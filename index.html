@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rihla — Your Pocket Travel Planner</title>
+<style>
+  :root{
+    --bg:#0f1226; --card:#1a1f3c; --card2:#232a52;
+    --ink:#f5f7ff; --muted:#a9b1d6; --line:#2c3363;
+    --brand:#6c8cff; --brand2:#8b6cff; --accent:#28d9a5;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 700px at 80% -10%, #23306b 0%, transparent 60%),
+               radial-gradient(1000px 600px at -10% 10%, #3a2568 0%, transparent 55%),
+               var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh; line-height:1.5;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:22px 16px 60px}
+  header.hero{text-align:center;padding:14px 6px 4px}
+  .logo{font-size:34px}
+  h1{font-size:28px;margin:6px 0 4px;letter-spacing:.3px}
+  .tag{color:var(--muted);font-size:15px;margin:0 auto;max-width:440px}
+  .card{
+    background:linear-gradient(180deg,var(--card),#161b38);
+    border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:18px;margin-top:20px;
+  }
+  label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px;font-weight:600;letter-spacing:.2px}
+  label:first-of-type{margin-top:0}
+  input,select{
+    width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);
+    background:#11162f;color:var(--ink);font-size:16px;outline:none;
+  }
+  input:focus,select:focus{border-color:var(--brand)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .chip{
+    padding:9px 13px;border-radius:999px;border:1px solid var(--line);
+    background:#11162f;color:var(--muted);font-size:14px;cursor:pointer;user-select:none;
+  }
+  .chip.active{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+  .btn{
+    width:100%;margin-top:20px;padding:16px;border:none;border-radius:14px;
+    background:linear-gradient(90deg,var(--brand),var(--brand2));
+    color:#fff;font-size:17px;font-weight:700;cursor:pointer;box-shadow:var(--shadow);
+  }
+  .btn:active{transform:translateY(1px)}
+  .out{margin-top:26px;display:none}
+  .out.show{display:block;animation:rise .4s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .summary{
+    background:linear-gradient(120deg,#1c2450,#241a4d);
+    border:1px solid var(--line);border-radius:var(--radius);padding:18px;
+  }
+  .summary h2{margin:0 0 4px;font-size:22px}
+  .summary .meta{color:var(--muted);font-size:14px}
+  .stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+  .stat{flex:1;min-width:120px;background:#11162f;border:1px solid var(--line);border-radius:12px;padding:12px}
+  .stat .k{font-size:12px;color:var(--muted)}
+  .stat .v{font-size:18px;font-weight:700;margin-top:2px}
+  .day{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-top:14px}
+  .day h3{margin:0 0 2px;font-size:17px}
+  .day .city{color:var(--accent);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.6px}
+  .slot{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+  .slot:first-of-type{border-top:none}
+  .slot .ico{font-size:18px;width:26px;text-align:center}
+  .slot .t{font-size:12px;color:var(--muted);font-weight:700;width:70px;flex-shrink:0}
+  .slot .d{font-size:15px}
+  .note{color:var(--muted);font-size:12px;text-align:center;margin-top:18px;padding:0 10px}
+  .foot{color:var(--muted);font-size:12px;text-align:center;margin-top:30px}
+  a{color:var(--brand)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="logo">🧭</div>
+    <h1>Rihla</h1>
+    <p class="tag">Tell me where and when. I'll plan your trip in seconds.</p>
+  </header>
+
+  <div class="card">
+    <label for="dest">Where do you want to go?</label>
+    <input id="dest" type="text" placeholder="e.g. Japan, Turkey, Italy…" autocomplete="off">
+
+    <div class="row">
+      <div>
+        <label for="days">How many days?</label>
+        <input id="days" type="number" min="1" max="30" value="5">
+      </div>
+      <div>
+        <label for="pace">Trip pace</label>
+        <select id="pace">
+          <option value="relaxed">Relaxed</option>
+          <option value="balanced" selected>Balanced</option>
+          <option value="packed">Packed</option>
+        </select>
+      </div>
+    </div>
+
+    <label>What's your budget?</label>
+    <div class="chips" id="budgetChips">
+      <div class="chip" data-v="Budget">💸 Budget</div>
+      <div class="chip active" data-v="Mid-range">✨ Mid-range</div>
+      <div class="chip" data-v="Luxury">👑 Luxury</div>
+    </div>
+
+    <label>What are you into?</label>
+    <div class="chips" id="vibeChips">
+      <div class="chip active" data-v="Culture">🏛️ Culture</div>
+      <div class="chip" data-v="Food">🍜 Food</div>
+      <div class="chip" data-v="Nature">🏔️ Nature</div>
+      <div class="chip" data-v="Shopping">🛍️ Shopping</div>
+      <div class="chip" data-v="Relax">🏖️ Relax</div>
+    </div>
+
+    <button class="btn" onclick="plan()">Plan my trip ✨</button>
+  </div>
+
+  <div class="out" id="out"></div>
+
+  <p class="foot">Made with ❤️ — your very first app. This is a demo planner; the next version connects to live hotels, maps &amp; restaurants.</p>
+</div>
+
+<script>
+  // ---- little interactive helpers ----
+  function wireChips(id, multi){
+    const box = document.getElementById(id);
+    box.addEventListener('click', e=>{
+      const chip = e.target.closest('.chip');
+      if(!chip) return;
+      if(multi){ chip.classList.toggle('active'); }
+      else { box.querySelectorAll('.chip').forEach(c=>c.classList.remove('active')); chip.classList.add('active'); }
+    });
+  }
+  wireChips('budgetChips', false);
+  wireChips('vibeChips', true);
+
+  function picked(id){
+    return [...document.querySelectorAll('#'+id+' .chip.active')].map(c=>c.dataset.v);
+  }
+
+  // ---- a small library of activities by vibe (demo content) ----
+  const LIB = {
+    Culture:[["🏛️","Explore the old town & historic landmarks"],["🖼️","Visit a famous museum or gallery"],["⛩️","See an iconic temple, palace or monument"]],
+    Food:[["🍜","Try a signature local dish at a beloved spot"],["🥘","Join a street-food walk"],["☕","Café-hop through a charming neighbourhood"]],
+    Nature:[["🏔️","Day trip to a scenic viewpoint or mountain"],["🌊","Relax by the water — coast, lake or river"],["🌳","Stroll a famous park or garden"]],
+    Shopping:[["🛍️","Wander the main shopping street & local market"],["🎁","Hunt for souvenirs and local crafts"],["🏬","Browse a landmark mall or bazaar"]],
+    Relax:[["🧖","Spa, hammam or hot-spring afternoon"],["🌅","Slow morning + sunset spot"],["🛥️","Easy scenic cruise or drive"]]
+  };
+  const MEALS = {
+    Budget:["local eatery","street-food stall","family-run diner"],
+    "Mid-range":["well-rated local restaurant","cozy bistro","popular halal spot"],
+    Luxury:["fine-dining restaurant","rooftop venue","chef's tasting menu"]
+  };
+  const HOTELS = {Budget:"a clean, well-located guesthouse", "Mid-range":"a comfortable 4-star hotel", Luxury:"a 5-star hotel with a view"};
+  const COST = {Budget:70, "Mid-range":160, Luxury:380}; // per person per day, demo
+
+  function pick(arr, seed){ return arr[seed % arr.length]; }
+
+  function plan(){
+    const dest = (document.getElementById('dest').value || 'your destination').trim();
+    const days = Math.max(1, Math.min(30, parseInt(document.getElementById('days').value)||5));
+    const pace = document.getElementById('pace').value;
+    const budget = picked('budgetChips')[0] || 'Mid-range';
+    let vibes = picked('vibeChips'); if(!vibes.length) vibes = ['Culture'];
+
+    const slotsPerDay = pace==='relaxed'?2 : pace==='packed'?4 : 3;
+    const perDay = COST[budget];
+    const total = perDay * days;
+
+    let html = `
+      <div class="summary">
+        <h2>${cap(dest)} · ${days} days</h2>
+        <div class="meta">${budget} · ${cap(pace)} pace · ${vibes.join(' · ')}</div>
+        <div class="stats">
+          <div class="stat"><div class="k">Length</div><div class="v">${days} days</div></div>
+          <div class="stat"><div class="k">Stay</div><div class="v">${HOTELS[budget]}</div></div>
+          <div class="stat"><div class="k">Est. per person</div><div class="v">~$${total.toLocaleString()}</div></div>
+        </div>
+      </div>`;
+
+    for(let d=1; d<=days; d++){
+      html += `<div class="day"><div class="city">Day ${d}</div><h3>${dayTitle(d,days)}</h3>`;
+      // morning activity from a rotating vibe
+      const timeLabels = slotsPerDay===2?["Morning","Evening"]:slotsPerDay===4?["Morning","Midday","Afternoon","Evening"]:["Morning","Afternoon","Evening"];
+      for(let s=0;s<slotsPerDay;s++){
+        const vibe = vibes[(d+s) % vibes.length];
+        const act = pick(LIB[vibe], d+s);
+        html += slot(act[0], timeLabels[s], act[1]);
+      }
+      const meal = pick(MEALS[budget], d);
+      html += slot("🍽️","Dinner", `Eat at ${meal} in ${cap(dest)}`);
+      html += `</div>`;
+    }
+
+    html += `<p class="note">⚠️ Estimated demo plan & prices — always confirm details when you book. Check visa requirements for ${cap(dest)} before travelling.</p>`;
+
+    const out = document.getElementById('out');
+    out.innerHTML = html;
+    out.classList.add('show');
+    out.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  function slot(ico, t, d){
+    return `<div class="slot"><div class="ico">${ico}</div><div class="t">${t}</div><div class="d">${d}</div></div>`;
+  }
+  function dayTitle(d,total){
+    if(d===1) return "Arrival & first impressions";
+    if(d===total) return "Last day & departure";
+    return "Exploring highlights";
+  }
+  function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+</script>
+</body>
+</html>
