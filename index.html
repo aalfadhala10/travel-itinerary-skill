@@ -8,127 +8,105 @@
 <body>
 <style>
   :root{
-    --paper:#f6f0e2; --paper2:#fbf7ee; --card:#fffdf7;
-    --ink:#26201a; --muted:#8b8172; --line:#e4d9c2;
-    --teal:#0e4f4a; --teal-soft:#0e4f4a12;
-    --amber:#c9852a; --amber-soft:#c9852a1f;
-    --shadow:0 14px 34px rgba(40,32,20,.12);
+    --paper:#e9e2cf; --paper2:#f2ecd9; --card:#fbf8ef;
+    --ink:#211e17; --muted:#7d7562; --line:#d9cfb6;
+    --teal:#0c4a41; --teal-soft:#0c4a4112;
+    --amber:#c6842a; --amber-soft:#c6842a1f;
+    --clay:#b0512f;
+    --shadow:0 14px 34px rgba(40,32,20,.14);
     --ff-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
     --ff-body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     --ff-data:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   }
   @media (prefers-color-scheme:dark){
     :root{
-      --paper:#0e1512; --paper2:#111a16; --card:#16201b;
-      --ink:#f0ece1; --muted:#9aa89f; --line:#26312a;
-      --teal:#4fbfac; --teal-soft:#4fbfac1a;
-      --amber:#eaa64a; --amber-soft:#eaa64a22;
-      --shadow:0 16px 40px rgba(0,0,0,.5);
+      --paper:#0a1310; --paper2:#0f1a15; --card:#14211c;
+      --ink:#ece5d3; --muted:#93a096; --line:#243029;
+      --teal:#45b8a1; --teal-soft:#45b8a11a;
+      --amber:#e6a648; --amber-soft:#e6a64822;
+      --clay:#d9694c; --shadow:0 16px 40px rgba(0,0,0,.5);
     }
   }
   :root[data-theme="light"]{
-    --paper:#f6f0e2; --paper2:#fbf7ee; --card:#fffdf7;
-    --ink:#26201a; --muted:#8b8172; --line:#e4d9c2;
-    --teal:#0e4f4a; --teal-soft:#0e4f4a12;
-    --amber:#c9852a; --amber-soft:#c9852a1f;
-    --shadow:0 14px 34px rgba(40,32,20,.12);
+    --paper:#e9e2cf; --paper2:#f2ecd9; --card:#fbf8ef;
+    --ink:#211e17; --muted:#7d7562; --line:#d9cfb6;
+    --teal:#0c4a41; --teal-soft:#0c4a4112; --amber:#c6842a; --amber-soft:#c6842a1f;
+    --clay:#b0512f; --shadow:0 14px 34px rgba(40,32,20,.14);
   }
   :root[data-theme="dark"]{
-    --paper:#0e1512; --paper2:#111a16; --card:#16201b;
-    --ink:#f0ece1; --muted:#9aa89f; --line:#26312a;
-    --teal:#4fbfac; --teal-soft:#4fbfac1a;
-    --amber:#eaa64a; --amber-soft:#eaa64a22;
-    --shadow:0 16px 40px rgba(0,0,0,.5);
+    --paper:#0a1310; --paper2:#0f1a15; --card:#14211c;
+    --ink:#ece5d3; --muted:#93a096; --line:#243029;
+    --teal:#45b8a1; --teal-soft:#45b8a11a; --amber:#e6a648; --amber-soft:#e6a64822;
+    --clay:#d9694c; --shadow:0 16px 40px rgba(0,0,0,.5);
   }
 
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   body{
     margin:0;font-family:var(--ff-body);color:var(--ink);line-height:1.5;
-    background:
-      radial-gradient(900px 500px at 100% -5%, var(--teal-soft), transparent 60%),
-      radial-gradient(700px 460px at -10% 6%, var(--amber-soft), transparent 55%),
-      var(--paper);
-    min-height:100vh;
+    background:var(--paper);min-height:100vh;
   }
-  .wrap{max-width:680px;margin:0 auto;padding:20px 18px 64px}
+  #topo{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+  .wrap{max-width:680px;margin:0 auto;padding:20px 18px 64px;position:relative;z-index:1}
 
-  /* language switcher */
   .langbar{display:flex;justify-content:center;gap:6px;margin-bottom:8px}
-  .lang{
-    padding:6px 12px;border-radius:999px;border:1px solid var(--line);
-    background:var(--card);color:var(--muted);font-size:13px;cursor:pointer;user-select:none;transition:all .15s;
-  }
+  .lang{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:13px;cursor:pointer;user-select:none;transition:all .15s}
   .lang.active{background:var(--ink);border-color:var(--ink);color:var(--paper);font-weight:600}
 
-  /* hero */
   .hero{text-align:center;padding:6px 4px 2px}
-  .compass{
-    width:60px;height:60px;margin:0 auto 6px;border-radius:50%;
-    border:2px solid var(--teal);position:relative;background:var(--card);box-shadow:var(--shadow);
-  }
-  .compass::before{
-    content:"";position:absolute;inset:0;margin:auto;width:0;height:0;
-    border-left:6px solid transparent;border-right:6px solid transparent;
-    border-bottom:22px solid var(--amber);transform:translateY(-3px) rotate(38deg);transform-origin:50% 70%;
-  }
+  .compass{width:60px;height:60px;margin:0 auto 6px;border-radius:50%;border:2px solid var(--teal);position:relative;background:var(--card);box-shadow:var(--shadow)}
+  .compass::before{content:"";position:absolute;inset:0;margin:auto;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:22px solid var(--amber);transform:translateY(-3px) rotate(38deg);transform-origin:50% 70%}
   .compass::after{content:"";position:absolute;inset:0;margin:auto;width:6px;height:6px;border-radius:50%;background:var(--teal)}
   h1{font-family:var(--ff-display);font-size:38px;margin:2px 0 0;letter-spacing:.5px;font-weight:600}
   .tag{color:var(--muted);font-size:15px;max-width:420px;margin:6px auto 0;text-wrap:balance}
   .eyebrow{font-family:var(--ff-data);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--amber);font-weight:600}
 
-  /* trip card */
-  .card{
-    background:var(--card);border:1px solid var(--line);border-radius:16px;
-    box-shadow:var(--shadow);padding:20px;margin-top:22px;position:relative;
-  }
-  .card::before{
-    content:"";position:absolute;top:-1px;left:50%;transform:translateX(-50%);
-    width:44px;height:6px;border-radius:0 0 8px 8px;background:var(--paper);border:1px solid var(--line);border-top:none;
-  }
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px;margin-top:22px;position:relative}
+  .card::before{content:"";position:absolute;top:-1px;left:50%;transform:translateX(-50%);width:44px;height:6px;border-radius:0 0 8px 8px;background:var(--paper);border:1px solid var(--line);border-top:none}
   label{display:block;font-family:var(--ff-data);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:16px 0 7px;font-weight:600}
   label:first-of-type{margin-top:0}
   .hint{text-transform:none;letter-spacing:0;font-weight:400}
-  input,select{
-    width:100%;padding:14px;border-radius:11px;border:1px solid var(--line);
-    background:var(--paper2);color:var(--ink);font-size:16px;font-family:var(--ff-body);outline:none;transition:border-color .15s;
-  }
+  input,select{width:100%;padding:14px;border-radius:11px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);font-size:16px;font-family:var(--ff-body);outline:none;transition:border-color .15s}
   input:focus,select:focus{border-color:var(--teal)}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  /* passport stamps */
+  .stamps{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+  .stamp{font-family:var(--ff-data);font-size:12px;letter-spacing:.4px;text-transform:uppercase;padding:7px 11px;border:1.5px solid var(--clay);color:var(--clay);border-radius:8px;background:transparent;cursor:pointer;opacity:.82;transition:all .15s;transform:rotate(-2deg)}
+  .stamp:nth-child(even){transform:rotate(2deg)}
+  .stamp:nth-child(3n){transform:rotate(-1deg)}
+  .stamp:hover{opacity:1;transform:rotate(0)}
+  .stamp.active{background:var(--clay);color:var(--card);opacity:1;transform:rotate(0)}
+
   .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
-  .chip{
-    padding:9px 14px;border-radius:999px;border:1px solid var(--line);
-    background:var(--paper2);color:var(--muted);font-size:14px;cursor:pointer;user-select:none;transition:all .15s;
-  }
+  .chip{padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:var(--paper2);color:var(--muted);font-size:14px;cursor:pointer;user-select:none;transition:all .15s}
   .chip:hover{border-color:var(--teal)}
   .chip.active{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:600}
-  @media (prefers-color-scheme:dark){.chip.active{color:#0e1512}}
-  :root[data-theme="dark"] .chip.active{color:#0e1512}
+  @media (prefers-color-scheme:dark){.chip.active{color:#0a1310}}
+  :root[data-theme="dark"] .chip.active{color:#0a1310}
   :root[data-theme="light"] .chip.active{color:#fff}
-  .btn{
-    width:100%;margin-top:22px;padding:16px;border:none;border-radius:12px;
-    background:var(--amber);color:#231a0a;font-size:16px;font-weight:700;font-family:var(--ff-body);
-    cursor:pointer;box-shadow:var(--shadow);letter-spacing:.3px;transition:transform .08s,filter .15s;
-  }
+
+  .btn{width:100%;margin-top:22px;padding:16px;border:none;border-radius:12px;background:var(--amber);color:#231a0a;font-size:16px;font-weight:700;font-family:var(--ff-body);cursor:pointer;box-shadow:var(--shadow);letter-spacing:.3px;transition:transform .08s,filter .15s}
   .btn:hover{filter:brightness(1.05)}
   .btn:active{transform:translateY(1px)}
   .btn:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 
-  /* output */
   .out{margin-top:28px;display:none}
   .out.show{display:block;animation:rise .45s ease}
   @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){.out.show{animation:none}}
   .ticket{background:var(--teal);color:#fdfaf1;border-radius:16px;padding:20px}
   .ticket .eyebrow{color:#e9d6a8}
-  .ticket h2{font-family:var(--ff-display);font-size:26px;margin:4px 0 2px;font-weight:600}
+  .ticket h2{font-family:var(--ff-display);font-size:25px;margin:4px 0 2px;font-weight:600;line-height:1.15}
   .ticket .sub{opacity:.85;font-size:14px}
+  .ticket .blurb{font-size:13.5px;opacity:.92;margin-top:10px;font-style:italic;text-wrap:balance}
+  .ticket a{color:#fff;text-decoration:underline;text-decoration-color:#e9d6a8;text-underline-offset:2px}
   .stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
   .stat{flex:1;min-width:120px;background:rgba(255,255,255,.1);border-radius:10px;padding:11px 13px}
   .stat .k{font-family:var(--ff-data);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;opacity:.75}
-  .stat .v{font-size:16px;font-weight:700;margin-top:3px}
+  .stat .v{font-size:15px;font-weight:700;margin-top:3px}
   .stat .v.num{font-variant-numeric:tabular-nums}
+  .realtag{font-size:12px;color:var(--clay);font-weight:600;margin:14px 2px 2px;text-align:center}
 
-  /* route timeline */
   .route{margin-top:6px;padding-left:4px}
   .day{position:relative;padding:18px 0 4px 26px;margin-left:8px;border-left:2px solid var(--line)}
   .day:last-child{border-left-color:transparent}
@@ -140,20 +118,22 @@
   .slot .ico{font-size:18px;width:24px;text-align:center;flex-shrink:0}
   .slot .t{font-family:var(--ff-data);font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);width:64px;flex-shrink:0;padding-top:3px}
   .slot .d{font-size:15px}
+  .slot .d a{color:inherit;text-decoration:underline;text-decoration-color:var(--amber);text-underline-offset:3px}
+  .slot .area{color:var(--muted);font-size:12.5px}
   .note{color:var(--muted);font-size:12.5px;text-align:center;margin-top:22px;padding:0 8px;text-wrap:balance}
   .foot{color:var(--muted);font-size:12px;text-align:center;margin-top:34px;line-height:1.6}
   .foot b{color:var(--ink)}
 
-  /* ---- right-to-left (Arabic) ---- */
   #app[dir="rtl"]{text-align:right}
-  #app[dir="rtl"] .hero,#app[dir="rtl"] .langbar,#app[dir="rtl"] .note,#app[dir="rtl"] .foot{text-align:center}
-  #app[dir="rtl"] .eyebrow,#app[dir="rtl"] label,#app[dir="rtl"] .dlabel,
-  #app[dir="rtl"] .slot .t,#app[dir="rtl"] .stat .k{letter-spacing:normal;text-transform:none;font-family:var(--ff-body)}
+  #app[dir="rtl"] .hero,#app[dir="rtl"] .langbar,#app[dir="rtl"] .note,#app[dir="rtl"] .foot,#app[dir="rtl"] .realtag{text-align:center}
+  #app[dir="rtl"] .eyebrow,#app[dir="rtl"] label,#app[dir="rtl"] .dlabel,#app[dir="rtl"] .slot .t,#app[dir="rtl"] .stat .k{letter-spacing:normal;text-transform:none;font-family:var(--ff-body)}
   #app[dir="rtl"] .day{border-left:none;border-right:2px solid var(--line);margin-left:0;margin-right:8px;padding-left:0;padding-right:26px}
   #app[dir="rtl"] .day:last-child{border-right-color:transparent}
   #app[dir="rtl"] .day::before{left:auto;right:-7px}
   #app[dir="rtl"] .route{padding-left:0;padding-right:4px}
 </style>
+
+<canvas id="topo" aria-hidden="true"></canvas>
 
 <div class="wrap" id="app" dir="ltr">
   <div class="langbar" id="langbar">
@@ -171,20 +151,15 @@
 
   <div class="card">
     <label for="dest" id="lblDest">Where to?</label>
-    <input id="dest" type="text" placeholder="e.g. Japan, Turkey, Italy…" autocomplete="off">
+    <input id="dest" type="text" placeholder="e.g. Istanbul, Tokyo, Dubai…" autocomplete="off">
+
+    <label id="lblGuides">Popular real guides</label>
+    <div class="stamps" id="stamps"></div>
 
     <div class="row">
-      <div>
-        <label for="days" id="lblDays">How many days?</label>
-        <input id="days" type="number" min="1" max="30" value="5">
-      </div>
-      <div>
-        <label for="pace" id="lblPace">Trip pace</label>
-        <select id="pace">
-          <option value="relaxed">Relaxed</option>
-          <option value="balanced" selected>Balanced</option>
-          <option value="packed">Packed</option>
-        </select>
+      <div><label for="days" id="lblDays">How many days?</label><input id="days" type="number" min="1" max="30" value="5"></div>
+      <div><label for="pace" id="lblPace">Trip pace</label>
+        <select id="pace"><option value="relaxed">Relaxed</option><option value="balanced" selected>Balanced</option><option value="packed">Packed</option></select>
       </div>
     </div>
 
@@ -208,243 +183,284 @@
   </div>
 
   <div class="out" id="out" aria-live="polite"></div>
-
   <p class="foot" id="foot"></p>
 </div>
 
 <script>
-  var ICON = {Budget:"💸","Mid-range":"✨",Luxury:"👑",Culture:"🏛️",Food:"🍜",Nature:"🏔️",Shopping:"🛍️",Relax:"🏖️"};
+  var ICON={Budget:"💸","Mid-range":"✨",Luxury:"👑",Culture:"🏛️",Food:"🍜",Nature:"🏔️",Shopping:"🛍️",Relax:"🏖️"};
+  var TAGICON={Culture:"🏛️",Food:"🥘",Nature:"🌿",Shopping:"🛍️",Relax:"🌅"};
 
-  var I18N = {
-    en:{
-      dir:"ltr", loc:"en-US",
-      ui:{
-        eyebrow:"Pocket travel planner",
-        tag:"Tell me where and when — I'll map out your days in seconds.",
-        dest:"Where to?", destPh:"e.g. Japan, Turkey, Italy…",
-        days:"How many days?", pace:"Trip pace",
-        paces:{relaxed:"Relaxed",balanced:"Balanced",packed:"Packed"},
-        budget:"Budget", budgets:{Budget:"Budget","Mid-range":"Mid-range",Luxury:"Luxury"},
-        vibe:"What are you into?", vibeHint:"(pick a few)",
-        vibes:{Culture:"Culture",Food:"Food",Nature:"Nature",Shopping:"Shopping",Relax:"Relax"},
-        btn:"Plan my trip →",
-        foot:"<b>Rihla</b> — your very first app. 🎉<br>This is a demo planner; the next version connects to live hotels, maps &amp; halal restaurants."
-      },
-      out:{
-        eyebrow:"Your itinerary", statLen:"Length", statStay:"Where you stay", statPer:"Est. per person",
-        daysUnit:"days", dayWord:"Day",
-        arrival:"Arrival & first impressions", explore:"Exploring the highlights", last:"Last day & departure",
-        times:{morning:"Morning",midday:"Midday",afternoon:"Afternoon",evening:"Evening",dinner:"Dinner"},
-        dinner:function(m,d){return "Eat at "+m+" in "+d;},
-        note:function(d){return "⚠️ Estimated demo plan & prices — always confirm when you book. Check visa requirements for "+d+" before you travel.";}
-      },
-      hotels:{Budget:"a clean, well-located guesthouse","Mid-range":"a comfortable 4-star hotel",Luxury:"a 5-star hotel with a view"},
-      meals:{Budget:["a local eatery","a street-food stall","a family-run diner"],"Mid-range":["a well-rated local restaurant","a cozy bistro","a popular halal spot"],Luxury:["a fine-dining restaurant","a rooftop venue","a chef's tasting menu"]},
-      lib:{
-        Culture:[["🏛️","Explore the old town & historic landmarks"],["🖼️","Visit a famous museum or gallery"],["⛩️","See an iconic temple, palace or monument"]],
-        Food:[["🍜","Try a signature local dish at a beloved spot"],["🥘","Join a street-food walk"],["☕","Café-hop through a charming neighbourhood"]],
-        Nature:[["🏔️","Day trip to a scenic viewpoint or mountain"],["🌊","Relax by the water — coast, lake or river"],["🌳","Stroll a famous park or garden"]],
-        Shopping:[["🛍️","Wander the main shopping street & local market"],["🎁","Hunt for souvenirs & local crafts"],["🏬","Browse a landmark mall or bazaar"]],
-        Relax:[["🧖","Spa, hammam or hot-spring afternoon"],["🌅","Slow morning + a great sunset spot"],["🛥️","Easy scenic cruise or drive"]]
-      }
-    },
-    ar:{
-      dir:"rtl", loc:"ar-EG",
-      ui:{
-        eyebrow:"مخطط سفر في جيبك",
-        tag:"قل لي وين ومتى — وأرتّب لك أيامك خلال ثواني.",
-        dest:"وجهتك؟", destPh:"مثال: اليابان، تركيا، إيطاليا…",
-        days:"كم يوم؟", pace:"إيقاع الرحلة",
-        paces:{relaxed:"هادئ",balanced:"متوازن",packed:"مكثّف"},
-        budget:"الميزانية", budgets:{Budget:"اقتصادي","Mid-range":"متوسط",Luxury:"فاخر"},
-        vibe:"وش يهمّك؟", vibeHint:"(اختر أكثر من واحد)",
-        vibes:{Culture:"ثقافة",Food:"طعام",Nature:"طبيعة",Shopping:"تسوّق",Relax:"استرخاء"},
-        btn:"خطّط رحلتي ←",
-        foot:"<b>رحلة</b> — أول تطبيق لك. 🎉<br>هذي نسخة تجريبية؛ النسخة الجاية تتصل بفنادق وخرائط ومطاعم حلال فعلية."
-      },
-      out:{
-        eyebrow:"برنامجك", statLen:"المدة", statStay:"مكان الإقامة", statPer:"تقديري للفرد",
-        daysUnit:"يوم", dayWord:"اليوم",
-        arrival:"الوصول والانطباعات الأولى", explore:"استكشاف أبرز المعالم", last:"اليوم الأخير والمغادرة",
-        times:{morning:"الصباح",midday:"الظهر",afternoon:"بعد الظهر",evening:"المساء",dinner:"العشاء"},
-        dinner:function(m,d){return "تعشّى في "+m+" في "+d;},
-        note:function(d){return "⚠️ خطة وأسعار تقديرية للعرض — تأكّد دائمًا عند الحجز. تحقّق من متطلبات فيزا "+d+" قبل السفر.";}
-      },
-      hotels:{Budget:"نُزل نظيف وبموقع ممتاز","Mid-range":"فندق ٤ نجوم مريح",Luxury:"فندق ٥ نجوم بإطلالة"},
-      meals:{Budget:["مطعم محلي","عربة أكل شارع","مطعم عائلي"],"Mid-range":["مطعم محلي بتقييم عالٍ","بيسترو دافئ","مكان حلال مشهور"],Luxury:["مطعم فاخر","مكان بإطلالة على السطح","قائمة تذوّق للشيف"]},
-      lib:{
-        Culture:[["🏛️","استكشف المدينة القديمة والمعالم التاريخية"],["🖼️","زُر متحفًا أو معرضًا مشهورًا"],["⛩️","شاهد معبدًا أو قصرًا أو معلمًا أيقونيًا"]],
-        Food:[["🍜","جرّب طبقًا محليًا مميزًا في مكان محبوب"],["🥘","جولة أكل شارع"],["☕","تنقّل بين المقاهي في حي ساحر"]],
-        Nature:[["🏔️","رحلة نهار إلى إطلالة أو جبل خلاب"],["🌊","استرخِ عند الماء — ساحل أو بحيرة أو نهر"],["🌳","تمشَّ في حديقة أو منتزه مشهور"]],
-        Shopping:[["🛍️","تجوّل في شارع التسوق الرئيسي والسوق المحلي"],["🎁","ابحث عن الهدايا والحرف المحلية"],["🏬","تفقّد مركز تسوق أو بازار شهير"]],
-        Relax:[["🧖","سبا أو حمّام أو ينابيع ساخنة بعد الظهر"],["🌅","صباح هادئ + مكان غروب رائع"],["🛥️","جولة بحرية أو بالسيارة مريحة"]]
-      }
-    },
-    es:{
-      dir:"ltr", loc:"es-ES",
-      ui:{
-        eyebrow:"Planificador de viajes de bolsillo",
-        tag:"Dime dónde y cuándo, y trazaré tus días en segundos.",
-        dest:"¿A dónde?", destPh:"p. ej. Japón, Turquía, Italia…",
-        days:"¿Cuántos días?", pace:"Ritmo del viaje",
-        paces:{relaxed:"Relajado",balanced:"Equilibrado",packed:"Intenso"},
-        budget:"Presupuesto", budgets:{Budget:"Económico","Mid-range":"Medio",Luxury:"Lujo"},
-        vibe:"¿Qué te gusta?", vibeHint:"(elige varios)",
-        vibes:{Culture:"Cultura",Food:"Comida",Nature:"Naturaleza",Shopping:"Compras",Relax:"Relax"},
-        btn:"Planear mi viaje →",
-        foot:"<b>Rihla</b> — tu primera app. 🎉<br>Esta es una demo; la próxima versión se conecta a hoteles, mapas y restaurantes halal reales."
-      },
-      out:{
-        eyebrow:"Tu itinerario", statLen:"Duración", statStay:"Alojamiento", statPer:"Est. por persona",
-        daysUnit:"días", dayWord:"Día",
-        arrival:"Llegada y primeras impresiones", explore:"Explorando lo mejor", last:"Último día y salida",
-        times:{morning:"Mañana",midday:"Mediodía",afternoon:"Tarde",evening:"Noche",dinner:"Cena"},
-        dinner:function(m,d){return "Cena en "+m+" en "+d;},
-        note:function(d){return "⚠️ Plan y precios estimados de demostración — confirma siempre al reservar. Revisa los requisitos de visa para "+d+" antes de viajar.";}
-      },
-      hotels:{Budget:"una pensión limpia y bien ubicada","Mid-range":"un hotel de 4 estrellas cómodo",Luxury:"un hotel de 5 estrellas con vistas"},
-      meals:{Budget:["un local sencillo","un puesto de comida callejera","un comedor familiar"],"Mid-range":["un restaurante local bien valorado","un bistró acogedor","un sitio halal popular"],Luxury:["un restaurante de alta cocina","una azotea con vistas","un menú degustación del chef"]},
-      lib:{
-        Culture:[["🏛️","Explora el casco antiguo y los monumentos históricos"],["🖼️","Visita un museo o galería famosa"],["⛩️","Ve un templo, palacio o monumento icónico"]],
-        Food:[["🍜","Prueba un plato local en un sitio muy querido"],["🥘","Únete a una ruta de comida callejera"],["☕","Recorre cafés por un barrio con encanto"]],
-        Nature:[["🏔️","Excursión a un mirador o montaña espectacular"],["🌊","Relájate junto al agua — costa, lago o río"],["🌳","Pasea por un parque o jardín famoso"]],
-        Shopping:[["🛍️","Recorre la calle comercial y el mercado local"],["🎁","Busca recuerdos y artesanía local"],["🏬","Visita un centro comercial o bazar emblemático"]],
-        Relax:[["🧖","Spa, hammam o aguas termales por la tarde"],["🌅","Mañana tranquila + un buen lugar para el atardecer"],["🛥️","Un crucero o paseo panorámico tranquilo"]]
-      }
-    }
+  /* ---------- REAL curated destination guides ---------- */
+  function P(n,a,t){return {n:n,a:a,t:t};}
+  var DEST={
+    istanbul:{city:"Istanbul",country:"Turkey",flag:"🇹🇷",
+      alias:["istanbul","turkey","türkiye","turkiye","اسطنبول","إسطنبول","تركيا"],
+      blurb:{en:"Where Europe meets Asia across the Bosphorus — imperial mosques, bazaars and ferries.",ar:"حيث تلتقي أوروبا وآسيا على البسفور — جوامع تاريخية وأسواق ومراكب.",es:"Donde Europa se encuentra con Asia sobre el Bósforo — mezquitas, bazares y ferris."},
+      cost:{Budget:70,"Mid-range":150,Luxury:350},
+      hotels:{Budget:"Sirkeci Mansion",'Mid-range':"Hotel Amira Istanbul",Luxury:"Four Seasons Bosphorus"},
+      poi:[P("Sultan Ahmed (Blue Mosque)","Sultanahmet",["Culture"]),P("Hagia Sophia","Sultanahmet",["Culture"]),P("Topkapı Palace","Sultanahmet",["Culture"]),P("Basilica Cistern","Sultanahmet",["Culture"]),P("Grand Bazaar","Beyazıt",["Shopping"]),P("Spice Bazaar","Eminönü",["Shopping","Food"]),P("Bosphorus Ferry Cruise","Eminönü",["Nature","Relax"]),P("Galata Tower","Beyoğlu",["Culture"]),P("İstiklal Street","Beyoğlu",["Shopping"]),P("Süleymaniye Mosque","Fatih",["Culture"]),P("Dolmabahçe Palace","Beşiktaş",["Culture"]),P("Ortaköy Waterfront","Ortaköy",["Relax","Food"])],
+      food:[P("Hamdi Restaurant","Eminönü"),P("Karaköy Lokantası","Karaköy"),P("Sultanahmet Köftecisi","Sultanahmet"),P("Balıkçı Sabahattin","Sultanahmet"),P("Çiya Sofrası","Kadıköy"),P("Nusr-Et Steakhouse","Etiler")]},
+    dubai:{city:"Dubai",country:"UAE",flag:"🇦🇪",
+      alias:["dubai","uae","united arab emirates","emirates","دبي","الامارات","الإمارات","ابوظبي","أبوظبي"],
+      blurb:{en:"Futuristic skyline, gold souks and desert dunes — luxury meets Arabian heritage.",ar:"أفق مستقبلي وأسواق ذهب وكثبان صحراء — فخامة وتراث عربي.",es:"Rascacielos futuristas, zocos de oro y dunas — lujo y herencia árabe."},
+      cost:{Budget:110,"Mid-range":240,Luxury:550},
+      hotels:{Budget:"Rove Downtown",'Mid-range':"Hilton Dubai Al Habtoor City",Luxury:"Atlantis The Palm"},
+      poi:[P("Burj Khalifa","Downtown",["Culture"]),P("The Dubai Mall & Fountain","Downtown",["Shopping"]),P("Museum of the Future","Trade Centre",["Culture"]),P("Al Fahidi Historic District","Bur Dubai",["Culture"]),P("Gold & Spice Souk","Deira",["Shopping"]),P("Dubai Marina & JBR","Marina",["Relax"]),P("Palm Jumeirah","Palm",["Relax"]),P("Jumeirah Mosque","Jumeirah",["Culture"]),P("Desert Safari","Al Marmoom",["Nature"]),P("Kite Beach","Umm Suqeim",["Relax","Nature"]),P("Global Village","Dubailand",["Shopping"]),P("Dubai Creek Abra Ride","Deira",["Relax"])],
+      food:[P("Ravi Restaurant","Satwa"),P("Al Ustad Special Kebab","Bur Dubai"),P("Arabian Tea House","Al Fahidi"),P("Zaroob","Sheikh Zayed Rd"),P("Logma","BoxPark"),P("Pierchic","Al Sufouh")]},
+    tokyo:{city:"Tokyo",country:"Japan",flag:"🇯🇵",
+      alias:["tokyo","japan","اليابان","طوكيو"],
+      blurb:{en:"Neon districts, ancient shrines and the world's best food scene.",ar:"أحياء نيون ومعابد عريقة وأفضل مطبخ في العالم.",es:"Barrios de neón, santuarios antiguos y la mejor gastronomía del mundo."},
+      cost:{Budget:120,"Mid-range":260,Luxury:600},
+      hotels:{Budget:"APA Hotel Shinjuku",'Mid-range':"Shibuya Excel Hotel Tokyu",Luxury:"The Ritz-Carlton Tokyo"},
+      poi:[P("Senso-ji Temple","Asakusa",["Culture"]),P("Meiji Shrine","Shibuya",["Culture"]),P("Shibuya Crossing","Shibuya",["Culture"]),P("Tokyo Skytree","Sumida",["Culture"]),P("teamLab Planets","Toyosu",["Culture"]),P("Tsukiji Outer Market","Tsukiji",["Food"]),P("Shinjuku Gyoen","Shinjuku",["Nature"]),P("Ueno Park","Ueno",["Nature","Culture"]),P("Akihabara","Akihabara",["Shopping"]),P("Ginza","Ginza",["Shopping"]),P("Odaiba Waterfront","Odaiba",["Relax"]),P("Mount Takao Day Trip","Hachioji",["Nature"])],
+      food:[P("Naritaya Halal Ramen","Asakusa"),P("Gyumon Halal Yakiniku","Shibuya"),P("Halal Wagyu Yakiniku Panga","Asakusa"),P("CoCo Ichibanya (Halal)","Akihabara"),P("Malaychan","Ikebukuro"),P("Sekai Cafe","Asakusa")]},
+    kl:{city:"Kuala Lumpur",country:"Malaysia",flag:"🇲🇾",
+      alias:["kuala lumpur","malaysia","ماليزيا","كوالالمبور","كوالا لمبور"],
+      blurb:{en:"Twin towers, cave temples and some of Asia's best halal street food.",ar:"أبراج توأم ومعابد كهوف وأشهى أكل شارع حلال في آسيا.",es:"Torres gemelas, templos en cuevas y la mejor comida callejera halal de Asia."},
+      cost:{Budget:45,"Mid-range":100,Luxury:240},
+      hotels:{Budget:"Sunway Putra Hotel",'Mid-range':"Traders Hotel KL",Luxury:"Mandarin Oriental KL"},
+      poi:[P("Petronas Twin Towers","KLCC",["Culture"]),P("Batu Caves","Gombak",["Culture","Nature"]),P("KL Tower","Bukit Nanas",["Culture"]),P("Central Market","Chinatown",["Shopping"]),P("Petaling Street","Chinatown",["Shopping"]),P("Bukit Bintang","Bukit Bintang",["Shopping","Food"]),P("Islamic Arts Museum","Perdana",["Culture"]),P("Merdeka Square","City Centre",["Culture"]),P("KLCC Park","KLCC",["Nature"]),P("Perdana Botanical Gardens","Tasik Perdana",["Nature"]),P("Aquaria KLCC","KLCC",["Relax"]),P("Jalan Alor Night Food","Bukit Bintang",["Food"])],
+      food:[P("Nasi Kandar Pelita","Jalan Ampang"),P("Village Park Restaurant","Damansara"),P("Madam Kwan's","KLCC"),P("Restoran Rebung","Bangsar"),P("Jalan Alor Food Street","Bukit Bintang"),P("Sky Bar (halal)","Trader's Hotel")]},
+    bangkok:{city:"Bangkok",country:"Thailand",flag:"🇹🇭",
+      alias:["bangkok","thailand","تايلاند","تايلند","بانكوك"],
+      blurb:{en:"Glittering temples, floating markets and buzzing riverside life.",ar:"معابد متلألئة وأسواق عائمة وحياة نهرية نابضة.",es:"Templos dorados, mercados flotantes y vida junto al río."},
+      cost:{Budget:50,"Mid-range":110,Luxury:260},
+      hotels:{Budget:"Ibis Bangkok Riverside",'Mid-range':"Chatrium Hotel Riverside",Luxury:"Mandarin Oriental Bangkok"},
+      poi:[P("Grand Palace & Wat Phra Kaew","Phra Nakhon",["Culture"]),P("Wat Arun","Bangkok Yai",["Culture"]),P("Wat Pho (Reclining Buddha)","Phra Nakhon",["Culture"]),P("Chatuchak Weekend Market","Chatuchak",["Shopping"]),P("Chao Phraya River Boat","Riverside",["Nature","Relax"]),P("ICONSIAM","Khlong San",["Shopping"]),P("Jim Thompson House","Pathum Wan",["Culture"]),P("Lumpini Park","Pathum Wan",["Nature"]),P("Asiatique The Riverfront","Charoen Krung",["Relax","Shopping"]),P("Khao San Road","Phra Nakhon",["Culture"])],
+      food:[P("Home Cuisine Islamic Restaurant","Charoen Krung"),P("Roti-Mataba","Phra Athit"),P("Muslim Restaurant","Charoen Krung"),P("Al Saray","Sukhumvit Soi 3/1"),P("Saras","Silom"),P("Sinthorn Steak House (halal)","Chok Chai")]},
+    cairo:{city:"Cairo",country:"Egypt",flag:"🇪🇬",
+      alias:["cairo","egypt","مصر","القاهرة"],
+      blurb:{en:"Pyramids, pharaohs and a thousand years of Islamic architecture.",ar:"أهرامات وفراعنة وألف سنة من العمارة الإسلامية.",es:"Pirámides, faraones y mil años de arquitectura islámica."},
+      cost:{Budget:40,"Mid-range":90,Luxury:220},
+      hotels:{Budget:"Cairo Pyramids Hotel",'Mid-range':"Steigenberger Hotel El Tahrir",Luxury:"Marriott Mena House"},
+      poi:[P("Pyramids of Giza & Sphinx","Giza",["Culture"]),P("Grand Egyptian Museum","Giza",["Culture"]),P("Egyptian Museum","Tahrir",["Culture"]),P("Khan el-Khalili Bazaar","Islamic Cairo",["Shopping"]),P("Al-Azhar Mosque","Islamic Cairo",["Culture"]),P("Salah El-Din Citadel","Islamic Cairo",["Culture"]),P("Al-Muizz Street","Islamic Cairo",["Culture"]),P("Coptic Cairo","Old Cairo",["Culture"]),P("Nile Felucca Ride","Nile Corniche",["Relax","Nature"]),P("Cairo Tower","Zamalek",["Culture"])],
+      food:[P("Abou El Sid","Zamalek"),P("Felfela","Downtown"),P("Koshary Abou Tarek","Downtown"),P("Sequoia","Zamalek"),P("Naguib Mahfouz Café","Khan el-Khalili"),P("Zooba","Zamalek")]},
+    london:{city:"London",country:"United Kingdom",flag:"🇬🇧",
+      alias:["london","uk","united kingdom","england","britain","لندن","بريطانيا","انجلترا","إنجلترا"],
+      blurb:{en:"Royal landmarks, world museums and endless halal eats.",ar:"معالم ملكية ومتاحف عالمية وخيارات حلال لا تنتهي.",es:"Monumentos reales, grandes museos y comida halal por todas partes."},
+      cost:{Budget:130,"Mid-range":270,Luxury:620},
+      hotels:{Budget:"Premier Inn London County Hall",'Mid-range':"The Tower Hotel",Luxury:"The Savoy"},
+      poi:[P("Big Ben & Westminster","Westminster",["Culture"]),P("Tower of London","Tower Hill",["Culture"]),P("British Museum","Bloomsbury",["Culture"]),P("Buckingham Palace","St James's",["Culture"]),P("London Eye","South Bank",["Relax"]),P("Tower Bridge","Tower Hill",["Culture"]),P("Borough Market","Southwark",["Food"]),P("Oxford & Regent Street","West End",["Shopping"]),P("Camden Market","Camden",["Shopping"]),P("Hyde Park","Kensington",["Nature"])],
+      food:[P("Tayyabs","Whitechapel"),P("Dishoom (halal meat)","Covent Garden"),P("The Halal Guys","Leicester Square"),P("Comptoir Libanais","Marylebone"),P("Roti King","Euston"),P("Sagar (vegetarian)","Hammersmith")]},
+    paris:{city:"Paris",country:"France",flag:"🇫🇷",
+      alias:["paris","france","باريس","فرنسا"],
+      blurb:{en:"Iconic monuments, art and riverside romance on the Seine.",ar:"معالم أيقونية وفن ورومانسية على ضفاف السين.",es:"Monumentos icónicos, arte y romanticismo junto al Sena."},
+      cost:{Budget:130,"Mid-range":280,Luxury:640},
+      hotels:{Budget:"Ibis Paris Tour Eiffel",'Mid-range':"Hôtel Le Six",Luxury:"Le Meurice"},
+      poi:[P("Eiffel Tower","Champ de Mars",["Culture"]),P("Louvre Museum","1st arr.",["Culture"]),P("Notre-Dame & Île de la Cité","4th arr.",["Culture"]),P("Montmartre & Sacré-Cœur","18th arr.",["Culture"]),P("Arc de Triomphe & Champs-Élysées","8th arr.",["Shopping","Culture"]),P("Seine River Cruise","Port de la Bourdonnais",["Relax"]),P("Musée d'Orsay","7th arr.",["Culture"]),P("Luxembourg Gardens","6th arr.",["Nature"]),P("Galeries Lafayette","9th arr.",["Shopping"]),P("Versailles Day Trip","Versailles",["Culture"])],
+      food:[P("L'As du Fallafel","Le Marais"),P("Zaman Beirut","10th arr."),P("Al Diwan","16th arr."),P("Urban Halal Burger","Various"),P("Le Kashmir","10th arr."),P("Chez Ali","18th arr.")]}
   };
 
-  var LANG = "en";
-  var COST = {Budget:70,"Mid-range":160,Luxury:380};
+  var I18N={
+    en:{dir:"ltr",loc:"en-US",ui:{eyebrow:"Pocket travel planner",tag:"Tell me where and when — I'll map out your days in seconds.",dest:"Where to?",destPh:"e.g. Istanbul, Tokyo, Dubai…",guides:"Popular real guides",days:"How many days?",pace:"Trip pace",paces:{relaxed:"Relaxed",balanced:"Balanced",packed:"Packed"},budget:"Budget",budgets:{Budget:"Budget","Mid-range":"Mid-range",Luxury:"Luxury"},vibe:"What are you into?",vibeHint:"(pick a few)",vibes:{Culture:"Culture",Food:"Food",Nature:"Nature",Shopping:"Shopping",Relax:"Relax"},btn:"Plan my trip →",foot:"<b>Rihla</b> — your very first app. 🎉<br>8 real destination guides built in; more coming."},
+      out:{eyebrow:"Your itinerary",statLen:"Length",statStay:"Where you stay",statPer:"Est. per person",daysUnit:"days",dayWord:"Day",arrival:"Arrival & first impressions",explore:"Exploring the highlights",last:"Last day & departure",times:{morning:"Morning",midday:"Midday",afternoon:"Afternoon",evening:"Evening",dinner:"Dinner"},realTag:"📍 Real places — tap any name to open in Google Maps",book:"Booking",dinner_:function(m,c){return "Dinner at "+m;},note:function(d){return "⚠️ Estimated prices — always confirm when you book. Reconfirm halal options locally, and check visa requirements for "+d+" before you travel.";},notCurated:function(d){return "We don't have a hand-made guide for “"+d+"” yet — here's a smart starter plan you can tweak. (Try Istanbul, Dubai, Tokyo, Kuala Lumpur, Bangkok, Cairo, London or Paris for a real guide.)";}},
+      hotels:{Budget:"a clean, well-located guesthouse","Mid-range":"a comfortable 4-star hotel",Luxury:"a 5-star hotel with a view"},
+      meals:{Budget:["a local eatery","a street-food stall","a family-run diner"],"Mid-range":["a well-rated local restaurant","a cozy bistro","a popular halal spot"],Luxury:["a fine-dining restaurant","a rooftop venue","a chef's tasting menu"]},
+      lib:{Culture:[["🏛️","Explore the old town & historic landmarks"],["🖼️","Visit a famous museum or gallery"],["⛩️","See an iconic temple, palace or monument"]],Food:[["🍜","Try a signature local dish"],["🥘","Join a street-food walk"],["☕","Café-hop through a charming neighbourhood"]],Nature:[["🏔️","Day trip to a scenic viewpoint"],["🌊","Relax by the water"],["🌳","Stroll a famous park or garden"]],Shopping:[["🛍️","Wander the main shopping street & market"],["🎁","Hunt for souvenirs & local crafts"],["🏬","Browse a landmark mall or bazaar"]],Relax:[["🧖","Spa or hot-spring afternoon"],["🌅","Slow morning + a great sunset spot"],["🛥️","Easy scenic cruise or drive"]]}},
+    ar:{dir:"rtl",loc:"ar-EG",ui:{eyebrow:"مخطط سفر في جيبك",tag:"قل لي وين ومتى — وأرتّب لك أيامك خلال ثواني.",dest:"وجهتك؟",destPh:"مثال: إسطنبول، طوكيو، دبي…",guides:"وجهات جاهزة بأماكن حقيقية",days:"كم يوم؟",pace:"إيقاع الرحلة",paces:{relaxed:"هادئ",balanced:"متوازن",packed:"مكثّف"},budget:"الميزانية",budgets:{Budget:"اقتصادي","Mid-range":"متوسط",Luxury:"فاخر"},vibe:"وش يهمّك؟",vibeHint:"(اختر أكثر من واحد)",vibes:{Culture:"ثقافة",Food:"طعام",Nature:"طبيعة",Shopping:"تسوّق",Relax:"استرخاء"},btn:"خطّط رحلتي ←",foot:"<b>رحلة</b> — أول تطبيق لك. 🎉<br>٨ وجهات حقيقية جاهزة بالداخل، والمزيد قادم."},
+      out:{eyebrow:"برنامجك",statLen:"المدة",statStay:"مكان الإقامة",statPer:"تقديري للفرد",daysUnit:"يوم",dayWord:"اليوم",arrival:"الوصول والانطباعات الأولى",explore:"استكشاف أبرز المعالم",last:"اليوم الأخير والمغادرة",times:{morning:"الصباح",midday:"الظهر",afternoon:"بعد الظهر",evening:"المساء",dinner:"العشاء"},realTag:"📍 أماكن حقيقية — اضغط أي اسم يفتح في خرائط قوقل",book:"الحجز",dinner_:function(m,c){return "عشاء في "+m;},note:function(d){return "⚠️ أسعار تقديرية — تأكّد دائمًا عند الحجز. تحقّق من خيارات الحلال محليًا، ومن متطلبات فيزا "+d+" قبل السفر.";},notCurated:function(d){return "ما عندنا دليل جاهز لـ«"+d+"» إلى الحين — هذي خطة مبدئية ذكية تقدر تعدّلها. (جرّب إسطنبول، دبي، طوكيو، كوالالمبور، بانكوك، القاهرة، لندن أو باريس لدليل حقيقي.)";}},
+      hotels:{Budget:"نُزل نظيف وبموقع ممتاز","Mid-range":"فندق ٤ نجوم مريح",Luxury:"فندق ٥ نجوم بإطلالة"},
+      meals:{Budget:["مطعم محلي","عربة أكل شارع","مطعم عائلي"],"Mid-range":["مطعم محلي بتقييم عالٍ","بيسترو دافئ","مكان حلال مشهور"],Luxury:["مطعم فاخر","مكان بإطلالة على السطح","قائمة تذوّق للشيف"]},
+      lib:{Culture:[["🏛️","استكشف المدينة القديمة والمعالم"],["🖼️","زُر متحفًا أو معرضًا مشهورًا"],["⛩️","شاهد معلمًا أيقونيًا"]],Food:[["🍜","جرّب طبقًا محليًا مميزًا"],["🥘","جولة أكل شارع"],["☕","تنقّل بين المقاهي"]],Nature:[["🏔️","رحلة نهار لإطلالة خلابة"],["🌊","استرخِ عند الماء"],["🌳","تمشَّ في حديقة مشهورة"]],Shopping:[["🛍️","تجوّل في شارع التسوق والسوق"],["🎁","ابحث عن الهدايا المحلية"],["🏬","تفقّد مركز تسوق أو بازار"]],Relax:[["🧖","سبا أو ينابيع بعد الظهر"],["🌅","صباح هادئ + غروب رائع"],["🛥️","جولة بحرية مريحة"]]}},
+    es:{dir:"ltr",loc:"es-ES",ui:{eyebrow:"Planificador de viajes de bolsillo",tag:"Dime dónde y cuándo, y trazaré tus días en segundos.",dest:"¿A dónde?",destPh:"p. ej. Estambul, Tokio, Dubái…",guides:"Guías reales populares",days:"¿Cuántos días?",pace:"Ritmo del viaje",paces:{relaxed:"Relajado",balanced:"Equilibrado",packed:"Intenso"},budget:"Presupuesto",budgets:{Budget:"Económico","Mid-range":"Medio",Luxury:"Lujo"},vibe:"¿Qué te gusta?",vibeHint:"(elige varios)",vibes:{Culture:"Cultura",Food:"Comida",Nature:"Naturaleza",Shopping:"Compras",Relax:"Relax"},btn:"Planear mi viaje →",foot:"<b>Rihla</b> — tu primera app. 🎉<br>8 guías reales incluidas; pronto habrá más."},
+      out:{eyebrow:"Tu itinerario",statLen:"Duración",statStay:"Alojamiento",statPer:"Est. por persona",daysUnit:"días",dayWord:"Día",arrival:"Llegada y primeras impresiones",explore:"Explorando lo mejor",last:"Último día y salida",times:{morning:"Mañana",midday:"Mediodía",afternoon:"Tarde",evening:"Noche",dinner:"Cena"},realTag:"📍 Lugares reales — toca un nombre para abrir en Google Maps",book:"Reservar",dinner_:function(m,c){return "Cena en "+m;},note:function(d){return "⚠️ Precios estimados — confirma siempre al reservar. Reconfirma las opciones halal en el lugar y revisa los requisitos de visa para "+d+" antes de viajar.";},notCurated:function(d){return "Aún no tenemos una guía hecha a mano para «"+d+"» — aquí tienes un plan inicial que puedes ajustar. (Prueba Estambul, Dubái, Tokio, Kuala Lumpur, Bangkok, El Cairo, Londres o París para una guía real.)";}},
+      hotels:{Budget:"una pensión limpia y bien ubicada","Mid-range":"un hotel de 4 estrellas cómodo",Luxury:"un hotel de 5 estrellas con vistas"},
+      meals:{Budget:["un local sencillo","un puesto callejero","un comedor familiar"],"Mid-range":["un restaurante bien valorado","un bistró acogedor","un sitio halal popular"],Luxury:["un restaurante de alta cocina","una azotea con vistas","un menú degustación"]},
+      lib:{Culture:[["🏛️","Explora el casco antiguo y los monumentos"],["🖼️","Visita un museo o galería famosa"],["⛩️","Ve un monumento icónico"]],Food:[["🍜","Prueba un plato local"],["🥘","Ruta de comida callejera"],["☕","Recorre cafés con encanto"]],Nature:[["🏔️","Excursión a un mirador espectacular"],["🌊","Relájate junto al agua"],["🌳","Pasea por un parque famoso"]],Shopping:[["🛍️","Recorre la calle comercial y el mercado"],["🎁","Busca recuerdos locales"],["🏬","Visita un centro comercial o bazar"]],Relax:[["🧖","Spa o aguas termales por la tarde"],["🌅","Mañana tranquila + atardecer"],["🛥️","Un crucero panorámico tranquilo"]]}}
+  };
 
+  var LANG="en";
+  var GENCOST={Budget:70,"Mid-range":160,Luxury:380};
   function $(id){return document.getElementById(id);}
-  function pick(arr,seed){return arr[seed % arr.length];}
+  function pick(a,s){return a[s%a.length];}
   function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function mapUrl(q){return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(q);}
+  function bookUrl(q){return "https://www.booking.com/searchresults.html?ss="+encodeURIComponent(q);}
+  function link(name,q){return '<a href="'+mapUrl(q)+'" target="_blank" rel="noopener">'+esc(name)+'</a>';}
 
-  // ---- interactive chips ----
-  function wireChips(id, multi){
-    var box = $(id);
-    box.addEventListener('click', function(e){
-      var chip = e.target.closest('.chip');
-      if(!chip) return;
-      if(multi){
-        var active = box.querySelectorAll('.chip.active');
-        if(chip.classList.contains('active') && active.length===1) return;
-        chip.classList.toggle('active');
-      } else {
-        box.querySelectorAll('.chip').forEach(function(c){c.classList.remove('active');});
-        chip.classList.add('active');
-      }
+  /* ---- chips ---- */
+  function wireChips(id,multi){
+    var box=$(id);
+    box.addEventListener('click',function(e){
+      var chip=e.target.closest('.chip'); if(!chip)return;
+      if(multi){var act=box.querySelectorAll('.chip.active'); if(chip.classList.contains('active')&&act.length===1)return; chip.classList.toggle('active');}
+      else{box.querySelectorAll('.chip').forEach(function(c){c.classList.remove('active');}); chip.classList.add('active');}
     });
   }
-  wireChips('budgetChips', false);
-  wireChips('vibeChips', true);
+  wireChips('budgetChips',false); wireChips('vibeChips',true);
+  function picked(id){return [].slice.call(document.querySelectorAll('#'+id+' .chip.active')).map(function(c){return c.dataset.v;});}
 
-  function picked(id){
-    return [].slice.call(document.querySelectorAll('#'+id+' .chip.active')).map(function(c){return c.dataset.v;});
+  /* ---- destination stamps ---- */
+  function renderStamps(){
+    var box=$('stamps'); box.innerHTML='';
+    Object.keys(DEST).forEach(function(k){
+      var d=DEST[k];
+      var el=document.createElement('div');
+      el.className='stamp'; el.dataset.key=k;
+      el.textContent=d.flag+' '+d.city;
+      box.appendChild(el);
+    });
+    box.addEventListener('click',function(e){
+      var s=e.target.closest('.stamp'); if(!s)return;
+      $('dest').value=DEST[s.dataset.key].city;
+      box.querySelectorAll('.stamp').forEach(function(x){x.classList.remove('active');});
+      s.classList.add('active');
+    });
   }
-
-  // ---- apply a language to the whole page ----
-  function applyLang(lang){
-    LANG = lang;
-    var t = I18N[lang], u = t.ui;
-    $('app').setAttribute('dir', t.dir);
-
-    document.querySelectorAll('#langbar .lang').forEach(function(el){
-      el.classList.toggle('active', el.dataset.lang===lang);
-    });
-
-    $('heroEyebrow').textContent = u.eyebrow;
-    $('heroTag').textContent = u.tag;
-    $('lblDest').textContent = u.dest;
-    $('dest').setAttribute('placeholder', u.destPh);
-    $('lblDays').textContent = u.days;
-    $('lblPace').textContent = u.pace;
-
-    var opts = $('pace').options;
-    opts[0].textContent = u.paces.relaxed;
-    opts[1].textContent = u.paces.balanced;
-    opts[2].textContent = u.paces.packed;
-
-    $('lblBudget').textContent = u.budget;
-    $('lblVibe').innerHTML = u.vibe + ' <span class="hint">'+u.vibeHint+'</span>';
-
-    document.querySelectorAll('#budgetChips .chip').forEach(function(c){
-      c.textContent = ICON[c.dataset.v] + ' ' + u.budgets[c.dataset.v];
-    });
-    document.querySelectorAll('#vibeChips .chip').forEach(function(c){
-      c.textContent = ICON[c.dataset.v] + ' ' + u.vibes[c.dataset.v];
-    });
-
-    $('planBtn').textContent = u.btn;
-    $('foot').innerHTML = u.foot;
-
-    // if an itinerary is already showing, rebuild it in the new language
-    if($('out').classList.contains('show')) plan();
-  }
-
-  document.getElementById('langbar').addEventListener('click', function(e){
-    var b = e.target.closest('.lang');
-    if(b) applyLang(b.dataset.lang);
+  renderStamps();
+  $('dest').addEventListener('input',function(){
+    var m=matchDest(this.value);
+    document.querySelectorAll('#stamps .stamp').forEach(function(s){s.classList.toggle('active', m && DEST[s.dataset.key]===m);});
   });
 
-  // ---- build the itinerary ----
+  function matchDest(input){
+    var s=(input||'').toLowerCase().trim(); if(!s)return null;
+    var keys=Object.keys(DEST);
+    for(var i=0;i<keys.length;i++){
+      var al=DEST[keys[i]].alias;
+      for(var j=0;j<al.length;j++){
+        var a=al[j];
+        if(s.indexOf(a)>=0 || (s.length>=3 && a.indexOf(s)>=0)) return DEST[keys[i]];
+      }
+    }
+    return null;
+  }
+
+  /* ---- language ---- */
+  function applyLang(lang){
+    LANG=lang; var t=I18N[lang],u=t.ui;
+    $('app').setAttribute('dir',t.dir);
+    document.querySelectorAll('#langbar .lang').forEach(function(el){el.classList.toggle('active',el.dataset.lang===lang);});
+    $('heroEyebrow').textContent=u.eyebrow; $('heroTag').textContent=u.tag;
+    $('lblDest').textContent=u.dest; $('dest').setAttribute('placeholder',u.destPh);
+    $('lblGuides').textContent=u.guides;
+    $('lblDays').textContent=u.days; $('lblPace').textContent=u.pace;
+    var o=$('pace').options; o[0].textContent=u.paces.relaxed; o[1].textContent=u.paces.balanced; o[2].textContent=u.paces.packed;
+    $('lblBudget').textContent=u.budget;
+    $('lblVibe').innerHTML=u.vibe+' <span class="hint">'+u.vibeHint+'</span>';
+    document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.textContent=ICON[c.dataset.v]+' '+u.budgets[c.dataset.v];});
+    document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.textContent=ICON[c.dataset.v]+' '+u.vibes[c.dataset.v];});
+    $('planBtn').textContent=u.btn; $('foot').innerHTML=u.foot;
+    if($('out').classList.contains('show')) plan();
+  }
+  $('langbar').addEventListener('click',function(e){var b=e.target.closest('.lang'); if(b)applyLang(b.dataset.lang);});
+
+  /* ---- itinerary ---- */
   function slot(ico,tm,d){return '<div class="slot"><div class="ico">'+ico+'</div><div class="t">'+tm+'</div><div class="d">'+d+'</div></div>';}
+  function timeLabels(o,n){var m=o.times; return n===2?[m.morning,m.evening]:n===4?[m.morning,m.midday,m.afternoon,m.evening]:[m.morning,m.afternoon,m.evening];}
+  function dayTitle(o,d,total){return d===1?o.arrival:d===total?o.last:o.explore;}
+
+  function poolFor(dest,vibes){
+    var match=dest.poi.filter(function(p){return p.t.some(function(x){return vibes.indexOf(x)>=0;});});
+    var rest=dest.poi.filter(function(p){return match.indexOf(p)<0;});
+    return match.concat(rest);
+  }
 
   function plan(){
-    var t = I18N[LANG], o = t.out;
-    var dest = ($('dest').value || (LANG==='ar'?'وجهتك':LANG==='es'?'tu destino':'your destination')).trim();
-    var days = Math.max(1, Math.min(30, parseInt($('days').value,10)||5));
-    var pace = $('pace').value;
-    var budget = picked('budgetChips')[0] || 'Mid-range';
-    var vibes = picked('vibeChips'); if(!vibes.length) vibes = ['Culture'];
+    var t=I18N[LANG],o=t.out;
+    var raw=($('dest').value||'').trim();
+    var days=Math.max(1,Math.min(30,parseInt($('days').value,10)||5));
+    var pace=$('pace').value;
+    var budget=picked('budgetChips')[0]||'Mid-range';
+    var vibes=picked('vibeChips'); if(!vibes.length)vibes=['Culture'];
+    var spd=pace==='relaxed'?2:pace==='packed'?4:3;
+    var match=matchDest(raw);
+    var html='', note='';
 
-    var slotsPerDay = pace==='relaxed'?2 : pace==='packed'?4 : 3;
-    var total = COST[budget] * days;
-    var money = '~$' + total.toLocaleString(t.loc);
-
-    var subVibes = vibes.map(function(v){return t.ui.vibes[v];}).join(' · ');
-    var subLine = t.ui.budgets[budget] + ' · ' + t.ui.paces[pace] + ' · ' + subVibes;
-
-    var html = ''+
-      '<div class="ticket">'+
-        '<div class="eyebrow">'+o.eyebrow+'</div>'+
-        '<h2>'+cap(dest)+' · '+days+' '+o.daysUnit+'</h2>'+
-        '<div class="sub">'+subLine+'</div>'+
+    if(match){
+      var cost=match.cost[budget]*days;
+      var money='~$'+cost.toLocaleString(t.loc);
+      var hotel=match.hotels[budget];
+      var stay=link(hotel,hotel+' '+match.city)+' · <a href="'+bookUrl(hotel+' '+match.city)+'" target="_blank" rel="noopener">'+o.book+'</a>';
+      var subVibes=vibes.map(function(v){return t.ui.vibes[v];}).join(' · ');
+      html+='<div class="ticket"><div class="eyebrow">'+o.eyebrow+'</div>'+
+        '<h2>'+esc(match.city)+', '+esc(match.country)+' · '+days+' '+o.daysUnit+'</h2>'+
+        '<div class="sub">'+t.ui.budgets[budget]+' · '+t.ui.paces[pace]+' · '+subVibes+'</div>'+
+        '<div class="blurb">'+esc(match.blurb[LANG])+'</div>'+
+        '<div class="stats">'+
+          '<div class="stat"><div class="k">'+o.statLen+'</div><div class="v num">'+days+' '+o.daysUnit+'</div></div>'+
+          '<div class="stat"><div class="k">'+o.statStay+'</div><div class="v">'+stay+'</div></div>'+
+          '<div class="stat"><div class="k">'+o.statPer+'</div><div class="v num">'+money+'</div></div>'+
+        '</div></div>';
+      html+='<div class="realtag">'+o.realTag+'</div><div class="route">';
+      var pool=poolFor(match,vibes), p=0, f=0, tl=timeLabels(o,spd);
+      for(var d=1;d<=days;d++){
+        html+='<div class="day"><div class="dlabel">'+o.dayWord+' '+d+'</div><h3>'+dayTitle(o,d,days)+'</h3>';
+        for(var s=0;s<spd;s++){
+          var poi=pool[p++%pool.length];
+          var ic=TAGICON[poi.t[0]]||'📍';
+          html+=slot(ic,tl[s],link(poi.n,poi.n+' '+match.city)+' <span class="area">· '+esc(poi.a)+'</span>');
+        }
+        var fo=match.food[f++%match.food.length];
+        html+=slot('🍽️',o.times.dinner,link(fo.n,fo.n+' '+match.city)+' <span class="area">· '+esc(fo.a)+'</span>');
+        html+='</div>';
+      }
+      html+='</div>';
+      note=o.note(esc(match.city));
+    } else {
+      var gcost=GENCOST[budget]*days, gmoney='~$'+gcost.toLocaleString(t.loc);
+      var dest=raw||(LANG==='ar'?'وجهتك':LANG==='es'?'tu destino':'your destination');
+      var sv=vibes.map(function(v){return t.ui.vibes[v];}).join(' · ');
+      html+='<div class="ticket"><div class="eyebrow">'+o.eyebrow+'</div>'+
+        '<h2>'+esc(cap(dest))+' · '+days+' '+o.daysUnit+'</h2>'+
+        '<div class="sub">'+t.ui.budgets[budget]+' · '+t.ui.paces[pace]+' · '+sv+'</div>'+
         '<div class="stats">'+
           '<div class="stat"><div class="k">'+o.statLen+'</div><div class="v num">'+days+' '+o.daysUnit+'</div></div>'+
           '<div class="stat"><div class="k">'+o.statStay+'</div><div class="v">'+t.hotels[budget]+'</div></div>'+
-          '<div class="stat"><div class="k">'+o.statPer+'</div><div class="v num">'+money+'</div></div>'+
-        '</div>'+
-      '</div><div class="route">';
-
-    var labels3=[o.times.morning,o.times.afternoon,o.times.evening];
-    var labels4=[o.times.morning,o.times.midday,o.times.afternoon,o.times.evening];
-    var labels2=[o.times.morning,o.times.evening];
-
-    for(var d=1; d<=days; d++){
-      var title = d===1?o.arrival : d===days?o.last : o.explore;
-      html += '<div class="day"><div class="dlabel">'+o.dayWord+' '+d+'</div><h3>'+title+'</h3>';
-      var tl = slotsPerDay===2?labels2 : slotsPerDay===4?labels4 : labels3;
-      for(var s=0;s<slotsPerDay;s++){
-        var vibe = vibes[(d+s) % vibes.length];
-        var act = pick(t.lib[vibe], d+s);
-        html += slot(act[0], tl[s], act[1]);
+          '<div class="stat"><div class="k">'+o.statPer+'</div><div class="v num">'+gmoney+'</div></div>'+
+        '</div></div><div class="route">';
+      var tl2=timeLabels(o,spd);
+      for(var d2=1;d2<=days;d2++){
+        html+='<div class="day"><div class="dlabel">'+o.dayWord+' '+d2+'</div><h3>'+dayTitle(o,d2,days)+'</h3>';
+        for(var s2=0;s2<spd;s2++){var vb=vibes[(d2+s2)%vibes.length];var act=pick(t.lib[vb],d2+s2);html+=slot(act[0],tl2[s2],esc(act[1]));}
+        html+=slot('🍽️',o.times.dinner,o.dinner_(pick(t.meals[budget],d2),cap(dest)));
+        html+='</div>';
       }
-      html += slot("🍽️", o.times.dinner, o.dinner(pick(t.meals[budget], d), cap(dest)));
-      html += '</div>';
+      html+='</div>';
+      note='<span style="color:var(--clay)">'+o.notCurated(esc(cap(dest)))+'</span><br>'+o.note(esc(cap(dest)));
     }
-    html += '</div>';
-    html += '<p class="note">'+o.note(cap(dest))+'</p>';
-
-    var out = $('out');
-    out.innerHTML = html;
-    out.classList.add('show');
-    out.scrollIntoView({behavior:'smooth', block:'start'});
+    html+='<p class="note">'+note+'</p>';
+    var out=$('out'); out.innerHTML=html; out.classList.add('show');
+    out.scrollIntoView({behavior:'smooth',block:'start'});
   }
+  $('planBtn').addEventListener('click',plan);
 
-  $('planBtn').addEventListener('click', plan);
-  applyLang('en'); // set initial labels
+  /* ---- topographic contour backdrop ---- */
+  (function(){
+    var cv=$('topo'),ctx=cv.getContext('2d');
+    function inkColor(){
+      var c=getComputedStyle(document.documentElement).getPropertyValue('--ink').trim()||'#211e17';
+      return c;
+    }
+    function draw(){
+      var w=cv.clientWidth,h=cv.clientHeight,dpr=Math.min(2,window.devicePixelRatio||1);
+      cv.width=w*dpr; cv.height=h*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.clearRect(0,0,w,h);
+      ctx.strokeStyle=inkColor(); ctx.globalAlpha=0.06; ctx.lineWidth=1;
+      var centers=[[w*0.2,h*0.18],[w*0.85,h*0.42],[w*0.5,h*0.82]];
+      for(var c=0;c<centers.length;c++){
+        var cx=centers[c][0],cy=centers[c][1];
+        for(var r=26;r<Math.max(w,h)*0.9;r+=26){
+          ctx.beginPath();
+          for(var a=0;a<=Math.PI*2+0.1;a+=0.18){
+            var wob=Math.sin(a*3+c*1.7+r*0.02)*8 + Math.cos(a*5+r*0.01)*5;
+            var rr=r+wob;
+            var x=cx+Math.cos(a)*rr, y=cy+Math.sin(a)*rr*0.82;
+            if(a===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+          }
+          ctx.stroke();
+        }
+      }
+      ctx.globalAlpha=1;
+    }
+    draw();
+    var to; window.addEventListener('resize',function(){clearTimeout(to);to=setTimeout(draw,150);});
+    if(window.matchMedia)window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);
+    new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  })();
+
+  applyLang('en');
 </script>
 </body>
 </html>
