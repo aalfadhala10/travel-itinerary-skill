@@ -383,23 +383,19 @@
   function picked(id){return [].slice.call(document.querySelectorAll('#'+id+' .chip.active')).map(function(c){return c.dataset.v;});}
 
   /* dropdown picker, grouped by region */
-  function renderPicker(){
-    var sel=$('destPick'), prev=sel.value, t=I18N[LANG];
-    sel.innerHTML='';
-    var o0=document.createElement('option'); o0.value=''; o0.textContent=t.ui.pickPh; sel.appendChild(o0);
-    REGION_ORDER.forEach(function(rk){
-      var keys=Object.keys(DEST).filter(function(k){return DEST[k].region===rk;});
-      if(!keys.length)return;
-      var g=document.createElement('optgroup'); g.label=t.region[rk];
-      keys.forEach(function(k){
-        var d=DEST[k], op=document.createElement('option');
-        op.value=k; op.textContent=d.flag+'  '+d.city+' — '+d.country;
-        g.appendChild(op);
-      });
-      sel.appendChild(g);
+  function fillCountrySelect(sel, phText){
+    var prev=sel.value; sel.innerHTML='';
+    var o0=document.createElement('option'); o0.value=''; o0.textContent=phText; sel.appendChild(o0);
+    var order=[], map={};
+    Object.keys(DEST).forEach(function(k){var d=DEST[k]; if(!map[d.country]){map[d.country]={flag:d.flag,cities:[]}; order.push(d.country);} map[d.country].cities.push(k);});
+    order.forEach(function(country){
+      var grp=map[country], og=document.createElement('optgroup'); og.label=grp.flag+'  '+country;
+      grp.cities.forEach(function(k){var op=document.createElement('option'); op.value=k; op.textContent=DEST[k].city; og.appendChild(op);});
+      sel.appendChild(og);
     });
     sel.value=prev;
   }
+  function renderPicker(){ fillCountrySelect($('destPick'), I18N[LANG].ui.pickPh); }
   $('destPick').addEventListener('change',function(){
     if(this.value){ $('dest').value=DEST[this.value].city; }
   });
@@ -422,23 +418,7 @@
     sel.value=found;
   });
 
-  function renderPicker2(){
-    var sel=$('destPick2'), prev=sel.value, t=I18N[LANG];
-    sel.innerHTML='';
-    var o0=document.createElement('option'); o0.value=''; o0.textContent=t.ui.pick2Ph; sel.appendChild(o0);
-    REGION_ORDER.forEach(function(rk){
-      var keys=Object.keys(DEST).filter(function(k){return DEST[k].region===rk;});
-      if(!keys.length)return;
-      var g=document.createElement('optgroup'); g.label=t.region[rk];
-      keys.forEach(function(k){
-        var d=DEST[k], op=document.createElement('option');
-        op.value=k; op.textContent=d.flag+'  '+d.city+' — '+d.country;
-        g.appendChild(op);
-      });
-      sel.appendChild(g);
-    });
-    sel.value=prev;
-  }
+  function renderPicker2(){ fillCountrySelect($('destPick2'), I18N[LANG].ui.pick2Ph); }
   function keyOf(d){var ks=Object.keys(DEST);for(var i=0;i<ks.length;i++)if(DEST[ks[i]]===d)return ks[i];return null;}
 
   function matchDest(input){
