@@ -279,11 +279,14 @@
      Paste your IDs here to turn the app's links into earning links.
      Leave a value as "" to keep the plain (non-earning) link. */
   var CONFIG={
-    bookingAID:"",          // Booking.com Affiliate Partner ID (the numeric "aid")
-    bookingLabel:"rihla",   // optional tracking label for Booking reports
-    getYourGuidePartner:"", // GetYourGuide partner id (added later)
-    airaloRef:"",           // Airalo referral code (added later)
-    paddleLink:""           // Paddle checkout link for the paid unlock (added later)
+    marker:"551927",        // your Travelpayouts marker
+    toursLink:"https://klook.tpm.lv/UCLrY5DQ", // Klook tours & activities (EARNING)
+    hotelsLink:"",          // Hotellook/Booking earning link (add when connected)
+    flightsLink:"",         // Aviasales flights link (add when connected)
+    airaloRef:"",           // Airalo eSIM referral code (add later)
+    bookingAID:"",          // Booking.com direct affiliate id (only if used directly)
+    bookingLabel:"rihla",
+    paddleLink:""           // Paddle checkout link for the paid unlock (add later)
   };
   /* ================================================== */
 
@@ -668,10 +671,13 @@
   }
   function bookingBar(city,t){
     var o=t.out;
+    var hotels=CONFIG.hotelsLink||bookUrl(city);
+    var tours=CONFIG.toursLink||('https://www.getyourguide.com/s/?q='+encodeURIComponent(city));
+    var esim=CONFIG.airaloRef?('https://www.airalo.com/?rc='+encodeURIComponent(CONFIG.airaloRef)):'https://www.airalo.com/';
     return '<div class="bookbar"><div class="maphdr">'+o.bookTitle+'</div><div class="bookrow">'+
-      '<a class="bookbtn" href="'+bookUrl(city)+'" target="_blank" rel="noopener">'+o.bookHotels+'</a>'+
-      '<a class="bookbtn" href="https://www.getyourguide.com/s/?q='+encodeURIComponent(city)+'" target="_blank" rel="noopener">'+o.bookTours+'</a>'+
-      '<a class="bookbtn" href="https://www.airalo.com/" target="_blank" rel="noopener">'+o.bookEsim+'</a>'+
+      '<a class="bookbtn" href="'+hotels+'" target="_blank" rel="noopener">'+o.bookHotels+'</a>'+
+      '<a class="bookbtn" href="'+tours+'" target="_blank" rel="noopener">'+o.bookTours+'</a>'+
+      '<a class="bookbtn" href="'+esim+'" target="_blank" rel="noopener">'+o.bookEsim+'</a>'+
       '</div></div>';
   }
 
