@@ -214,6 +214,9 @@
       <div><label for="kids" id="lblKids">Kids (2–11)</label><input id="kids" type="number" min="0" max="20" value="0"></div>
     </div>
 
+    <label for="startDate" id="lblStartDate">Start date (optional)</label>
+    <input id="startDate" type="date">
+
     <label id="lblBudget">Budget</label>
     <div class="chips" id="budgetChips">
       <div class="chip" data-v="Budget"></div>
@@ -389,21 +392,21 @@
   var I18N={
     en:{dir:"ltr",loc:"en-US",cond:{veryhot:"very hot",hotdry:"hot & dry",hothumid:"hot & humid",warm:"warm & sunny",mild:"mild",tropical:"tropical, some rain",alpine:"mild alpine"},
       region:{me:"Middle East & Türkiye",eu:"Europe",cauc:"Caucasus",asia:"Asia",africa:"Africa",islands:"Islands & Beaches"},
-      ui:{eyebrow:"Pocket travel planner",tag:"Tell me where and when — I'll map out your days in seconds.",dest:"Where to?",pickPh:"Choose a country…",destPh:"…or type any other place",dest2:"Second city",addCity:"Add a second city",pick2Ph:"— none —",dest2Ph:"…or type a second city",days:"How many days?",adults:"Adults",kids:"Kids (2–11)",pace:"Trip pace",paces:{relaxed:"Relaxed",balanced:"Balanced",packed:"Packed"},budget:"Budget",budgets:{Budget:"Budget","Mid-range":"Mid-range",Luxury:"Luxury"},vibe:"What are you into?",vibeHint:"(pick a few)",vibes:{Culture:"Culture",Food:"Food",Nature:"Nature",Shopping:"Shopping",Relax:"Relax"},btn:"Plan my trip →",foot:"<b>Rihla</b> — your very first app.<br>27 real summer destinations built in; more coming."},
+      ui:{eyebrow:"Pocket travel planner",tag:"Tell me where and when — I'll map out your days in seconds.",dest:"Where to?",pickPh:"Choose a country…",destPh:"…or type any other place",dest2:"Second city",addCity:"Add a second city",pick2Ph:"— none —",dest2Ph:"…or type a second city",days:"How many days?",adults:"Adults",kids:"Kids (2–11)",startDate:"Start date (optional)",pace:"Trip pace",paces:{relaxed:"Relaxed",balanced:"Balanced",packed:"Packed"},budget:"Budget",budgets:{Budget:"Budget","Mid-range":"Mid-range",Luxury:"Luxury"},vibe:"What are you into?",vibeHint:"(pick a few)",vibes:{Culture:"Culture",Food:"Food",Nature:"Nature",Shopping:"Shopping",Relax:"Relax"},btn:"Plan my trip →",foot:"<b>Rihla</b> — your very first app.<br>27 real summer destinations built in; more coming."},
       out:{eyebrow:"Your itinerary",summer:"Summer",statLen:"Length",statStay:"Where you stay",statPer:"Est. per person",daysUnit:"days",dayWord:"Day",arrival:"Arrival & first impressions",explore:"Exploring the highlights",last:"Last day & departure",times:{morning:"Morning",midday:"Midday",afternoon:"Afternoon",evening:"Evening",dinner:"Dinner"},realTag:"Real places — tap any name to open in Google Maps",book:"Booking",mapTitle:"Route overview",openMap:"Open in Google Maps →",budTitle:"Budget breakdown",cats:{stay:"Hotel / stay",food:"Food",activities:"Activities & sights",localtx:"Local transport",misc:"Misc & shopping",transfer:"Intercity transfer"},budTotal:"Total (estimated)",perPerson:"per person",groupTotal:"Group total",bookTitle:"Book & save",bookHotels:"Hotels",bookTours:"Tours & activities",bookEsim:"Travel eSIM",linkCopied:"Trip link copied",proTag:"Premium",proTitle:"Unlock the full trip",proSub:"See every day, export a PDF, and get a shareable trip link.",proPrice:"$4.99 · one-time",proBtn:"Unlock full trip",proNote:"Demo — no real charge yet. Real payment connects at launch.",unlockCta:"Unlock to save & share",unlocked:"Unlocked — enjoy your full trip!",exclFlights:"Estimate excludes international flights.",inLocal:"≈",copy:"Copy",share:"Share trip",print:"Print",copied:"Copied to clipboard",modeFly:"Short flight",modeGround:"Train or road",transDur:{fly:"~1–3h",ground:"~4–6h"},dinner_:function(m){return "Dinner at "+m;},note:function(d){return "Estimated prices — always confirm when you book. Reconfirm halal options locally, and check visa requirements for "+d+" before you travel.";},notCurated:function(d){return "We don't have a hand-made guide for “"+d+"” yet — here's a smart starter plan you can tweak. Pick a country from the dropdown for a real guide.";}},
       hotels:{Budget:"a clean, well-located guesthouse","Mid-range":"a comfortable 4-star hotel",Luxury:"a 5-star hotel with a view"},
       meals:{Budget:["a local eatery","a street-food stall","a family-run diner"],"Mid-range":["a well-rated local restaurant","a cozy bistro","a popular halal spot"],Luxury:["a fine-dining restaurant","a rooftop venue","a chef's tasting menu"]},
       lib:{Culture:[["🏛️","Explore the old town & historic landmarks"],["🖼️","Visit a famous museum or gallery"],["⛩️","See an iconic temple, palace or monument"]],Food:[["🍜","Try a signature local dish"],["🥘","Join a street-food walk"],["☕","Café-hop through a charming neighbourhood"]],Nature:[["🏔️","Day trip to a scenic viewpoint"],["🌊","Relax by the water"],["🌳","Stroll a famous park or garden"]],Shopping:[["🛍️","Wander the main shopping street & market"],["🎁","Hunt for souvenirs & local crafts"],["🏬","Browse a landmark mall or bazaar"]],Relax:[["🧖","Spa or hot-spring afternoon"],["🌅","Slow morning + a great sunset spot"],["🛥️","Easy scenic cruise or drive"]]}},
     ar:{dir:"rtl",loc:"ar-EG",cond:{veryhot:"حار جدًا",hotdry:"حار وجاف",hothumid:"حار ورطب",warm:"دافئ ومشمس",mild:"معتدل",tropical:"استوائي مع أمطار",alpine:"جبلي معتدل"},
       region:{me:"الشرق الأوسط وتركيا",eu:"أوروبا",cauc:"القوقاز",asia:"آسيا",africa:"أفريقيا",islands:"جزر وشواطئ"},
-      ui:{eyebrow:"مخطط سفر في جيبك",tag:"قل لي وين ومتى — وأرتّب لك أيامك خلال ثواني.",dest:"وجهتك؟",pickPh:"اختر دولة…",destPh:"…أو اكتب أي مكان ثاني",dest2:"المدينة الثانية",addCity:"أضف مدينة ثانية",pick2Ph:"— بدون —",dest2Ph:"…أو اكتب مدينة ثانية",days:"كم يوم؟",adults:"بالغين",kids:"أطفال (٢–١١)",pace:"إيقاع الرحلة",paces:{relaxed:"هادئ",balanced:"متوازن",packed:"مكثّف"},budget:"الميزانية",budgets:{Budget:"اقتصادي","Mid-range":"متوسط",Luxury:"فاخر"},vibe:"وش يهمّك؟",vibeHint:"(اختر أكثر من واحد)",vibes:{Culture:"ثقافة",Food:"طعام",Nature:"طبيعة",Shopping:"تسوّق",Relax:"استرخاء"},btn:"خطّط رحلتي ←",foot:"<b>رحلة</b> — أول تطبيق لك.<br>٢٧ وجهة صيفية حقيقية بالداخل، والمزيد قادم."},
+      ui:{eyebrow:"مخطط سفر في جيبك",tag:"قل لي وين ومتى — وأرتّب لك أيامك خلال ثواني.",dest:"وجهتك؟",pickPh:"اختر دولة…",destPh:"…أو اكتب أي مكان ثاني",dest2:"المدينة الثانية",addCity:"أضف مدينة ثانية",pick2Ph:"— بدون —",dest2Ph:"…أو اكتب مدينة ثانية",days:"كم يوم؟",adults:"بالغين",kids:"أطفال (٢–١١)",startDate:"تاريخ البداية (اختياري)",pace:"إيقاع الرحلة",paces:{relaxed:"هادئ",balanced:"متوازن",packed:"مكثّف"},budget:"الميزانية",budgets:{Budget:"اقتصادي","Mid-range":"متوسط",Luxury:"فاخر"},vibe:"وش يهمّك؟",vibeHint:"(اختر أكثر من واحد)",vibes:{Culture:"ثقافة",Food:"طعام",Nature:"طبيعة",Shopping:"تسوّق",Relax:"استرخاء"},btn:"خطّط رحلتي ←",foot:"<b>رحلة</b> — أول تطبيق لك.<br>٢٧ وجهة صيفية حقيقية بالداخل، والمزيد قادم."},
       out:{eyebrow:"برنامجك",summer:"الصيف",statLen:"المدة",statStay:"مكان الإقامة",statPer:"تقديري للفرد",daysUnit:"يوم",dayWord:"اليوم",arrival:"الوصول والانطباعات الأولى",explore:"استكشاف أبرز المعالم",last:"اليوم الأخير والمغادرة",times:{morning:"الصباح",midday:"الظهر",afternoon:"بعد الظهر",evening:"المساء",dinner:"العشاء"},realTag:"أماكن حقيقية — اضغط أي اسم يفتح في خرائط قوقل",book:"الحجز",mapTitle:"نظرة على المسار",openMap:"افتح في خرائط قوقل ←",budTitle:"تفصيل الميزانية",cats:{stay:"الفندق / الإقامة",food:"الأكل",activities:"الأنشطة والمعالم",localtx:"المواصلات المحلية",misc:"متفرقات وتسوّق",transfer:"الانتقال بين المدن"},budTotal:"الإجمالي (تقديري)",perPerson:"للفرد",groupTotal:"إجمالي المجموعة",bookTitle:"احجز ووفّر",bookHotels:"فنادق",bookTours:"جولات وأنشطة",bookEsim:"شريحة eSIM",linkCopied:"تم نسخ رابط الرحلة",proTag:"مميّز",proTitle:"افتح الرحلة كاملة",proSub:"شوف كل الأيام، صدّر PDF، واحصل على رابط مشاركة للرحلة.",proPrice:"$4.99 · مرة واحدة",proBtn:"افتح الرحلة كاملة",proNote:"نسخة تجريبية — بدون خصم فعلي. الدفع الحقيقي يُربط عند الإطلاق.",unlockCta:"افتح للحفظ والمشاركة",unlocked:"تم الفتح — استمتع برحلتك كاملة!",exclFlights:"التقدير لا يشمل تذاكر الطيران الدولية.",inLocal:"≈",copy:"نسخ",share:"مشاركة الرحلة",print:"طباعة",copied:"تم النسخ",modeFly:"رحلة قصيرة",modeGround:"قطار أو سيارة",transDur:{fly:"~١–٣ ساعات",ground:"~٤–٦ ساعات"},dinner_:function(m){return "عشاء في "+m;},note:function(d){return "أسعار تقديرية — تأكّد دائمًا عند الحجز. تحقّق من خيارات الحلال محليًا، ومن متطلبات فيزا "+d+" قبل السفر.";},notCurated:function(d){return "ما عندنا دليل جاهز لـ«"+d+"» إلى الحين — هذي خطة مبدئية ذكية تقدر تعدّلها. اختر دولة من القائمة لدليل حقيقي.";}},
       hotels:{Budget:"نُزل نظيف وبموقع ممتاز","Mid-range":"فندق ٤ نجوم مريح",Luxury:"فندق ٥ نجوم بإطلالة"},
       meals:{Budget:["مطعم محلي","عربة أكل شارع","مطعم عائلي"],"Mid-range":["مطعم محلي بتقييم عالٍ","بيسترو دافئ","مكان حلال مشهور"],Luxury:["مطعم فاخر","مكان بإطلالة على السطح","قائمة تذوّق للشيف"]},
       lib:{Culture:[["🏛️","استكشف المدينة القديمة والمعالم"],["🖼️","زُر متحفًا أو معرضًا مشهورًا"],["⛩️","شاهد معلمًا أيقونيًا"]],Food:[["🍜","جرّب طبقًا محليًا مميزًا"],["🥘","جولة أكل شارع"],["☕","تنقّل بين المقاهي"]],Nature:[["🏔️","رحلة نهار لإطلالة خلابة"],["🌊","استرخِ عند الماء"],["🌳","تمشَّ في حديقة مشهورة"]],Shopping:[["🛍️","تجوّل في شارع التسوق والسوق"],["🎁","ابحث عن الهدايا المحلية"],["🏬","تفقّد مركز تسوق أو بازار"]],Relax:[["🧖","سبا أو ينابيع بعد الظهر"],["🌅","صباح هادئ + غروب رائع"],["🛥️","جولة بحرية مريحة"]]}},
     es:{dir:"ltr",loc:"es-ES",cond:{veryhot:"muy caluroso",hotdry:"caluroso y seco",hothumid:"caluroso y húmedo",warm:"cálido y soleado",mild:"templado",tropical:"tropical, con lluvia",alpine:"alpino templado"},
       region:{me:"Oriente Medio y Turquía",eu:"Europa",cauc:"Cáucaso",asia:"Asia",africa:"África",islands:"Islas y playas"},
-      ui:{eyebrow:"Planificador de viajes de bolsillo",tag:"Dime dónde y cuándo, y trazaré tus días en segundos.",dest:"¿A dónde?",pickPh:"Elige un país…",destPh:"…o escribe otro lugar",dest2:"Segunda ciudad",addCity:"Añadir una segunda ciudad",pick2Ph:"— ninguna —",dest2Ph:"…o escribe una segunda ciudad",days:"¿Cuántos días?",adults:"Adultos",kids:"Niños (2–11)",pace:"Ritmo del viaje",paces:{relaxed:"Relajado",balanced:"Equilibrado",packed:"Intenso"},budget:"Presupuesto",budgets:{Budget:"Económico","Mid-range":"Medio",Luxury:"Lujo"},vibe:"¿Qué te gusta?",vibeHint:"(elige varios)",vibes:{Culture:"Cultura",Food:"Comida",Nature:"Naturaleza",Shopping:"Compras",Relax:"Relax"},btn:"Planear mi viaje →",foot:"<b>Rihla</b> — tu primera app.<br>27 destinos reales de verano incluidos; pronto habrá más."},
+      ui:{eyebrow:"Planificador de viajes de bolsillo",tag:"Dime dónde y cuándo, y trazaré tus días en segundos.",dest:"¿A dónde?",pickPh:"Elige un país…",destPh:"…o escribe otro lugar",dest2:"Segunda ciudad",addCity:"Añadir una segunda ciudad",pick2Ph:"— ninguna —",dest2Ph:"…o escribe una segunda ciudad",days:"¿Cuántos días?",adults:"Adultos",kids:"Niños (2–11)",startDate:"Fecha de inicio (opcional)",pace:"Ritmo del viaje",paces:{relaxed:"Relajado",balanced:"Equilibrado",packed:"Intenso"},budget:"Presupuesto",budgets:{Budget:"Económico","Mid-range":"Medio",Luxury:"Lujo"},vibe:"¿Qué te gusta?",vibeHint:"(elige varios)",vibes:{Culture:"Cultura",Food:"Comida",Nature:"Naturaleza",Shopping:"Compras",Relax:"Relax"},btn:"Planear mi viaje →",foot:"<b>Rihla</b> — tu primera app.<br>27 destinos reales de verano incluidos; pronto habrá más."},
       out:{eyebrow:"Tu itinerario",summer:"Verano",statLen:"Duración",statStay:"Alojamiento",statPer:"Est. por persona",daysUnit:"días",dayWord:"Día",arrival:"Llegada y primeras impresiones",explore:"Explorando lo mejor",last:"Último día y salida",times:{morning:"Mañana",midday:"Mediodía",afternoon:"Tarde",evening:"Noche",dinner:"Cena"},realTag:"Lugares reales — toca un nombre para abrir en Google Maps",book:"Reservar",mapTitle:"Vista de la ruta",openMap:"Abrir en Google Maps →",budTitle:"Desglose del presupuesto",cats:{stay:"Hotel / alojamiento",food:"Comida",activities:"Actividades y lugares",localtx:"Transporte local",misc:"Varios y compras",transfer:"Traslado entre ciudades"},budTotal:"Total (estimado)",perPerson:"por persona",groupTotal:"Total del grupo",bookTitle:"Reserva y ahorra",bookHotels:"Hoteles",bookTours:"Tours y actividades",bookEsim:"eSIM de viaje",linkCopied:"Enlace del viaje copiado",proTag:"Premium",proTitle:"Desbloquea el viaje completo",proSub:"Ve todos los días, exporta un PDF y obtén un enlace para compartir.",proPrice:"$4.99 · pago único",proBtn:"Desbloquear viaje completo",proNote:"Demo — sin cargo real aún. El pago real se conecta al lanzar.",unlockCta:"Desbloquear para guardar y compartir",unlocked:"¡Desbloqueado — disfruta tu viaje completo!",exclFlights:"El estimado no incluye vuelos internacionales.",inLocal:"≈",copy:"Copiar",share:"Compartir viaje",print:"Imprimir",copied:"Copiado",modeFly:"Vuelo corto",modeGround:"Tren o carretera",transDur:{fly:"~1–3h",ground:"~4–6h"},dinner_:function(m){return "Cena en "+m;},note:function(d){return "Precios estimados — confirma siempre al reservar. Reconfirma las opciones halal en el lugar y revisa los requisitos de visa para "+d+" antes de viajar.";},notCurated:function(d){return "Aún no tenemos una guía hecha a mano para «"+d+"» — aquí tienes un plan inicial que puedes ajustar. Elige un país del menú para una guía real.";}},
       hotels:{Budget:"una pensión limpia y bien ubicada","Mid-range":"un hotel de 4 estrellas cómodo",Luxury:"un hotel de 5 estrellas con vistas"},
       meals:{Budget:["un local sencillo","un puesto callejero","un comedor familiar"],"Mid-range":["un restaurante bien valorado","un bistró acogedor","un sitio halal popular"],Luxury:["un restaurante de alta cocina","una azotea con vistas","un menú degustación"]},
@@ -492,7 +495,7 @@
     $('lblDest').textContent=u.dest; $('dest').setAttribute('placeholder',u.destPh);
     $('lblDest2').textContent=u.dest2; $('addCityLabel').textContent=u.addCity; $('dest2').setAttribute('placeholder',u.dest2Ph);
     renderPicker(); renderPicker2();
-    $('lblDays').textContent=u.days; $('lblPace').textContent=u.pace; $('lblAdults').textContent=u.adults; $('lblKids').textContent=u.kids;
+    $('lblDays').textContent=u.days; $('lblPace').textContent=u.pace; $('lblAdults').textContent=u.adults; $('lblKids').textContent=u.kids; $('lblStartDate').textContent=u.startDate;
     var o=$('pace').options; o[0].textContent=u.paces.relaxed; o[1].textContent=u.paces.balanced; o[2].textContent=u.paces.packed;
     $('lblBudget').textContent=u.budget;
     $('lblVibe').innerHTML=u.vibe+' <span class="hint">'+u.vibeHint+'</span>';
@@ -511,7 +514,15 @@
     var rest=dest.poi.filter(function(p){return match.indexOf(p)<0;});
     return match.concat(rest);
   }
-  function seasonLine(dest,t){var s=dest.summer;return t.out.summer+' · '+t.cond[s.cond]+' · ~'+s.temp+'°C';}
+  function seasonLine(dest,t,label){var s=dest.summer;return (label||t.out.summer)+' · '+t.cond[s.cond]+' · ~'+s.temp+'°C';}
+  function formatDates(val,days,t){
+    if(!val)return null;
+    var s=new Date(val+'T00:00:00'); if(isNaN(s.getTime()))return null;
+    var e=new Date(s.getTime()); e.setDate(e.getDate()+Math.max(0,days-1));
+    var loc=t.loc, sM=s.toLocaleDateString(loc,{month:'short'}), eM=e.toLocaleDateString(loc,{month:'short'});
+    var range=(s.getMonth()===e.getMonth())?(sM+' '+s.getDate()+'–'+e.getDate()+', '+e.getFullYear()):(sM+' '+s.getDate()+' – '+eM+' '+e.getDate()+', '+e.getFullYear());
+    return {range:range, monthLabel:sM};
+  }
   function money(t,usd){return '~$'+Math.round(usd).toLocaleString(t.loc);}
   function transferInfo(t,c1,c2){var ground=c1.region===c2.region;return {usd:ground?60:180,mode:ground?t.out.modeGround:t.out.modeFly,dur:ground?t.out.transDur.ground:t.out.transDur.fly};}
   function catRows(base){return [['stay',0.42],['food',0.24],['activities',0.16],['localtx',0.08],['misc',0.10]].map(function(c){return {k:c[0],v:Math.round(base*c[1])};});}
@@ -608,7 +619,7 @@
 
   function stateObj(){
     return {d:$('dest').value, d2:$('dest2').value, days:$('days').value, pace:$('pace').value,
-      adults:$('adults').value, kids:$('kids').value,
+      adults:$('adults').value, kids:$('kids').value, sd:$('startDate').value,
       budget:picked('budgetChips')[0]||'Mid-range', vibes:picked('vibeChips'), lang:LANG};
   }
   function saveState(){try{localStorage.setItem('rihla_v1',JSON.stringify(stateObj()));}catch(e){}}
@@ -616,7 +627,7 @@
   function applyState(s){
     if(s.lang&&I18N[s.lang])applyLang(s.lang);
     $('dest').value=s.d||''; $('days').value=s.days||5; $('pace').value=s.pace||'balanced';
-    $('adults').value=s.adults||2; $('kids').value=s.kids||0;
+    $('adults').value=s.adults||2; $('kids').value=s.kids||0; $('startDate').value=s.sd||'';
     if(s.d2){ $('city2wrap').classList.remove('is-hidden'); $('addCity').classList.add('is-hidden'); $('dest2').value=s.d2; }
     if(s.budget)document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===s.budget);});
     if(s.vibes&&s.vibes.length)document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',s.vibes.indexOf(c.dataset.v)>=0);});
@@ -634,7 +645,8 @@
     var vibes=picked('vibeChips'); if(!vibes.length)vibes=['Culture'];
     var adults=Math.max(1,Math.min(20,parseInt($('adults').value,10)||1));
     var kids=Math.max(0,Math.min(20,parseInt($('kids').value,10)||0));
-    var subVibes=vibes.map(function(v){return t.ui.vibes[v];}).join(' · ');
+    var di=formatDates($('startDate').value,days,t);
+    var subVibes=vibes.map(function(v){return t.ui.vibes[v];}).join(' · ')+(di?' · '+di.range:'');
     var m1=matchDest(raw);
     var raw2=($('dest2').value||'').trim();
     var m2=raw2?matchDest(raw2):($('destPick2').value?DEST[$('destPick2').value]:null);
@@ -649,7 +661,8 @@
       var totalUSD=base1+base2+trUSD;
       var title=multi?(esc(m1.city)+' → '+esc(m2.city)+' · '+days+' '+o.daysUnit):(esc(m1.city)+', '+esc(m1.country)+' · '+days+' '+o.daysUnit);
       var stay=multi?(link(m1.hotels[budget],m1.hotels[budget]+' '+m1.city)+' / '+link(m2.hotels[budget],m2.hotels[budget]+' '+m2.city)):(link(m1.hotels[budget],m1.hotels[budget]+' '+m1.city)+' · <a href="'+bookUrl(m1.hotels[budget]+' '+m1.city)+'" target="_blank" rel="noopener">'+o.book+'</a>');
-      var seasons='<div class="season">'+seasonLine(m1,t)+'</div>'+(multi?' <div class="season">'+seasonLine(m2,t)+'</div>':'');
+      var ml=di?di.monthLabel:null;
+      var seasons='<div class="season">'+seasonLine(m1,t,ml)+'</div>'+(multi?' <div class="season">'+seasonLine(m2,t,ml)+'</div>':'');
       var blurb=multi?(esc(m1.city)+' ('+d1+' '+o.daysUnit+') → '+esc(m2.city)+' ('+d2+' '+o.daysUnit+')'):esc(m1.blurb[LANG]);
 
       txt.push(multi?(m1.city+' → '+m2.city+' · '+days+' '+o.daysUnit):(m1.city+', '+m1.country+' · '+days+' '+o.daysUnit));
