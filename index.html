@@ -8,12 +8,10 @@
 <body>
 <style>
   :root{
-    /* light — warm cartographer's paper */
     --paper:#f6f0e2; --paper2:#fbf7ee; --card:#fffdf7;
     --ink:#26201a; --muted:#8b8172; --line:#e4d9c2;
     --teal:#0e4f4a; --teal-soft:#0e4f4a12;
     --amber:#c9852a; --amber-soft:#c9852a1f;
-    --stamp:#b23a2e;
     --shadow:0 14px 34px rgba(40,32,20,.12);
     --ff-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
     --ff-body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -25,7 +23,6 @@
       --ink:#f0ece1; --muted:#9aa89f; --line:#26312a;
       --teal:#4fbfac; --teal-soft:#4fbfac1a;
       --amber:#eaa64a; --amber-soft:#eaa64a22;
-      --stamp:#e0725f;
       --shadow:0 16px 40px rgba(0,0,0,.5);
     }
   }
@@ -34,14 +31,14 @@
     --ink:#26201a; --muted:#8b8172; --line:#e4d9c2;
     --teal:#0e4f4a; --teal-soft:#0e4f4a12;
     --amber:#c9852a; --amber-soft:#c9852a1f;
-    --stamp:#b23a2e; --shadow:0 14px 34px rgba(40,32,20,.12);
+    --shadow:0 14px 34px rgba(40,32,20,.12);
   }
   :root[data-theme="dark"]{
     --paper:#0e1512; --paper2:#111a16; --card:#16201b;
     --ink:#f0ece1; --muted:#9aa89f; --line:#26312a;
     --teal:#4fbfac; --teal-soft:#4fbfac1a;
     --amber:#eaa64a; --amber-soft:#eaa64a22;
-    --stamp:#e0725f; --shadow:0 16px 40px rgba(0,0,0,.5);
+    --shadow:0 16px 40px rgba(0,0,0,.5);
   }
 
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -53,20 +50,26 @@
       var(--paper);
     min-height:100vh;
   }
-  .wrap{max-width:680px;margin:0 auto;padding:26px 18px 64px}
+  .wrap{max-width:680px;margin:0 auto;padding:20px 18px 64px}
+
+  /* language switcher */
+  .langbar{display:flex;justify-content:center;gap:6px;margin-bottom:8px}
+  .lang{
+    padding:6px 12px;border-radius:999px;border:1px solid var(--line);
+    background:var(--card);color:var(--muted);font-size:13px;cursor:pointer;user-select:none;transition:all .15s;
+  }
+  .lang.active{background:var(--ink);border-color:var(--ink);color:var(--paper);font-weight:600}
 
   /* hero */
-  .hero{text-align:center;padding:8px 4px 2px}
+  .hero{text-align:center;padding:6px 4px 2px}
   .compass{
     width:60px;height:60px;margin:0 auto 6px;border-radius:50%;
-    border:2px solid var(--teal);position:relative;
-    background:var(--card);box-shadow:var(--shadow);
+    border:2px solid var(--teal);position:relative;background:var(--card);box-shadow:var(--shadow);
   }
-  .compass::before{ /* needle */
+  .compass::before{
     content:"";position:absolute;inset:0;margin:auto;width:0;height:0;
     border-left:6px solid transparent;border-right:6px solid transparent;
-    border-bottom:22px solid var(--amber);transform:translateY(-3px) rotate(38deg);
-    transform-origin:50% 70%;
+    border-bottom:22px solid var(--amber);transform:translateY(-3px) rotate(38deg);transform-origin:50% 70%;
   }
   .compass::after{content:"";position:absolute;inset:0;margin:auto;width:6px;height:6px;border-radius:50%;background:var(--teal)}
   h1{font-family:var(--ff-display);font-size:38px;margin:2px 0 0;letter-spacing:.5px;font-weight:600}
@@ -78,12 +81,13 @@
     background:var(--card);border:1px solid var(--line);border-radius:16px;
     box-shadow:var(--shadow);padding:20px;margin-top:22px;position:relative;
   }
-  .card::before{ /* boarding-pass punch */
+  .card::before{
     content:"";position:absolute;top:-1px;left:50%;transform:translateX(-50%);
     width:44px;height:6px;border-radius:0 0 8px 8px;background:var(--paper);border:1px solid var(--line);border-top:none;
   }
   label{display:block;font-family:var(--ff-data);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:16px 0 7px;font-weight:600}
   label:first-of-type{margin-top:0}
+  .hint{text-transform:none;letter-spacing:0;font-weight:400}
   input,select{
     width:100%;padding:14px;border-radius:11px;border:1px solid var(--line);
     background:var(--paper2);color:var(--ink);font-size:16px;font-family:var(--ff-body);outline:none;transition:border-color .15s;
@@ -97,8 +101,9 @@
   }
   .chip:hover{border-color:var(--teal)}
   .chip.active{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:600}
-  :root[data-theme="dark"] .chip.active, :root:not([data-theme="light"]) .chip.active{color:#0e1512}
   @media (prefers-color-scheme:dark){.chip.active{color:#0e1512}}
+  :root[data-theme="dark"] .chip.active{color:#0e1512}
+  :root[data-theme="light"] .chip.active{color:#fff}
   .btn{
     width:100%;margin-top:22px;padding:16px;border:none;border-radius:12px;
     background:var(--amber);color:#231a0a;font-size:16px;font-weight:700;font-family:var(--ff-body);
@@ -113,10 +118,7 @@
   .out.show{display:block;animation:rise .45s ease}
   @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){.out.show{animation:none}}
-
-  .ticket{
-    background:var(--teal);color:#fdfaf1;border-radius:16px;padding:20px;position:relative;overflow:hidden;
-  }
+  .ticket{background:var(--teal);color:#fdfaf1;border-radius:16px;padding:20px}
   .ticket .eyebrow{color:#e9d6a8}
   .ticket h2{font-family:var(--ff-display);font-size:26px;margin:4px 0 2px;font-weight:600}
   .ticket .sub{opacity:.85;font-size:14px}
@@ -141,27 +143,43 @@
   .note{color:var(--muted);font-size:12.5px;text-align:center;margin-top:22px;padding:0 8px;text-wrap:balance}
   .foot{color:var(--muted);font-size:12px;text-align:center;margin-top:34px;line-height:1.6}
   .foot b{color:var(--ink)}
+
+  /* ---- right-to-left (Arabic) ---- */
+  #app[dir="rtl"]{text-align:right}
+  #app[dir="rtl"] .hero,#app[dir="rtl"] .langbar,#app[dir="rtl"] .note,#app[dir="rtl"] .foot{text-align:center}
+  #app[dir="rtl"] .eyebrow,#app[dir="rtl"] label,#app[dir="rtl"] .dlabel,
+  #app[dir="rtl"] .slot .t,#app[dir="rtl"] .stat .k{letter-spacing:normal;text-transform:none;font-family:var(--ff-body)}
+  #app[dir="rtl"] .day{border-left:none;border-right:2px solid var(--line);margin-left:0;margin-right:8px;padding-left:0;padding-right:26px}
+  #app[dir="rtl"] .day:last-child{border-right-color:transparent}
+  #app[dir="rtl"] .day::before{left:auto;right:-7px}
+  #app[dir="rtl"] .route{padding-left:0;padding-right:4px}
 </style>
 
-<div class="wrap">
+<div class="wrap" id="app" dir="ltr">
+  <div class="langbar" id="langbar">
+    <div class="lang active" data-lang="en">English</div>
+    <div class="lang" data-lang="ar">العربية</div>
+    <div class="lang" data-lang="es">Español</div>
+  </div>
+
   <header class="hero">
     <div class="compass" aria-hidden="true"></div>
-    <div class="eyebrow">Pocket travel planner</div>
+    <div class="eyebrow" id="heroEyebrow">Pocket travel planner</div>
     <h1>Rihla</h1>
-    <p class="tag">Tell me where and when — I'll map out your days in seconds.</p>
+    <p class="tag" id="heroTag">Tell me where and when — I'll map out your days in seconds.</p>
   </header>
 
   <div class="card">
-    <label for="dest">Where to?</label>
+    <label for="dest" id="lblDest">Where to?</label>
     <input id="dest" type="text" placeholder="e.g. Japan, Turkey, Italy…" autocomplete="off">
 
     <div class="row">
       <div>
-        <label for="days">How many days?</label>
+        <label for="days" id="lblDays">How many days?</label>
         <input id="days" type="number" min="1" max="30" value="5">
       </div>
       <div>
-        <label for="pace">Trip pace</label>
+        <label for="pace" id="lblPace">Trip pace</label>
         <select id="pace">
           <option value="relaxed">Relaxed</option>
           <option value="balanced" selected>Balanced</option>
@@ -170,20 +188,20 @@
       </div>
     </div>
 
-    <label>Budget</label>
+    <label id="lblBudget">Budget</label>
     <div class="chips" id="budgetChips">
-      <div class="chip" data-v="Budget">💸 Budget</div>
-      <div class="chip active" data-v="Mid-range">✨ Mid-range</div>
-      <div class="chip" data-v="Luxury">👑 Luxury</div>
+      <div class="chip" data-v="Budget"></div>
+      <div class="chip active" data-v="Mid-range"></div>
+      <div class="chip" data-v="Luxury"></div>
     </div>
 
-    <label>What are you into? <span style="text-transform:none;letter-spacing:0;font-weight:400">(pick a few)</span></label>
+    <label id="lblVibe">What are you into?</label>
     <div class="chips" id="vibeChips">
-      <div class="chip active" data-v="Culture">🏛️ Culture</div>
-      <div class="chip" data-v="Food">🍜 Food</div>
-      <div class="chip" data-v="Nature">🏔️ Nature</div>
-      <div class="chip" data-v="Shopping">🛍️ Shopping</div>
-      <div class="chip" data-v="Relax">🏖️ Relax</div>
+      <div class="chip active" data-v="Culture"></div>
+      <div class="chip" data-v="Food"></div>
+      <div class="chip" data-v="Nature"></div>
+      <div class="chip" data-v="Shopping"></div>
+      <div class="chip" data-v="Relax"></div>
     </div>
 
     <button class="btn" id="planBtn" type="button">Plan my trip →</button>
@@ -191,21 +209,127 @@
 
   <div class="out" id="out" aria-live="polite"></div>
 
-  <p class="foot">
-    <b>Rihla</b> — your very first app. 🎉<br>
-    This is a demo planner; the next version connects to live hotels, maps &amp; halal restaurants.
-  </p>
+  <p class="foot" id="foot"></p>
 </div>
 
 <script>
+  var ICON = {Budget:"💸","Mid-range":"✨",Luxury:"👑",Culture:"🏛️",Food:"🍜",Nature:"🏔️",Shopping:"🛍️",Relax:"🏖️"};
+
+  var I18N = {
+    en:{
+      dir:"ltr", loc:"en-US",
+      ui:{
+        eyebrow:"Pocket travel planner",
+        tag:"Tell me where and when — I'll map out your days in seconds.",
+        dest:"Where to?", destPh:"e.g. Japan, Turkey, Italy…",
+        days:"How many days?", pace:"Trip pace",
+        paces:{relaxed:"Relaxed",balanced:"Balanced",packed:"Packed"},
+        budget:"Budget", budgets:{Budget:"Budget","Mid-range":"Mid-range",Luxury:"Luxury"},
+        vibe:"What are you into?", vibeHint:"(pick a few)",
+        vibes:{Culture:"Culture",Food:"Food",Nature:"Nature",Shopping:"Shopping",Relax:"Relax"},
+        btn:"Plan my trip →",
+        foot:"<b>Rihla</b> — your very first app. 🎉<br>This is a demo planner; the next version connects to live hotels, maps &amp; halal restaurants."
+      },
+      out:{
+        eyebrow:"Your itinerary", statLen:"Length", statStay:"Where you stay", statPer:"Est. per person",
+        daysUnit:"days", dayWord:"Day",
+        arrival:"Arrival & first impressions", explore:"Exploring the highlights", last:"Last day & departure",
+        times:{morning:"Morning",midday:"Midday",afternoon:"Afternoon",evening:"Evening",dinner:"Dinner"},
+        dinner:function(m,d){return "Eat at "+m+" in "+d;},
+        note:function(d){return "⚠️ Estimated demo plan & prices — always confirm when you book. Check visa requirements for "+d+" before you travel.";}
+      },
+      hotels:{Budget:"a clean, well-located guesthouse","Mid-range":"a comfortable 4-star hotel",Luxury:"a 5-star hotel with a view"},
+      meals:{Budget:["a local eatery","a street-food stall","a family-run diner"],"Mid-range":["a well-rated local restaurant","a cozy bistro","a popular halal spot"],Luxury:["a fine-dining restaurant","a rooftop venue","a chef's tasting menu"]},
+      lib:{
+        Culture:[["🏛️","Explore the old town & historic landmarks"],["🖼️","Visit a famous museum or gallery"],["⛩️","See an iconic temple, palace or monument"]],
+        Food:[["🍜","Try a signature local dish at a beloved spot"],["🥘","Join a street-food walk"],["☕","Café-hop through a charming neighbourhood"]],
+        Nature:[["🏔️","Day trip to a scenic viewpoint or mountain"],["🌊","Relax by the water — coast, lake or river"],["🌳","Stroll a famous park or garden"]],
+        Shopping:[["🛍️","Wander the main shopping street & local market"],["🎁","Hunt for souvenirs & local crafts"],["🏬","Browse a landmark mall or bazaar"]],
+        Relax:[["🧖","Spa, hammam or hot-spring afternoon"],["🌅","Slow morning + a great sunset spot"],["🛥️","Easy scenic cruise or drive"]]
+      }
+    },
+    ar:{
+      dir:"rtl", loc:"ar-EG",
+      ui:{
+        eyebrow:"مخطط سفر في جيبك",
+        tag:"قل لي وين ومتى — وأرتّب لك أيامك خلال ثواني.",
+        dest:"وجهتك؟", destPh:"مثال: اليابان، تركيا، إيطاليا…",
+        days:"كم يوم؟", pace:"إيقاع الرحلة",
+        paces:{relaxed:"هادئ",balanced:"متوازن",packed:"مكثّف"},
+        budget:"الميزانية", budgets:{Budget:"اقتصادي","Mid-range":"متوسط",Luxury:"فاخر"},
+        vibe:"وش يهمّك؟", vibeHint:"(اختر أكثر من واحد)",
+        vibes:{Culture:"ثقافة",Food:"طعام",Nature:"طبيعة",Shopping:"تسوّق",Relax:"استرخاء"},
+        btn:"خطّط رحلتي ←",
+        foot:"<b>رحلة</b> — أول تطبيق لك. 🎉<br>هذي نسخة تجريبية؛ النسخة الجاية تتصل بفنادق وخرائط ومطاعم حلال فعلية."
+      },
+      out:{
+        eyebrow:"برنامجك", statLen:"المدة", statStay:"مكان الإقامة", statPer:"تقديري للفرد",
+        daysUnit:"يوم", dayWord:"اليوم",
+        arrival:"الوصول والانطباعات الأولى", explore:"استكشاف أبرز المعالم", last:"اليوم الأخير والمغادرة",
+        times:{morning:"الصباح",midday:"الظهر",afternoon:"بعد الظهر",evening:"المساء",dinner:"العشاء"},
+        dinner:function(m,d){return "تعشّى في "+m+" في "+d;},
+        note:function(d){return "⚠️ خطة وأسعار تقديرية للعرض — تأكّد دائمًا عند الحجز. تحقّق من متطلبات فيزا "+d+" قبل السفر.";}
+      },
+      hotels:{Budget:"نُزل نظيف وبموقع ممتاز","Mid-range":"فندق ٤ نجوم مريح",Luxury:"فندق ٥ نجوم بإطلالة"},
+      meals:{Budget:["مطعم محلي","عربة أكل شارع","مطعم عائلي"],"Mid-range":["مطعم محلي بتقييم عالٍ","بيسترو دافئ","مكان حلال مشهور"],Luxury:["مطعم فاخر","مكان بإطلالة على السطح","قائمة تذوّق للشيف"]},
+      lib:{
+        Culture:[["🏛️","استكشف المدينة القديمة والمعالم التاريخية"],["🖼️","زُر متحفًا أو معرضًا مشهورًا"],["⛩️","شاهد معبدًا أو قصرًا أو معلمًا أيقونيًا"]],
+        Food:[["🍜","جرّب طبقًا محليًا مميزًا في مكان محبوب"],["🥘","جولة أكل شارع"],["☕","تنقّل بين المقاهي في حي ساحر"]],
+        Nature:[["🏔️","رحلة نهار إلى إطلالة أو جبل خلاب"],["🌊","استرخِ عند الماء — ساحل أو بحيرة أو نهر"],["🌳","تمشَّ في حديقة أو منتزه مشهور"]],
+        Shopping:[["🛍️","تجوّل في شارع التسوق الرئيسي والسوق المحلي"],["🎁","ابحث عن الهدايا والحرف المحلية"],["🏬","تفقّد مركز تسوق أو بازار شهير"]],
+        Relax:[["🧖","سبا أو حمّام أو ينابيع ساخنة بعد الظهر"],["🌅","صباح هادئ + مكان غروب رائع"],["🛥️","جولة بحرية أو بالسيارة مريحة"]]
+      }
+    },
+    es:{
+      dir:"ltr", loc:"es-ES",
+      ui:{
+        eyebrow:"Planificador de viajes de bolsillo",
+        tag:"Dime dónde y cuándo, y trazaré tus días en segundos.",
+        dest:"¿A dónde?", destPh:"p. ej. Japón, Turquía, Italia…",
+        days:"¿Cuántos días?", pace:"Ritmo del viaje",
+        paces:{relaxed:"Relajado",balanced:"Equilibrado",packed:"Intenso"},
+        budget:"Presupuesto", budgets:{Budget:"Económico","Mid-range":"Medio",Luxury:"Lujo"},
+        vibe:"¿Qué te gusta?", vibeHint:"(elige varios)",
+        vibes:{Culture:"Cultura",Food:"Comida",Nature:"Naturaleza",Shopping:"Compras",Relax:"Relax"},
+        btn:"Planear mi viaje →",
+        foot:"<b>Rihla</b> — tu primera app. 🎉<br>Esta es una demo; la próxima versión se conecta a hoteles, mapas y restaurantes halal reales."
+      },
+      out:{
+        eyebrow:"Tu itinerario", statLen:"Duración", statStay:"Alojamiento", statPer:"Est. por persona",
+        daysUnit:"días", dayWord:"Día",
+        arrival:"Llegada y primeras impresiones", explore:"Explorando lo mejor", last:"Último día y salida",
+        times:{morning:"Mañana",midday:"Mediodía",afternoon:"Tarde",evening:"Noche",dinner:"Cena"},
+        dinner:function(m,d){return "Cena en "+m+" en "+d;},
+        note:function(d){return "⚠️ Plan y precios estimados de demostración — confirma siempre al reservar. Revisa los requisitos de visa para "+d+" antes de viajar.";}
+      },
+      hotels:{Budget:"una pensión limpia y bien ubicada","Mid-range":"un hotel de 4 estrellas cómodo",Luxury:"un hotel de 5 estrellas con vistas"},
+      meals:{Budget:["un local sencillo","un puesto de comida callejera","un comedor familiar"],"Mid-range":["un restaurante local bien valorado","un bistró acogedor","un sitio halal popular"],Luxury:["un restaurante de alta cocina","una azotea con vistas","un menú degustación del chef"]},
+      lib:{
+        Culture:[["🏛️","Explora el casco antiguo y los monumentos históricos"],["🖼️","Visita un museo o galería famosa"],["⛩️","Ve un templo, palacio o monumento icónico"]],
+        Food:[["🍜","Prueba un plato local en un sitio muy querido"],["🥘","Únete a una ruta de comida callejera"],["☕","Recorre cafés por un barrio con encanto"]],
+        Nature:[["🏔️","Excursión a un mirador o montaña espectacular"],["🌊","Relájate junto al agua — costa, lago o río"],["🌳","Pasea por un parque o jardín famoso"]],
+        Shopping:[["🛍️","Recorre la calle comercial y el mercado local"],["🎁","Busca recuerdos y artesanía local"],["🏬","Visita un centro comercial o bazar emblemático"]],
+        Relax:[["🧖","Spa, hammam o aguas termales por la tarde"],["🌅","Mañana tranquila + un buen lugar para el atardecer"],["🛥️","Un crucero o paseo panorámico tranquilo"]]
+      }
+    }
+  };
+
+  var LANG = "en";
+  var COST = {Budget:70,"Mid-range":160,Luxury:380};
+
+  function $(id){return document.getElementById(id);}
+  function pick(arr,seed){return arr[seed % arr.length];}
+  function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+  // ---- interactive chips ----
   function wireChips(id, multi){
-    var box = document.getElementById(id);
+    var box = $(id);
     box.addEventListener('click', function(e){
       var chip = e.target.closest('.chip');
       if(!chip) return;
       if(multi){
         var active = box.querySelectorAll('.chip.active');
-        if(chip.classList.contains('active') && active.length===1) return; // keep at least one
+        if(chip.classList.contains('active') && active.length===1) return;
         chip.classList.toggle('active');
       } else {
         box.querySelectorAll('.chip').forEach(function(c){c.classList.remove('active');});
@@ -220,69 +344,107 @@
     return [].slice.call(document.querySelectorAll('#'+id+' .chip.active')).map(function(c){return c.dataset.v;});
   }
 
-  var LIB = {
-    Culture:[["🏛️","Explore the old town & historic landmarks"],["🖼️","Visit a famous museum or gallery"],["⛩️","See an iconic temple, palace or monument"]],
-    Food:[["🍜","Try a signature local dish at a beloved spot"],["🥘","Join a street-food walk"],["☕","Café-hop through a charming neighbourhood"]],
-    Nature:[["🏔️","Day trip to a scenic viewpoint or mountain"],["🌊","Relax by the water — coast, lake or river"],["🌳","Stroll a famous park or garden"]],
-    Shopping:[["🛍️","Wander the main shopping street & local market"],["🎁","Hunt for souvenirs & local crafts"],["🏬","Browse a landmark mall or bazaar"]],
-    Relax:[["🧖","Spa, hammam or hot-spring afternoon"],["🌅","Slow morning + a great sunset spot"],["🛥️","Easy scenic cruise or drive"]]
-  };
-  var MEALS = {Budget:["a local eatery","a street-food stall","a family-run diner"],"Mid-range":["a well-rated local restaurant","a cozy bistro","a popular halal spot"],Luxury:["a fine-dining restaurant","a rooftop venue","a chef's tasting menu"]};
-  var HOTELS = {Budget:"a clean, well-located guesthouse","Mid-range":"a comfortable 4-star hotel",Luxury:"a 5-star hotel with a view"};
-  var COST = {Budget:70,"Mid-range":160,Luxury:380};
+  // ---- apply a language to the whole page ----
+  function applyLang(lang){
+    LANG = lang;
+    var t = I18N[lang], u = t.ui;
+    $('app').setAttribute('dir', t.dir);
 
-  function pick(arr, seed){ return arr[seed % arr.length]; }
-  function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
-  function slot(ico,t,d){ return '<div class="slot"><div class="ico">'+ico+'</div><div class="t">'+t+'</div><div class="d">'+d+'</div></div>'; }
-  function dayTitle(d,total){ if(d===1) return "Arrival & first impressions"; if(d===total) return "Last day & departure"; return "Exploring the highlights"; }
+    document.querySelectorAll('#langbar .lang').forEach(function(el){
+      el.classList.toggle('active', el.dataset.lang===lang);
+    });
+
+    $('heroEyebrow').textContent = u.eyebrow;
+    $('heroTag').textContent = u.tag;
+    $('lblDest').textContent = u.dest;
+    $('dest').setAttribute('placeholder', u.destPh);
+    $('lblDays').textContent = u.days;
+    $('lblPace').textContent = u.pace;
+
+    var opts = $('pace').options;
+    opts[0].textContent = u.paces.relaxed;
+    opts[1].textContent = u.paces.balanced;
+    opts[2].textContent = u.paces.packed;
+
+    $('lblBudget').textContent = u.budget;
+    $('lblVibe').innerHTML = u.vibe + ' <span class="hint">'+u.vibeHint+'</span>';
+
+    document.querySelectorAll('#budgetChips .chip').forEach(function(c){
+      c.textContent = ICON[c.dataset.v] + ' ' + u.budgets[c.dataset.v];
+    });
+    document.querySelectorAll('#vibeChips .chip').forEach(function(c){
+      c.textContent = ICON[c.dataset.v] + ' ' + u.vibes[c.dataset.v];
+    });
+
+    $('planBtn').textContent = u.btn;
+    $('foot').innerHTML = u.foot;
+
+    // if an itinerary is already showing, rebuild it in the new language
+    if($('out').classList.contains('show')) plan();
+  }
+
+  document.getElementById('langbar').addEventListener('click', function(e){
+    var b = e.target.closest('.lang');
+    if(b) applyLang(b.dataset.lang);
+  });
+
+  // ---- build the itinerary ----
+  function slot(ico,tm,d){return '<div class="slot"><div class="ico">'+ico+'</div><div class="t">'+tm+'</div><div class="d">'+d+'</div></div>';}
 
   function plan(){
-    var dest = (document.getElementById('dest').value || 'your destination').trim();
-    var days = Math.max(1, Math.min(30, parseInt(document.getElementById('days').value,10)||5));
-    var pace = document.getElementById('pace').value;
+    var t = I18N[LANG], o = t.out;
+    var dest = ($('dest').value || (LANG==='ar'?'وجهتك':LANG==='es'?'tu destino':'your destination')).trim();
+    var days = Math.max(1, Math.min(30, parseInt($('days').value,10)||5));
+    var pace = $('pace').value;
     var budget = picked('budgetChips')[0] || 'Mid-range';
     var vibes = picked('vibeChips'); if(!vibes.length) vibes = ['Culture'];
 
     var slotsPerDay = pace==='relaxed'?2 : pace==='packed'?4 : 3;
     var total = COST[budget] * days;
+    var money = '~$' + total.toLocaleString(t.loc);
+
+    var subVibes = vibes.map(function(v){return t.ui.vibes[v];}).join(' · ');
+    var subLine = t.ui.budgets[budget] + ' · ' + t.ui.paces[pace] + ' · ' + subVibes;
 
     var html = ''+
       '<div class="ticket">'+
-        '<div class="eyebrow">Your itinerary</div>'+
-        '<h2>'+cap(dest)+' · '+days+' days</h2>'+
-        '<div class="sub">'+budget+' · '+cap(pace)+' pace · '+vibes.join(' · ')+'</div>'+
+        '<div class="eyebrow">'+o.eyebrow+'</div>'+
+        '<h2>'+cap(dest)+' · '+days+' '+o.daysUnit+'</h2>'+
+        '<div class="sub">'+subLine+'</div>'+
         '<div class="stats">'+
-          '<div class="stat"><div class="k">Length</div><div class="v num">'+days+' days</div></div>'+
-          '<div class="stat"><div class="k">Where you stay</div><div class="v">'+HOTELS[budget]+'</div></div>'+
-          '<div class="stat"><div class="k">Est. per person</div><div class="v num">~$'+total.toLocaleString()+'</div></div>'+
+          '<div class="stat"><div class="k">'+o.statLen+'</div><div class="v num">'+days+' '+o.daysUnit+'</div></div>'+
+          '<div class="stat"><div class="k">'+o.statStay+'</div><div class="v">'+t.hotels[budget]+'</div></div>'+
+          '<div class="stat"><div class="k">'+o.statPer+'</div><div class="v num">'+money+'</div></div>'+
         '</div>'+
       '</div><div class="route">';
 
-    var labels3 = ["Morning","Afternoon","Evening"];
-    var labels4 = ["Morning","Midday","Afternoon","Evening"];
-    var labels2 = ["Morning","Evening"];
+    var labels3=[o.times.morning,o.times.afternoon,o.times.evening];
+    var labels4=[o.times.morning,o.times.midday,o.times.afternoon,o.times.evening];
+    var labels2=[o.times.morning,o.times.evening];
 
     for(var d=1; d<=days; d++){
-      html += '<div class="day"><div class="dlabel">Day '+d+'</div><h3>'+dayTitle(d,days)+'</h3>';
-      var timeLabels = slotsPerDay===2?labels2 : slotsPerDay===4?labels4 : labels3;
+      var title = d===1?o.arrival : d===days?o.last : o.explore;
+      html += '<div class="day"><div class="dlabel">'+o.dayWord+' '+d+'</div><h3>'+title+'</h3>';
+      var tl = slotsPerDay===2?labels2 : slotsPerDay===4?labels4 : labels3;
       for(var s=0;s<slotsPerDay;s++){
         var vibe = vibes[(d+s) % vibes.length];
-        var act = pick(LIB[vibe], d+s);
-        html += slot(act[0], timeLabels[s], act[1]);
+        var act = pick(t.lib[vibe], d+s);
+        html += slot(act[0], tl[s], act[1]);
       }
-      html += slot("🍽️","Dinner","Eat at "+pick(MEALS[budget], d)+" in "+cap(dest));
+      html += slot("🍽️", o.times.dinner, o.dinner(pick(t.meals[budget], d), cap(dest)));
       html += '</div>';
     }
     html += '</div>';
-    html += '<p class="note">⚠️ Estimated demo plan &amp; prices — always confirm when you book. Check visa requirements for '+cap(dest)+' before you travel.</p>';
+    html += '<p class="note">'+o.note(cap(dest))+'</p>';
 
-    var out = document.getElementById('out');
+    var out = $('out');
     out.innerHTML = html;
     out.classList.add('show');
     out.scrollIntoView({behavior:'smooth', block:'start'});
   }
 
-  document.getElementById('planBtn').addEventListener('click', plan);
+  $('planBtn').addEventListener('click', plan);
+  applyLang('en'); // set initial labels
 </script>
 </body>
 </html>
