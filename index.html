@@ -67,7 +67,7 @@
   #dest{margin-top:10px}
   .addcity{display:inline-flex;align-items:center;gap:4px;margin-top:12px;padding:9px 15px;border-radius:999px;border:1px dashed var(--line);background:transparent;color:var(--teal);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--ff-body);transition:all .15s}
   .addcity:hover{border-color:var(--teal);background:var(--teal-soft)}
-  #city2wrap[hidden]{display:none}
+  .is-hidden{display:none!important}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 
   .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
@@ -182,7 +182,7 @@
     <input id="dest" type="text" placeholder="…or type any other place" autocomplete="off">
 
     <button type="button" class="addcity" id="addCity">+ <span id="addCityLabel">Add a second city</span></button>
-    <div id="city2wrap" hidden>
+    <div id="city2wrap" class="is-hidden">
       <label for="destPick2" id="lblDest2">Second city</label>
       <select id="destPick2"></select>
     </div>
@@ -388,7 +388,7 @@
     if(this.value){ $('dest').value=DEST[this.value].city; }
   });
   $('addCity').addEventListener('click',function(){
-    $('city2wrap').hidden=false; this.hidden=true;
+    $('city2wrap').classList.remove('is-hidden'); this.classList.add('is-hidden');
     try{$('destPick2').focus();}catch(e){}
   });
   $('dest').addEventListener('input',function(){
