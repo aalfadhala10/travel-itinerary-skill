@@ -266,6 +266,18 @@
 <div class="toast" id="toast" aria-hidden="true"></div>
 
 <script>
+  /* ================== MONEY CONFIG ==================
+     Paste your IDs here to turn the app's links into earning links.
+     Leave a value as "" to keep the plain (non-earning) link. */
+  var CONFIG={
+    bookingAID:"",          // Booking.com Affiliate Partner ID (the numeric "aid")
+    bookingLabel:"rihla",   // optional tracking label for Booking reports
+    getYourGuidePartner:"", // GetYourGuide partner id (added later)
+    airaloRef:"",           // Airalo referral code (added later)
+    paddleLink:""           // Paddle checkout link for the paid unlock (added later)
+  };
+  /* ================================================== */
+
   var ICON={Budget:"💸","Mid-range":"✨",Luxury:"👑",Culture:"🏛️",Food:"🍜",Nature:"🏔️",Shopping:"🛍️",Relax:"🏖️"};
   var TAGICON={Culture:"🏛️",Food:"🥘",Nature:"🌿",Shopping:"🛍️",Relax:"🌅"};
   var REGION_ORDER=["me","eu","cauc","asia","africa","islands"];
@@ -447,7 +459,11 @@
   function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function mapUrl(q){return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(q);}
-  function bookUrl(q){return "https://www.booking.com/searchresults.html?ss="+encodeURIComponent(q);}
+  function bookUrl(q){
+    var u="https://www.booking.com/searchresults.html?ss="+encodeURIComponent(q);
+    if(CONFIG.bookingAID){u+="&aid="+encodeURIComponent(CONFIG.bookingAID);if(CONFIG.bookingLabel)u+="&label="+encodeURIComponent(CONFIG.bookingLabel);}
+    return u;
+  }
   function link(name,q){return '<a href="'+mapUrl(q)+'" target="_blank" rel="noopener">'+esc(name)+'</a>';}
 
   function wireChips(id,multi){
