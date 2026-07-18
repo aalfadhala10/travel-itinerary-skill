@@ -3,91 +3,156 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rihla — Your Pocket Travel Planner</title>
-<style>
-  :root{
-    --bg:#0f1226; --card:#1a1f3c; --card2:#232a52;
-    --ink:#f5f7ff; --muted:#a9b1d6; --line:#2c3363;
-    --brand:#6c8cff; --brand2:#8b6cff; --accent:#28d9a5;
-    --shadow:0 10px 30px rgba(0,0,0,.35);
-    --radius:18px;
-  }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;padding:0}
-  body{
-    background:radial-gradient(1200px 700px at 80% -10%, #23306b 0%, transparent 60%),
-               radial-gradient(1000px 600px at -10% 10%, #3a2568 0%, transparent 55%),
-               var(--bg);
-    color:var(--ink);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    min-height:100vh; line-height:1.5;
-  }
-  .wrap{max-width:720px;margin:0 auto;padding:22px 16px 60px}
-  header.hero{text-align:center;padding:14px 6px 4px}
-  .logo{font-size:34px}
-  h1{font-size:28px;margin:6px 0 4px;letter-spacing:.3px}
-  .tag{color:var(--muted);font-size:15px;margin:0 auto;max-width:440px}
-  .card{
-    background:linear-gradient(180deg,var(--card),#161b38);
-    border:1px solid var(--line);border-radius:var(--radius);
-    box-shadow:var(--shadow);padding:18px;margin-top:20px;
-  }
-  label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px;font-weight:600;letter-spacing:.2px}
-  label:first-of-type{margin-top:0}
-  input,select{
-    width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);
-    background:#11162f;color:var(--ink);font-size:16px;outline:none;
-  }
-  input:focus,select:focus{border-color:var(--brand)}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
-  .chip{
-    padding:9px 13px;border-radius:999px;border:1px solid var(--line);
-    background:#11162f;color:var(--muted);font-size:14px;cursor:pointer;user-select:none;
-  }
-  .chip.active{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
-  .btn{
-    width:100%;margin-top:20px;padding:16px;border:none;border-radius:14px;
-    background:linear-gradient(90deg,var(--brand),var(--brand2));
-    color:#fff;font-size:17px;font-weight:700;cursor:pointer;box-shadow:var(--shadow);
-  }
-  .btn:active{transform:translateY(1px)}
-  .out{margin-top:26px;display:none}
-  .out.show{display:block;animation:rise .4s ease}
-  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-  .summary{
-    background:linear-gradient(120deg,#1c2450,#241a4d);
-    border:1px solid var(--line);border-radius:var(--radius);padding:18px;
-  }
-  .summary h2{margin:0 0 4px;font-size:22px}
-  .summary .meta{color:var(--muted);font-size:14px}
-  .stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
-  .stat{flex:1;min-width:120px;background:#11162f;border:1px solid var(--line);border-radius:12px;padding:12px}
-  .stat .k{font-size:12px;color:var(--muted)}
-  .stat .v{font-size:18px;font-weight:700;margin-top:2px}
-  .day{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-top:14px}
-  .day h3{margin:0 0 2px;font-size:17px}
-  .day .city{color:var(--accent);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.6px}
-  .slot{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
-  .slot:first-of-type{border-top:none}
-  .slot .ico{font-size:18px;width:26px;text-align:center}
-  .slot .t{font-size:12px;color:var(--muted);font-weight:700;width:70px;flex-shrink:0}
-  .slot .d{font-size:15px}
-  .note{color:var(--muted);font-size:12px;text-align:center;margin-top:18px;padding:0 10px}
-  .foot{color:var(--muted);font-size:12px;text-align:center;margin-top:30px}
-  a{color:var(--brand)}
-</style>
+<title>Rihla — Pocket Travel Planner</title>
 </head>
 <body>
+<style>
+  :root{
+    /* light — warm cartographer's paper */
+    --paper:#f6f0e2; --paper2:#fbf7ee; --card:#fffdf7;
+    --ink:#26201a; --muted:#8b8172; --line:#e4d9c2;
+    --teal:#0e4f4a; --teal-soft:#0e4f4a12;
+    --amber:#c9852a; --amber-soft:#c9852a1f;
+    --stamp:#b23a2e;
+    --shadow:0 14px 34px rgba(40,32,20,.12);
+    --ff-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    --ff-body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --ff-data:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#0e1512; --paper2:#111a16; --card:#16201b;
+      --ink:#f0ece1; --muted:#9aa89f; --line:#26312a;
+      --teal:#4fbfac; --teal-soft:#4fbfac1a;
+      --amber:#eaa64a; --amber-soft:#eaa64a22;
+      --stamp:#e0725f;
+      --shadow:0 16px 40px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="light"]{
+    --paper:#f6f0e2; --paper2:#fbf7ee; --card:#fffdf7;
+    --ink:#26201a; --muted:#8b8172; --line:#e4d9c2;
+    --teal:#0e4f4a; --teal-soft:#0e4f4a12;
+    --amber:#c9852a; --amber-soft:#c9852a1f;
+    --stamp:#b23a2e; --shadow:0 14px 34px rgba(40,32,20,.12);
+  }
+  :root[data-theme="dark"]{
+    --paper:#0e1512; --paper2:#111a16; --card:#16201b;
+    --ink:#f0ece1; --muted:#9aa89f; --line:#26312a;
+    --teal:#4fbfac; --teal-soft:#4fbfac1a;
+    --amber:#eaa64a; --amber-soft:#eaa64a22;
+    --stamp:#e0725f; --shadow:0 16px 40px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;font-family:var(--ff-body);color:var(--ink);line-height:1.5;
+    background:
+      radial-gradient(900px 500px at 100% -5%, var(--teal-soft), transparent 60%),
+      radial-gradient(700px 460px at -10% 6%, var(--amber-soft), transparent 55%),
+      var(--paper);
+    min-height:100vh;
+  }
+  .wrap{max-width:680px;margin:0 auto;padding:26px 18px 64px}
+
+  /* hero */
+  .hero{text-align:center;padding:8px 4px 2px}
+  .compass{
+    width:60px;height:60px;margin:0 auto 6px;border-radius:50%;
+    border:2px solid var(--teal);position:relative;
+    background:var(--card);box-shadow:var(--shadow);
+  }
+  .compass::before{ /* needle */
+    content:"";position:absolute;inset:0;margin:auto;width:0;height:0;
+    border-left:6px solid transparent;border-right:6px solid transparent;
+    border-bottom:22px solid var(--amber);transform:translateY(-3px) rotate(38deg);
+    transform-origin:50% 70%;
+  }
+  .compass::after{content:"";position:absolute;inset:0;margin:auto;width:6px;height:6px;border-radius:50%;background:var(--teal)}
+  h1{font-family:var(--ff-display);font-size:38px;margin:2px 0 0;letter-spacing:.5px;font-weight:600}
+  .tag{color:var(--muted);font-size:15px;max-width:420px;margin:6px auto 0;text-wrap:balance}
+  .eyebrow{font-family:var(--ff-data);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--amber);font-weight:600}
+
+  /* trip card */
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    box-shadow:var(--shadow);padding:20px;margin-top:22px;position:relative;
+  }
+  .card::before{ /* boarding-pass punch */
+    content:"";position:absolute;top:-1px;left:50%;transform:translateX(-50%);
+    width:44px;height:6px;border-radius:0 0 8px 8px;background:var(--paper);border:1px solid var(--line);border-top:none;
+  }
+  label{display:block;font-family:var(--ff-data);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:16px 0 7px;font-weight:600}
+  label:first-of-type{margin-top:0}
+  input,select{
+    width:100%;padding:14px;border-radius:11px;border:1px solid var(--line);
+    background:var(--paper2);color:var(--ink);font-size:16px;font-family:var(--ff-body);outline:none;transition:border-color .15s;
+  }
+  input:focus,select:focus{border-color:var(--teal)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+  .chip{
+    padding:9px 14px;border-radius:999px;border:1px solid var(--line);
+    background:var(--paper2);color:var(--muted);font-size:14px;cursor:pointer;user-select:none;transition:all .15s;
+  }
+  .chip:hover{border-color:var(--teal)}
+  .chip.active{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:600}
+  :root[data-theme="dark"] .chip.active, :root:not([data-theme="light"]) .chip.active{color:#0e1512}
+  @media (prefers-color-scheme:dark){.chip.active{color:#0e1512}}
+  .btn{
+    width:100%;margin-top:22px;padding:16px;border:none;border-radius:12px;
+    background:var(--amber);color:#231a0a;font-size:16px;font-weight:700;font-family:var(--ff-body);
+    cursor:pointer;box-shadow:var(--shadow);letter-spacing:.3px;transition:transform .08s,filter .15s;
+  }
+  .btn:hover{filter:brightness(1.05)}
+  .btn:active{transform:translateY(1px)}
+  .btn:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+
+  /* output */
+  .out{margin-top:28px;display:none}
+  .out.show{display:block;animation:rise .45s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.out.show{animation:none}}
+
+  .ticket{
+    background:var(--teal);color:#fdfaf1;border-radius:16px;padding:20px;position:relative;overflow:hidden;
+  }
+  .ticket .eyebrow{color:#e9d6a8}
+  .ticket h2{font-family:var(--ff-display);font-size:26px;margin:4px 0 2px;font-weight:600}
+  .ticket .sub{opacity:.85;font-size:14px}
+  .stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+  .stat{flex:1;min-width:120px;background:rgba(255,255,255,.1);border-radius:10px;padding:11px 13px}
+  .stat .k{font-family:var(--ff-data);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;opacity:.75}
+  .stat .v{font-size:16px;font-weight:700;margin-top:3px}
+  .stat .v.num{font-variant-numeric:tabular-nums}
+
+  /* route timeline */
+  .route{margin-top:6px;padding-left:4px}
+  .day{position:relative;padding:18px 0 4px 26px;margin-left:8px;border-left:2px solid var(--line)}
+  .day:last-child{border-left-color:transparent}
+  .day::before{content:"";position:absolute;left:-7px;top:22px;width:12px;height:12px;border-radius:50%;background:var(--amber);border:2px solid var(--card)}
+  .day .dlabel{font-family:var(--ff-data);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);font-weight:600}
+  .day h3{font-family:var(--ff-display);margin:1px 0 10px;font-size:19px;font-weight:600}
+  .slot{display:flex;gap:11px;padding:8px 0;border-top:1px dashed var(--line)}
+  .slot:first-of-type{border-top:none}
+  .slot .ico{font-size:18px;width:24px;text-align:center;flex-shrink:0}
+  .slot .t{font-family:var(--ff-data);font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);width:64px;flex-shrink:0;padding-top:3px}
+  .slot .d{font-size:15px}
+  .note{color:var(--muted);font-size:12.5px;text-align:center;margin-top:22px;padding:0 8px;text-wrap:balance}
+  .foot{color:var(--muted);font-size:12px;text-align:center;margin-top:34px;line-height:1.6}
+  .foot b{color:var(--ink)}
+</style>
+
 <div class="wrap">
   <header class="hero">
-    <div class="logo">🧭</div>
+    <div class="compass" aria-hidden="true"></div>
+    <div class="eyebrow">Pocket travel planner</div>
     <h1>Rihla</h1>
-    <p class="tag">Tell me where and when. I'll plan your trip in seconds.</p>
+    <p class="tag">Tell me where and when — I'll map out your days in seconds.</p>
   </header>
 
   <div class="card">
-    <label for="dest">Where do you want to go?</label>
+    <label for="dest">Where to?</label>
     <input id="dest" type="text" placeholder="e.g. Japan, Turkey, Italy…" autocomplete="off">
 
     <div class="row">
@@ -105,14 +170,14 @@
       </div>
     </div>
 
-    <label>What's your budget?</label>
+    <label>Budget</label>
     <div class="chips" id="budgetChips">
       <div class="chip" data-v="Budget">💸 Budget</div>
       <div class="chip active" data-v="Mid-range">✨ Mid-range</div>
       <div class="chip" data-v="Luxury">👑 Luxury</div>
     </div>
 
-    <label>What are you into?</label>
+    <label>What are you into? <span style="text-transform:none;letter-spacing:0;font-weight:400">(pick a few)</span></label>
     <div class="chips" id="vibeChips">
       <div class="chip active" data-v="Culture">🏛️ Culture</div>
       <div class="chip" data-v="Food">🍜 Food</div>
@@ -121,103 +186,103 @@
       <div class="chip" data-v="Relax">🏖️ Relax</div>
     </div>
 
-    <button class="btn" onclick="plan()">Plan my trip ✨</button>
+    <button class="btn" id="planBtn" type="button">Plan my trip →</button>
   </div>
 
-  <div class="out" id="out"></div>
+  <div class="out" id="out" aria-live="polite"></div>
 
-  <p class="foot">Made with ❤️ — your very first app. This is a demo planner; the next version connects to live hotels, maps &amp; restaurants.</p>
+  <p class="foot">
+    <b>Rihla</b> — your very first app. 🎉<br>
+    This is a demo planner; the next version connects to live hotels, maps &amp; halal restaurants.
+  </p>
 </div>
 
 <script>
-  // ---- little interactive helpers ----
   function wireChips(id, multi){
-    const box = document.getElementById(id);
-    box.addEventListener('click', e=>{
-      const chip = e.target.closest('.chip');
+    var box = document.getElementById(id);
+    box.addEventListener('click', function(e){
+      var chip = e.target.closest('.chip');
       if(!chip) return;
-      if(multi){ chip.classList.toggle('active'); }
-      else { box.querySelectorAll('.chip').forEach(c=>c.classList.remove('active')); chip.classList.add('active'); }
+      if(multi){
+        var active = box.querySelectorAll('.chip.active');
+        if(chip.classList.contains('active') && active.length===1) return; // keep at least one
+        chip.classList.toggle('active');
+      } else {
+        box.querySelectorAll('.chip').forEach(function(c){c.classList.remove('active');});
+        chip.classList.add('active');
+      }
     });
   }
   wireChips('budgetChips', false);
   wireChips('vibeChips', true);
 
   function picked(id){
-    return [...document.querySelectorAll('#'+id+' .chip.active')].map(c=>c.dataset.v);
+    return [].slice.call(document.querySelectorAll('#'+id+' .chip.active')).map(function(c){return c.dataset.v;});
   }
 
-  // ---- a small library of activities by vibe (demo content) ----
-  const LIB = {
+  var LIB = {
     Culture:[["🏛️","Explore the old town & historic landmarks"],["🖼️","Visit a famous museum or gallery"],["⛩️","See an iconic temple, palace or monument"]],
     Food:[["🍜","Try a signature local dish at a beloved spot"],["🥘","Join a street-food walk"],["☕","Café-hop through a charming neighbourhood"]],
     Nature:[["🏔️","Day trip to a scenic viewpoint or mountain"],["🌊","Relax by the water — coast, lake or river"],["🌳","Stroll a famous park or garden"]],
-    Shopping:[["🛍️","Wander the main shopping street & local market"],["🎁","Hunt for souvenirs and local crafts"],["🏬","Browse a landmark mall or bazaar"]],
-    Relax:[["🧖","Spa, hammam or hot-spring afternoon"],["🌅","Slow morning + sunset spot"],["🛥️","Easy scenic cruise or drive"]]
+    Shopping:[["🛍️","Wander the main shopping street & local market"],["🎁","Hunt for souvenirs & local crafts"],["🏬","Browse a landmark mall or bazaar"]],
+    Relax:[["🧖","Spa, hammam or hot-spring afternoon"],["🌅","Slow morning + a great sunset spot"],["🛥️","Easy scenic cruise or drive"]]
   };
-  const MEALS = {
-    Budget:["local eatery","street-food stall","family-run diner"],
-    "Mid-range":["well-rated local restaurant","cozy bistro","popular halal spot"],
-    Luxury:["fine-dining restaurant","rooftop venue","chef's tasting menu"]
-  };
-  const HOTELS = {Budget:"a clean, well-located guesthouse", "Mid-range":"a comfortable 4-star hotel", Luxury:"a 5-star hotel with a view"};
-  const COST = {Budget:70, "Mid-range":160, Luxury:380}; // per person per day, demo
+  var MEALS = {Budget:["a local eatery","a street-food stall","a family-run diner"],"Mid-range":["a well-rated local restaurant","a cozy bistro","a popular halal spot"],Luxury:["a fine-dining restaurant","a rooftop venue","a chef's tasting menu"]};
+  var HOTELS = {Budget:"a clean, well-located guesthouse","Mid-range":"a comfortable 4-star hotel",Luxury:"a 5-star hotel with a view"};
+  var COST = {Budget:70,"Mid-range":160,Luxury:380};
 
   function pick(arr, seed){ return arr[seed % arr.length]; }
+  function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+  function slot(ico,t,d){ return '<div class="slot"><div class="ico">'+ico+'</div><div class="t">'+t+'</div><div class="d">'+d+'</div></div>'; }
+  function dayTitle(d,total){ if(d===1) return "Arrival & first impressions"; if(d===total) return "Last day & departure"; return "Exploring the highlights"; }
 
   function plan(){
-    const dest = (document.getElementById('dest').value || 'your destination').trim();
-    const days = Math.max(1, Math.min(30, parseInt(document.getElementById('days').value)||5));
-    const pace = document.getElementById('pace').value;
-    const budget = picked('budgetChips')[0] || 'Mid-range';
-    let vibes = picked('vibeChips'); if(!vibes.length) vibes = ['Culture'];
+    var dest = (document.getElementById('dest').value || 'your destination').trim();
+    var days = Math.max(1, Math.min(30, parseInt(document.getElementById('days').value,10)||5));
+    var pace = document.getElementById('pace').value;
+    var budget = picked('budgetChips')[0] || 'Mid-range';
+    var vibes = picked('vibeChips'); if(!vibes.length) vibes = ['Culture'];
 
-    const slotsPerDay = pace==='relaxed'?2 : pace==='packed'?4 : 3;
-    const perDay = COST[budget];
-    const total = perDay * days;
+    var slotsPerDay = pace==='relaxed'?2 : pace==='packed'?4 : 3;
+    var total = COST[budget] * days;
 
-    let html = `
-      <div class="summary">
-        <h2>${cap(dest)} · ${days} days</h2>
-        <div class="meta">${budget} · ${cap(pace)} pace · ${vibes.join(' · ')}</div>
-        <div class="stats">
-          <div class="stat"><div class="k">Length</div><div class="v">${days} days</div></div>
-          <div class="stat"><div class="k">Stay</div><div class="v">${HOTELS[budget]}</div></div>
-          <div class="stat"><div class="k">Est. per person</div><div class="v">~$${total.toLocaleString()}</div></div>
-        </div>
-      </div>`;
+    var html = ''+
+      '<div class="ticket">'+
+        '<div class="eyebrow">Your itinerary</div>'+
+        '<h2>'+cap(dest)+' · '+days+' days</h2>'+
+        '<div class="sub">'+budget+' · '+cap(pace)+' pace · '+vibes.join(' · ')+'</div>'+
+        '<div class="stats">'+
+          '<div class="stat"><div class="k">Length</div><div class="v num">'+days+' days</div></div>'+
+          '<div class="stat"><div class="k">Where you stay</div><div class="v">'+HOTELS[budget]+'</div></div>'+
+          '<div class="stat"><div class="k">Est. per person</div><div class="v num">~$'+total.toLocaleString()+'</div></div>'+
+        '</div>'+
+      '</div><div class="route">';
 
-    for(let d=1; d<=days; d++){
-      html += `<div class="day"><div class="city">Day ${d}</div><h3>${dayTitle(d,days)}</h3>`;
-      // morning activity from a rotating vibe
-      const timeLabels = slotsPerDay===2?["Morning","Evening"]:slotsPerDay===4?["Morning","Midday","Afternoon","Evening"]:["Morning","Afternoon","Evening"];
-      for(let s=0;s<slotsPerDay;s++){
-        const vibe = vibes[(d+s) % vibes.length];
-        const act = pick(LIB[vibe], d+s);
+    var labels3 = ["Morning","Afternoon","Evening"];
+    var labels4 = ["Morning","Midday","Afternoon","Evening"];
+    var labels2 = ["Morning","Evening"];
+
+    for(var d=1; d<=days; d++){
+      html += '<div class="day"><div class="dlabel">Day '+d+'</div><h3>'+dayTitle(d,days)+'</h3>';
+      var timeLabels = slotsPerDay===2?labels2 : slotsPerDay===4?labels4 : labels3;
+      for(var s=0;s<slotsPerDay;s++){
+        var vibe = vibes[(d+s) % vibes.length];
+        var act = pick(LIB[vibe], d+s);
         html += slot(act[0], timeLabels[s], act[1]);
       }
-      const meal = pick(MEALS[budget], d);
-      html += slot("🍽️","Dinner", `Eat at ${meal} in ${cap(dest)}`);
-      html += `</div>`;
+      html += slot("🍽️","Dinner","Eat at "+pick(MEALS[budget], d)+" in "+cap(dest));
+      html += '</div>';
     }
+    html += '</div>';
+    html += '<p class="note">⚠️ Estimated demo plan &amp; prices — always confirm when you book. Check visa requirements for '+cap(dest)+' before you travel.</p>';
 
-    html += `<p class="note">⚠️ Estimated demo plan & prices — always confirm details when you book. Check visa requirements for ${cap(dest)} before travelling.</p>`;
-
-    const out = document.getElementById('out');
+    var out = document.getElementById('out');
     out.innerHTML = html;
     out.classList.add('show');
     out.scrollIntoView({behavior:'smooth', block:'start'});
   }
 
-  function slot(ico, t, d){
-    return `<div class="slot"><div class="ico">${ico}</div><div class="t">${t}</div><div class="d">${d}</div></div>`;
-  }
-  function dayTitle(d,total){
-    if(d===1) return "Arrival & first impressions";
-    if(d===total) return "Last day & departure";
-    return "Exploring highlights";
-  }
-  function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+  document.getElementById('planBtn').addEventListener('click', plan);
 </script>
 </body>
 </html>
