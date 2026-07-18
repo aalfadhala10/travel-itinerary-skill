@@ -130,6 +130,15 @@
   .transfer{background:var(--paper2);border:1px dashed var(--clay);border-radius:12px;padding:12px 14px;margin:14px 0 4px}
   .transfer .tlabel{font-family:var(--ff-data);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--clay);font-weight:600}
   .transfer .tbody{font-size:14px;margin-top:3px}
+  .mapcard{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px;margin-top:16px}
+  .maphdr{font-family:var(--ff-data);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  #app[dir="rtl"] .maphdr{letter-spacing:normal;font-family:var(--ff-body)}
+  .mapcv{width:100%;height:150px;display:block;border-radius:10px;background:var(--paper2)}
+  .mapbtn{display:block;text-align:center;margin-top:12px;padding:12px;border-radius:11px;background:var(--teal);color:#fff;font-weight:700;text-decoration:none;font-size:14px;transition:filter .15s}
+  @media(prefers-color-scheme:dark){.mapbtn{color:#0a1310}}
+  :root[data-theme="dark"] .mapbtn{color:#0a1310}
+  :root[data-theme="light"] .mapbtn{color:#fff}
+  .mapbtn:hover{filter:brightness(1.06)}
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:11px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s;z-index:5}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   @media print{
@@ -310,21 +319,21 @@
     en:{dir:"ltr",loc:"en-US",cond:{veryhot:"very hot",hotdry:"hot & dry",hothumid:"hot & humid",warm:"warm & sunny",mild:"mild",tropical:"tropical, some rain",alpine:"mild alpine"},
       region:{me:"Middle East & Türkiye",eu:"Europe",cauc:"Caucasus",asia:"Asia",africa:"Africa",islands:"Islands & Beaches"},
       ui:{eyebrow:"Pocket travel planner",tag:"Tell me where and when — I'll map out your days in seconds.",dest:"Where to?",pickPh:"Choose a country…",destPh:"…or type any other place",dest2:"Add a second city (optional)",pick2Ph:"— none —",days:"How many days?",pace:"Trip pace",paces:{relaxed:"Relaxed",balanced:"Balanced",packed:"Packed"},budget:"Budget",budgets:{Budget:"Budget","Mid-range":"Mid-range",Luxury:"Luxury"},vibe:"What are you into?",vibeHint:"(pick a few)",vibes:{Culture:"Culture",Food:"Food",Nature:"Nature",Shopping:"Shopping",Relax:"Relax"},btn:"Plan my trip →",foot:"<b>Rihla</b> — your very first app.<br>18 real summer destinations built in; more coming."},
-      out:{eyebrow:"Your itinerary",summer:"Summer",statLen:"Length",statStay:"Where you stay",statPer:"Est. per person",daysUnit:"days",dayWord:"Day",arrival:"Arrival & first impressions",explore:"Exploring the highlights",last:"Last day & departure",times:{morning:"Morning",midday:"Midday",afternoon:"Afternoon",evening:"Evening",dinner:"Dinner"},realTag:"Real places — tap any name to open in Google Maps",book:"Booking",budTitle:"Budget breakdown",cats:{stay:"Hotel / stay",food:"Food",activities:"Activities & sights",localtx:"Local transport",misc:"Misc & shopping",transfer:"Intercity transfer"},budTotal:"Total (estimated)",perPerson:"per person",exclFlights:"Estimate excludes international flights.",inLocal:"≈",copy:"Copy",share:"Share",print:"Print",copied:"Copied to clipboard",modeFly:"Short flight",modeGround:"Train or road",transDur:{fly:"~1–3h",ground:"~4–6h"},dinner_:function(m){return "Dinner at "+m;},note:function(d){return "Estimated prices — always confirm when you book. Reconfirm halal options locally, and check visa requirements for "+d+" before you travel.";},notCurated:function(d){return "We don't have a hand-made guide for “"+d+"” yet — here's a smart starter plan you can tweak. Pick a country from the dropdown for a real guide.";}},
+      out:{eyebrow:"Your itinerary",summer:"Summer",statLen:"Length",statStay:"Where you stay",statPer:"Est. per person",daysUnit:"days",dayWord:"Day",arrival:"Arrival & first impressions",explore:"Exploring the highlights",last:"Last day & departure",times:{morning:"Morning",midday:"Midday",afternoon:"Afternoon",evening:"Evening",dinner:"Dinner"},realTag:"Real places — tap any name to open in Google Maps",book:"Booking",mapTitle:"Route overview",openMap:"Open in Google Maps →",budTitle:"Budget breakdown",cats:{stay:"Hotel / stay",food:"Food",activities:"Activities & sights",localtx:"Local transport",misc:"Misc & shopping",transfer:"Intercity transfer"},budTotal:"Total (estimated)",perPerson:"per person",exclFlights:"Estimate excludes international flights.",inLocal:"≈",copy:"Copy",share:"Share",print:"Print",copied:"Copied to clipboard",modeFly:"Short flight",modeGround:"Train or road",transDur:{fly:"~1–3h",ground:"~4–6h"},dinner_:function(m){return "Dinner at "+m;},note:function(d){return "Estimated prices — always confirm when you book. Reconfirm halal options locally, and check visa requirements for "+d+" before you travel.";},notCurated:function(d){return "We don't have a hand-made guide for “"+d+"” yet — here's a smart starter plan you can tweak. Pick a country from the dropdown for a real guide.";}},
       hotels:{Budget:"a clean, well-located guesthouse","Mid-range":"a comfortable 4-star hotel",Luxury:"a 5-star hotel with a view"},
       meals:{Budget:["a local eatery","a street-food stall","a family-run diner"],"Mid-range":["a well-rated local restaurant","a cozy bistro","a popular halal spot"],Luxury:["a fine-dining restaurant","a rooftop venue","a chef's tasting menu"]},
       lib:{Culture:[["🏛️","Explore the old town & historic landmarks"],["🖼️","Visit a famous museum or gallery"],["⛩️","See an iconic temple, palace or monument"]],Food:[["🍜","Try a signature local dish"],["🥘","Join a street-food walk"],["☕","Café-hop through a charming neighbourhood"]],Nature:[["🏔️","Day trip to a scenic viewpoint"],["🌊","Relax by the water"],["🌳","Stroll a famous park or garden"]],Shopping:[["🛍️","Wander the main shopping street & market"],["🎁","Hunt for souvenirs & local crafts"],["🏬","Browse a landmark mall or bazaar"]],Relax:[["🧖","Spa or hot-spring afternoon"],["🌅","Slow morning + a great sunset spot"],["🛥️","Easy scenic cruise or drive"]]}},
     ar:{dir:"rtl",loc:"ar-EG",cond:{veryhot:"حار جدًا",hotdry:"حار وجاف",hothumid:"حار ورطب",warm:"دافئ ومشمس",mild:"معتدل",tropical:"استوائي مع أمطار",alpine:"جبلي معتدل"},
       region:{me:"الشرق الأوسط وتركيا",eu:"أوروبا",cauc:"القوقاز",asia:"آسيا",africa:"أفريقيا",islands:"جزر وشواطئ"},
       ui:{eyebrow:"مخطط سفر في جيبك",tag:"قل لي وين ومتى — وأرتّب لك أيامك خلال ثواني.",dest:"وجهتك؟",pickPh:"اختر دولة…",destPh:"…أو اكتب أي مكان ثاني",dest2:"أضف مدينة ثانية (اختياري)",pick2Ph:"— بدون —",days:"كم يوم؟",pace:"إيقاع الرحلة",paces:{relaxed:"هادئ",balanced:"متوازن",packed:"مكثّف"},budget:"الميزانية",budgets:{Budget:"اقتصادي","Mid-range":"متوسط",Luxury:"فاخر"},vibe:"وش يهمّك؟",vibeHint:"(اختر أكثر من واحد)",vibes:{Culture:"ثقافة",Food:"طعام",Nature:"طبيعة",Shopping:"تسوّق",Relax:"استرخاء"},btn:"خطّط رحلتي ←",foot:"<b>رحلة</b> — أول تطبيق لك.<br>١٨ وجهة صيفية حقيقية بالداخل، والمزيد قادم."},
-      out:{eyebrow:"برنامجك",summer:"الصيف",statLen:"المدة",statStay:"مكان الإقامة",statPer:"تقديري للفرد",daysUnit:"يوم",dayWord:"اليوم",arrival:"الوصول والانطباعات الأولى",explore:"استكشاف أبرز المعالم",last:"اليوم الأخير والمغادرة",times:{morning:"الصباح",midday:"الظهر",afternoon:"بعد الظهر",evening:"المساء",dinner:"العشاء"},realTag:"أماكن حقيقية — اضغط أي اسم يفتح في خرائط قوقل",book:"الحجز",budTitle:"تفصيل الميزانية",cats:{stay:"الفندق / الإقامة",food:"الأكل",activities:"الأنشطة والمعالم",localtx:"المواصلات المحلية",misc:"متفرقات وتسوّق",transfer:"الانتقال بين المدن"},budTotal:"الإجمالي (تقديري)",perPerson:"للفرد",exclFlights:"التقدير لا يشمل تذاكر الطيران الدولية.",inLocal:"≈",copy:"نسخ",share:"مشاركة",print:"طباعة",copied:"تم النسخ",modeFly:"رحلة قصيرة",modeGround:"قطار أو سيارة",transDur:{fly:"~١–٣ ساعات",ground:"~٤–٦ ساعات"},dinner_:function(m){return "عشاء في "+m;},note:function(d){return "أسعار تقديرية — تأكّد دائمًا عند الحجز. تحقّق من خيارات الحلال محليًا، ومن متطلبات فيزا "+d+" قبل السفر.";},notCurated:function(d){return "ما عندنا دليل جاهز لـ«"+d+"» إلى الحين — هذي خطة مبدئية ذكية تقدر تعدّلها. اختر دولة من القائمة لدليل حقيقي.";}},
+      out:{eyebrow:"برنامجك",summer:"الصيف",statLen:"المدة",statStay:"مكان الإقامة",statPer:"تقديري للفرد",daysUnit:"يوم",dayWord:"اليوم",arrival:"الوصول والانطباعات الأولى",explore:"استكشاف أبرز المعالم",last:"اليوم الأخير والمغادرة",times:{morning:"الصباح",midday:"الظهر",afternoon:"بعد الظهر",evening:"المساء",dinner:"العشاء"},realTag:"أماكن حقيقية — اضغط أي اسم يفتح في خرائط قوقل",book:"الحجز",mapTitle:"نظرة على المسار",openMap:"افتح في خرائط قوقل ←",budTitle:"تفصيل الميزانية",cats:{stay:"الفندق / الإقامة",food:"الأكل",activities:"الأنشطة والمعالم",localtx:"المواصلات المحلية",misc:"متفرقات وتسوّق",transfer:"الانتقال بين المدن"},budTotal:"الإجمالي (تقديري)",perPerson:"للفرد",exclFlights:"التقدير لا يشمل تذاكر الطيران الدولية.",inLocal:"≈",copy:"نسخ",share:"مشاركة",print:"طباعة",copied:"تم النسخ",modeFly:"رحلة قصيرة",modeGround:"قطار أو سيارة",transDur:{fly:"~١–٣ ساعات",ground:"~٤–٦ ساعات"},dinner_:function(m){return "عشاء في "+m;},note:function(d){return "أسعار تقديرية — تأكّد دائمًا عند الحجز. تحقّق من خيارات الحلال محليًا، ومن متطلبات فيزا "+d+" قبل السفر.";},notCurated:function(d){return "ما عندنا دليل جاهز لـ«"+d+"» إلى الحين — هذي خطة مبدئية ذكية تقدر تعدّلها. اختر دولة من القائمة لدليل حقيقي.";}},
       hotels:{Budget:"نُزل نظيف وبموقع ممتاز","Mid-range":"فندق ٤ نجوم مريح",Luxury:"فندق ٥ نجوم بإطلالة"},
       meals:{Budget:["مطعم محلي","عربة أكل شارع","مطعم عائلي"],"Mid-range":["مطعم محلي بتقييم عالٍ","بيسترو دافئ","مكان حلال مشهور"],Luxury:["مطعم فاخر","مكان بإطلالة على السطح","قائمة تذوّق للشيف"]},
       lib:{Culture:[["🏛️","استكشف المدينة القديمة والمعالم"],["🖼️","زُر متحفًا أو معرضًا مشهورًا"],["⛩️","شاهد معلمًا أيقونيًا"]],Food:[["🍜","جرّب طبقًا محليًا مميزًا"],["🥘","جولة أكل شارع"],["☕","تنقّل بين المقاهي"]],Nature:[["🏔️","رحلة نهار لإطلالة خلابة"],["🌊","استرخِ عند الماء"],["🌳","تمشَّ في حديقة مشهورة"]],Shopping:[["🛍️","تجوّل في شارع التسوق والسوق"],["🎁","ابحث عن الهدايا المحلية"],["🏬","تفقّد مركز تسوق أو بازار"]],Relax:[["🧖","سبا أو ينابيع بعد الظهر"],["🌅","صباح هادئ + غروب رائع"],["🛥️","جولة بحرية مريحة"]]}},
     es:{dir:"ltr",loc:"es-ES",cond:{veryhot:"muy caluroso",hotdry:"caluroso y seco",hothumid:"caluroso y húmedo",warm:"cálido y soleado",mild:"templado",tropical:"tropical, con lluvia",alpine:"alpino templado"},
       region:{me:"Oriente Medio y Turquía",eu:"Europa",cauc:"Cáucaso",asia:"Asia",africa:"África",islands:"Islas y playas"},
       ui:{eyebrow:"Planificador de viajes de bolsillo",tag:"Dime dónde y cuándo, y trazaré tus días en segundos.",dest:"¿A dónde?",pickPh:"Elige un país…",destPh:"…o escribe otro lugar",dest2:"Añade una segunda ciudad (opcional)",pick2Ph:"— ninguna —",days:"¿Cuántos días?",pace:"Ritmo del viaje",paces:{relaxed:"Relajado",balanced:"Equilibrado",packed:"Intenso"},budget:"Presupuesto",budgets:{Budget:"Económico","Mid-range":"Medio",Luxury:"Lujo"},vibe:"¿Qué te gusta?",vibeHint:"(elige varios)",vibes:{Culture:"Cultura",Food:"Comida",Nature:"Naturaleza",Shopping:"Compras",Relax:"Relax"},btn:"Planear mi viaje →",foot:"<b>Rihla</b> — tu primera app.<br>18 destinos reales de verano incluidos; pronto habrá más."},
-      out:{eyebrow:"Tu itinerario",summer:"Verano",statLen:"Duración",statStay:"Alojamiento",statPer:"Est. por persona",daysUnit:"días",dayWord:"Día",arrival:"Llegada y primeras impresiones",explore:"Explorando lo mejor",last:"Último día y salida",times:{morning:"Mañana",midday:"Mediodía",afternoon:"Tarde",evening:"Noche",dinner:"Cena"},realTag:"Lugares reales — toca un nombre para abrir en Google Maps",book:"Reservar",budTitle:"Desglose del presupuesto",cats:{stay:"Hotel / alojamiento",food:"Comida",activities:"Actividades y lugares",localtx:"Transporte local",misc:"Varios y compras",transfer:"Traslado entre ciudades"},budTotal:"Total (estimado)",perPerson:"por persona",exclFlights:"El estimado no incluye vuelos internacionales.",inLocal:"≈",copy:"Copiar",share:"Compartir",print:"Imprimir",copied:"Copiado",modeFly:"Vuelo corto",modeGround:"Tren o carretera",transDur:{fly:"~1–3h",ground:"~4–6h"},dinner_:function(m){return "Cena en "+m;},note:function(d){return "Precios estimados — confirma siempre al reservar. Reconfirma las opciones halal en el lugar y revisa los requisitos de visa para "+d+" antes de viajar.";},notCurated:function(d){return "Aún no tenemos una guía hecha a mano para «"+d+"» — aquí tienes un plan inicial que puedes ajustar. Elige un país del menú para una guía real.";}},
+      out:{eyebrow:"Tu itinerario",summer:"Verano",statLen:"Duración",statStay:"Alojamiento",statPer:"Est. por persona",daysUnit:"días",dayWord:"Día",arrival:"Llegada y primeras impresiones",explore:"Explorando lo mejor",last:"Último día y salida",times:{morning:"Mañana",midday:"Mediodía",afternoon:"Tarde",evening:"Noche",dinner:"Cena"},realTag:"Lugares reales — toca un nombre para abrir en Google Maps",book:"Reservar",mapTitle:"Vista de la ruta",openMap:"Abrir en Google Maps →",budTitle:"Desglose del presupuesto",cats:{stay:"Hotel / alojamiento",food:"Comida",activities:"Actividades y lugares",localtx:"Transporte local",misc:"Varios y compras",transfer:"Traslado entre ciudades"},budTotal:"Total (estimado)",perPerson:"por persona",exclFlights:"El estimado no incluye vuelos internacionales.",inLocal:"≈",copy:"Copiar",share:"Compartir",print:"Imprimir",copied:"Copiado",modeFly:"Vuelo corto",modeGround:"Tren o carretera",transDur:{fly:"~1–3h",ground:"~4–6h"},dinner_:function(m){return "Cena en "+m;},note:function(d){return "Precios estimados — confirma siempre al reservar. Reconfirma las opciones halal en el lugar y revisa los requisitos de visa para "+d+" antes de viajar.";},notCurated:function(d){return "Aún no tenemos una guía hecha a mano para «"+d+"» — aquí tienes un plan inicial que puedes ajustar. Elige un país del menú para una guía real.";}},
       hotels:{Budget:"una pensión limpia y bien ubicada","Mid-range":"un hotel de 4 estrellas cómodo",Luxury:"un hotel de 5 estrellas con vistas"},
       meals:{Budget:["un local sencillo","un puesto callejero","un comedor familiar"],"Mid-range":["un restaurante bien valorado","un bistró acogedor","un sitio halal popular"],Luxury:["un restaurante de alta cocina","una azotea con vistas","un menú degustación"]},
       lib:{Culture:[["🏛️","Explora el casco antiguo y los monumentos"],["🖼️","Visita un museo o galería famosa"],["⛩️","Ve un monumento icónico"]],Food:[["🍜","Prueba un plato local"],["🥘","Ruta de comida callejera"],["☕","Recorre cafés con encanto"]],Nature:[["🏔️","Excursión a un mirador espectacular"],["🌊","Relájate junto al agua"],["🌳","Pasea por un parque famoso"]],Shopping:[["🛍️","Recorre la calle comercial y el mercado"],["🎁","Busca recuerdos locales"],["🏬","Visita un centro comercial o bazar"]],Relax:[["🧖","Spa o aguas termales por la tarde"],["🌅","Mañana tranquila + atardecer"],["🛥️","Un crucero panorámico tranquilo"]]}}
@@ -362,7 +371,7 @@
       var g=document.createElement('optgroup'); g.label=t.region[rk];
       keys.forEach(function(k){
         var d=DEST[k], op=document.createElement('option');
-        op.value=k; op.textContent=d.city+' — '+d.country;
+        op.value=k; op.textContent=d.flag+'  '+d.city+' — '+d.country;
         g.appendChild(op);
       });
       sel.appendChild(g);
@@ -389,7 +398,7 @@
       var g=document.createElement('optgroup'); g.label=t.region[rk];
       keys.forEach(function(k){
         var d=DEST[k], op=document.createElement('option');
-        op.value=k; op.textContent=d.city+' — '+d.country;
+        op.value=k; op.textContent=d.flag+'  '+d.city+' — '+d.country;
         g.appendChild(op);
       });
       sel.appendChild(g);
@@ -443,24 +452,65 @@
   function transferInfo(t,c1,c2){var ground=c1.region===c2.region;return {usd:ground?60:180,mode:ground?t.out.modeGround:t.out.modeFly,dur:ground?t.out.transDur.ground:t.out.transDur.fly};}
   function catRows(base){return [['stay',0.42],['food',0.24],['activities',0.16],['localtx',0.08],['misc',0.10]].map(function(c){return {k:c[0],v:Math.round(base*c[1])};});}
 
-  function emitDays(match,fromDay,count,total,vibes,spd,o,t,txt){
+  function emitDays(match,fromDay,count,total,vibes,spd,o,t,txt,stops){
     var pool=poolFor(match,vibes),p=0,f=0,tl=timeLabels(o,spd),html='';
     for(var i=0;i<count;i++){
       var d=fromDay+i, title=d===1?o.arrival:d===total?o.last:o.explore;
       html+='<div class="day"><div class="dlabel">'+o.dayWord+' '+d+'</div><h3>'+title+'</h3>';
       txt.push(''); txt.push(o.dayWord+' '+d+' — '+title+' ('+match.city+')');
       for(var s=0;s<spd;s++){
-        var poi=pool[p++%pool.length], ic=TAGICON[poi.t[0]]||'📍';
-        html+=slot(ic,tl[s],link(poi.n,poi.n+' '+match.city)+' <span class="area">· '+esc(poi.a)+'</span>');
+        var poi=pool[p++%pool.length];
+        if(stops)stops.push({n:poi.n,a:poi.a});
+        html+=slot('',tl[s],link(poi.n,poi.n+' '+match.city)+' <span class="area">· '+esc(poi.a)+'</span>');
         txt.push('  '+tl[s]+': '+poi.n+' ('+poi.a+')');
       }
       var fo=match.food[f++%match.food.length];
-      html+=slot('🍽️',o.times.dinner,link(fo.n,fo.n+' '+match.city)+' <span class="area">· '+esc(fo.a)+'</span>');
+      html+=slot('',o.times.dinner,link(fo.n,fo.n+' '+match.city)+' <span class="area">· '+esc(fo.a)+'</span>');
       txt.push('  '+o.times.dinner+': '+fo.n+' ('+fo.a+')');
       html+='</div>';
     }
     return html;
   }
+
+  var MAPQ=[], MAPN=0;
+  function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+  function routeUrl(city,stops){
+    if(stops.length<=1)return mapUrl((stops[0]?stops[0].n:city)+' '+city);
+    var q=stops.map(function(s){return encodeURIComponent(s.n+' '+city);});
+    var u='https://www.google.com/maps/dir/?api=1&origin='+q[0]+'&destination='+q[q.length-1];
+    var way=q.slice(1,-1).join('|'); if(way)u+='&waypoints='+way;
+    return u;
+  }
+  function mapCard(city,stops,t){
+    var seen={},uniq=[]; stops.forEach(function(s){if(!seen[s.n]){seen[s.n]=1;uniq.push(s);}});
+    if(!uniq.length)return '';
+    var id='mapcv_'+(MAPN++); MAPQ.push({id:id,n:Math.min(uniq.length,12)});
+    var url=routeUrl(city,uniq.slice(0,10));
+    return '<div class="mapcard"><div class="maphdr">'+t.out.mapTitle+' · '+esc(city)+'</div>'+
+      '<canvas class="mapcv" id="'+id+'"></canvas>'+
+      '<a class="mapbtn" href="'+url+'" target="_blank" rel="noopener">'+t.out.openMap+'</a></div>';
+  }
+  function drawMiniMap(cv,n){
+    var w=cv.clientWidth||300,h=150,dpr=Math.min(2,window.devicePixelRatio||1),ctx=cv.getContext('2d');
+    cv.width=w*dpr; cv.height=h*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+    var teal=cssVar('--teal'),amber=cssVar('--amber'),ink=cssVar('--ink'),card=cssVar('--card');
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle=ink; ctx.globalAlpha=0.05; ctx.lineWidth=1;
+    for(var r=18;r<170;r+=22){ctx.beginPath();ctx.arc(w*0.5,h*0.5,r,0,Math.PI*2);ctx.stroke();}
+    ctx.globalAlpha=1;
+    var pad=28,pts=[];
+    for(var i=0;i<n;i++){var x=pad+(n===1?(w-2*pad)/2:i*(w-2*pad)/(n-1));var y=h*0.5+Math.sin(i*0.9+0.6)*h*0.24;pts.push([x,y]);}
+    ctx.strokeStyle=teal; ctx.globalAlpha=0.55; ctx.lineWidth=2; ctx.setLineDash([5,5]);
+    ctx.beginPath(); pts.forEach(function(p,i){i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]);}); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha=1;
+    pts.forEach(function(p,i){
+      ctx.beginPath(); ctx.arc(p[0],p[1],11,0,Math.PI*2); ctx.fillStyle=amber; ctx.fill();
+      ctx.lineWidth=2; ctx.strokeStyle=card; ctx.stroke();
+      ctx.fillStyle='#231a0a'; ctx.font='bold 11px ui-monospace,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(String(i+1),p[0],p[1]);
+    });
+  }
+  function redrawMaps(){MAPQ.forEach(function(q){var cv=$(q.id);if(cv)drawMiniMap(cv,q.n);});}
 
   function budgetCard(o,t,rows,transferUSD,totalUSD,localKey){
     var h='<div class="bud"><h4>'+o.budTitle+'</h4>';
@@ -484,7 +534,7 @@
     var subVibes=vibes.map(function(v){return t.ui.vibes[v];}).join(' · ');
     var m1=matchDest(raw);
     var k2=$('destPick2').value, m2=k2?DEST[k2]:null; if(m2&&m2===m1)m2=null;
-    var txt=[], html='', note='';
+    var txt=[], html='', note=''; MAPQ=[];
 
     if(m1){
       var multi=!!(m2&&days>=2);
@@ -510,14 +560,16 @@
           '<div class="stat"><div class="k">'+o.statPer+'</div><div class="v num">'+money(t,totalUSD)+'</div></div>'+
         '</div></div>';
 
-      html+='<div class="realtag">'+o.realTag+'</div><div class="route">';
-      html+=emitDays(m1,1,d1,days,vibes,spd,o,t,txt);
+      var stops1=[], route1=emitDays(m1,1,d1,days,vibes,spd,o,t,txt,stops1);
+      var mapHtml=mapCard(m1.city,stops1,t), route2='', transHtml='';
       if(multi){
-        html+='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+tr.mode+' · '+esc(m1.city)+' → '+esc(m2.city)+' · '+tr.dur+' · '+money(t,tr.usd)+'</div></div>';
+        transHtml='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+tr.mode+' · '+esc(m1.city)+' → '+esc(m2.city)+' · '+tr.dur+' · '+money(t,tr.usd)+'</div></div>';
         txt.push(''); txt.push('» '+o.cats.transfer+': '+m1.city+' → '+m2.city+' ('+tr.dur+', ~$'+tr.usd+')');
-        html+=emitDays(m2,d1+1,d2,days,vibes,spd,o,t,txt);
+        var stops2=[]; route2=emitDays(m2,d1+1,d2,days,vibes,spd,o,t,txt,stops2);
+        mapHtml+=mapCard(m2.city,stops2,t);
       }
-      html+='</div>';
+      html+=mapHtml;
+      html+='<div class="realtag">'+o.realTag+'</div><div class="route">'+route1+transHtml+route2+'</div>';
       html+=budgetCard(o,t,catRows(base1+base2),trUSD,totalUSD,multi?null:keyOf(m1));
       txt.push(''); txt.push(o.budTotal+' ('+o.perPerson+'): ~$'+Math.round(totalUSD));
       note=o.note(esc(m1.city)+(multi?' & '+esc(m2.city):''));
@@ -538,8 +590,8 @@
         var tt=d3===1?o.arrival:d3===days?o.last:o.explore;
         html+='<div class="day"><div class="dlabel">'+o.dayWord+' '+d3+'</div><h3>'+tt+'</h3>';
         txt.push(''); txt.push(o.dayWord+' '+d3+' — '+tt);
-        for(var s3=0;s3<spd;s3++){var vb=vibes[(d3+s3)%vibes.length];var act=pick(t.lib[vb],d3+s3);html+=slot(act[0],tl2[s3],esc(act[1]));txt.push('  '+tl2[s3]+': '+act[1]);}
-        html+=slot('🍽️',o.times.dinner,o.dinner_(pick(t.meals[budget],d3)));
+        for(var s3=0;s3<spd;s3++){var vb=vibes[(d3+s3)%vibes.length];var act=pick(t.lib[vb],d3+s3);html+=slot('',tl2[s3],esc(act[1]));txt.push('  '+tl2[s3]+': '+act[1]);}
+        html+=slot('',o.times.dinner,o.dinner_(pick(t.meals[budget],d3)));
         html+='</div>';
       }
       html+='</div>';
@@ -551,6 +603,7 @@
     html+='<div class="actions"><button class="act" type="button" data-act="copy">'+o.copy+'</button><button class="act" type="button" data-act="share">'+o.share+'</button><button class="act" type="button" data-act="print">'+o.print+'</button></div>';
     LASTTEXT='Rihla\n'+txt.join('\n');
     var out=$('out'); out.innerHTML=html; out.classList.add('show');
+    redrawMaps();
     out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   $('planBtn').addEventListener('click',plan);
@@ -589,9 +642,9 @@
       ctx.globalAlpha=1;
     }
     draw();
-    var to; window.addEventListener('resize',function(){clearTimeout(to);to=setTimeout(draw,150);});
-    if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').addEventListener)window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',draw);
-    new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+    var to; window.addEventListener('resize',function(){clearTimeout(to);to=setTimeout(function(){draw();redrawMaps();},150);});
+    if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').addEventListener)window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',function(){draw();redrawMaps();});
+    new MutationObserver(function(){draw();redrawMaps();}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
   })();
 
   applyLang('en');
