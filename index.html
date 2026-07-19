@@ -160,6 +160,31 @@
   .themebtn:hover{border-color:var(--teal);color:var(--ink)}
   #app[dir="rtl"] .themebtn{right:auto;left:18px}
 
+  .profilebtn{position:absolute;top:20px;left:18px;z-index:2;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--ff-body);transition:all .15s}
+  .profilebtn:hover{border-color:var(--teal);color:var(--ink)}
+  #app[dir="rtl"] .profilebtn{left:auto;right:18px}
+  .greet{color:var(--teal);font-size:14px;font-weight:700;margin:9px 0 0}
+
+  .welcome{position:fixed;inset:0;z-index:20;background:rgba(18,14,8,.55);display:flex;align-items:center;justify-content:center;padding:22px;opacity:0;pointer-events:none;transition:opacity .25s}
+  .welcome.show{opacity:1;pointer-events:auto}
+  .welcard{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);max-width:400px;width:100%;padding:28px 24px;text-align:center;transform:translateY(10px);transition:transform .25s}
+  .welcome.show .welcard{transform:none}
+  .welcard .compass{margin:0 auto 8px}
+  .welcard h2{font-family:var(--ff-display);font-size:26px;margin:6px 0 4px;font-weight:600}
+  .welcard .wsub{color:var(--muted);font-size:14px;margin:0 auto 18px;max-width:300px;text-wrap:balance}
+  .welbtn{width:100%;padding:15px;border:none;border-radius:12px;background:var(--amber);color:#231a0a;font-size:16px;font-weight:700;font-family:var(--ff-body);cursor:pointer;box-shadow:var(--shadow);transition:filter .15s}
+  .welbtn:hover{filter:brightness(1.05)}
+  .welbtn:active{transform:translateY(1px)}
+  .weldiv{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;margin:16px 0;font-family:var(--ff-data);letter-spacing:1.5px;text-transform:uppercase}
+  .weldiv::before,.weldiv::after{content:"";flex:1;height:1px;background:var(--line)}
+  #app[dir="rtl"] .weldiv{letter-spacing:normal;font-family:var(--ff-body)}
+  .welname{width:100%;padding:13px;border-radius:11px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);font-size:16px;font-family:var(--ff-body);outline:none;margin-bottom:10px}
+  .welname:focus{border-color:var(--teal)}
+  .welsave{width:100%;padding:13px;border:1px solid var(--teal);border-radius:12px;background:var(--teal-soft);color:var(--teal);font-size:15px;font-weight:700;font-family:var(--ff-body);cursor:pointer;transition:all .15s}
+  .welsave:hover{filter:brightness(1.05)}
+  .welsave:active{transform:translateY(1px)}
+  .welnote{color:var(--muted);font-size:11px;margin-top:14px}
+
   .mytrips{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px 16px;margin-top:16px}
   .triptags{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
   .triptag{display:inline-flex;align-items:center;gap:9px;padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
@@ -238,6 +263,7 @@
 
 <div class="wrap" id="app" dir="ltr">
   <button type="button" class="themebtn" id="themeBtn">Dark</button>
+  <button type="button" class="profilebtn" id="profileBtn">Guest</button>
   <div class="langbar" id="langbar">
     <div class="lang active" data-lang="en">English</div>
     <div class="lang" data-lang="ar">العربية</div>
@@ -249,6 +275,7 @@
     <div class="eyebrow" id="heroEyebrow">Pocket travel planner</div>
     <h1>بوصلة</h1>
     <p class="tag" id="heroTag">Tell me where and when — I'll map out your days in seconds.</p>
+    <p class="greet is-hidden" id="greet"></p>
   </header>
 
   <div class="card">
@@ -314,6 +341,19 @@
   <div id="mytrips" class="is-hidden"></div>
   <div class="out" id="out" aria-live="polite"></div>
   <p class="foot" id="foot"></p>
+
+  <div class="welcome" id="welcome" aria-hidden="true">
+    <div class="welcard">
+      <div class="compass" aria-hidden="true"></div>
+      <h2 id="welTitle">Welcome</h2>
+      <p class="wsub" id="welSub"></p>
+      <button type="button" class="welbtn" id="guestBtn"></button>
+      <div class="weldiv" id="welDiv"></div>
+      <input type="text" class="welname" id="welName" autocomplete="given-name" maxlength="24">
+      <button type="button" class="welsave" id="welSave"></button>
+      <p class="welnote" id="welNote"></p>
+    </div>
+  </div>
 </div>
 <div class="toast" id="toast" aria-hidden="true"></div>
 
@@ -797,21 +837,21 @@
   var I18N={
     en:{dir:"ltr",loc:"en-US",cond:{veryhot:"very hot",hotdry:"hot & dry",hothumid:"hot & humid",warm:"warm & sunny",mild:"mild",tropical:"tropical, some rain",alpine:"mild alpine"},
       region:{me:"Middle East & Türkiye",eu:"Europe",cauc:"Caucasus",asia:"Asia",africa:"Africa",islands:"Islands & Beaches"},
-      ui:{eyebrow:"Pocket travel planner",tag:"Your compass to the world.",dest:"Where to?",pickPh:"Choose a country…",destPh:"…or type any other place",surprise:"Surprise me",dest2:"Second city",addCity:"Add a second city",pick2Ph:"— none —",dest2Ph:"…or type a second city",days:"How many days?",adults:"Adults",kids:"Kids (2–11)",startDate:"Start date (optional)",cur:"Your currency",pace:"Trip pace",paces:{relaxed:"Relaxed",balanced:"Balanced",packed:"Packed"},budget:"Budget",budgets:{Budget:"Budget","Mid-range":"Mid-range",Luxury:"Luxury"},vibe:"What are you into?",vibeHint:"(pick a few)",vibes:{Culture:"Culture",Food:"Food",Nature:"Nature",Shopping:"Shopping",Relax:"Relax"},btn:"Plan my trip →",myTrips:"My trips",themeDark:"Dark",themeLight:"Light",foot:"<b>بوصلة · Bosla</b> — your very first app.<br>89 real summer destinations built in; more coming."},
+      ui:{eyebrow:"Pocket travel planner",tag:"Your compass to the world.",dest:"Where to?",pickPh:"Choose a country…",destPh:"…or type any other place",surprise:"Surprise me",dest2:"Second city",addCity:"Add a second city",pick2Ph:"— none —",dest2Ph:"…or type a second city",days:"How many days?",adults:"Adults",kids:"Kids (2–11)",startDate:"Start date (optional)",cur:"Your currency",pace:"Trip pace",paces:{relaxed:"Relaxed",balanced:"Balanced",packed:"Packed"},budget:"Budget",budgets:{Budget:"Budget","Mid-range":"Mid-range",Luxury:"Luxury"},vibe:"What are you into?",vibeHint:"(pick a few)",vibes:{Culture:"Culture",Food:"Food",Nature:"Nature",Shopping:"Shopping",Relax:"Relax"},btn:"Plan my trip →",myTrips:"My trips",themeDark:"Dark",themeLight:"Light",guestWord:"Guest",greet:function(n){return "Welcome, "+n;},welcomeTitle:"Welcome to بوصلة",welcomeSub:"Plan a full trip in seconds — no signup needed.",guestBtn:"Plan as a guest",nameLabel:"or save your trips",namePh:"Your first name",saveNameBtn:"Save & start",welcomeNote:"Saved on this device only — no account, no email.",foot:"<b>بوصلة · Bosla</b> — your very first app.<br>89 real summer destinations built in; more coming."},
       out:{eyebrow:"Your itinerary",summer:"Summer",statLen:"Length",statStay:"Where you stay",statPer:"Est. per person",daysUnit:"days",dayWord:"Day",arrival:"Arrival & first impressions",explore:"Exploring the highlights",last:"Last day & departure",times:{morning:"Morning",midday:"Midday",afternoon:"Afternoon",evening:"Evening",dinner:"Dinner"},realTag:"Real places — tap any name to open in Google Maps",book:"Booking",mapTitle:"Route overview",openMap:"Open in Google Maps →",budTitle:"Budget breakdown",cats:{stay:"Hotel / stay",food:"Food",activities:"Activities & sights",localtx:"Local transport",misc:"Misc & shopping",transfer:"Intercity transfer"},budTotal:"Total (estimated)",perPerson:"per person",groupTotal:"Group total",bookTitle:"Book & save",bookHotels:"Hotels",bookTours:"Tours & activities",bookEsim:"Travel eSIM",linkCopied:"Trip link copied",faithTitle:"Prayer & halal",faithMosques:"Nearby mosques",faithPrayer:"Prayer times on Google",prayerLoading:"Loading prayer times…",prayerNote:"Approx. times (high-latitude adjusted) — confirm with a local mosque.",prayerNames:{fajr:"Fajr",dhuhr:"Dhuhr",asr:"Asr",maghrib:"Maghrib",isha:"Isha"},pkTitle:"What to pack",pk:{docs:"Passport + copies of your visa",shoes:"Comfortable walking shoes",adapter:"Universal power adapter",power:"Power bank",esim:"A travel eSIM for data",sun:"Sunscreen, hat & sunglasses",light:"Light, breathable clothing",rain:"A light rain jacket or umbrella",repellent:"Insect repellent",layers:"Layers / a light jacket",warm:"A warm layer (even in summer)",swim:"Swimwear",modest:"Modest attire for mosques (shoulders & knees covered)"},countdown:function(n){return "Starts in "+n+" day"+(n===1?"":"s");},today:"Starts today",proTag:"Premium",proTitle:"Unlock the full trip",proSub:"See every day, export a PDF, and get a shareable trip link.",proPrice:"$4.99 · one-time",proBtn:"Unlock full trip",proNote:"Demo — no real charge yet. Real payment connects at launch.",unlockCta:"Unlock to save & share",unlocked:"Unlocked — enjoy your full trip!",exclFlights:"Estimate excludes international flights.",inLocal:"≈",copy:"Copy",share:"Share link",print:"Print",copied:"Copied to clipboard",save:"Save",saved:"Saved to My trips",waShare:"WhatsApp",waMsg:"Check out my trip plan on بوصلة (Bosla):",gtkTitle:"Good to know",gtkEmergency:"Emergency number",gtkPlug:"Power socket",gtkPlugVal:function(p){return "Type "+p;},gtkDrive:"Driving side",driveLeft:"Left-hand",driveRight:"Right-hand",modeFly:"Short flight",modeGround:"Train or road",transDur:{fly:"~1–3h",ground:"~4–6h"},dinner_:function(m){return "Dinner at "+m;},note:function(d){return "Estimated prices — always confirm when you book. Reconfirm halal options locally, and check visa requirements for "+d+" before you travel.";},notCurated:function(d){return "We don't have a hand-made guide for “"+d+"” yet — here's a smart starter plan you can tweak. Pick a country from the dropdown for a real guide.";}},
       hotels:{Budget:"a clean, well-located guesthouse","Mid-range":"a comfortable 4-star hotel",Luxury:"a 5-star hotel with a view"},
       meals:{Budget:["a local eatery","a street-food stall","a family-run diner"],"Mid-range":["a well-rated local restaurant","a cozy bistro","a popular halal spot"],Luxury:["a fine-dining restaurant","a rooftop venue","a chef's tasting menu"]},
       lib:{Culture:[["🏛️","Explore the old town & historic landmarks"],["🖼️","Visit a famous museum or gallery"],["⛩️","See an iconic temple, palace or monument"]],Food:[["🍜","Try a signature local dish"],["🥘","Join a street-food walk"],["☕","Café-hop through a charming neighbourhood"]],Nature:[["🏔️","Day trip to a scenic viewpoint"],["🌊","Relax by the water"],["🌳","Stroll a famous park or garden"]],Shopping:[["🛍️","Wander the main shopping street & market"],["🎁","Hunt for souvenirs & local crafts"],["🏬","Browse a landmark mall or bazaar"]],Relax:[["🧖","Spa or hot-spring afternoon"],["🌅","Slow morning + a great sunset spot"],["🛥️","Easy scenic cruise or drive"]]}},
     ar:{dir:"rtl",loc:"ar-EG",cond:{veryhot:"حار جدًا",hotdry:"حار وجاف",hothumid:"حار ورطب",warm:"دافئ ومشمس",mild:"معتدل",tropical:"استوائي مع أمطار",alpine:"جبلي معتدل"},
       region:{me:"الشرق الأوسط وتركيا",eu:"أوروبا",cauc:"القوقاز",asia:"آسيا",africa:"أفريقيا",islands:"جزر وشواطئ"},
-      ui:{eyebrow:"مخطط سفر في جيبك",tag:"بوصلتك نحو العالم.",dest:"وجهتك؟",pickPh:"اختر دولة…",destPh:"…أو اكتب أي مكان ثاني",surprise:"فاجئني",dest2:"المدينة الثانية",addCity:"أضف مدينة ثانية",pick2Ph:"— بدون —",dest2Ph:"…أو اكتب مدينة ثانية",days:"كم يوم؟",adults:"بالغين",kids:"أطفال (٢–١١)",startDate:"تاريخ البداية (اختياري)",cur:"عملتك",pace:"إيقاع الرحلة",paces:{relaxed:"هادئ",balanced:"متوازن",packed:"مكثّف"},budget:"الميزانية",budgets:{Budget:"اقتصادي","Mid-range":"متوسط",Luxury:"فاخر"},vibe:"وش يهمّك؟",vibeHint:"(اختر أكثر من واحد)",vibes:{Culture:"ثقافة",Food:"طعام",Nature:"طبيعة",Shopping:"تسوّق",Relax:"استرخاء"},btn:"خطّط رحلتي ←",myTrips:"رحلاتي",themeDark:"داكن",themeLight:"فاتح",foot:"<b>بوصلة</b> — أول تطبيق لك.<br>٨٩ وجهة صيفية حقيقية بالداخل، والمزيد قادم."},
+      ui:{eyebrow:"مخطط سفر في جيبك",tag:"بوصلتك نحو العالم.",dest:"وجهتك؟",pickPh:"اختر دولة…",destPh:"…أو اكتب أي مكان ثاني",surprise:"فاجئني",dest2:"المدينة الثانية",addCity:"أضف مدينة ثانية",pick2Ph:"— بدون —",dest2Ph:"…أو اكتب مدينة ثانية",days:"كم يوم؟",adults:"بالغين",kids:"أطفال (٢–١١)",startDate:"تاريخ البداية (اختياري)",cur:"عملتك",pace:"إيقاع الرحلة",paces:{relaxed:"هادئ",balanced:"متوازن",packed:"مكثّف"},budget:"الميزانية",budgets:{Budget:"اقتصادي","Mid-range":"متوسط",Luxury:"فاخر"},vibe:"وش يهمّك؟",vibeHint:"(اختر أكثر من واحد)",vibes:{Culture:"ثقافة",Food:"طعام",Nature:"طبيعة",Shopping:"تسوّق",Relax:"استرخاء"},btn:"خطّط رحلتي ←",myTrips:"رحلاتي",themeDark:"داكن",themeLight:"فاتح",guestWord:"ضيف",greet:function(n){return "أهلاً "+n;},welcomeTitle:"أهلاً بك في بوصلة",welcomeSub:"خطّط رحلة كاملة في ثوانٍ — بدون تسجيل.",guestBtn:"ابدأ كضيف",nameLabel:"أو احفظ رحلاتك",namePh:"اسمك الأول",saveNameBtn:"احفظ وابدأ",welcomeNote:"محفوظ على هذا الجهاز فقط — بدون حساب أو بريد.",foot:"<b>بوصلة</b> — أول تطبيق لك.<br>٨٩ وجهة صيفية حقيقية بالداخل، والمزيد قادم."},
       out:{eyebrow:"برنامجك",summer:"الصيف",statLen:"المدة",statStay:"مكان الإقامة",statPer:"تقديري للفرد",daysUnit:"يوم",dayWord:"اليوم",arrival:"الوصول والانطباعات الأولى",explore:"استكشاف أبرز المعالم",last:"اليوم الأخير والمغادرة",times:{morning:"الصباح",midday:"الظهر",afternoon:"بعد الظهر",evening:"المساء",dinner:"العشاء"},realTag:"أماكن حقيقية — اضغط أي اسم يفتح في خرائط قوقل",book:"الحجز",mapTitle:"نظرة على المسار",openMap:"افتح في خرائط قوقل ←",budTitle:"تفصيل الميزانية",cats:{stay:"الفندق / الإقامة",food:"الأكل",activities:"الأنشطة والمعالم",localtx:"المواصلات المحلية",misc:"متفرقات وتسوّق",transfer:"الانتقال بين المدن"},budTotal:"الإجمالي (تقديري)",perPerson:"للفرد",groupTotal:"إجمالي المجموعة",bookTitle:"احجز ووفّر",bookHotels:"فنادق",bookTours:"جولات وأنشطة",bookEsim:"شريحة eSIM",linkCopied:"تم نسخ رابط الرحلة",faithTitle:"الصلاة والحلال",faithMosques:"مساجد قريبة",faithPrayer:"أوقات الصلاة في قوقل",prayerLoading:"جارٍ تحميل أوقات الصلاة…",prayerNote:"أوقات تقريبية (معدّلة لخطوط العرض العالية) — تأكّد من مسجد محلي.",prayerNames:{fajr:"الفجر",dhuhr:"الظهر",asr:"العصر",maghrib:"المغرب",isha:"العشاء"},pkTitle:"وش تحزم",pk:{docs:"جواز السفر + نسخة من الفيزا",shoes:"حذاء مريح للمشي",adapter:"محول كهرباء عالمي",power:"باور بانك (شاحن متنقل)",esim:"شريحة eSIM للإنترنت",sun:"واقي شمس وقبعة ونظارة",light:"ملابس خفيفة وقطنية",rain:"جاكيت مطر خفيف أو مظلة",repellent:"طارد حشرات",layers:"طبقات / جاكيت خفيف",warm:"طبقة دافئة (حتى بالصيف)",swim:"ملابس سباحة",modest:"ملابس محتشمة للمساجد (تغطي الأكتاف والركب)"},countdown:function(n){return "تبدأ بعد "+n+" يوم";},today:"تبدأ اليوم",proTag:"مميّز",proTitle:"افتح الرحلة كاملة",proSub:"شوف كل الأيام، صدّر PDF، واحصل على رابط مشاركة للرحلة.",proPrice:"$4.99 · مرة واحدة",proBtn:"افتح الرحلة كاملة",proNote:"نسخة تجريبية — بدون خصم فعلي. الدفع الحقيقي يُربط عند الإطلاق.",unlockCta:"افتح للحفظ والمشاركة",unlocked:"تم الفتح — استمتع برحلتك كاملة!",exclFlights:"التقدير لا يشمل تذاكر الطيران الدولية.",inLocal:"≈",copy:"نسخ",share:"نسخ الرابط",print:"طباعة",copied:"تم النسخ",save:"حفظ",saved:"تم الحفظ في رحلاتي",waShare:"واتساب",waMsg:"شوف خطة رحلتي على بوصلة:",gtkTitle:"معلومات مفيدة",gtkEmergency:"رقم الطوارئ",gtkPlug:"نوع القابس",gtkPlugVal:function(p){return "نوع "+p;},gtkDrive:"اتجاه القيادة",driveLeft:"يسار",driveRight:"يمين",modeFly:"رحلة قصيرة",modeGround:"قطار أو سيارة",transDur:{fly:"~١–٣ ساعات",ground:"~٤–٦ ساعات"},dinner_:function(m){return "عشاء في "+m;},note:function(d){return "أسعار تقديرية — تأكّد دائمًا عند الحجز. تحقّق من خيارات الحلال محليًا، ومن متطلبات فيزا "+d+" قبل السفر.";},notCurated:function(d){return "ما عندنا دليل جاهز لـ«"+d+"» إلى الحين — هذي خطة مبدئية ذكية تقدر تعدّلها. اختر دولة من القائمة لدليل حقيقي.";}},
       hotels:{Budget:"نُزل نظيف وبموقع ممتاز","Mid-range":"فندق ٤ نجوم مريح",Luxury:"فندق ٥ نجوم بإطلالة"},
       meals:{Budget:["مطعم محلي","عربة أكل شارع","مطعم عائلي"],"Mid-range":["مطعم محلي بتقييم عالٍ","بيسترو دافئ","مكان حلال مشهور"],Luxury:["مطعم فاخر","مكان بإطلالة على السطح","قائمة تذوّق للشيف"]},
       lib:{Culture:[["🏛️","استكشف المدينة القديمة والمعالم"],["🖼️","زُر متحفًا أو معرضًا مشهورًا"],["⛩️","شاهد معلمًا أيقونيًا"]],Food:[["🍜","جرّب طبقًا محليًا مميزًا"],["🥘","جولة أكل شارع"],["☕","تنقّل بين المقاهي"]],Nature:[["🏔️","رحلة نهار لإطلالة خلابة"],["🌊","استرخِ عند الماء"],["🌳","تمشَّ في حديقة مشهورة"]],Shopping:[["🛍️","تجوّل في شارع التسوق والسوق"],["🎁","ابحث عن الهدايا المحلية"],["🏬","تفقّد مركز تسوق أو بازار"]],Relax:[["🧖","سبا أو ينابيع بعد الظهر"],["🌅","صباح هادئ + غروب رائع"],["🛥️","جولة بحرية مريحة"]]}},
     es:{dir:"ltr",loc:"es-ES",cond:{veryhot:"muy caluroso",hotdry:"caluroso y seco",hothumid:"caluroso y húmedo",warm:"cálido y soleado",mild:"templado",tropical:"tropical, con lluvia",alpine:"alpino templado"},
       region:{me:"Oriente Medio y Turquía",eu:"Europa",cauc:"Cáucaso",asia:"Asia",africa:"África",islands:"Islas y playas"},
-      ui:{eyebrow:"Planificador de viajes de bolsillo",tag:"Tu brújula hacia el mundo.",dest:"¿A dónde?",pickPh:"Elige un país…",destPh:"…o escribe otro lugar",surprise:"Sorpréndeme",dest2:"Segunda ciudad",addCity:"Añadir una segunda ciudad",pick2Ph:"— ninguna —",dest2Ph:"…o escribe una segunda ciudad",days:"¿Cuántos días?",adults:"Adultos",kids:"Niños (2–11)",startDate:"Fecha de inicio (opcional)",cur:"Tu moneda",pace:"Ritmo del viaje",paces:{relaxed:"Relajado",balanced:"Equilibrado",packed:"Intenso"},budget:"Presupuesto",budgets:{Budget:"Económico","Mid-range":"Medio",Luxury:"Lujo"},vibe:"¿Qué te gusta?",vibeHint:"(elige varios)",vibes:{Culture:"Cultura",Food:"Comida",Nature:"Naturaleza",Shopping:"Compras",Relax:"Relax"},btn:"Planear mi viaje →",myTrips:"Mis viajes",themeDark:"Oscuro",themeLight:"Claro",foot:"<b>بوصلة · Bosla</b> — tu primera app.<br>89 destinos reales de verano incluidos; pronto habrá más."},
+      ui:{eyebrow:"Planificador de viajes de bolsillo",tag:"Tu brújula hacia el mundo.",dest:"¿A dónde?",pickPh:"Elige un país…",destPh:"…o escribe otro lugar",surprise:"Sorpréndeme",dest2:"Segunda ciudad",addCity:"Añadir una segunda ciudad",pick2Ph:"— ninguna —",dest2Ph:"…o escribe una segunda ciudad",days:"¿Cuántos días?",adults:"Adultos",kids:"Niños (2–11)",startDate:"Fecha de inicio (opcional)",cur:"Tu moneda",pace:"Ritmo del viaje",paces:{relaxed:"Relajado",balanced:"Equilibrado",packed:"Intenso"},budget:"Presupuesto",budgets:{Budget:"Económico","Mid-range":"Medio",Luxury:"Lujo"},vibe:"¿Qué te gusta?",vibeHint:"(elige varios)",vibes:{Culture:"Cultura",Food:"Comida",Nature:"Naturaleza",Shopping:"Compras",Relax:"Relax"},btn:"Planear mi viaje →",myTrips:"Mis viajes",themeDark:"Oscuro",themeLight:"Claro",guestWord:"Invitado",greet:function(n){return "Hola, "+n;},welcomeTitle:"Bienvenido a بوصلة",welcomeSub:"Planea un viaje completo en segundos — sin registro.",guestBtn:"Entrar como invitado",nameLabel:"o guarda tus viajes",namePh:"Tu nombre",saveNameBtn:"Guardar y empezar",welcomeNote:"Guardado solo en este dispositivo — sin cuenta ni correo.",foot:"<b>بوصلة · Bosla</b> — tu primera app.<br>89 destinos reales de verano incluidos; pronto habrá más."},
       out:{eyebrow:"Tu itinerario",summer:"Verano",statLen:"Duración",statStay:"Alojamiento",statPer:"Est. por persona",daysUnit:"días",dayWord:"Día",arrival:"Llegada y primeras impresiones",explore:"Explorando lo mejor",last:"Último día y salida",times:{morning:"Mañana",midday:"Mediodía",afternoon:"Tarde",evening:"Noche",dinner:"Cena"},realTag:"Lugares reales — toca un nombre para abrir en Google Maps",book:"Reservar",mapTitle:"Vista de la ruta",openMap:"Abrir en Google Maps →",budTitle:"Desglose del presupuesto",cats:{stay:"Hotel / alojamiento",food:"Comida",activities:"Actividades y lugares",localtx:"Transporte local",misc:"Varios y compras",transfer:"Traslado entre ciudades"},budTotal:"Total (estimado)",perPerson:"por persona",groupTotal:"Total del grupo",bookTitle:"Reserva y ahorra",bookHotels:"Hoteles",bookTours:"Tours y actividades",bookEsim:"eSIM de viaje",linkCopied:"Enlace del viaje copiado",faithTitle:"Oración y halal",faithMosques:"Mezquitas cercanas",faithPrayer:"Horarios de oración en Google",prayerLoading:"Cargando horarios de oración…",prayerNote:"Horarios aprox. (ajustados a latitudes altas) — confirma con una mezquita local.",prayerNames:{fajr:"Fajr",dhuhr:"Dhuhr",asr:"Asr",maghrib:"Magrib",isha:"Isha"},pkTitle:"Qué llevar",pk:{docs:"Pasaporte + copias de tu visa",shoes:"Zapatos cómodos para caminar",adapter:"Adaptador de corriente universal",power:"Batería externa",esim:"Una eSIM de viaje para datos",sun:"Protector solar, gorra y gafas",light:"Ropa ligera y transpirable",rain:"Chubasquero ligero o paraguas",repellent:"Repelente de insectos",layers:"Capas / chaqueta ligera",warm:"Una capa abrigada (incluso en verano)",swim:"Traje de baño",modest:"Ropa modesta para mezquitas (hombros y rodillas cubiertos)"},countdown:function(n){return "Comienza en "+n+" día"+(n===1?"":"s");},today:"Comienza hoy",proTag:"Premium",proTitle:"Desbloquea el viaje completo",proSub:"Ve todos los días, exporta un PDF y obtén un enlace para compartir.",proPrice:"$4.99 · pago único",proBtn:"Desbloquear viaje completo",proNote:"Demo — sin cargo real aún. El pago real se conecta al lanzar.",unlockCta:"Desbloquear para guardar y compartir",unlocked:"¡Desbloqueado — disfruta tu viaje completo!",exclFlights:"El estimado no incluye vuelos internacionales.",inLocal:"≈",copy:"Copiar",share:"Copiar enlace",print:"Imprimir",copied:"Copiado",save:"Guardar",saved:"Guardado en Mis viajes",waShare:"WhatsApp",waMsg:"Mira mi plan de viaje en بوصلة (Bosla):",gtkTitle:"Bueno saber",gtkEmergency:"Número de emergencia",gtkPlug:"Enchufe",gtkPlugVal:function(p){return "Tipo "+p;},gtkDrive:"Sentido de circulación",driveLeft:"Izquierda",driveRight:"Derecha",modeFly:"Vuelo corto",modeGround:"Tren o carretera",transDur:{fly:"~1–3h",ground:"~4–6h"},dinner_:function(m){return "Cena en "+m;},note:function(d){return "Precios estimados — confirma siempre al reservar. Reconfirma las opciones halal en el lugar y revisa los requisitos de visa para "+d+" antes de viajar.";},notCurated:function(d){return "Aún no tenemos una guía hecha a mano para «"+d+"» — aquí tienes un plan inicial que puedes ajustar. Elige un país del menú para una guía real.";}},
       hotels:{Budget:"una pensión limpia y bien ubicada","Mid-range":"un hotel de 4 estrellas cómodo",Luxury:"un hotel de 5 estrellas con vistas"},
       meals:{Budget:["un local sencillo","un puesto callejero","un comedor familiar"],"Mid-range":["un restaurante bien valorado","un bistró acogedor","un sitio halal popular"],Luxury:["un restaurante de alta cocina","una azotea con vistas","un menú degustación"]},
@@ -923,7 +963,9 @@
     document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.textContent=u.budgets[c.dataset.v];});
     document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.textContent=u.vibes[c.dataset.v];});
     $('planBtn').textContent=u.btn; $('foot').innerHTML=u.foot;
-    updateThemeBtn(); renderMyTrips();
+    $('welTitle').textContent=u.welcomeTitle; $('welSub').textContent=u.welcomeSub; $('guestBtn').textContent=u.guestBtn;
+    $('welDiv').textContent=u.nameLabel; $('welName').setAttribute('placeholder',u.namePh); $('welSave').textContent=u.saveNameBtn; $('welNote').textContent=u.welcomeNote;
+    updateThemeBtn(); applyProfile(); renderMyTrips();
     if($('out').classList.contains('show')) plan();
   }
   $('langbar').addEventListener('click',function(e){var b=e.target.closest('.lang'); if(b)applyLang(b.dataset.lang);});
@@ -1132,6 +1174,27 @@
   function updateThemeBtn(){var u=I18N[LANG].ui; $('themeBtn').textContent=currentTheme()==='dark'?u.themeLight:u.themeDark;}
   function setTheme(mode){document.documentElement.setAttribute('data-theme',mode); try{localStorage.setItem('rihla_theme',mode);}catch(e){} updateThemeBtn();}
   $('themeBtn').addEventListener('click',function(){setTheme(currentTheme()==='dark'?'light':'dark');});
+
+  /* Guest-first profile — optional local name, no account */
+  function getName(){try{return localStorage.getItem('rihla_name')||'';}catch(e){return '';}}
+  function setName(n){try{if(n)localStorage.setItem('rihla_name',n);else localStorage.removeItem('rihla_name');}catch(e){}}
+  function isWelcomed(){try{return localStorage.getItem('rihla_welcomed')==='1';}catch(e){return false;}}
+  function markWelcomed(){try{localStorage.setItem('rihla_welcomed','1');}catch(e){}}
+  function applyProfile(){
+    var u=I18N[LANG].ui, n=getName(), g=$('greet');
+    $('profileBtn').textContent=n||u.guestWord;
+    if(n){ g.textContent=u.greet(n); g.classList.remove('is-hidden'); }
+    else { g.textContent=''; g.classList.add('is-hidden'); }
+  }
+  function showWelcome(){ $('welName').value=getName(); var w=$('welcome'); w.classList.add('show'); w.setAttribute('aria-hidden','false'); }
+  function hideWelcome(){ var w=$('welcome'); w.classList.remove('show'); w.setAttribute('aria-hidden','true'); }
+  $('profileBtn').addEventListener('click',showWelcome);
+  $('guestBtn').addEventListener('click',function(){ markWelcomed(); hideWelcome(); });
+  $('welSave').addEventListener('click',function(){
+    setName(($('welName').value||'').trim().slice(0,24)); markWelcomed(); applyProfile(); renderMyTrips(); hideWelcome();
+  });
+  $('welName').addEventListener('keydown',function(e){ if(e.key==='Enter')$('welSave').click(); });
+  $('welcome').addEventListener('click',function(e){ if(e.target===this){ markWelcomed(); hideWelcome(); } });
   function applyState(s){
     if(s.lang&&I18N[s.lang])applyLang(s.lang);
     $('dest').value=s.d||''; $('days').value=s.days||5; $('pace').value=s.pace||'balanced';
@@ -1316,6 +1379,9 @@
       else { var lg=(navigator.language||navigator.userLanguage||'en').slice(0,2).toLowerCase(); if(lg==='ar')applyLang('ar'); else if(lg==='es')applyLang('es'); }
     }catch(e){}
   })();
+
+  // first-time welcome (skipped when opening a shared trip link)
+  (function(){ try{ if(!isWelcomed() && (location.hash||'').indexOf('#trip=')!==0){ showWelcome(); } }catch(e){} })();
 
   if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 </script>
