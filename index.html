@@ -370,9 +370,11 @@
      Leave a value as "" to keep the plain (non-earning) link. */
   var CONFIG={
     marker:"551927",        // your Travelpayouts marker
-    toursLink:"https://klook.tpm.lv/UCLrY5DQ", // Klook fallback short link (EARNING)
-    toursClickBase:"https://c137.travelpayouts.com/click", // Travelpayouts deep-link redirector
-    toursPromoId:"4110",    // Klook promo_id on Travelpayouts (keeps commission on deep links)
+    toursLink:"https://klook.tpm.lv/UCLrY5DQ", // Klook short link (EARNING, works today)
+    // Paste your Travelpayouts *deep link* here with {url} where the destination goes,
+    // e.g. "https://tp.media/r?marker=551927&trs=XXXX&p=XXXX&u={url}&campaign_id=XXXX"
+    // When set, the Tours button jumps straight to the searched city on Klook.
+    toursDeepTemplate:"",
     hotelsLink:"",          // Hotellook/Booking earning link (add when connected)
     flightsLink:"",         // Aviasales flights link (add when connected)
     airaloRef:"",           // Airalo eSIM referral code (add later)
@@ -886,12 +888,11 @@
   function klookSearchUrl(city){ return "https://www.klook.com/en-US/search/?query="+encodeURIComponent(city); }
   function toursLinkFor(city){
     var sub=slug(city);
-    // Deep-link straight to the searched city on Klook, keeping affiliate tracking (same marker)
-    if(CONFIG.marker && CONFIG.toursClickBase && CONFIG.toursPromoId){
-      return CONFIG.toursClickBase+"?shmarker="+encodeURIComponent(CONFIG.marker)+(sub?'.'+sub:'')+
-        "&promo_id="+encodeURIComponent(CONFIG.toursPromoId)+
-        "&source_type=customlink&type=click&custom_url="+encodeURIComponent(klookSearchUrl(city));
+    // If a verified Travelpayouts deep link template is set, jump straight to the city (keeps tracking)
+    if(CONFIG.toursDeepTemplate && CONFIG.toursDeepTemplate.indexOf('{url}')>=0){
+      return CONFIG.toursDeepTemplate.replace('{url}', encodeURIComponent(klookSearchUrl(city)));
     }
+    // Otherwise use the working short link (+ per-city sub_id for attribution)
     if(CONFIG.toursLink) return CONFIG.toursLink+(CONFIG.toursLink.indexOf('?')>=0?'&':'?')+"sub_id="+encodeURIComponent(sub);
     return "https://www.getyourguide.com/s/?q="+encodeURIComponent(city);
   }
