@@ -370,7 +370,9 @@
      Leave a value as "" to keep the plain (non-earning) link. */
   var CONFIG={
     marker:"551927",        // your Travelpayouts marker
-    toursLink:"https://klook.tpm.lv/UCLrY5DQ", // Klook tours & activities (EARNING)
+    toursLink:"https://klook.tpm.lv/UCLrY5DQ", // Klook fallback short link (EARNING)
+    toursClickBase:"https://c137.travelpayouts.com/click", // Travelpayouts deep-link redirector
+    toursPromoId:"4110",    // Klook promo_id on Travelpayouts (keeps commission on deep links)
     hotelsLink:"",          // Hotellook/Booking earning link (add when connected)
     flightsLink:"",         // Aviasales flights link (add when connected)
     airaloRef:"",           // Airalo eSIM referral code (add later)
@@ -881,9 +883,17 @@
     return u;
   }
   function slug(s){return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');}
+  function klookSearchUrl(city){ return "https://www.klook.com/en-US/search/?query="+encodeURIComponent(city); }
   function toursLinkFor(city){
-    if(!CONFIG.toursLink) return "https://www.getyourguide.com/s/?q="+encodeURIComponent(city);
-    return CONFIG.toursLink+(CONFIG.toursLink.indexOf('?')>=0?'&':'?')+"sub_id="+encodeURIComponent(slug(city));
+    var sub=slug(city);
+    // Deep-link straight to the searched city on Klook, keeping affiliate tracking (same marker)
+    if(CONFIG.marker && CONFIG.toursClickBase && CONFIG.toursPromoId){
+      return CONFIG.toursClickBase+"?shmarker="+encodeURIComponent(CONFIG.marker)+(sub?'.'+sub:'')+
+        "&promo_id="+encodeURIComponent(CONFIG.toursPromoId)+
+        "&source_type=customlink&type=click&custom_url="+encodeURIComponent(klookSearchUrl(city));
+    }
+    if(CONFIG.toursLink) return CONFIG.toursLink+(CONFIG.toursLink.indexOf('?')>=0?'&':'?')+"sub_id="+encodeURIComponent(sub);
+    return "https://www.getyourguide.com/s/?q="+encodeURIComponent(city);
   }
   function link(name,q){return '<a href="'+mapUrl(q)+'" target="_blank" rel="noopener">'+esc(name)+'</a>';}
 
