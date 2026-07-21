@@ -375,12 +375,11 @@
      Paste your IDs here to turn the app's links into earning links.
      Leave a value as "" to keep the plain (non-earning) link. */
   var CONFIG={
-    marker:"551927",        // your Travelpayouts marker
-    toursLink:"https://klook.tpm.lv/UCLrY5DQ", // Klook short link (EARNING, works today)
-    // Paste your Travelpayouts *deep link* here with {url} where the destination goes,
-    // e.g. "https://tp.media/r?marker=551927&trs=XXXX&p=XXXX&u={url}&campaign_id=XXXX"
-    // When set, the Tours button jumps straight to the searched city on Klook.
-    toursDeepTemplate:"",
+    marker:"752671",        // your Travelpayouts account marker (trs/traffic-source is 551927)
+    toursLink:"https://klook.tpm.lv/UCLrY5DQ", // Klook short link (fallback)
+    // Travelpayouts Klook deep link — {url} is replaced with the searched city's Klook page,
+    // so the Tours button jumps straight to that city while keeping your commission.
+    toursDeepTemplate:"https://tp.media/r?marker=752671&trs=551927&p=4110&u={url}&campaign_id=137",
     hotelsLink:"",          // Hotellook/Booking earning link (add when connected)
     flightsLink:"",         // Aviasales flights link (add when connected)
     airaloRef:"",           // Airalo eSIM referral code (add later)
