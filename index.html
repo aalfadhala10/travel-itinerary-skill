@@ -382,7 +382,8 @@
     toursDeepTemplate:"https://tp.media/r?marker=752671&trs=551927&p=4110&u={url}&campaign_id=137",
     hotelsLink:"",          // Hotellook/Booking earning link (add when connected)
     flightsLink:"",         // Aviasales flights link (add when connected)
-    airaloRef:"",           // Airalo eSIM referral code (add later)
+    esimLink:"https://airalo.tpm.lv/Ec0ZJUJ7", // Airalo eSIM link (EARNING)
+    airaloRef:"",           // Airalo referral code (only used if esimLink is empty)
     bookingAID:"",          // Booking.com direct affiliate id (only if used directly)
     bookingLabel:"rihla",
     paddleLink:""           // Paddle checkout link for the paid unlock (add later)
@@ -1118,8 +1119,7 @@
     else if(c==='alpine'){ items.push(pk.warm); items.push(pk.layers); }
     else { items.push(pk.light); }
     if(vibes.indexOf('Relax')>=0) items.push(pk.swim);
-    var esim=CONFIG.airaloRef?('https://www.airalo.com/?rc='+encodeURIComponent(CONFIG.airaloRef)):'https://www.airalo.com/';
-    items.push('<a href="'+esim+'" target="_blank" rel="noopener">'+pk.esim+'</a>');
+    items.push('<a href="'+esimLink()+'" target="_blank" rel="noopener">'+pk.esim+'</a>');
     items.push(pk.modest);
     var key=slug(keyName||'trip'), checked=[];
     try{checked=JSON.parse(localStorage.getItem('rihla_pack_'+key)||'[]');}catch(e){}
@@ -1168,12 +1168,16 @@
     if(CONFIG.flightsLink) return CONFIG.flightsLink;
     return 'https://www.google.com/travel/flights?q='+encodeURIComponent('Flights to '+city);
   }
+  function esimLink(){
+    if(CONFIG.esimLink) return CONFIG.esimLink;
+    return CONFIG.airaloRef?('https://www.airalo.com/?rc='+encodeURIComponent(CONFIG.airaloRef)):'https://www.airalo.com/';
+  }
   function bookingBar(city,t){
     var o=t.out;
     var flights=flightsLinkFor(city);
     var hotels=CONFIG.hotelsLink||bookUrl(city);
     var tours=toursLinkFor(city);
-    var esim=CONFIG.airaloRef?('https://www.airalo.com/?rc='+encodeURIComponent(CONFIG.airaloRef)):'https://www.airalo.com/';
+    var esim=esimLink();
     return '<div class="bookbar"><div class="maphdr">'+o.bookTitle+'</div><div class="bookrow">'+
       '<a class="bookbtn" href="'+flights+'" target="_blank" rel="noopener">'+o.bookFlights+'</a>'+
       '<a class="bookbtn" href="'+hotels+'" target="_blank" rel="noopener">'+o.bookHotels+'</a>'+
