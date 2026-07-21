@@ -95,8 +95,12 @@
   .hint{text-transform:none;letter-spacing:0;font-weight:400}
   input,select{width:100%;padding:14px;border-radius:11px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);font-size:16px;font-family:var(--ff-body);outline:none;transition:border-color .15s}
   input:focus,select:focus{border-color:var(--teal)}
-  #dest,#dest2{margin-top:10px}
-  .combo{position:relative}
+  .combo{position:relative;margin-top:10px}
+  .combo input{padding-right:42px}
+  #app[dir="rtl"] .combo input{padding-right:14px;padding-left:42px}
+  .comboclear{position:absolute;top:50%;transform:translateY(-50%);right:10px;z-index:9;width:26px;height:26px;border-radius:50%;border:none;background:var(--line);color:var(--ink);font-size:12px;line-height:1;cursor:pointer;padding:0}
+  .comboclear:hover{background:var(--clay);color:#fff}
+  #app[dir="rtl"] .comboclear{right:auto;left:10px}
   .combolist{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:8;max-height:300px;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:5px}
   .comboitem{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:9px;cursor:pointer}
   .comboitem:hover,.comboitem.active{background:var(--teal-soft)}
@@ -104,6 +108,17 @@
   .comboitem .ccity{font-size:15px;font-weight:600;color:var(--ink)}
   .comboitem .ccountry{color:var(--muted);font-size:13px;margin-left:auto}
   #app[dir="rtl"] .comboitem .ccountry{margin-left:0;margin-right:auto}
+  .stepper{display:flex;align-items:stretch;gap:8px}
+  .stepper input{flex:1;min-width:0;text-align:center}
+  .stepbtn{flex:0 0 46px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);border-radius:11px;font-size:22px;font-weight:600;cursor:pointer;font-family:var(--ff-body);line-height:1;transition:all .15s;user-select:none}
+  .stepbtn:hover{border-color:var(--teal);background:var(--teal-soft)}
+  .stepbtn:active{transform:translateY(1px)}
+  .editfab{position:fixed;bottom:22px;right:18px;z-index:6;padding:12px 18px;border-radius:999px;border:none;background:var(--teal);color:#fff;font-size:14px;font-weight:700;font-family:var(--ff-body);box-shadow:var(--shadow);cursor:pointer;transition:filter .15s}
+  .editfab:hover{filter:brightness(1.06)}
+  @media (prefers-color-scheme:dark){.editfab{color:#0a1310}}
+  :root[data-theme="dark"] .editfab{color:#0a1310}
+  :root[data-theme="light"] .editfab{color:#fff}
+  #app[dir="rtl"] .editfab{right:auto;left:18px}
   .surprise{display:inline-block;margin-top:9px;background:none;border:none;color:var(--amber);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--ff-body);text-decoration:underline;text-decoration-color:var(--amber);text-underline-offset:3px;padding:2px 0}
   .surprise:hover{filter:brightness(1.1)}
   .addcity{display:inline-flex;align-items:center;gap:4px;margin-top:12px;padding:9px 15px;border-radius:999px;border:1px dashed var(--line);background:transparent;color:var(--teal);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--ff-body);transition:all .15s}
@@ -301,6 +316,7 @@
     <label for="dest" id="lblDest">Where to?</label>
     <div class="combo">
       <input id="dest" type="text" placeholder="Search a city or country…" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list">
+      <button type="button" class="comboclear is-hidden" data-clear="dest" aria-label="Clear">✕</button>
       <div class="combolist is-hidden" id="destList"></div>
     </div>
     <button type="button" class="surprise" id="surprise">Surprise me</button>
@@ -310,20 +326,27 @@
       <label for="dest2" id="lblDest2">Second city</label>
       <div class="combo">
         <input id="dest2" type="text" placeholder="Search a second city…" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list">
+        <button type="button" class="comboclear is-hidden" data-clear="dest2" aria-label="Clear">✕</button>
         <div class="combolist is-hidden" id="destList2"></div>
       </div>
     </div>
 
     <div class="row">
-      <div><label for="days" id="lblDays">How many days?</label><input id="days" type="number" min="1" max="30" value="5"></div>
+      <div><label for="days" id="lblDays">How many days?</label>
+        <div class="stepper"><button type="button" class="stepbtn" data-for="days" data-step="-1" aria-label="−">−</button><input id="days" type="number" min="1" max="30" value="5" inputmode="numeric"><button type="button" class="stepbtn" data-for="days" data-step="1" aria-label="+">+</button></div>
+      </div>
       <div><label for="pace" id="lblPace">Trip pace</label>
         <select id="pace"><option value="relaxed">Relaxed</option><option value="balanced" selected>Balanced</option><option value="packed">Packed</option></select>
       </div>
     </div>
 
     <div class="row">
-      <div><label for="adults" id="lblAdults">Adults</label><input id="adults" type="number" min="1" max="20" value="2"></div>
-      <div><label for="kids" id="lblKids">Kids (2–11)</label><input id="kids" type="number" min="0" max="20" value="0"></div>
+      <div><label for="adults" id="lblAdults">Adults</label>
+        <div class="stepper"><button type="button" class="stepbtn" data-for="adults" data-step="-1" aria-label="−">−</button><input id="adults" type="number" min="1" max="20" value="2" inputmode="numeric"><button type="button" class="stepbtn" data-for="adults" data-step="1" aria-label="+">+</button></div>
+      </div>
+      <div><label for="kids" id="lblKids">Kids (2–11)</label>
+        <div class="stepper"><button type="button" class="stepbtn" data-for="kids" data-step="-1" aria-label="−">−</button><input id="kids" type="number" min="0" max="20" value="0" inputmode="numeric"><button type="button" class="stepbtn" data-for="kids" data-step="1" aria-label="+">+</button></div>
+      </div>
     </div>
 
     <label for="startDate" id="lblStartDate">Start date (optional)</label>
@@ -364,6 +387,8 @@
   <div id="mytrips" class="is-hidden"></div>
   <div class="out" id="out" aria-live="polite"></div>
   <p class="foot" id="foot"></p>
+
+  <button type="button" class="editfab is-hidden" id="editFab">Edit trip ↑</button>
 
   <div class="welcome" id="welcome" aria-hidden="true">
     <div class="welcard">
@@ -866,21 +891,21 @@
   var I18N={
     en:{dir:"ltr",loc:"en-US",cond:{veryhot:"very hot",hotdry:"hot & dry",hothumid:"hot & humid",warm:"warm & sunny",mild:"mild",tropical:"tropical, some rain",alpine:"mild alpine"},
       region:{me:"Middle East & Türkiye",eu:"Europe",cauc:"Caucasus",asia:"Asia",africa:"Africa",islands:"Islands & Beaches"},
-      ui:{eyebrow:"Pocket travel planner",tag:"Your compass to the world.",dest:"Where to?",pickPh:"Choose a country…",destPh:"Search a city or country…",surprise:"Surprise me",dest2:"Second city",addCity:"Add a second city",pick2Ph:"— none —",dest2Ph:"Search a second city…",days:"How many days?",adults:"Adults",kids:"Kids (2–11)",startDate:"Start date (optional)",cur:"Your currency",pace:"Trip pace",paces:{relaxed:"Relaxed",balanced:"Balanced",packed:"Packed"},budget:"Budget",budgets:{Budget:"Budget","Mid-range":"Mid-range",Luxury:"Luxury"},vibe:"What are you into?",vibeHint:"(pick a few)",vibes:{Culture:"Culture",Food:"Food",Nature:"Nature",Shopping:"Shopping",Relax:"Relax"},btn:"Plan my trip →",myTrips:"My trips",themeDark:"Dark",themeLight:"Light",guestWord:"Guest",greet:function(n){return "Welcome, "+n;},welcomeTitle:"Welcome to بوصلة",welcomeSub:"Plan a full trip in seconds — no signup needed.",guestBtn:"Plan as a guest",nameLabel:"or save your trips",namePh:"Your first name",saveNameBtn:"Save & start",welcomeNote:"Saved on this device only — no account, no email.",profileTitle:"Your profile",profileSave:"Save name",removeName:"Remove my name",foot:"<b>بوصلة · Bosla</b> — your very first app.<br>89 real summer destinations built in; more coming."},
+      ui:{eyebrow:"Pocket travel planner",tag:"Your compass to the world.",dest:"Where to?",pickPh:"Choose a country…",destPh:"Search a city or country…",surprise:"Surprise me",dest2:"Second city",addCity:"Add a second city",pick2Ph:"— none —",dest2Ph:"Search a second city…",days:"How many days?",adults:"Adults",kids:"Kids (2–11)",startDate:"Start date (optional)",cur:"Your currency",pace:"Trip pace",paces:{relaxed:"Relaxed",balanced:"Balanced",packed:"Packed"},budget:"Budget",budgets:{Budget:"Budget","Mid-range":"Mid-range",Luxury:"Luxury"},vibe:"What are you into?",vibeHint:"(pick a few)",vibes:{Culture:"Culture",Food:"Food",Nature:"Nature",Shopping:"Shopping",Relax:"Relax"},btn:"Plan my trip →",myTrips:"My trips",themeDark:"Dark",themeLight:"Light",guestWord:"Guest",greet:function(n){return "Welcome, "+n;},welcomeTitle:"Welcome to بوصلة",welcomeSub:"Plan a full trip in seconds — no signup needed.",guestBtn:"Plan as a guest",nameLabel:"or save your trips",namePh:"Your first name",saveNameBtn:"Save & start",welcomeNote:"Saved on this device only — no account, no email.",profileTitle:"Your profile",profileSave:"Save name",removeName:"Remove my name",editTrip:"Edit trip ↑",pickFirst:"Choose where you're going first",foot:"<b>بوصلة · Bosla</b> — your very first app.<br>89 real summer destinations built in; more coming."},
       out:{eyebrow:"Your itinerary",summer:"Summer",statLen:"Length",statStay:"Where you stay",statPer:"Est. per person",daysUnit:"days",dayWord:"Day",arrival:"Arrival & first impressions",explore:"Exploring the highlights",last:"Last day & departure",times:{morning:"Morning",midday:"Midday",afternoon:"Afternoon",evening:"Evening",dinner:"Dinner"},realTag:"Real places — tap any name to open in Google Maps",book:"Booking",mapTitle:"Route overview",openMap:"Open in Google Maps →",budTitle:"Budget breakdown",cats:{stay:"Hotel / stay",food:"Food",activities:"Activities & sights",localtx:"Local transport",misc:"Misc & shopping",transfer:"Intercity transfer"},budTotal:"Total (estimated)",perPerson:"per person",groupTotal:"Group total",bookTitle:"Book & save",bookHotels:"Hotels",bookTours:"Tours & activities",bookEsim:"Travel eSIM",bookFlights:"Flights",addCal:"Add to calendar",pkHint:"Tap to check off what you've packed.",linkCopied:"Trip link copied",faithTitle:"Prayer & halal",faithMosques:"Nearby mosques",faithPrayer:"Prayer times on Google",prayerLoading:"Loading prayer times…",prayerNote:"Approx. times (high-latitude adjusted) — confirm with a local mosque.",prayerNames:{fajr:"Fajr",dhuhr:"Dhuhr",asr:"Asr",maghrib:"Maghrib",isha:"Isha"},pkTitle:"What to pack",pk:{docs:"Passport + copies of your visa",shoes:"Comfortable walking shoes",adapter:"Universal power adapter",power:"Power bank",esim:"A travel eSIM for data",sun:"Sunscreen, hat & sunglasses",light:"Light, breathable clothing",rain:"A light rain jacket or umbrella",repellent:"Insect repellent",layers:"Layers / a light jacket",warm:"A warm layer (even in summer)",swim:"Swimwear",modest:"Modest attire for mosques (shoulders & knees covered)"},countdown:function(n){return "Starts in "+n+" day"+(n===1?"":"s");},today:"Starts today",proTag:"Premium",proTitle:"Unlock the full trip",proSub:"See every day, export a PDF, and get a shareable trip link.",proPrice:"$4.99 · one-time",proBtn:"Unlock full trip",proNote:"Demo — no real charge yet. Real payment connects at launch.",unlockCta:"Unlock to save & share",unlocked:"Unlocked — enjoy your full trip!",exclFlights:"Estimate excludes international flights.",inLocal:"≈",copy:"Copy",share:"Share link",print:"Print",copied:"Copied to clipboard",save:"Save",saved:"Saved to My trips",waShare:"WhatsApp",waMsg:"Check out my trip plan on بوصلة (Bosla):",gtkTitle:"Good to know",gtkEmergency:"Emergency number",gtkPlug:"Power socket",gtkPlugVal:function(p){return "Type "+p;},gtkDrive:"Driving side",driveLeft:"Left-hand",driveRight:"Right-hand",modeFly:"Short flight",modeGround:"Train or road",transDur:{fly:"~1–3h",ground:"~4–6h"},dinner_:function(m){return "Dinner at "+m;},note:function(d){return "Estimated prices — always confirm when you book. Reconfirm halal options locally, and check visa requirements for "+d+" before you travel.";},notCurated:function(d){return "We don't have a hand-made guide for “"+d+"” yet — here's a smart starter plan you can tweak. Pick a country from the dropdown for a real guide.";}},
       hotels:{Budget:"a clean, well-located guesthouse","Mid-range":"a comfortable 4-star hotel",Luxury:"a 5-star hotel with a view"},
       meals:{Budget:["a local eatery","a street-food stall","a family-run diner"],"Mid-range":["a well-rated local restaurant","a cozy bistro","a popular halal spot"],Luxury:["a fine-dining restaurant","a rooftop venue","a chef's tasting menu"]},
       lib:{Culture:[["🏛️","Explore the old town & historic landmarks"],["🖼️","Visit a famous museum or gallery"],["⛩️","See an iconic temple, palace or monument"]],Food:[["🍜","Try a signature local dish"],["🥘","Join a street-food walk"],["☕","Café-hop through a charming neighbourhood"]],Nature:[["🏔️","Day trip to a scenic viewpoint"],["🌊","Relax by the water"],["🌳","Stroll a famous park or garden"]],Shopping:[["🛍️","Wander the main shopping street & market"],["🎁","Hunt for souvenirs & local crafts"],["🏬","Browse a landmark mall or bazaar"]],Relax:[["🧖","Spa or hot-spring afternoon"],["🌅","Slow morning + a great sunset spot"],["🛥️","Easy scenic cruise or drive"]]}},
     ar:{dir:"rtl",loc:"ar-EG",cond:{veryhot:"حار جدًا",hotdry:"حار وجاف",hothumid:"حار ورطب",warm:"دافئ ومشمس",mild:"معتدل",tropical:"استوائي مع أمطار",alpine:"جبلي معتدل"},
       region:{me:"الشرق الأوسط وتركيا",eu:"أوروبا",cauc:"القوقاز",asia:"آسيا",africa:"أفريقيا",islands:"جزر وشواطئ"},
-      ui:{eyebrow:"مخطط سفر في جيبك",tag:"بوصلتك نحو العالم.",dest:"وجهتك؟",pickPh:"اختر دولة…",destPh:"ابحث عن مدينة أو دولة…",surprise:"فاجئني",dest2:"المدينة الثانية",addCity:"أضف مدينة ثانية",pick2Ph:"— بدون —",dest2Ph:"ابحث عن مدينة ثانية…",days:"كم يوم؟",adults:"بالغين",kids:"أطفال (٢–١١)",startDate:"تاريخ البداية (اختياري)",cur:"عملتك",pace:"إيقاع الرحلة",paces:{relaxed:"هادئ",balanced:"متوازن",packed:"مكثّف"},budget:"الميزانية",budgets:{Budget:"اقتصادي","Mid-range":"متوسط",Luxury:"فاخر"},vibe:"وش يهمّك؟",vibeHint:"(اختر أكثر من واحد)",vibes:{Culture:"ثقافة",Food:"طعام",Nature:"طبيعة",Shopping:"تسوّق",Relax:"استرخاء"},btn:"خطّط رحلتي ←",myTrips:"رحلاتي",themeDark:"داكن",themeLight:"فاتح",guestWord:"ضيف",greet:function(n){return "أهلاً "+n;},welcomeTitle:"أهلاً بك في بوصلة",welcomeSub:"خطّط رحلة كاملة في ثوانٍ — بدون تسجيل.",guestBtn:"ابدأ كضيف",nameLabel:"أو احفظ رحلاتك",namePh:"اسمك الأول",saveNameBtn:"احفظ وابدأ",welcomeNote:"محفوظ على هذا الجهاز فقط — بدون حساب أو بريد.",profileTitle:"ملفّك",profileSave:"حفظ الاسم",removeName:"إزالة اسمي",foot:"<b>بوصلة</b> — أول تطبيق لك.<br>٨٩ وجهة صيفية حقيقية بالداخل، والمزيد قادم."},
+      ui:{eyebrow:"مخطط سفر في جيبك",tag:"بوصلتك نحو العالم.",dest:"وجهتك؟",pickPh:"اختر دولة…",destPh:"ابحث عن مدينة أو دولة…",surprise:"فاجئني",dest2:"المدينة الثانية",addCity:"أضف مدينة ثانية",pick2Ph:"— بدون —",dest2Ph:"ابحث عن مدينة ثانية…",days:"كم يوم؟",adults:"بالغين",kids:"أطفال (٢–١١)",startDate:"تاريخ البداية (اختياري)",cur:"عملتك",pace:"إيقاع الرحلة",paces:{relaxed:"هادئ",balanced:"متوازن",packed:"مكثّف"},budget:"الميزانية",budgets:{Budget:"اقتصادي","Mid-range":"متوسط",Luxury:"فاخر"},vibe:"وش يهمّك؟",vibeHint:"(اختر أكثر من واحد)",vibes:{Culture:"ثقافة",Food:"طعام",Nature:"طبيعة",Shopping:"تسوّق",Relax:"استرخاء"},btn:"خطّط رحلتي ←",myTrips:"رحلاتي",themeDark:"داكن",themeLight:"فاتح",guestWord:"ضيف",greet:function(n){return "أهلاً "+n;},welcomeTitle:"أهلاً بك في بوصلة",welcomeSub:"خطّط رحلة كاملة في ثوانٍ — بدون تسجيل.",guestBtn:"ابدأ كضيف",nameLabel:"أو احفظ رحلاتك",namePh:"اسمك الأول",saveNameBtn:"احفظ وابدأ",welcomeNote:"محفوظ على هذا الجهاز فقط — بدون حساب أو بريد.",profileTitle:"ملفّك",profileSave:"حفظ الاسم",removeName:"إزالة اسمي",editTrip:"عدّل الرحلة ↑",pickFirst:"اختر وجهتك أولاً",foot:"<b>بوصلة</b> — أول تطبيق لك.<br>٨٩ وجهة صيفية حقيقية بالداخل، والمزيد قادم."},
       out:{eyebrow:"برنامجك",summer:"الصيف",statLen:"المدة",statStay:"مكان الإقامة",statPer:"تقديري للفرد",daysUnit:"يوم",dayWord:"اليوم",arrival:"الوصول والانطباعات الأولى",explore:"استكشاف أبرز المعالم",last:"اليوم الأخير والمغادرة",times:{morning:"الصباح",midday:"الظهر",afternoon:"بعد الظهر",evening:"المساء",dinner:"العشاء"},realTag:"أماكن حقيقية — اضغط أي اسم يفتح في خرائط قوقل",book:"الحجز",mapTitle:"نظرة على المسار",openMap:"افتح في خرائط قوقل ←",budTitle:"تفصيل الميزانية",cats:{stay:"الفندق / الإقامة",food:"الأكل",activities:"الأنشطة والمعالم",localtx:"المواصلات المحلية",misc:"متفرقات وتسوّق",transfer:"الانتقال بين المدن"},budTotal:"الإجمالي (تقديري)",perPerson:"للفرد",groupTotal:"إجمالي المجموعة",bookTitle:"احجز ووفّر",bookHotels:"فنادق",bookTours:"جولات وأنشطة",bookEsim:"شريحة eSIM",bookFlights:"طيران",addCal:"أضف إلى التقويم",pkHint:"اضغط لتعليم ما جهّزته.",linkCopied:"تم نسخ رابط الرحلة",faithTitle:"الصلاة والحلال",faithMosques:"مساجد قريبة",faithPrayer:"أوقات الصلاة في قوقل",prayerLoading:"جارٍ تحميل أوقات الصلاة…",prayerNote:"أوقات تقريبية (معدّلة لخطوط العرض العالية) — تأكّد من مسجد محلي.",prayerNames:{fajr:"الفجر",dhuhr:"الظهر",asr:"العصر",maghrib:"المغرب",isha:"العشاء"},pkTitle:"وش تحزم",pk:{docs:"جواز السفر + نسخة من الفيزا",shoes:"حذاء مريح للمشي",adapter:"محول كهرباء عالمي",power:"باور بانك (شاحن متنقل)",esim:"شريحة eSIM للإنترنت",sun:"واقي شمس وقبعة ونظارة",light:"ملابس خفيفة وقطنية",rain:"جاكيت مطر خفيف أو مظلة",repellent:"طارد حشرات",layers:"طبقات / جاكيت خفيف",warm:"طبقة دافئة (حتى بالصيف)",swim:"ملابس سباحة",modest:"ملابس محتشمة للمساجد (تغطي الأكتاف والركب)"},countdown:function(n){return "تبدأ بعد "+n+" يوم";},today:"تبدأ اليوم",proTag:"مميّز",proTitle:"افتح الرحلة كاملة",proSub:"شوف كل الأيام، صدّر PDF، واحصل على رابط مشاركة للرحلة.",proPrice:"$4.99 · مرة واحدة",proBtn:"افتح الرحلة كاملة",proNote:"نسخة تجريبية — بدون خصم فعلي. الدفع الحقيقي يُربط عند الإطلاق.",unlockCta:"افتح للحفظ والمشاركة",unlocked:"تم الفتح — استمتع برحلتك كاملة!",exclFlights:"التقدير لا يشمل تذاكر الطيران الدولية.",inLocal:"≈",copy:"نسخ",share:"نسخ الرابط",print:"طباعة",copied:"تم النسخ",save:"حفظ",saved:"تم الحفظ في رحلاتي",waShare:"واتساب",waMsg:"شوف خطة رحلتي على بوصلة:",gtkTitle:"معلومات مفيدة",gtkEmergency:"رقم الطوارئ",gtkPlug:"نوع القابس",gtkPlugVal:function(p){return "نوع "+p;},gtkDrive:"اتجاه القيادة",driveLeft:"يسار",driveRight:"يمين",modeFly:"رحلة قصيرة",modeGround:"قطار أو سيارة",transDur:{fly:"~١–٣ ساعات",ground:"~٤–٦ ساعات"},dinner_:function(m){return "عشاء في "+m;},note:function(d){return "أسعار تقديرية — تأكّد دائمًا عند الحجز. تحقّق من خيارات الحلال محليًا، ومن متطلبات فيزا "+d+" قبل السفر.";},notCurated:function(d){return "ما عندنا دليل جاهز لـ«"+d+"» إلى الحين — هذي خطة مبدئية ذكية تقدر تعدّلها. اختر دولة من القائمة لدليل حقيقي.";}},
       hotels:{Budget:"نُزل نظيف وبموقع ممتاز","Mid-range":"فندق ٤ نجوم مريح",Luxury:"فندق ٥ نجوم بإطلالة"},
       meals:{Budget:["مطعم محلي","عربة أكل شارع","مطعم عائلي"],"Mid-range":["مطعم محلي بتقييم عالٍ","بيسترو دافئ","مكان حلال مشهور"],Luxury:["مطعم فاخر","مكان بإطلالة على السطح","قائمة تذوّق للشيف"]},
       lib:{Culture:[["🏛️","استكشف المدينة القديمة والمعالم"],["🖼️","زُر متحفًا أو معرضًا مشهورًا"],["⛩️","شاهد معلمًا أيقونيًا"]],Food:[["🍜","جرّب طبقًا محليًا مميزًا"],["🥘","جولة أكل شارع"],["☕","تنقّل بين المقاهي"]],Nature:[["🏔️","رحلة نهار لإطلالة خلابة"],["🌊","استرخِ عند الماء"],["🌳","تمشَّ في حديقة مشهورة"]],Shopping:[["🛍️","تجوّل في شارع التسوق والسوق"],["🎁","ابحث عن الهدايا المحلية"],["🏬","تفقّد مركز تسوق أو بازار"]],Relax:[["🧖","سبا أو ينابيع بعد الظهر"],["🌅","صباح هادئ + غروب رائع"],["🛥️","جولة بحرية مريحة"]]}},
     es:{dir:"ltr",loc:"es-ES",cond:{veryhot:"muy caluroso",hotdry:"caluroso y seco",hothumid:"caluroso y húmedo",warm:"cálido y soleado",mild:"templado",tropical:"tropical, con lluvia",alpine:"alpino templado"},
       region:{me:"Oriente Medio y Turquía",eu:"Europa",cauc:"Cáucaso",asia:"Asia",africa:"África",islands:"Islas y playas"},
-      ui:{eyebrow:"Planificador de viajes de bolsillo",tag:"Tu brújula hacia el mundo.",dest:"¿A dónde?",pickPh:"Elige un país…",destPh:"Busca una ciudad o país…",surprise:"Sorpréndeme",dest2:"Segunda ciudad",addCity:"Añadir una segunda ciudad",pick2Ph:"— ninguna —",dest2Ph:"Busca una segunda ciudad…",days:"¿Cuántos días?",adults:"Adultos",kids:"Niños (2–11)",startDate:"Fecha de inicio (opcional)",cur:"Tu moneda",pace:"Ritmo del viaje",paces:{relaxed:"Relajado",balanced:"Equilibrado",packed:"Intenso"},budget:"Presupuesto",budgets:{Budget:"Económico","Mid-range":"Medio",Luxury:"Lujo"},vibe:"¿Qué te gusta?",vibeHint:"(elige varios)",vibes:{Culture:"Cultura",Food:"Comida",Nature:"Naturaleza",Shopping:"Compras",Relax:"Relax"},btn:"Planear mi viaje →",myTrips:"Mis viajes",themeDark:"Oscuro",themeLight:"Claro",guestWord:"Invitado",greet:function(n){return "Hola, "+n;},welcomeTitle:"Bienvenido a بوصلة",welcomeSub:"Planea un viaje completo en segundos — sin registro.",guestBtn:"Entrar como invitado",nameLabel:"o guarda tus viajes",namePh:"Tu nombre",saveNameBtn:"Guardar y empezar",welcomeNote:"Guardado solo en este dispositivo — sin cuenta ni correo.",profileTitle:"Tu perfil",profileSave:"Guardar nombre",removeName:"Quitar mi nombre",foot:"<b>بوصلة · Bosla</b> — tu primera app.<br>89 destinos reales de verano incluidos; pronto habrá más."},
+      ui:{eyebrow:"Planificador de viajes de bolsillo",tag:"Tu brújula hacia el mundo.",dest:"¿A dónde?",pickPh:"Elige un país…",destPh:"Busca una ciudad o país…",surprise:"Sorpréndeme",dest2:"Segunda ciudad",addCity:"Añadir una segunda ciudad",pick2Ph:"— ninguna —",dest2Ph:"Busca una segunda ciudad…",days:"¿Cuántos días?",adults:"Adultos",kids:"Niños (2–11)",startDate:"Fecha de inicio (opcional)",cur:"Tu moneda",pace:"Ritmo del viaje",paces:{relaxed:"Relajado",balanced:"Equilibrado",packed:"Intenso"},budget:"Presupuesto",budgets:{Budget:"Económico","Mid-range":"Medio",Luxury:"Lujo"},vibe:"¿Qué te gusta?",vibeHint:"(elige varios)",vibes:{Culture:"Cultura",Food:"Comida",Nature:"Naturaleza",Shopping:"Compras",Relax:"Relax"},btn:"Planear mi viaje →",myTrips:"Mis viajes",themeDark:"Oscuro",themeLight:"Claro",guestWord:"Invitado",greet:function(n){return "Hola, "+n;},welcomeTitle:"Bienvenido a بوصلة",welcomeSub:"Planea un viaje completo en segundos — sin registro.",guestBtn:"Entrar como invitado",nameLabel:"o guarda tus viajes",namePh:"Tu nombre",saveNameBtn:"Guardar y empezar",welcomeNote:"Guardado solo en este dispositivo — sin cuenta ni correo.",profileTitle:"Tu perfil",profileSave:"Guardar nombre",removeName:"Quitar mi nombre",editTrip:"Editar viaje ↑",pickFirst:"Primero elige tu destino",foot:"<b>بوصلة · Bosla</b> — tu primera app.<br>89 destinos reales de verano incluidos; pronto habrá más."},
       out:{eyebrow:"Tu itinerario",summer:"Verano",statLen:"Duración",statStay:"Alojamiento",statPer:"Est. por persona",daysUnit:"días",dayWord:"Día",arrival:"Llegada y primeras impresiones",explore:"Explorando lo mejor",last:"Último día y salida",times:{morning:"Mañana",midday:"Mediodía",afternoon:"Tarde",evening:"Noche",dinner:"Cena"},realTag:"Lugares reales — toca un nombre para abrir en Google Maps",book:"Reservar",mapTitle:"Vista de la ruta",openMap:"Abrir en Google Maps →",budTitle:"Desglose del presupuesto",cats:{stay:"Hotel / alojamiento",food:"Comida",activities:"Actividades y lugares",localtx:"Transporte local",misc:"Varios y compras",transfer:"Traslado entre ciudades"},budTotal:"Total (estimado)",perPerson:"por persona",groupTotal:"Total del grupo",bookTitle:"Reserva y ahorra",bookHotels:"Hoteles",bookTours:"Tours y actividades",bookEsim:"eSIM de viaje",bookFlights:"Vuelos",addCal:"Añadir al calendario",pkHint:"Toca para marcar lo que ya empacaste.",linkCopied:"Enlace del viaje copiado",faithTitle:"Oración y halal",faithMosques:"Mezquitas cercanas",faithPrayer:"Horarios de oración en Google",prayerLoading:"Cargando horarios de oración…",prayerNote:"Horarios aprox. (ajustados a latitudes altas) — confirma con una mezquita local.",prayerNames:{fajr:"Fajr",dhuhr:"Dhuhr",asr:"Asr",maghrib:"Magrib",isha:"Isha"},pkTitle:"Qué llevar",pk:{docs:"Pasaporte + copias de tu visa",shoes:"Zapatos cómodos para caminar",adapter:"Adaptador de corriente universal",power:"Batería externa",esim:"Una eSIM de viaje para datos",sun:"Protector solar, gorra y gafas",light:"Ropa ligera y transpirable",rain:"Chubasquero ligero o paraguas",repellent:"Repelente de insectos",layers:"Capas / chaqueta ligera",warm:"Una capa abrigada (incluso en verano)",swim:"Traje de baño",modest:"Ropa modesta para mezquitas (hombros y rodillas cubiertos)"},countdown:function(n){return "Comienza en "+n+" día"+(n===1?"":"s");},today:"Comienza hoy",proTag:"Premium",proTitle:"Desbloquea el viaje completo",proSub:"Ve todos los días, exporta un PDF y obtén un enlace para compartir.",proPrice:"$4.99 · pago único",proBtn:"Desbloquear viaje completo",proNote:"Demo — sin cargo real aún. El pago real se conecta al lanzar.",unlockCta:"Desbloquear para guardar y compartir",unlocked:"¡Desbloqueado — disfruta tu viaje completo!",exclFlights:"El estimado no incluye vuelos internacionales.",inLocal:"≈",copy:"Copiar",share:"Copiar enlace",print:"Imprimir",copied:"Copiado",save:"Guardar",saved:"Guardado en Mis viajes",waShare:"WhatsApp",waMsg:"Mira mi plan de viaje en بوصلة (Bosla):",gtkTitle:"Bueno saber",gtkEmergency:"Número de emergencia",gtkPlug:"Enchufe",gtkPlugVal:function(p){return "Tipo "+p;},gtkDrive:"Sentido de circulación",driveLeft:"Izquierda",driveRight:"Derecha",modeFly:"Vuelo corto",modeGround:"Tren o carretera",transDur:{fly:"~1–3h",ground:"~4–6h"},dinner_:function(m){return "Cena en "+m;},note:function(d){return "Precios estimados — confirma siempre al reservar. Reconfirma las opciones halal en el lugar y revisa los requisitos de visa para "+d+" antes de viajar.";},notCurated:function(d){return "Aún no tenemos una guía hecha a mano para «"+d+"» — aquí tienes un plan inicial que puedes ajustar. Elige un país del menú para una guía real.";}},
       hotels:{Budget:"una pensión limpia y bien ubicada","Mid-range":"un hotel de 4 estrellas cómodo",Luxury:"un hotel de 5 estrellas con vistas"},
       meals:{Budget:["un local sencillo","un puesto callejero","un comedor familiar"],"Mid-range":["un restaurante bien valorado","un bistró acogedor","un sitio halal popular"],Luxury:["un restaurante de alta cocina","una azotea con vistas","un menú degustación"]},
@@ -951,17 +976,26 @@
     list.classList.remove('is-hidden');
   }
   function makeCombo(inputId, listId, onPick){
-    var inp=$(inputId), list=$(listId);
-    function open(){ renderComboList(list, inp.value); inp.setAttribute('aria-expanded','true'); }
-    function close(){ list.classList.add('is-hidden'); inp.setAttribute('aria-expanded','false'); }
+    var inp=$(inputId), list=$(listId), active=-1;
+    var clr=document.querySelector('[data-clear="'+inputId+'"]');
+    function its(){ return [].slice.call(list.querySelectorAll('.comboitem')); }
+    function toggleClear(){ if(clr) clr.classList.toggle('is-hidden', !inp.value); }
+    function setActive(i){ var a=its(); active=i; a.forEach(function(el,idx){el.classList.toggle('active',idx===active);}); if(a[active])a[active].scrollIntoView({block:'nearest'}); }
+    function open(){ renderComboList(list, inp.value); active=-1; inp.setAttribute('aria-expanded','true'); toggleClear(); }
+    function close(){ list.classList.add('is-hidden'); inp.setAttribute('aria-expanded','false'); active=-1; }
+    function pick(it){ var k=it.getAttribute('data-k'); inp.value=DEST[k].city; toggleClear(); close(); if(onPick)onPick(k,inp); }
     inp.addEventListener('focus', open);
     inp.addEventListener('input', open);
-    inp.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key==='Escape'){ close(); if(e.key==='Enter')inp.blur(); } });
-    inp.addEventListener('blur', function(){ setTimeout(close, 160); });
-    list.addEventListener('mousedown', function(e){
-      var it=e.target.closest('.comboitem'); if(!it)return; e.preventDefault();
-      var k=it.getAttribute('data-k'); inp.value=DEST[k].city; close(); if(onPick)onPick(k,inp);
+    inp.addEventListener('keydown', function(e){
+      var a=its();
+      if(e.key==='ArrowDown'){ e.preventDefault(); if(list.classList.contains('is-hidden'))open(); setActive(Math.min((active<0?-1:active)+1, a.length-1)); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); if(active>0)setActive(active-1); }
+      else if(e.key==='Enter'){ if(active>=0&&a[active]){ e.preventDefault(); pick(a[active]); } else { close(); inp.blur(); } }
+      else if(e.key==='Escape'){ close(); }
     });
+    inp.addEventListener('blur', function(){ setTimeout(close, 160); });
+    list.addEventListener('mousedown', function(e){ var it=e.target.closest('.comboitem'); if(!it)return; e.preventDefault(); pick(it); });
+    if(clr){ clr.addEventListener('mousedown', function(e){ e.preventDefault(); inp.value=''; toggleClear(); open(); inp.focus(); }); }
   }
   makeCombo('dest','destList');
   makeCombo('dest2','destList2');
@@ -973,6 +1007,17 @@
     var keys=Object.keys(DEST), k=keys[Math.floor(Math.random()*keys.length)];
     $('dest').value=DEST[k].city; plan();
   });
+  // tap-friendly number steppers for days / adults / kids
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.stepbtn'); if(!b)return;
+    var inp=$(b.getAttribute('data-for')); if(!inp)return;
+    var mn=parseInt(inp.min,10), mx=parseInt(inp.max,10);
+    var v=(parseInt(inp.value,10)||(isNaN(mn)?0:mn))+parseInt(b.getAttribute('data-step'),10);
+    if(!isNaN(mn))v=Math.max(mn,v); if(!isNaN(mx))v=Math.min(mx,v);
+    inp.value=v;
+  });
+  // floating "edit trip" button — jump back to the form from a long itinerary
+  $('editFab').addEventListener('click',function(){ window.scrollTo({top:0,behavior:'smooth'}); });
 
   function keyOf(d){var ks=Object.keys(DEST);for(var i=0;i<ks.length;i++)if(DEST[ks[i]]===d)return ks[i];return null;}
 
@@ -1006,7 +1051,7 @@
     $('planBtn').textContent=u.btn; $('foot').innerHTML=u.foot;
     $('welSub').textContent=u.welcomeSub; $('guestBtn').textContent=u.guestBtn;
     $('welDiv').textContent=u.nameLabel; $('welName').setAttribute('placeholder',u.namePh); $('welNote').textContent=u.welcomeNote;
-    renderWelcome();
+    renderWelcome(); $('editFab').textContent=u.editTrip;
     updateThemeBtn(); applyProfile(); renderMyTrips();
     if($('out').classList.contains('show')) plan();
   }
@@ -1290,6 +1335,7 @@
   function plan(){
     var t=I18N[LANG],o=t.out;
     var raw=($('dest').value||'').trim();
+    if(!raw){ toast(o.pickFirst); try{$('dest').focus();}catch(e){} return; }
     var days=Math.max(1,Math.min(30,parseInt($('days').value,10)||5));
     var pace=$('pace').value, spd=pace==='relaxed'?2:pace==='packed'?4:3;
     var budget=picked('budgetChips')[0]||'Mid-range';
@@ -1396,7 +1442,7 @@
     else if(!paywallShown){ acts+='<button class="act" type="button" data-act="unlock">'+o.unlockCta+'</button>'; }
     html+=acts+'</div>';
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
-    var out=$('out'); out.innerHTML=html; out.classList.add('show');
+    var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden');
     redrawMaps(); runPrayers(); saveState();
     out.scrollIntoView({behavior:'smooth',block:'start'});
   }
