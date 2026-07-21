@@ -961,14 +961,15 @@
 
   function matchDest(input){
     var s=(input||'').toLowerCase().trim(); if(!s)return null;
-    var keys=Object.keys(DEST);
-    for(var i=0;i<keys.length;i++){
-      var al=DEST[keys[i]].alias;
-      for(var j=0;j<al.length;j++){
-        var a=al[j];
-        if(s.indexOf(a)>=0 || (s.length>=3 && a.indexOf(s)>=0)) return DEST[keys[i]];
-      }
-    }
+    var keys=Object.keys(DEST), i, j, al, a;
+    // 1) exact alias match wins — lets short aliases like "uk"/"uae" work only when typed exactly
+    for(i=0;i<keys.length;i++){ al=DEST[keys[i]].alias; for(j=0;j<al.length;j++){ if(s===al[j]) return DEST[keys[i]]; } }
+    // 2) prefix or whole-word contains — only for aliases 4+ chars, so "uk" can't match inside "phuket"
+    for(i=0;i<keys.length;i++){ al=DEST[keys[i]].alias; for(j=0;j<al.length;j++){ a=al[j];
+      if(a.length<4) continue;
+      if(s.length>=2 && a.indexOf(s)===0) return DEST[keys[i]];   // alias starts with typed text (paris <- par)
+      if(s.length>=4 && s.indexOf(a)>=0) return DEST[keys[i]];    // typed text contains a full alias word
+    } }
     return null;
   }
 
