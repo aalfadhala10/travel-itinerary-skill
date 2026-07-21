@@ -953,18 +953,26 @@
   function picked(id){return [].slice.call(document.querySelectorAll('#'+id+' .chip.active')).map(function(c){return c.dataset.v;});}
 
   /* searchable destination picker — alphabetical by country, type to filter */
+  function byCountryCity(a,b){
+    var ca=a.d.country.toLowerCase(), cb=b.d.country.toLowerCase();
+    if(ca!==cb) return ca<cb?-1:1;
+    var xa=a.d.city.toLowerCase(), xb=b.d.city.toLowerCase();
+    return xa<xb?-1:xa>xb?1:0;
+  }
   function destOptions(query){
     var s=(query||'').toLowerCase().trim();
     var arr=Object.keys(DEST).map(function(k){return {k:k,d:DEST[k]};});
-    if(s){ arr=arr.filter(function(x){var d=x.d;
-      return d.city.toLowerCase().indexOf(s)>=0 || d.country.toLowerCase().indexOf(s)>=0 ||
-        d.alias.some(function(a){return a.indexOf(s)>=0;}); }); }
-    arr.sort(function(a,b){
-      var ca=a.d.country.toLowerCase(), cb=b.d.country.toLowerCase();
-      if(ca<cb)return -1; if(ca>cb)return 1;
-      var xa=a.d.city.toLowerCase(), xb=b.d.city.toLowerCase();
-      return xa<xb?-1:xa>xb?1:0;
-    });
+    if(!s){ arr.sort(byCountryCity); return arr; }
+    // rank: city starts-with (0) → country starts-with (1) → alias starts-with (2) → any contains (3)
+    arr=arr.map(function(x){
+      var city=x.d.city.toLowerCase(), country=x.d.country.toLowerCase(), sc=99;
+      if(city.indexOf(s)===0) sc=0;
+      else if(country.indexOf(s)===0) sc=1;
+      else if(x.d.alias.some(function(a){return a.indexOf(s)===0;})) sc=2;
+      else if(city.indexOf(s)>=0||country.indexOf(s)>=0||x.d.alias.some(function(a){return a.indexOf(s)>=0;})) sc=3;
+      x._sc=sc; return x;
+    }).filter(function(x){return x._sc<99;});
+    arr.sort(function(a,b){ return a._sc!==b._sc ? a._sc-b._sc : byCountryCity(a,b); });
     return arr;
   }
   function renderComboList(list, query){
