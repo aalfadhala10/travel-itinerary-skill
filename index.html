@@ -509,8 +509,10 @@
     bookingLabel:"rihla",
     paddleLink:"",          // Paddle checkout link for the paid unlock (add later)
     feedbackEmail:"ahmed.alfadala@gmail.com", // where email-fallback feedback goes
-    feedbackEndpoint:""     // Formspree URL (e.g. https://formspree.io/f/xxxx) — when set,
+    feedbackEndpoint:"",    // Formspree URL (e.g. https://formspree.io/f/xxxx) — when set,
                             // feedback POSTs here silently instead of opening the email app
+    shortenerApi:"https://cleanuri.com/api/v1/shorten" // free CORS shortener for share links
+                            // (falls back to the full link automatically if it ever fails)
   };
   /* ================================================== */
 
@@ -1360,6 +1362,22 @@
   }
   function saveState(){try{localStorage.setItem('rihla_v1',JSON.stringify(stateObj()));}catch(e){}}
   function buildTripLink(){return location.href.split('#')[0]+'#trip='+encodeURIComponent(JSON.stringify(stateObj()));}
+  // Shorten a trip link (cached). Pre-called on plan render so share buttons stay instant;
+  // if the shortener is unavailable it just resolves null and callers use the full link.
+  var SHORTCACHE={};
+  function shortenUrl(long){
+    return new Promise(function(resolve){
+      if(SHORTCACHE[long]){ resolve(SHORTCACHE[long]); return; }
+      if(!CONFIG.shortenerApi||!window.fetch){ resolve(null); return; }
+      var ctl=('AbortController' in window)?new AbortController():null;
+      var to=setTimeout(function(){ if(ctl)ctl.abort(); resolve(null); },5000);
+      fetch(CONFIG.shortenerApi,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'url='+encodeURIComponent(long),signal:ctl?ctl.signal:undefined})
+        .then(function(r){return r.json();})
+        .then(function(j){ clearTimeout(to); var s=j&&(j.result_url||j.short_url||j.shorturl); if(s)SHORTCACHE[long]=s; resolve(s||null); })
+        .catch(function(){ clearTimeout(to); resolve(null); });
+    });
+  }
+  function shareLink(){ var long=buildTripLink(); return SHORTCACHE[long]||long; }
 
   /* My trips — save & reopen */
   function loadTrips(){try{return JSON.parse(localStorage.getItem('rihla_trips')||'[]');}catch(e){return [];}}
@@ -1599,7 +1617,7 @@
     html+=acts+'</div>';
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
     var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden');
-    redrawMaps(); runPrayers(); saveState();
+    redrawMaps(); runPrayers(); saveState(); shortenUrl(buildTripLink());
     out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   $('planBtn').addEventListener('click',plan);
@@ -1610,11 +1628,11 @@
     var act=b.dataset.act, o=I18N[LANG].out;
     if(act==='unlock'){ try{localStorage.setItem('rihla_pro','1');}catch(e){} PRO=true; toast(o.unlocked); plan(); return; }
     if(act==='save'){ saveTrip(); toast(o.saved); return; }
-    if(act==='wa'){ window.open('https://wa.me/?text='+encodeURIComponent(o.waMsg+' '+buildTripLink()),'_blank'); return; }
+    if(act==='wa'){ window.open('https://wa.me/?text='+encodeURIComponent(o.waMsg+' '+shareLink()),'_blank'); return; }
     if(act==='print'){window.print();return;}
     if(act==='share'){
-      var link=buildTripLink();
-      if(navigator.share){navigator.share({title:'Rihla',text:'My Rihla trip',url:link}).catch(function(){});return;}
+      var link=shareLink();
+      if(navigator.share){navigator.share({title:'بوصلة · Bosla',text:o.waMsg,url:link}).catch(function(){});return;}
       if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(link).then(function(){toast(o.linkCopied);},function(){toast(o.linkCopied);});}
       else{toast(o.linkCopied);}
       return;
