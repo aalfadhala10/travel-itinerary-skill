@@ -1386,8 +1386,9 @@
       })();
     });
   }
-  // Short link if ready; otherwise the CLEAN base URL (never the giant one) so chats stay tidy + previews work
-  function shareLink(){ var long=buildTripLink(); return SHORTCACHE[long]||location.href.split('#')[0]; }
+  // Direct long link — opens the exact trip with no redirect/interstitial page.
+  // (Shortener kept above but disabled for now; user preferred the direct link.)
+  function shareLink(){ return buildTripLink(); }
   function tripSummary(o){ var d=($('dest').value||'').trim(); return d?(' — '+d+' · '+$('days').value+' '+o.daysUnit):''; }
 
   /* My trips — save & reopen */
@@ -1628,7 +1629,7 @@
     html+=acts+'</div>';
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
     var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden');
-    redrawMaps(); runPrayers(); saveState(); shortenUrl(buildTripLink());
+    redrawMaps(); runPrayers(); saveState();
     out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   $('planBtn').addEventListener('click',plan);
