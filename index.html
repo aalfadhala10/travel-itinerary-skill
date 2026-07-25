@@ -1338,6 +1338,7 @@
   function formatDates(val,days,t){
     if(!val)return null;
     var s=new Date(val+'T00:00:00'); if(isNaN(s.getTime()))return null;
+    var t0=new Date(); t0.setHours(0,0,0,0); if(s<t0)return null; // ignore past dates
     var e=new Date(s.getTime()); e.setDate(e.getDate()+Math.max(0,days-1));
     var loc=t.loc, sM=s.toLocaleDateString(loc,{month:'short'}), eM=e.toLocaleDateString(loc,{month:'short'});
     var range=(s.getMonth()===e.getMonth())?(sM+' '+s.getDate()+'–'+e.getDate()+', '+e.getFullYear()):(sM+' '+s.getDate()+' – '+eM+' '+e.getDate()+', '+e.getFullYear());
@@ -1889,6 +1890,9 @@
 
   // credits granted by a checkout success redirect (…?credits=N) — add them, then clean the URL
   (function(){ try{ var c=parseInt(new URLSearchParams(location.search).get('credits'),10); if(c>0){ setCredits(getCredits()+c); if(history.replaceState)history.replaceState(null,'',location.pathname+location.hash); } }catch(e){} })();
+
+  // no past dates — the start-date picker can't go before today
+  (function(){ try{ $('startDate').min=new Date().toLocaleDateString('en-CA'); }catch(e){} })();
 
   // restore saved theme preference before first render
   (function(){ try{ var th=localStorage.getItem('rihla_theme'); if(th==='dark'||th==='light')document.documentElement.setAttribute('data-theme',th); }catch(e){} })();
