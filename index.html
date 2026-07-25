@@ -358,7 +358,7 @@
 
 <div class="wrap" id="app" dir="ltr">
   <button type="button" class="themebtn" id="themeBtn">Dark</button>
-  <button type="button" class="menubtn" id="menuBtn" aria-label="Menu"><span></span><span></span><span></span></button>
+  <button type="button" class="menubtn notranslate" translate="no" id="menuBtn" aria-label="Menu"><span></span><span></span><span></span></button>
   <div class="langbar" id="langbar">
     <div class="lang active" data-lang="en">English</div>
     <div class="lang" data-lang="ar">العربية</div>
@@ -1600,7 +1600,8 @@
   function showIntro(){ $('intro').classList.remove('is-hidden'); }
   function hideIntro(){ $('intro').classList.add('is-hidden'); try{localStorage.setItem('rihla_introseen','1');}catch(e){} }
   $('introClose').addEventListener('click',hideIntro);
-  $('menuBtn').addEventListener('click',openDrawer);
+  // Delegated so it keeps working even if a page-translator rewrites the button's insides
+  document.addEventListener('click',function(e){ if(e.target.closest&&e.target.closest('#menuBtn')){ e.preventDefault(); openDrawer(); } });
   $('drawerClose').addEventListener('click',closeDrawer);
   $('drawer').addEventListener('click',function(e){ if(e.target===this)closeDrawer(); });
   $('drawerProfile').addEventListener('click',function(){ closeDrawer(); showWelcome('edit'); });
