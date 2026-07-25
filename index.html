@@ -1278,7 +1278,7 @@
   });
   $('surprise').addEventListener('click',function(){
     var keys=Object.keys(DEST), k=keys[Math.floor(Math.random()*keys.length)];
-    $('dest').value=DEST[k].city; plan();
+    $('dest').value=DEST[k].city; newSeed(); plan();
   });
   // tap-friendly number steppers for days / adults / kids
   document.addEventListener('click',function(e){
@@ -1378,7 +1378,8 @@
   function catRows(base){return [['stay',0.42],['food',0.24],['activities',0.16],['localtx',0.08],['misc',0.10]].map(function(c){return {k:c[0],v:Math.round(base*c[1])};});}
 
   function emitDays(match,fromDay,count,total,vibes,spd,o,t,txt,stops){
-    var pool=poolFor(match,vibes),p=0,f=0,tl=timeLabels(o,spd),html='';
+    var pool=poolFor(match,vibes),tl=timeLabels(o,spd),html='';
+    var off=SEED%1000; var p=pool.length?off%pool.length:0, f=match.food.length?off%match.food.length:0;
     for(var i=0;i<count;i++){
       var d=fromDay+i, title=d===1?o.arrival:d===total?o.last:o.explore;
       html+='<div class="day"><div class="dlabel">'+o.dayWord+' '+d+' · '+esc(match.city)+'</div><h3>'+title+'</h3>';
@@ -1545,7 +1546,19 @@
 
   var LASTTEXT='';
   var ROUTE=null;
-  var AUTOROUTE={ eu:["paris","zurich","milan","venice","rome"], asia:["tokyo","kyoto","osaka"], me:["dubai","abudhabi","doha","muscat"], africa:["cairo","marrakech","capetown"], islands:["maldives","zanzibar","mauritius"], americas:["newyork","washington","chicago"] };
+  var SEED=0;
+  function newSeed(){ SEED=Math.floor(Math.random()*1e9)+1; }
+  function srand(seed){ var x=(seed||1)>>>0; return function(){ x=(x*1103515245+12345)&0x7fffffff; return x/0x7fffffff; }; }
+  function shuffle(arr,seed){ var r=srand(seed), a=arr.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(r()*(i+1)); var tmp=a[i];a[i]=a[j];a[j]=tmp; } return a; }
+  // Larger curated pools so each generation can pick a different mix
+  var AUTOROUTE={
+    eu:["paris","amsterdam","zurich","munich","milan","venice","florence","rome","barcelona","vienna","prague","interlaken","nice","budapest","lisbon"],
+    asia:["tokyo","kyoto","osaka","bangkok","chiangmai","phuket","singapore","kl","bali","seoul","busan","hanoi","danang","penang"],
+    me:["dubai","abudhabi","rak","doha","muscat","salalah","jeddah","riyadh","alula","abha","manama","kuwait","amman","istanbul","antalya","cappadocia","beirut"],
+    africa:["cairo","sharm","marrakech","fes","capetown","zanzibar","nairobi","tunis","mauritius"],
+    islands:["maldives","mauritius","zanzibar","santorini","mykonos","crete","bali","langkawi","phuket"],
+    americas:["newyork","washington","chicago","la","sanfrancisco","lasvegas","miami","orlando","honolulu","cancun","rio","buenosaires"]
+  };
   function arabicDigits(s){return String(s).replace(/[٠-٩]/g,function(d){return "٠١٢٣٤٥٦٧٨٩".indexOf(d);});}
   function parsePrompt(raw){
     var s=arabicDigits((raw||'').toLowerCase());
@@ -1576,17 +1589,19 @@
     hits.sort(function(a,b){return a.pos-b.pos;});
     return {days:days,vibes:v,budget:budget,pace:pace,roadtrip:roadtrip,regions:regions,hits:hits.map(function(h){return h.k;})};
   }
-  function buildRoute(pp){
+  function buildRoute(pp,seed){
     var keys=[], seen={};
-    pp.hits.forEach(function(k){ if(DEST[k]&&!seen[k]){seen[k]=1;keys.push(k);} });
+    pp.hits.forEach(function(k){ if(DEST[k]&&!seen[k]){seen[k]=1;keys.push(k);} }); // user-named cities stay first & ordered
+    var extra=[];
     // a road trip in one country → add that country's other cities
     if(pp.roadtrip && keys.length){
       var cset={}; keys.forEach(function(k){cset[DEST[k].country]=1;});
       if(Object.keys(cset).length===1){ var cty=Object.keys(cset)[0];
-        Object.keys(DEST).forEach(function(k){ if(DEST[k].country===cty&&!seen[k]){seen[k]=1;keys.push(k);} }); }
+        Object.keys(DEST).forEach(function(k){ if(DEST[k].country===cty&&!seen[k]){seen[k]=1;extra.push(k);} }); }
     }
-    // still sparse → fill from the region's curated route
-    if(keys.length<2 && pp.regions.length){ (AUTOROUTE[pp.regions[0]]||[]).forEach(function(k){ if(DEST[k]&&!seen[k]){seen[k]=1;keys.push(k);} }); }
+    // still sparse → fill from the region's curated pool
+    if((keys.length+extra.length)<2 && pp.regions.length){ (AUTOROUTE[pp.regions[0]]||[]).forEach(function(k){ if(DEST[k]&&!seen[k]){seen[k]=1;extra.push(k);} }); }
+    keys=keys.concat(shuffle(extra,seed||1)); // shuffle the auto-picked cities so each run differs
     var days=pp.days||(pp.roadtrip?12:5);
     var maxStops=Math.max(1,Math.min(5,Math.floor(days/2)));
     if(!pp.roadtrip && !pp.regions.length && pp.hits.length<=1) maxStops=Math.min(maxStops,1);
@@ -1596,9 +1611,10 @@
   function runPrompt(){
     var raw=$('promptBox').value||'';
     if(!raw.trim()){ toast(I18N[LANG].ui.promptNone); return; }
+    newSeed();
     var pp=parsePrompt(raw);
     pp.days=pp.days||(pp.roadtrip?12:5);
-    var keys=buildRoute(pp);
+    var keys=buildRoute(pp,SEED);
     if(!keys.length){ toast(I18N[LANG].ui.promptNone); return; }
     var days=Math.max(1,Math.min(30,pp.days));
     $('days').value=days; syncDayChips();
@@ -1686,7 +1702,7 @@
     return {d:$('dest').value, d2:$('dest2').value, days:$('days').value, pace:$('pace').value,
       adults:$('adults').value, kids:$('kids').value, sd:$('startDate').value, cur:$('homeCur').value,
       budget:picked('budgetChips')[0]||'Mid-range', vibes:picked('vibeChips'), lang:LANG,
-      rt:(ROUTE&&ROUTE.length>=3?ROUTE:null)};
+      rt:(ROUTE&&ROUTE.length>=3?ROUTE:null), seed:SEED};
   }
   function saveState(){try{localStorage.setItem('rihla_v1',JSON.stringify(stateObj()));}catch(e){}}
   function buildTripLink(){return location.href.split('#')[0]+'#trip='+encodeURIComponent(JSON.stringify(stateObj()));}
@@ -1845,6 +1861,7 @@
 
   function applyState(s){
     if(s.lang&&I18N[s.lang])applyLang(s.lang);
+    SEED=(typeof s.seed==='number'?s.seed:SEED); // reproduce the exact saved/shared trip
     $('dest').value=s.d||''; $('days').value=s.days||5; $('pace').value=s.pace||'balanced';
     $('adults').value=s.adults||2; $('kids').value=s.kids||0; $('startDate').value=s.sd||''; $('homeCur').value=s.cur||'USD';
     if(s.d2){ $('city2wrap').classList.remove('is-hidden'); $('addCity').classList.add('is-hidden'); $('dest2').value=s.d2; }
@@ -1943,8 +1960,8 @@
         var tt=d3===1?o.arrival:d3===days?o.last:o.explore;
         html+='<div class="day"><div class="dlabel">'+o.dayWord+' '+d3+'</div><h3>'+tt+'</h3>';
         txt.push(''); txt.push(o.dayWord+' '+d3+' — '+tt);
-        for(var s3=0;s3<spd;s3++){var vb=vibes[(d3+s3)%vibes.length];var act=pick(t.lib[vb],d3+s3);html+=slot('',tl2[s3],esc(act[1]));txt.push('  '+tl2[s3]+': '+act[1]);}
-        html+=slot('',o.times.dinner,o.dinner_(pick(t.meals[budget],d3)));
+        for(var s3=0;s3<spd;s3++){var vb=vibes[(d3+s3)%vibes.length];var act=pick(t.lib[vb],d3+s3+SEED);html+=slot('',tl2[s3],esc(act[1]));txt.push('  '+tl2[s3]+': '+act[1]);}
+        html+=slot('',o.times.dinner,o.dinner_(pick(t.meals[budget],d3+SEED)));
         html+='</div>';
       }
       html+='</div>';
@@ -1976,7 +1993,7 @@
     redrawMaps(); runPrayers(); saveState();
     out.scrollIntoView({behavior:'smooth',block:'start'});
   }
-  $('planBtn').addEventListener('click',plan);
+  $('planBtn').addEventListener('click',function(){ newSeed(); plan(); });
 
   function toast(msg){var el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove('show');},1800);}
   $('out').addEventListener('click',function(e){
