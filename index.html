@@ -1362,22 +1362,33 @@
   }
   function saveState(){try{localStorage.setItem('rihla_v1',JSON.stringify(stateObj()));}catch(e){}}
   function buildTripLink(){return location.href.split('#')[0]+'#trip='+encodeURIComponent(JSON.stringify(stateObj()));}
-  // Shorten a trip link (cached). Pre-called on plan render so share buttons stay instant;
-  // if the shortener is unavailable it just resolves null and callers use the full link.
+  // Shorten a trip link (cached). Pre-called on plan render so share buttons stay instant.
+  // Tries several free CORS shorteners in turn; resolves null if all fail.
   var SHORTCACHE={};
   function shortenUrl(long){
     return new Promise(function(resolve){
       if(SHORTCACHE[long]){ resolve(SHORTCACHE[long]); return; }
-      if(!CONFIG.shortenerApi||!window.fetch){ resolve(null); return; }
-      var ctl=('AbortController' in window)?new AbortController():null;
-      var to=setTimeout(function(){ if(ctl)ctl.abort(); resolve(null); },5000);
-      fetch(CONFIG.shortenerApi,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'url='+encodeURIComponent(long),signal:ctl?ctl.signal:undefined})
-        .then(function(r){return r.json();})
-        .then(function(j){ clearTimeout(to); var s=j&&(j.result_url||j.short_url||j.shorturl); if(s)SHORTCACHE[long]=s; resolve(s||null); })
-        .catch(function(){ clearTimeout(to); resolve(null); });
+      if(!window.fetch){ resolve(null); return; }
+      var providers=[
+        {u:'https://tinyurl.com/api-create.php?url='+encodeURIComponent(long),o:{},p:function(t){t=(t||'').trim();return /^https?:\/\//.test(t)?t:null;}},
+        {u:'https://is.gd/create.php?format=simple&url='+encodeURIComponent(long),o:{},p:function(t){t=(t||'').trim();return /^https?:\/\//.test(t)?t:null;}},
+        {u:'https://cleanuri.com/api/v1/shorten',o:{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'url='+encodeURIComponent(long)},p:function(t){try{return JSON.parse(t).result_url||null;}catch(e){return null;}}}
+      ];
+      var i=0;
+      (function next(){
+        if(i>=providers.length){ resolve(null); return; }
+        var pr=providers[i++], ctl=('AbortController' in window)?new AbortController():null;
+        var to=setTimeout(function(){ if(ctl)ctl.abort(); },4000);
+        fetch(pr.u,Object.assign({signal:ctl?ctl.signal:undefined},pr.o))
+          .then(function(r){return r.text();})
+          .then(function(t){ clearTimeout(to); var s=pr.p(t); if(s){SHORTCACHE[long]=s; resolve(s);} else next(); })
+          .catch(function(){ clearTimeout(to); next(); });
+      })();
     });
   }
-  function shareLink(){ var long=buildTripLink(); return SHORTCACHE[long]||long; }
+  // Short link if ready; otherwise the CLEAN base URL (never the giant one) so chats stay tidy + previews work
+  function shareLink(){ var long=buildTripLink(); return SHORTCACHE[long]||location.href.split('#')[0]; }
+  function tripSummary(o){ var d=($('dest').value||'').trim(); return d?(' — '+d+' · '+$('days').value+' '+o.daysUnit):''; }
 
   /* My trips — save & reopen */
   function loadTrips(){try{return JSON.parse(localStorage.getItem('rihla_trips')||'[]');}catch(e){return [];}}
@@ -1628,11 +1639,11 @@
     var act=b.dataset.act, o=I18N[LANG].out;
     if(act==='unlock'){ try{localStorage.setItem('rihla_pro','1');}catch(e){} PRO=true; toast(o.unlocked); plan(); return; }
     if(act==='save'){ saveTrip(); toast(o.saved); return; }
-    if(act==='wa'){ window.open('https://wa.me/?text='+encodeURIComponent(o.waMsg+' '+shareLink()),'_blank'); return; }
+    if(act==='wa'){ window.open('https://wa.me/?text='+encodeURIComponent(o.waMsg+tripSummary(o)+'\n'+shareLink()),'_blank'); return; }
     if(act==='print'){window.print();return;}
     if(act==='share'){
       var link=shareLink();
-      if(navigator.share){navigator.share({title:'بوصلة · Bosla',text:o.waMsg,url:link}).catch(function(){});return;}
+      if(navigator.share){navigator.share({title:'بوصلة · Bosla',text:o.waMsg+tripSummary(o),url:link}).catch(function(){});return;}
       if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(link).then(function(){toast(o.linkCopied);},function(){toast(o.linkCopied);});}
       else{toast(o.linkCopied);}
       return;
