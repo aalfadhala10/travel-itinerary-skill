@@ -1387,9 +1387,12 @@
     });
   }
   // Direct long link — opens the exact trip with no redirect/interstitial page.
-  // (Shortener kept above but disabled for now; user preferred the direct link.)
-  function shareLink(){ return buildTripLink(); }
-  function tripSummary(o){ var d=($('dest').value||'').trim(); return d?(' — '+d+' · '+$('days').value+' '+o.daysUnit):''; }
+  // A changing ?p= marker on the base makes WhatsApp/social re-fetch the preview image
+  // each share (it strips the #trip fragment, so without this it caches one stale preview).
+  function shareLink(){
+    var base=location.href.split('#')[0].split('?')[0];
+    return base+'?p='+Date.now().toString(36)+'#trip='+encodeURIComponent(JSON.stringify(stateObj()));
+  }
 
   /* My trips — save & reopen */
   function loadTrips(){try{return JSON.parse(localStorage.getItem('rihla_trips')||'[]');}catch(e){return [];}}
@@ -1640,11 +1643,11 @@
     var act=b.dataset.act, o=I18N[LANG].out;
     if(act==='unlock'){ try{localStorage.setItem('rihla_pro','1');}catch(e){} PRO=true; toast(o.unlocked); plan(); return; }
     if(act==='save'){ saveTrip(); toast(o.saved); return; }
-    if(act==='wa'){ window.open('https://wa.me/?text='+encodeURIComponent(o.waMsg+tripSummary(o)+'\n'+shareLink()),'_blank'); return; }
+    if(act==='wa'){ window.open('https://wa.me/?text='+encodeURIComponent(o.waMsg+'\n'+shareLink()),'_blank'); return; }
     if(act==='print'){window.print();return;}
     if(act==='share'){
       var link=shareLink();
-      if(navigator.share){navigator.share({title:'بوصلة · Bosla',text:o.waMsg+tripSummary(o),url:link}).catch(function(){});return;}
+      if(navigator.share){navigator.share({title:'بوصلة · Bosla',text:o.waMsg,url:link}).catch(function(){});return;}
       if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(link).then(function(){toast(o.linkCopied);},function(){toast(o.linkCopied);});}
       else{toast(o.linkCopied);}
       return;
