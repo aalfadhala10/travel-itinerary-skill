@@ -1781,6 +1781,7 @@
     var chips=''; for(var d=1;d<=total;d++)chips+='<button type="button" class="dnav" data-day="'+d+'">'+d+'</button>';
     return '<div class="daynav"><span class="dnavlbl">'+o.jumpTo+'</span>'+chips+'</div>';
   }
+  function rerenderKeep(){ var y=window.pageYOffset||document.documentElement.scrollTop||0; KEEPSCROLL=true; if(LASTPLAN)LASTPLAN(); window.scrollTo(0,y); } // re-render without jumping to top
   function anotherVersion(){ newSeed(); DAYEDITS={}; DAYROT={}; if(LASTPLAN)LASTPLAN(); var out=$('out'); if(out)out.scrollIntoView({block:'start'}); }
   function retuneDays(delta){
     var cur=Math.max(1,Math.min(30,parseInt($('days').value,10)||5)), nn=Math.max(1,Math.min(30,cur+delta));
@@ -2006,6 +2007,7 @@
   var DAYROT={};     // per-day shuffle rotation: key "cityKey|day" → integer (picks different unused places)
   var LASTPLAN=null; // re-renders the current plan in place (honouring edits) after a change
   var LASTSPD=3;     // activity slots per day in the current plan
+  var KEEPSCROLL=false; // when re-rendering after an in-place edit, don't jump back to the top
   function newSeed(){ SEED=Math.floor(Math.random()*1e9)+1; }
   function srand(seed){ var x=(seed||1)>>>0; return function(){ x=(x*1103515245+12345)&0x7fffffff; return x/0x7fffffff; }; }
   function shuffle(arr,seed){ var r=srand(seed), a=arr.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(r()*(i+1)); var tmp=a[i];a[i]=a[j];a[j]=tmp; } return a; }
@@ -2223,7 +2225,7 @@
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
     var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden');
     redrawMaps(); runPrayers(); saveState();
-    out.scrollIntoView({behavior:'smooth',block:'start'});
+    if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   $('promptBtn').addEventListener('click',runPrompt);
 
@@ -2582,7 +2584,7 @@
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
     var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden');
     redrawMaps(); runPrayers(); saveState();
-    out.scrollIntoView({behavior:'smooth',block:'start'});
+    if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; plan(); });
 
@@ -2616,7 +2618,7 @@
     // clear any explicit swaps on this day so it re-rolls cleanly, then advance its rotation
     Object.keys(DAYEDITS).forEach(function(k){ if(k===key+'|d'||k.indexOf(key+'|')===0)delete DAYEDITS[k]; });
     DAYROT[key]=(DAYROT[key]||0)+1;
-    if(LASTPLAN)LASTPLAN();
+    rerenderKeep();
   }
   function openSwap(btn){
     var slot=btn.closest('.slot'); if(!slot)return;
@@ -2635,7 +2637,7 @@
     if(sh){ var pr=sh.getAttribute('data-shuf').split('|'); shuffleDay(pr[0],pr[1]); return; }
     var pk=e.target.closest('.swappick button');
     if(pk){ var sk=pk.getAttribute('data-sk'), i=+pk.getAttribute('data-i'), pr2=sk.split('|'), ck=pr2[0], isFood=(pr2[2]==='d');
-      var arr=isFood?DEST[ck].food:DEST[ck].poi, pl=arr&&arr[i]; if(pl){ DAYEDITS[sk]=pl.n; if(LASTPLAN)LASTPLAN(); } return; }
+      var arr=isFood?DEST[ck].food:DEST[ck].poi, pl=arr&&arr[i]; if(pl){ DAYEDITS[sk]=pl.n; rerenderKeep(); } return; }
     var sw=e.target.closest('.swapbtn');
     if(sw){ e.preventDefault(); openSwap(sw); return; }
     // trip tuner: adjust length, get another version, or jump to a day
