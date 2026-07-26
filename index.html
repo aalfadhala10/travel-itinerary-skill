@@ -2075,13 +2075,15 @@
   }
   // "Where to stay" — the plan suggests one hotel per budget, but travellers may want another type of
   // place; these open a search for that city filtered to apartments / resorts / villas / hostels etc.
-  var STAY_TYPES=[['hotel',204,'hotel'],['apartment',201,'apartment'],['resort',206,'resort'],['villa',213,'villa'],['hostel',203,'hostel']];
-  var STAY_AMEN=[['pool','private pool'],['beach','beachfront'],['family','family friendly'],['breakfast','breakfast included'],['parking','free parking'],['pets','pet friendly'],['spa','spa']];
-  function staysBar(city,t){
+  // [labelKey, Booking property-type ht_id]
+  var STAY_TYPES=[['hotel',204],['apartment',201],['resort',206],['villa',213],['hostel',203]];
+  // [labelKey, Booking nflt filter code] — applied as real filters, NOT stuffed into the location search
+  var STAY_AMEN=[['pool','hotelfacility=433'],['beach','ht_beach=1'],['family','hotelfacility=28'],['breakfast','mealplan=1'],['parking','hotelfacility=2'],['pets','stay_type=1'],['spa','hotelfacility=54']];
+  function staysBar(city,country,t){
     var o=t.out;
-    var types=STAY_TYPES.map(function(x){ return '<button type="button" class="stychip" data-ht="'+x[1]+'" data-word="'+x[2]+'">'+o.stayTypes[x[0]]+'</button>'; }).join('');
-    var amen=STAY_AMEN.map(function(x){ return '<button type="button" class="samchip" data-word="'+x[1]+'">'+o.stayAmen[x[0]]+'</button>'; }).join('');
-    return '<div class="bookbar staybar" data-staycity="'+esc(city)+'"><div class="maphdr">'+o.stayTitle+'</div>'+
+    var types=STAY_TYPES.map(function(x){ return '<button type="button" class="stychip" data-ht="'+x[1]+'">'+o.stayTypes[x[0]]+'</button>'; }).join('');
+    var amen=STAY_AMEN.map(function(x){ return '<button type="button" class="samchip" data-code="'+x[1]+'">'+o.stayAmen[x[0]]+'</button>'; }).join('');
+    return '<div class="bookbar staybar" data-staycity="'+esc(city)+'" data-staycountry="'+esc(country||'')+'"><div class="maphdr">'+o.stayTitle+'</div>'+
       '<div class="staychips">'+types+'</div>'+
       '<div class="stayamenlbl">'+o.stayAmenTitle+'</div><div class="staychips samen">'+amen+'</div>'+
       '<button type="button" class="staysearch">'+o.stayFind+'</button></div>';
@@ -2302,7 +2304,7 @@
       html+=faithBar(ms[0].city,ms[0].country,t);
       html+=phrasesCard(ms[0],t); html+=converterCard(ms[0],t);
     }
-    html+=staysBar(ms[0].city,t); html+=bookingBar(ms[0].city,t);
+    html+=staysBar(ms[0].city,ms[0].country,t); html+=bookingBar(ms[0].city,t);
     html+='<p class="note">'+o.note(ms.map(function(m){return esc(m.city);}).join(' & '))+'</p>';
     var acts='<div class="actions">'+
       '<button class="act" type="button" data-act="save">'+o.save+'</button>'+
@@ -2622,7 +2624,7 @@
         html+=faithBar(m1.city,m1.country,t);
         html+=phrasesCard(m1,t); html+=converterCard(m1,t);
       }
-      html+=staysBar(m1.city,t); html+=bookingBar(m1.city,t);
+      html+=staysBar(m1.city,m1.country,t); html+=bookingBar(m1.city,t);
       txt.push(''); txt.push(o.budTotal+' ('+o.perPerson+'): ~$'+Math.round(totalUSD));
       note=o.note(esc(m1.city)+(multi?' & '+esc(m2.city):''));
     } else {
@@ -2654,7 +2656,7 @@
         html+=packingCard(null,vibes,t,cap(dest));
         html+=faithBar(cap(dest),'',t);
       }
-      html+=staysBar(cap(dest),t); html+=bookingBar(cap(dest),t);
+      html+=staysBar(cap(dest),'',t); html+=bookingBar(cap(dest),t);
       note='<span style="color:var(--clay)">'+o.notCurated(esc(cap(dest)))+'</span><br>'+o.note(esc(cap(dest)));
     }
 
@@ -2754,12 +2756,14 @@
     if(am){ am.classList.toggle('active'); return; }
     var srch=e.target.closest('.staysearch');
     if(srch){ var bar=srch.closest('.staybar'); if(!bar)return;
-      var city=bar.getAttribute('data-staycity');
-      var tsel=bar.querySelector('.stychip.active'), ht=tsel?tsel.getAttribute('data-ht'):'', tw=tsel?tsel.getAttribute('data-word'):'';
-      var words=[].slice.call(bar.querySelectorAll('.samchip.active')).map(function(c){return c.getAttribute('data-word');});
-      var terms=words.slice(); if(tw)terms.push(tw);
-      var ss=terms.length?(terms.join(' ')+' in '+city):city;
-      window.open(bookUrl(ss)+(ht?'&nflt='+encodeURIComponent('ht_id='+ht):''),'_blank'); return; }
+      // Booking's "ss" is a LOCATION field — put ONLY the destination here (city + country) so it
+      // resolves to the right place. Property type & amenities go into the "nflt" filter, never ss.
+      var city=bar.getAttribute('data-staycity'), country=bar.getAttribute('data-staycountry');
+      var ss=country?(city+', '+country):city;
+      var tsel=bar.querySelector('.stychip.active'), ht=tsel?tsel.getAttribute('data-ht'):'';
+      var flt=[].slice.call(bar.querySelectorAll('.samchip.active')).map(function(c){return c.getAttribute('data-code');});
+      if(ht)flt.unshift('ht_id='+ht);
+      window.open(bookUrl(ss)+(flt.length?'&nflt='+encodeURIComponent(flt.join(';')):''),'_blank'); return; }
   });
   // interactive packing checklist — tap an item to tick it, saved per destination
   $('out').addEventListener('click',function(e){
