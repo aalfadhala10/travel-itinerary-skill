@@ -3447,6 +3447,21 @@
     if(s.d)plan();
   }
 
+  // how many days a single city can fill before it starts repeating (~its POIs / 4, clamped 2–3)
+  function cityCapacity(ck,spd){ var p=(DEST[ck]&&DEST[ck].poi.length)||10; return Math.max(2,Math.min(3,Math.round(p/4))); }
+  // nearest other cities to build a mini-route from: same country first (any distance), then same
+  // region within ~1000km — so a long single-city stay spreads out instead of repeating one city
+  function nearbyCities(ck,n){
+    if(n<=0||!CO[ck]||!DEST[ck])return [];
+    var self=CO[ck], selfC=DEST[ck].country, selfR=DEST[ck].region, cand=[];
+    for(var k in DEST){ if(k===ck||!CO[k])continue;
+      var d=kmDist(self,CO[k]), sameC=DEST[k].country===selfC, sameR=DEST[k].region===selfR;
+      if(sameC)cand.push({k:k,d:d,pri:0});
+      else if(sameR&&d<=1000)cand.push({k:k,d:d,pri:1});
+    }
+    cand.sort(function(a,b){return a.pri-b.pri||a.d-b.d;});
+    return cand.slice(0,n).map(function(x){return x.k;});
+  }
   function plan(){
     ROUTE=null; ROUTEDRIVE=false;
     LASTPLAN=function(){ plan(); };
@@ -3466,6 +3481,15 @@
     var raw2=($('dest2').value||'').trim();
     var m2=raw2?matchDest(raw2):null;
     if(m2&&m2===m1)m2=null;
+    // A long stay in one city would just repeat its ~10–12 real spots. Spread 4+ day single-city
+    // trips across the nearest cities so it reads like a real trip, not a padded one.
+    if(m1&&!m2){ var ck1=keyOf(m1), cap=cityCapacity(ck1,spd);
+      if(days>=4 && days>cap){
+        var nCities=Math.min(Math.ceil(days/cap), Math.floor(days/2), 4);
+        var extra=nearbyCities(ck1, nCities-1);
+        if(extra.length){ planRoute([ck1].concat(extra), days, vibes, budget, pace, false); return; }
+      }
+    }
     var txt=[], html='', note='', paywallShown=false; MAPQ=[]; PRAYERQ=[];
     var destKey = m1 ? keyOf(m1) : ('x:'+slug(raw||'dest'));
     var access = tripAccess(destKey);
