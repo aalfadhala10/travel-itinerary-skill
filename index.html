@@ -1260,6 +1260,18 @@
   var POI_CO={
     doha:{"Souq Waqif":[25.287,51.533],"Museum of Islamic Art":[25.295,51.539],"National Museum of Qatar":[25.286,51.552],"The Pearl-Qatar":[25.369,51.548],"Katara Cultural Village":[25.359,51.525],"Doha Corniche":[25.307,51.531],"Villaggio Mall":[25.259,51.443],"Aspire Park & Torch":[25.263,51.445],"Msheireb Downtown":[25.288,51.526],"Katara Beach":[25.361,51.527],"Khor Al Adaid (Inland Sea)":[24.99,51.22],"Al Zubarah Fort Day Trip":[25.978,51.023],"Shay Al Shomous":[25.288,51.533],"Parisa":[25.287,51.534],"Al Mourjan":[25.305,51.530],"Damasca One":[25.288,51.532],"IDAM (fine dining)":[25.295,51.539],"Turkey Central":[25.281,51.490]}
   };
+  // Extra hotel options per tier {cityKey:{Budget:[...],"Mid-range":[...],Luxury:[...]}} so each
+  // generation can suggest a different real hotel instead of always the same one. Falls back to the
+  // single DEST[..].hotels[tier] when a city has no pool. Extended over time by the assembler.
+  var HOTELS_X={
+    doha:{Budget:["Premier Inn Doha Education City","Al Najada Doha Hotel Apartments","La Villa Palace Hotel","Saraya Corniche Hotel","Ezdan Hotel Doha"],"Mid-range":["Souq Waqif Boutique Hotels","Alwadi Hotel Doha MGallery","Wyndham Doha West Bay","Marriott Marquis City Center Doha","Al Najada Doha by Tivoli"],Luxury:["Mandarin Oriental Doha","Four Seasons Hotel Doha","The Ritz-Carlton Doha","Raffles Doha","W Doha","Mondrian Doha"]}
+  };
+  // pick a hotel for a city+tier, varied by the trip seed so "another version" changes it
+  function hotelPick(dest,tier){
+    try{ var ck=keyOf(dest), pool=HOTELS_X[ck]&&HOTELS_X[ck][tier];
+      if(pool&&pool.length)return pool[((SEED%pool.length)+pool.length)%pool.length]; }catch(e){}
+    return dest.hotels[tier];
+  }
   var COUNTRY_TZ={};  // country → IANA timezone (for local-time display)
   var COUNTRY_LANG={};// country → phrasebook language code
   var LANG_PHRASES={};// language code → { hello:{t,p}, ... }
@@ -2363,7 +2375,7 @@
     var seasons=cd+'<div class="season">'+seasonLine(ms[0],t,ml)+'</div>'+timeThereLine(ms[0],t)+weatherBox(ms[0],$('startDate').value,t);
     var stip=(o.seasonTip&&o.seasonTip[ms[0].summer.cond])?('<div class="tip">'+o.seasonTip[ms[0].summer.cond]+'</div>'):'';
     var legs=ms.map(function(m,idx){return esc(m.city)+' ('+dc[idx]+' '+o.daysUnit+')';}).join(' → ');
-    var stay=ms.map(function(m){return link(m.hotels[budget],m.hotels[budget]+' '+m.city);}).join(' / ');
+    var stay=ms.map(function(m){var hn=hotelPick(m,budget);return link(hn,hn+' '+m.city);}).join(' / ');
     var txt=[]; txt.push(ms.map(function(m){return m.city;}).join(' → ')+' · '+days+' '+o.daysUnit); txt.push(t.ui.budgets[budget]+' · '+t.ui.paces[pace]+' · '+subVibes);
     var html='<div class="ticket"><div class="eyebrow">'+o.routeEyebrow+'</div>'+
       '<h2>'+title+'</h2>'+
@@ -2673,7 +2685,8 @@
       var tr=multi?transferInfo(t,m1,m2):null, trUSD=tr?tr.usd:0;
       var totalUSD=base1+base2+trUSD;
       var title=multi?(esc(m1.city)+' → '+esc(m2.city)+' · '+days+' '+o.daysUnit):(esc(m1.city)+', '+esc(m1.country)+' · '+days+' '+o.daysUnit);
-      var stay=multi?(link(m1.hotels[budget],m1.hotels[budget]+' '+m1.city)+' / '+link(m2.hotels[budget],m2.hotels[budget]+' '+m2.city)):(link(m1.hotels[budget],m1.hotels[budget]+' '+m1.city)+' · <a href="'+bookUrl(m1.hotels[budget]+' '+m1.city)+'" target="_blank" rel="noopener">'+o.book+'</a>');
+      var h1=hotelPick(m1,budget), h2=multi?hotelPick(m2,budget):'';
+      var stay=multi?(link(h1,h1+' '+m1.city)+' / '+link(h2,h2+' '+m2.city)):(link(h1,h1+' '+m1.city)+' · <a href="'+bookUrl(h1+' '+m1.city)+'" target="_blank" rel="noopener">'+o.book+'</a>');
       var ml=di?di.monthLabel:null;
       var cd=di?(di.du>0?'<div class="season">'+o.countdown(di.du)+'</div> ':(di.du===0?'<div class="season">'+o.today+'</div> ':'')):'';
       var seasons=cd+'<div class="season">'+seasonLine(m1,t,ml)+'</div>'+(multi?' <div class="season">'+seasonLine(m2,t,ml)+'</div>':'')+timeThereLine(m1,t)+weatherBox(m1,$('startDate').value,t);
