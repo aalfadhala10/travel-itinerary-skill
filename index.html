@@ -393,6 +393,7 @@
   .cvin{flex:1;min-width:70px;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:var(--paper2);color:var(--ink);font-size:15px;font-family:var(--ff-data);outline:none;text-align:center}
   .cvin:focus{border-color:var(--teal)}
   .cvcur{font-size:13px;font-weight:700;color:var(--muted);font-family:var(--ff-data)}
+  .cvsel{padding:8px 6px;border:1px solid var(--line);border-radius:9px;background:var(--paper2);color:var(--ink);font-size:13px;font-weight:700;font-family:var(--ff-data);cursor:pointer}
   .cveq{font-size:16px;color:var(--muted)}
   .cvnote{color:var(--muted);font-size:11.5px;margin-top:8px}
   .ptwrap{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
@@ -1865,8 +1866,9 @@
   function converterCard(dest,t){
     var o=t.out, ck=keyOf(dest), local=CUR[ck]||{s:'$',r:1}, home=CURRENCIES[HOME]||CURRENCIES.USD;
     var ls=(local.s||'').trim()||'$';
+    var opts=Object.keys(CURRENCIES).map(function(k){return '<option value="'+k+'"'+(k===HOME?' selected':'')+'>'+k+'</option>';}).join('');
     return '<div class="bookbar cvbar" data-hr="'+home.r+'" data-lr="'+local.r+'"><div class="maphdr">'+o.cvTitle+'</div>'+
-      '<div class="cvrow"><input type="number" class="cvin cvhome" inputmode="decimal" value="100"><span class="cvcur">'+esc(HOME)+'</span>'+
+      '<div class="cvrow"><input type="number" class="cvin cvhome" inputmode="decimal" value="100"><select class="cvsel" aria-label="'+o.cvTitle+'">'+opts+'</select>'+
       '<span class="cveq">=</span><input type="number" class="cvin cvlocal" inputmode="decimal"><span class="cvcur">'+esc(ls)+'</span></div>'+
       '<div class="cvnote">'+o.cvNote+'</div></div>';
   }
@@ -2696,6 +2698,11 @@
   $('out').addEventListener('click',function(e){
     var hd=e.target.closest('.bud>h4,.pack>h4,.bookbar>.maphdr,.mapcard>.maphdr');
     if(!hd)return; hd.parentElement.classList.toggle('collapsed');
+  });
+  // change your home currency right from the converter — updates the whole plan's budget
+  $('out').addEventListener('change',function(e){
+    var s=e.target; if(!s.classList||!s.classList.contains('cvsel'))return;
+    HOME=s.value; try{$('homeCur').value=s.value;}catch(err){} rerenderKeep();
   });
   // live currency converter — typing in one field updates the other
   $('out').addEventListener('input',function(e){
