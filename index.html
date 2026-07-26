@@ -155,6 +155,17 @@
   @media (prefers-reduced-motion:reduce){.out.show{animation:none}}
   .ticket{background:linear-gradient(155deg,#194a72 0%,#0b2138 100%);color:#fdfaf1;border-radius:16px;padding:20px;border:1px solid rgba(233,214,168,.22);box-shadow:0 16px 34px rgba(9,38,30,.30)}
   .ticket .eyebrow{color:#e9d6a8}
+  /* generated destination banner (climate-tinted scene, no external images) */
+  .hero-art{position:relative;height:104px;margin:-20px -20px 16px;border-radius:16px 16px 0 0;overflow:hidden}
+  .hero-art svg{display:block;width:100%;height:100%}
+  .hero-art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(11,33,56,.55) 100%)}
+  .hero-flag{position:absolute;left:16px;bottom:9px;z-index:2;font-size:32px;line-height:1;filter:drop-shadow(0 2px 5px rgba(0,0,0,.35))}
+  #app[dir="rtl"] .hero-flag{left:auto;right:16px}
+  /* gentle staggered reveal of result blocks */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .out.show .ticket,.out.show .day,.out.show .bookbar,.out.show .bud,.out.show .pack,.out.show .transfer{animation:fadeUp .5s ease both}
+  .out.show .day:nth-of-type(2){animation-delay:.05s}.out.show .day:nth-of-type(3){animation-delay:.1s}.out.show .day:nth-of-type(4){animation-delay:.15s}
+  @media (prefers-reduced-motion:reduce){.out.show .ticket,.out.show .day,.out.show .bookbar,.out.show .bud,.out.show .pack,.out.show .transfer{animation:none}}
   .ticket h2{font-family:var(--ff-display);font-size:25px;margin:4px 0 2px;font-weight:600;line-height:1.15}
   .ticket .sub{opacity:.85;font-size:14px}
   .ticket .blurb{font-size:13.5px;opacity:.92;margin-top:10px;font-style:italic;text-wrap:balance}
@@ -170,7 +181,7 @@
   .route{margin-top:6px;padding-left:4px}
   .day{position:relative;padding:18px 0 4px 26px;margin-left:8px;border-left:2px solid var(--line)}
   .day:last-child{border-left-color:transparent}
-  .day::before{content:"";position:absolute;left:-7px;top:22px;width:12px;height:12px;border-radius:50%;background:var(--amber);border:2px solid var(--card)}
+  .day::before{content:"";position:absolute;left:-7px;top:22px;width:12px;height:12px;border-radius:50%;background:var(--amber);border:2px solid var(--card);box-shadow:0 0 0 3px var(--amber-soft)}
   .day .dlabel{font-family:var(--ff-data);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);font-weight:600}
   .day h3{font-family:var(--ff-display);margin:1px 0 10px;font-size:19px;font-weight:600}
   .slot{display:flex;gap:11px;padding:8px 0;border-top:1px dashed var(--line)}
@@ -2734,6 +2745,17 @@
       +'<div class="d">'+link(poi.n,poi.n+' '+city)+' <span class="area">· '+esc(poi.a)+'</span></div>'
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
   }
+  // Generated destination banner — a climate-tinted scene (no external images, works offline).
+  // mountains for alpine, sun+waves for islands/tropical, dunes for hot/dry, a skyline otherwise.
+  function heroArt(cond,flag){
+    var P={alpine:['#dbeafe','#8fb6dd','#3b6fa0'],islands:['#a7e8e0','#ffe6b3','#2fa9bf'],tropical:['#bfe8c8','#e9dca0','#2f8f6b'],hothumid:['#cfe8d8','#e6d9a6','#4f9e7a'],veryhot:['#ffd9a0','#f2a65a','#cf7a2a'],hotdry:['#f5deb3','#e6b877','#c1873a'],warm:['#ffe1b3','#ffc98a','#e0954e'],mild:['#e0e8f0','#c0d2e2','#7fa0bd']};
+    var c=P[cond]||P.mild, s;
+    if(cond==='alpine') s='<polygon points="0,120 80,45 140,90 205,35 300,120" fill="'+c[2]+'" opacity=".5"/><polygon points="130,120 205,58 300,120" fill="'+c[2]+'" opacity=".78"/><polygon points="188,52 205,58 222,52 205,42" fill="#fff" opacity=".8"/>';
+    else if(cond==='islands'||cond==='tropical'||cond==='hothumid') s='<circle cx="248" cy="44" r="22" fill="#fff" opacity=".55"/><path d="M0,92 q75,-18 150,0 t150,0 V120 H0Z" fill="'+c[2]+'" opacity=".55"/><path d="M0,104 q75,-16 150,0 t150,0 V120 H0Z" fill="'+c[2]+'" opacity=".8"/>';
+    else if(cond==='veryhot'||cond==='hotdry') s='<circle cx="248" cy="42" r="24" fill="#fff" opacity=".6"/><path d="M0,98 q90,-34 170,-4 t130,-2 V120 H0Z" fill="'+c[2]+'" opacity=".5"/><path d="M0,110 q80,-22 160,0 t140,-4 V120 H0Z" fill="'+c[2]+'" opacity=".8"/>';
+    else s='<g fill="'+c[2]+'" opacity=".5"><rect x="28" y="72" width="26" height="48"/><rect x="64" y="54" width="30" height="66"/><rect x="104" y="80" width="22" height="40"/><rect x="150" y="66" width="26" height="54"/><rect x="210" y="58" width="28" height="62"/><rect x="246" y="82" width="24" height="38"/></g>';
+    return '<div class="hero-art"><svg viewBox="0 0 300 120" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+c[0]+'"/><stop offset="1" stop-color="'+c[1]+'"/></linearGradient></defs><rect width="300" height="120" fill="url(#hg)"/>'+s+'</svg>'+(flag?'<span class="hero-flag">'+flag+'</span>':'')+'</div>';
+  }
   // Re-order a city's POI pool so each day stays in one part of town and far day-trips land on
   // separate days. Central places are walked as a nearest-neighbour route (so a day's slots are
   // adjacent), and outliers (e.g. an inland-sea or a fort 80km away) are seeded one-per-day instead
@@ -3214,7 +3236,7 @@
     var legs=ms.map(function(m,idx){return esc(m.city)+' ('+dc[idx]+' '+o.daysUnit+')';}).join(' → ');
     var stay=ms.map(function(m){var hn=hotelPick(m,budget);return link(hn,hn+' '+m.city);}).join(' / ');
     var txt=[]; txt.push(ms.map(function(m){return m.city;}).join(' → ')+' · '+days+' '+o.daysUnit); txt.push(t.ui.budgets[budget]+' · '+t.ui.paces[pace]+' · '+subVibes);
-    var html='<div class="ticket"><div class="eyebrow">'+o.routeEyebrow+'</div>'+
+    var html='<div class="ticket">'+heroArt(ms[0].summer.cond,ms[0].flag)+'<div class="eyebrow">'+o.routeEyebrow+'</div>'+
       '<h2>'+title+'</h2>'+
       '<div class="sub">'+t.ui.budgets[budget]+' · '+t.ui.paces[pace]+' · '+subVibes+'</div>'+
       '<div class="blurb">'+legs+'</div>'+seasons+stip+
@@ -3558,7 +3580,7 @@
       txt.push(multi?(m1.city+' → '+m2.city+' · '+days+' '+o.daysUnit):(m1.city+', '+m1.country+' · '+days+' '+o.daysUnit));
       txt.push(t.ui.budgets[budget]+' · '+t.ui.paces[pace]+' · '+subVibes);
 
-      html+='<div class="ticket"><div class="eyebrow">'+o.eyebrow+'</div>'+
+      html+='<div class="ticket">'+heroArt(m1.summer.cond,m1.flag)+'<div class="eyebrow">'+o.eyebrow+'</div>'+
         '<h2>'+title+'</h2>'+
         '<div class="sub">'+t.ui.budgets[budget]+' · '+t.ui.paces[pace]+' · '+subVibes+'</div>'+
         '<div class="blurb">'+blurb+'</div>'+seasons+stip+
@@ -3595,7 +3617,7 @@
       var dest=raw||(LANG==='ar'?'وجهتك':LANG==='es'?'tu destino':'your destination');
       var gbase=GENCOST[budget]*days;
       txt.push(cap(dest)+' · '+days+' '+o.daysUnit); txt.push(t.ui.budgets[budget]+' · '+t.ui.paces[pace]+' · '+subVibes);
-      html+='<div class="ticket"><div class="eyebrow">'+o.eyebrow+'</div>'+
+      html+='<div class="ticket">'+heroArt('mild','')+'<div class="eyebrow">'+o.eyebrow+'</div>'+
         '<h2>'+esc(cap(dest))+' · '+days+' '+o.daysUnit+'</h2>'+
         '<div class="sub">'+t.ui.budgets[budget]+' · '+t.ui.paces[pace]+' · '+subVibes+'</div>'+
         '<div class="stats">'+
