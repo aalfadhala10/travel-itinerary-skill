@@ -1624,7 +1624,7 @@
   });
   $('surprise').addEventListener('click',function(){
     var keys=Object.keys(DEST), k=keys[Math.floor(Math.random()*keys.length)];
-    $('dest').value=DEST[k].city; newSeed(); DAYEDITS={}; SHUFN={}; plan();
+    $('dest').value=DEST[k].city; newSeed(); DAYEDITS={}; DAYROT={}; plan();
   });
   // tap-friendly number steppers for days / adults / kids
   document.addEventListener('click',function(e){
@@ -1742,21 +1742,30 @@
   }
   function emitDays(match,fromDay,count,total,vibes,spd,o,t,txt,stops){
     var pool=poolFor(match,vibes),tl=timeLabels(o,spd),html='',ck=keyOf(match);
-    var off=SEED%1000; var p=pool.length?off%pool.length:0, f=match.food.length?off%match.food.length:0;
+    var off=SEED%1000;
+    var usedA={}, usedF={}; // never repeat the same place/restaurant within one city
+    function take(arr,used,rot,s){
+      var avail=arr.filter(function(x){return !used[x.n];});
+      if(!avail.length)avail=arr; // pool exhausted (very long stay) — only then allow a repeat
+      var idx=((off+rot*spd+s)%avail.length+avail.length)%avail.length;
+      return avail[idx];
+    }
     for(var i=0;i<count;i++){
-      var d=fromDay+i, title=d===1?o.arrival:d===total?o.last:o.explore;
+      var d=fromDay+i, title=d===1?o.arrival:d===total?o.last:o.explore, rot=DAYROT[ck+'|'+d]||0;
       html+='<div class="day"><div class="dhead"><div class="dlabel">'+o.dayWord+' '+d+' · '+esc(match.city)+'</div>'
         +'<button type="button" class="dayshuffle" data-shuf="'+ck+'|'+d+'" title="'+o.shuffleDay+'">'+SHUFSVG+'<span>'+o.shuffleDay+'</span></button></div><h3>'+title+'</h3>';
       txt.push(''); txt.push(o.dayWord+' '+d+' — '+title+' ('+match.city+')');
       for(var s=0;s<spd;s++){
-        var def=pool[p++%pool.length], sk=ck+'|'+d+'|'+s;
-        var poi=DAYEDITS[sk]?(poiByName(ck,DAYEDITS[sk])||def):def;
+        var sk=ck+'|'+d+'|'+s, poi=DAYEDITS[sk]?poiByName(ck,DAYEDITS[sk]):null;
+        if(!poi)poi=take(pool,usedA,rot,s);
+        usedA[poi.n]=1;
         if(stops)stops.push({n:poi.n,a:poi.a});
         html+=eslot(tl[s],poi,match.city,sk,o);
         txt.push('  '+tl[s]+': '+poi.n+' ('+poi.a+')');
       }
-      var fdef=match.food[f++%match.food.length], dsk=ck+'|'+d+'|d';
-      var fo=DAYEDITS[dsk]?(poiByName(ck,DAYEDITS[dsk])||fdef):fdef;
+      var dsk=ck+'|'+d+'|d', fo=DAYEDITS[dsk]?poiByName(ck,DAYEDITS[dsk]):null;
+      if(!fo)fo=take(match.food,usedF,rot,0);
+      usedF[fo.n]=1;
       html+=eslot(o.times.dinner,fo,match.city,dsk,o);
       txt.push('  '+o.times.dinner+': '+fo.n+' ('+fo.a+')');
       html+='</div>';
@@ -1924,10 +1933,10 @@
   var ROUTE=null;
   var ROUTEDRIVE=false;
   var SEED=0;
-  var DAYEDITS={};   // per-day/per-slot place overrides: key "cityKey|day|slotIndex" (or |d for dinner) → place name
-  var LASTPLAN=null; // re-renders the current plan in place (honouring DAYEDITS) after an edit
-  var LASTSPD=3;     // activity slots per day in the current plan (for shuffle)
-  var SHUFN={};      // per-day shuffle counter so repeated shuffles keep changing
+  var DAYEDITS={};   // explicit per-slot swaps: key "cityKey|day|slotIndex" (or |d for dinner) → place name
+  var DAYROT={};     // per-day shuffle rotation: key "cityKey|day" → integer (picks different unused places)
+  var LASTPLAN=null; // re-renders the current plan in place (honouring edits) after a change
+  var LASTSPD=3;     // activity slots per day in the current plan
   function newSeed(){ SEED=Math.floor(Math.random()*1e9)+1; }
   function srand(seed){ var x=(seed||1)>>>0; return function(){ x=(x*1103515245+12345)&0x7fffffff; return x/0x7fffffff; }; }
   function shuffle(arr,seed){ var r=srand(seed), a=arr.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(r()*(i+1)); var tmp=a[i];a[i]=a[j];a[j]=tmp; } return a; }
@@ -2061,7 +2070,7 @@
   function runPrompt(){
     var raw=$('promptBox').value||'';
     if(!raw.trim()){ toast(I18N[LANG].ui.promptNone); return; }
-    newSeed(); DAYEDITS={}; SHUFN={};
+    newSeed(); DAYEDITS={}; DAYROT={};
     var pp=parsePrompt(raw);
     pp.days=pp.days||(pp.roadtrip?12:5);
     var keys=buildRoute(pp,SEED);
@@ -2214,7 +2223,7 @@
     return {d:$('dest').value, d2:$('dest2').value, days:$('days').value, pace:$('pace').value,
       adults:$('adults').value, kids:$('kids').value, sd:$('startDate').value, cur:$('homeCur').value,
       budget:picked('budgetChips')[0]||'Mid-range', vibes:picked('vibeChips'), lang:LANG,
-      rt:(ROUTE&&ROUTE.length>=2?ROUTE:null), dr:ROUTEDRIVE, seed:SEED, edits:DAYEDITS};
+      rt:(ROUTE&&ROUTE.length>=2?ROUTE:null), dr:ROUTEDRIVE, seed:SEED, edits:DAYEDITS, rot:DAYROT};
   }
   function saveState(){try{localStorage.setItem('rihla_v1',JSON.stringify(stateObj()));}catch(e){}}
   function buildTripLink(){return location.href.split('#')[0]+'#trip='+encodeURIComponent(JSON.stringify(stateObj()));}
@@ -2374,7 +2383,7 @@
   function applyState(s){
     if(s.lang&&I18N[s.lang])applyLang(s.lang);
     SEED=(typeof s.seed==='number'?s.seed:SEED); // reproduce the exact saved/shared trip
-    DAYEDITS=(s.edits&&typeof s.edits==='object')?s.edits:{}; SHUFN={}; // restore any per-day edits
+    DAYEDITS=(s.edits&&typeof s.edits==='object')?s.edits:{}; DAYROT=(s.rot&&typeof s.rot==='object')?s.rot:{}; // restore per-day edits
     $('dest').value=s.d||''; $('days').value=s.days||5; $('pace').value=s.pace||'balanced';
     $('adults').value=s.adults||2; $('kids').value=s.kids||0; $('startDate').value=s.sd||''; $('homeCur').value=s.cur||'USD';
     if(s.d2){ $('city2wrap').classList.remove('is-hidden'); $('addCity').classList.add('is-hidden'); $('dest2').value=s.d2; }
@@ -2506,7 +2515,7 @@
     redrawMaps(); runPrayers(); saveState();
     out.scrollIntoView({behavior:'smooth',block:'start'});
   }
-  $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; SHUFN={}; plan(); });
+  $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; plan(); });
 
   function toast(msg){var el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove('show');},1800);}
   $('out').addEventListener('click',function(e){
@@ -2534,11 +2543,10 @@
   });
   // per-day editing: shuffle a whole day, or tap the swap icon to choose a different real place
   function shuffleDay(ck,d){
-    var dd=DEST[ck]; if(!dd||!dd.poi.length)return;
-    var key=ck+'|'+d, base=(SHUFN[key]=(SHUFN[key]||0)+1);
-    var n=dd.poi.length, step=Math.max(1,Math.floor(n/Math.max(2,LASTSPD+1)));
-    for(var s=0;s<LASTSPD;s++){ DAYEDITS[ck+'|'+d+'|'+s]=dd.poi[(base*step + s*step) % n].n; }
-    if(dd.food.length)DAYEDITS[ck+'|'+d+'|d']=dd.food[base % dd.food.length].n;
+    var key=ck+'|'+d;
+    // clear any explicit swaps on this day so it re-rolls cleanly, then advance its rotation
+    Object.keys(DAYEDITS).forEach(function(k){ if(k===key+'|d'||k.indexOf(key+'|')===0)delete DAYEDITS[k]; });
+    DAYROT[key]=(DAYROT[key]||0)+1;
     if(LASTPLAN)LASTPLAN();
   }
   function openSwap(btn){
