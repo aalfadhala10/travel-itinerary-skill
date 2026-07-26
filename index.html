@@ -108,13 +108,13 @@
   .comboitem .ccity{font-size:15px;font-weight:600;color:var(--ink)}
   .comboitem .ccountry{color:var(--muted);font-size:13px;margin-left:auto}
   #app[dir="rtl"] .comboitem .ccountry{margin-left:0;margin-right:auto}
-  .stepper{display:flex;align-items:stretch;gap:8px}
+  .stepper{display:flex;align-items:stretch;gap:8px;direction:ltr}
   .stepper input{flex:1;min-width:0;text-align:center}
   .stepbtn{flex:0 0 46px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);border-radius:11px;font-size:22px;font-weight:600;cursor:pointer;font-family:var(--ff-body);line-height:1;transition:all .15s;user-select:none}
   .stepbtn:hover{border-color:var(--teal);background:var(--teal-soft)}
   .stepbtn:active{transform:translateY(1px)}
-  .daypresets{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-  .daychip{flex:1;min-width:36px;padding:7px 4px;border-radius:9px;border:1px solid var(--line);background:var(--paper2);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--ff-data);transition:all .15s;font-variant-numeric:tabular-nums}
+  .daypresets{display:flex;gap:6px;margin-top:8px;flex-wrap:nowrap;direction:ltr}
+  .daychip{flex:1;min-width:0;padding:9px 4px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--ff-data);transition:all .15s;font-variant-numeric:tabular-nums}
   .daychip:hover{border-color:var(--teal)}
   .daychip.active{background:var(--teal);border-color:var(--teal);color:#fff}
   @media (prefers-color-scheme:dark){.daychip.active{color:#0a1310}}
@@ -421,21 +421,17 @@
       </div>
     </div>
 
-    <div class="row">
-      <div><label for="days" id="lblDays">How many days?</label>
-        <div class="stepper"><button type="button" class="stepbtn" data-for="days" data-step="-1" aria-label="−">−</button><input id="days" type="number" min="1" max="30" value="5" inputmode="numeric"><button type="button" class="stepbtn" data-for="days" data-step="1" aria-label="+">+</button></div>
-        <div class="daypresets" id="dayPresets">
-          <button type="button" class="daychip" data-days="3">3</button>
-          <button type="button" class="daychip" data-days="5">5</button>
-          <button type="button" class="daychip" data-days="7">7</button>
-          <button type="button" class="daychip" data-days="10">10</button>
-          <button type="button" class="daychip" data-days="14">14</button>
-        </div>
-      </div>
-      <div><label for="pace" id="lblPace">Trip pace</label>
-        <select id="pace"><option value="relaxed">Relaxed</option><option value="balanced" selected>Balanced</option><option value="packed">Packed</option></select>
-      </div>
+    <label for="days" id="lblDays">How many days?</label>
+    <div class="stepper"><button type="button" class="stepbtn" data-for="days" data-step="-1" aria-label="−">−</button><input id="days" type="number" min="1" max="30" value="5" inputmode="numeric"><button type="button" class="stepbtn" data-for="days" data-step="1" aria-label="+">+</button></div>
+    <div class="daypresets" id="dayPresets">
+      <button type="button" class="daychip" data-days="3">3</button>
+      <button type="button" class="daychip" data-days="5">5</button>
+      <button type="button" class="daychip" data-days="7">7</button>
+      <button type="button" class="daychip" data-days="10">10</button>
+      <button type="button" class="daychip" data-days="14">14</button>
     </div>
+    <label for="pace" id="lblPace">Trip pace</label>
+    <select id="pace"><option value="relaxed">Relaxed</option><option value="balanced" selected>Balanced</option><option value="packed">Packed</option></select>
 
     <div class="row">
       <div><label for="adults" id="lblAdults">Adults</label>
