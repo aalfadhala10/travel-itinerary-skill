@@ -1254,6 +1254,12 @@
   // each match every city in that country — not just whichever city happened to carry the alias).
   var COUNTRY_AR={"Argentina":["الأرجنتين","الارجنتين"],"Australia":["أستراليا","استراليا"],"Austria":["النمسا"],"Azerbaijan":["أذربيجان","اذربيجان"],"Bahrain":["البحرين"],"Bosnia":["البوسنة"],"Brazil":["البرازيل"],"Cambodia":["كمبوديا"],"China":["الصين"],"Croatia":["كرواتيا"],"Cyprus":["قبرص"],"Czech Republic":["التشيك","جمهورية التشيك"],"Egypt":["مصر"],"France":["فرنسا"],"Georgia":["جورجيا"],"Germany":["ألمانيا","المانيا"],"Greece":["اليونان"],"Hungary":["المجر","هنغاريا"],"India":["الهند"],"Indonesia":["إندونيسيا","اندونيسيا"],"Ireland":["أيرلندا","ايرلندا"],"Italy":["إيطاليا","ايطاليا"],"Japan":["اليابان"],"Jordan":["الأردن","الاردن"],"Kenya":["كينيا"],"Kuwait":["الكويت"],"Lebanon":["لبنان"],"Malaysia":["ماليزيا"],"Maldives":["المالديف","جزر المالديف"],"Mauritius":["موريشيوس"],"Mexico":["المكسيك"],"Montenegro":["الجبل الأسود"],"Morocco":["المغرب"],"Nepal":["نيبال"],"Netherlands":["هولندا"],"New Zealand":["نيوزيلندا","نيوزلندا"],"Oman":["عمان","سلطنة عمان"],"Philippines":["الفلبين"],"Poland":["بولندا"],"Portugal":["البرتغال"],"Qatar":["قطر"],"Saudi Arabia":["السعودية","المملكة العربية السعودية"],"Singapore":["سنغافورة"],"South Africa":["جنوب أفريقيا","جنوب افريقيا"],"South Korea":["كوريا","كوريا الجنوبية"],"Spain":["إسبانيا","اسبانيا"],"Sri Lanka":["سريلانكا","سري لانكا"],"Switzerland":["سويسرا"],"Tanzania":["تنزانيا"],"Thailand":["تايلاند","تايلند"],"Tunisia":["تونس"],"Turkey":["تركيا"],"UAE":["الإمارات","الامارات"],"United Kingdom":["بريطانيا","المملكة المتحدة"],"United States":["أمريكا","امريكا","الولايات المتحدة"],"Uzbekistan":["أوزبكستان","اوزبكستان"],"Vietnam":["فيتنام"]};
   var CO={};          // city coordinates [lat,lng] — filled by the auto-generated block below
+  // Per-POI coordinates {cityKey:{ "Place name":[lat,lng] }} — lets the planner group each day
+  // geographically and spread far day-trips onto separate days. Cities without an entry fall back
+  // to the old vibe order. Authored/extended over time; more cities can be Object.assign'd in.
+  var POI_CO={
+    doha:{"Souq Waqif":[25.287,51.533],"Museum of Islamic Art":[25.295,51.539],"National Museum of Qatar":[25.286,51.552],"The Pearl-Qatar":[25.369,51.548],"Katara Cultural Village":[25.359,51.525],"Doha Corniche":[25.307,51.531],"Villaggio Mall":[25.259,51.443],"Aspire Park & Torch":[25.263,51.445],"Msheireb Downtown":[25.288,51.526],"Katara Beach":[25.361,51.527],"Khor Al Adaid (Inland Sea)":[24.99,51.22],"Al Zubarah Fort Day Trip":[25.978,51.023],"Shay Al Shomous":[25.288,51.533],"Parisa":[25.287,51.534],"Al Mourjan":[25.305,51.530],"Damasca One":[25.288,51.532],"IDAM (fine dining)":[25.295,51.539],"Turkey Central":[25.281,51.490]}
+  };
   var COUNTRY_TZ={};  // country → IANA timezone (for local-time display)
   var COUNTRY_LANG={};// country → phrasebook language code
   var LANG_PHRASES={};// language code → { hello:{t,p}, ... }
@@ -1906,31 +1912,90 @@
       +'<div class="d">'+link(poi.n,poi.n+' '+city)+' <span class="area">· '+esc(poi.a)+'</span></div>'
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
   }
+  // Re-order a city's POI pool so each day stays in one part of town and far day-trips land on
+  // separate days. Central places are walked as a nearest-neighbour route (so a day's slots are
+  // adjacent), and outliers (e.g. an inland-sea or a fort 80km away) are seeded one-per-day instead
+  // of being crammed together. Returns the original pool unchanged when we have no coordinates.
+  function geoOrderPool(ck,pool,spd){
+    var co=POI_CO[ck]; if(!co)return pool;
+    var covered=pool.filter(function(p){return co[p.n];});
+    if(covered.length<Math.max(3,Math.ceil(pool.length*0.6)))return pool; // not enough data to trust
+    function d2(a,b){var dx=a[0]-b[0],dy=(a[1]-b[1])*Math.cos((a[0]+b[0])/2*Math.PI/180);return dx*dx+dy*dy;}
+    var cx=0,cy=0; covered.forEach(function(p){cx+=co[p.n][0];cy+=co[p.n][1];}); cx/=covered.length; cy/=covered.length;
+    var cen=[cx,cy];
+    function dc(p){return d2(co[p.n],cen);}
+    var sorted=covered.map(dc).slice().sort(function(a,b){return a-b;});
+    var med=sorted[Math.floor(sorted.length/2)]||0;
+    var outliers=covered.filter(function(p){return dc(p)>Math.max(med*4,0.02);}).sort(function(a,b){return dc(b)-dc(a);});
+    var central=covered.filter(function(p){return outliers.indexOf(p)<0;});
+    // nearest-neighbour route through the central cluster, starting nearest the centroid
+    var route=[],rem=central.slice();
+    if(rem.length){
+      var si=0,sb=Infinity; rem.forEach(function(p,i){var v=dc(p); if(v<sb){sb=v;si=i;}});
+      var cur=rem.splice(si,1)[0]; route.push(cur);
+      while(rem.length){ var bi=0,bb=Infinity; rem.forEach(function(p,i){var v=d2(co[p.n],co[cur.n]); if(v<bb){bb=v;bi=i;}}); cur=rem.splice(bi,1)[0]; route.push(cur); }
+    }
+    // weave: one outlier at the head of each day, then fill the day from the central route
+    var result=[],oi=0,rc=0,dayCount=Math.max(1,Math.ceil(pool.length/spd));
+    for(var day=0;day<dayCount;day++){
+      if(oi<outliers.length)result.push(outliers[oi++]);
+      while(result.length<(day+1)*spd && rc<route.length)result.push(route[rc++]);
+    }
+    while(oi<outliers.length)result.push(outliers[oi++]);
+    while(rc<route.length)result.push(route[rc++]);
+    // keep any pool entries we had no coordinates for (appended, order preserved)
+    pool.forEach(function(p){ if(result.indexOf(p)<0)result.push(p); });
+    // remember the far day-trips so a long stay never *repeats* an 80km excursion as filler
+    result._out={}; outliers.forEach(function(p){result._out[p.n]=1;});
+    return result;
+  }
   function emitDays(match,fromDay,count,total,vibes,spd,o,t,txt,stops){
     var pool=poolFor(match,vibes),tl=timeLabels(o,spd),html='',ck=keyOf(match);
-    var off=SEED%1000;
+    var geoPool=geoOrderPool(ck,pool,spd), geoOn=(geoPool!==pool);
+    if(geoOn)pool=geoPool;
+    var off=geoOn?0:SEED%1000; // geo order is meaningful in-sequence, so don't rotate the start
     var usedA={}, usedF={}; // never repeat the same place/restaurant within one city
+    var outSet=pool._out||{};
     function take(arr,used,rot,s){
       var avail=arr.filter(function(x){return !used[x.n];});
-      if(!avail.length)avail=arr; // pool exhausted (very long stay) — only then allow a repeat
+      if(!avail.length){ // pool exhausted (very long stay) — only then allow a repeat
+        avail=arr.filter(function(x){return !outSet[x.n];}); // ...but never repeat a far day-trip
+        if(!avail.length)avail=arr;
+      }
       var idx=((off+rot*spd+s)%avail.length+avail.length)%avail.length;
       return avail[idx];
+    }
+    // dinner near where the day actually ends: prefer a restaurant closest to the last activity
+    // (by coordinates, else by matching neighbourhood), so you're not driving across town to eat.
+    function nearestFood(ck,food,used,dayPois,rot){
+      var avail=food.filter(function(x){return !used[x.n];}); if(!avail.length)avail=food;
+      var co=POI_CO[ck], anchor=dayPois[dayPois.length-1];
+      if(co&&anchor&&co[anchor.n]){
+        var ac=co[anchor.n];
+        function d2(a,b){var dx=a[0]-b[0],dy=(a[1]-b[1])*Math.cos((a[0]+b[0])/2*Math.PI/180);return dx*dx+dy*dy;}
+        var withCo=avail.filter(function(f){return co[f.n];});
+        if(withCo.length){ var best=withCo[0],bb=Infinity; withCo.forEach(function(f){var v=d2(co[f.n],ac); if(v<bb){bb=v;best=f;}}); return best; }
+      }
+      var areas={}; dayPois.forEach(function(p){areas[p.a]=1;}); // fallback: same neighbourhood
+      var same=avail.filter(function(f){return areas[f.a];}); if(same.length)return same[0];
+      return take(food,used,rot,0);
     }
     for(var i=0;i<count;i++){
       var d=fromDay+i, title=d===1?o.arrival:d===total?o.last:o.explore, rot=DAYROT[ck+'|'+d]||0;
       html+='<div class="day" id="day-'+d+'"><div class="dhead"><div class="dlabel">'+o.dayWord+' '+d+' · '+esc(match.city)+'</div>'
         +'<button type="button" class="dayshuffle" data-shuf="'+ck+'|'+d+'" title="'+o.shuffleDay+'">'+SHUFSVG+'<span>'+o.shuffleDay+'</span></button></div><h3>'+title+'</h3>';
       txt.push(''); txt.push(o.dayWord+' '+d+' — '+title+' ('+match.city+')');
+      var dayPois=[];
       for(var s=0;s<spd;s++){
         var sk=ck+'|'+d+'|'+s, poi=DAYEDITS[sk]?poiByName(ck,DAYEDITS[sk]):null;
         if(!poi)poi=take(pool,usedA,rot,s);
-        usedA[poi.n]=1;
+        usedA[poi.n]=1; dayPois.push(poi);
         if(stops)stops.push({n:poi.n,a:poi.a});
         html+=eslot(tl[s],poi,match.city,sk,o);
         txt.push('  '+tl[s]+': '+poi.n+' ('+poi.a+')');
       }
       var dsk=ck+'|'+d+'|d', fo=DAYEDITS[dsk]?poiByName(ck,DAYEDITS[dsk]):null;
-      if(!fo)fo=take(match.food,usedF,rot,0);
+      if(!fo)fo=nearestFood(ck,match.food,usedF,dayPois,rot);
       usedF[fo.n]=1;
       html+=eslot(o.times.dinner,fo,match.city,dsk,o);
       txt.push('  '+o.times.dinner+': '+fo.n+' ('+fo.a+')');
