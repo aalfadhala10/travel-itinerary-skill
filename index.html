@@ -216,6 +216,13 @@
   .micbtn:hover{border-color:var(--teal)}
   .micbtn:active{transform:translateY(1px)}
   .micbtn.is-hidden{display:none}
+  .miclang{position:absolute;bottom:9px;right:57px;height:40px;min-width:44px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--muted);font-size:12px;font-weight:700;font-family:var(--ff-data);letter-spacing:.5px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  #app[dir="rtl"] .miclang{right:auto;left:57px;font-family:var(--ff-body)}
+  .miclang:hover{border-color:var(--teal);color:var(--teal)}
+  .miclang:active{transform:translateY(1px)}
+  .miclang.is-hidden{display:none}
+  .promptwrap:has(.miclang:not(.is-hidden)) .promptbox{padding-right:108px}
+  #app[dir="rtl"] .promptwrap:has(.miclang:not(.is-hidden)) .promptbox{padding-right:14px;padding-left:108px}
   .micbtn.rec{background:#e5484d;border-color:#e5484d;color:#fff;animation:micpulse 1.2s infinite}
   @keyframes micpulse{0%{box-shadow:0 0 0 0 rgba(229,72,77,.45)}70%{box-shadow:0 0 0 11px rgba(229,72,77,0)}100%{box-shadow:0 0 0 0 rgba(229,72,77,0)}}
   .michint{margin-top:9px;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:var(--paper2);color:var(--muted);font-size:13px;line-height:1.5}
@@ -421,6 +428,7 @@
     <label id="lblPrompt">Plan by describing your trip</label>
     <div class="promptwrap">
       <textarea id="promptBox" class="promptbox" rows="2" placeholder="e.g. Europe road trip, 14 days, culture & food"></textarea>
+      <button type="button" class="miclang is-hidden" id="micLang" title="Voice language">EN</button>
       <button type="button" class="micbtn is-hidden" id="micBtn" aria-label="Speak your trip" title="Speak your trip">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" fill="currentColor"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
@@ -1633,8 +1641,11 @@
     return null;
   }
 
+  var VOICELANG='en'; // language the microphone listens in — defaults to the app language, overridable via the pill
+  function voiceLabel(l){ return l==='ar'?'عربي':(l==='es'?'ES':'EN'); }
   function applyLang(lang){
     LANG=lang; var t=I18N[lang],u=t.ui;
+    VOICELANG=lang; (function(){ var ml=$('micLang'); if(ml)ml.textContent=voiceLabel(lang); })();
     $('app').setAttribute('dir',t.dir);
     document.querySelectorAll('#langbar .lang').forEach(function(el){el.classList.toggle('active',el.dataset.lang===lang);});
     $('heroEyebrow').textContent=u.eyebrow; $('heroTag').textContent=u.tag;
@@ -2109,7 +2120,13 @@
     // On iOS, only Safari can use speech recognition; Chrome/Firefox/Edge/Opera/Google-app on iPhone
     // are blocked from it by Apple, so guide the user to Safari instead of failing on permission.
     var iosThirdParty=isIOS && /(CriOS|FxiOS|EdgiOS|OPiOS|GSA)/.test(navigator.userAgent);
-    function langCode(){ return LANG==='ar'?'ar-SA':(LANG==='es'?'es-ES':'en-US'); }
+    function langCode(){ return VOICELANG==='ar'?'ar-SA':(VOICELANG==='es'?'es-ES':'en-US'); }
+    // Voice-language pill: lets you speak a different language than the app's UI (e.g. English UI, Arabic voice).
+    var langPill=$('micLang');
+    if(langPill && !iosThirdParty){
+      langPill.classList.remove('is-hidden'); langPill.textContent=voiceLabel(VOICELANG);
+      langPill.addEventListener('click',function(){ var order=['en','ar','es'], i=order.indexOf(VOICELANG); VOICELANG=order[(i+1)%order.length]; langPill.textContent=voiceLabel(VOICELANG); });
+    }
     function showMicHint(){
       var u=I18N[LANG].ui, el=$('micHint'); if(!el)return; el.innerHTML='';
       var msg=document.createElement('div'); msg.textContent=u.micSafari; el.appendChild(msg);
