@@ -366,6 +366,12 @@
   :root[data-theme="light"] .mapbtn{color:#fff}
   .mapbtn:hover{filter:brightness(1.06)}
   .bookbar{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px;margin-top:16px}
+  .salmancard{border-color:#e0503a66}
+  .salmancard>.maphdr{color:#d63b25}
+  .salbody{font-size:14px;color:var(--ink);margin:0 0 12px;line-height:1.5}
+  .salbtn{display:inline-block;background:#d63b25;color:#fff;padding:10px 16px;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none}
+  .salbtn:hover{background:#b83320}
+  .salcredit{display:block;margin-top:12px;font-size:12px;color:#d63b25;text-decoration:none;opacity:.9}
   .bookrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
   .bookbtn{flex:1;min-width:100px;text-align:center;padding:12px 10px;border-radius:11px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);font-size:13px;font-weight:600;text-decoration:none;transition:all .15s}
   .bookbtn:hover{border-color:var(--teal);background:var(--teal-soft)}
@@ -3149,6 +3155,25 @@
     "China":{ride:["DiDi"],maps:["Amap","Apple Maps"],pay:"Alipay, WeChat Pay (bind a foreign card)",warn:"Google Maps is blocked — most Western apps (WhatsApp, Instagram, Google) need a VPN"},
     "Russia":{ride:["Yandex Go"],maps:["Yandex Maps","2GIS"],food:["Yandex Eats"],pay:"Mostly cash — foreign Visa/Mastercard don't work (Mir cards only)",warn:"Carry cash"}
   };
+  // Salmaninho (سلمانينيو) — a Saudi travel curator who shares per-country Google Maps lists.
+  // We LINK to his list (his signature red, credited) rather than republishing it — this sends
+  // travelers to his page. Country -> his Google Maps list URL.
+  var SALMAN={"China":"https://maps.app.goo.gl/Rd27ia7eBuJuXBZN7","Italy":"https://maps.app.goo.gl/YybXkYNek2mboqd28","Thailand":"https://maps.app.goo.gl/Up8R8638fxe9ThGD7","Vietnam":"https://maps.app.goo.gl/42jxQGAQeeXSfc4r5","Japan":"https://maps.app.goo.gl/2tw27WPoZ9Hph6yq5","Spain":"https://maps.app.goo.gl/GY8xhD7RiVjUfVbx9","United Kingdom":"https://maps.app.goo.gl/56DqSnHe5ZRHPfA49","Malaysia":"https://maps.app.goo.gl/WZLAe6sHoePGP1xs9","Mauritius":"https://maps.app.goo.gl/Ed1pcs6wUGZrE25e8","Russia":"https://maps.app.goo.gl/uq5EeKYAsCGYXDHH6","Austria":"https://maps.app.goo.gl/srruXa77LGmcA9128","South Africa":"https://maps.app.goo.gl/xaiA7uN2VaYgcqrJ6","South Korea":"https://maps.app.goo.gl/armUVKBstdPT4s1W7","Poland":"https://maps.app.goo.gl/idaYdYN81tcAWDFaA","Tanzania":"https://maps.app.goo.gl/MMUJJao3rBTbuRq29","Switzerland":"https://maps.app.goo.gl/GHFKztKZWcpGzCKq9","Portugal":"https://maps.app.goo.gl/kw2D8ozhqKSLA5Ug7","Czech Republic":"https://maps.app.goo.gl/edCYyfKEiYHR8amw9","Netherlands":"https://maps.app.goo.gl/SmQmRaaqEN2K9tZ98","France":"https://maps.app.goo.gl/Urr25mVwY6voG1JSA","Morocco":"https://maps.app.goo.gl/pzJ8L6R4dwp1xXTq5","Iceland":"https://maps.app.goo.gl/QDrmzG5UepQQZhpD6","Hungary":"https://maps.app.goo.gl/bQQ5Pt7dUoeZQSTw7","Finland":"https://maps.app.goo.gl/4aXvbsydAPDksu5s7","Greece":"https://maps.app.goo.gl/uZFRacWvwqwF7J2c6","Turkey":"https://maps.app.goo.gl/zzU3AHijgoWraWGQ6","Cyprus":"https://maps.app.goo.gl/jPWXQ5419AsJHSXn8","Syria":"https://maps.app.goo.gl/P9AxLgSP8w8L6RRSA","Qatar":"https://maps.app.goo.gl/XJ2hMcMtmdG9pa4C8","Oman":"https://maps.app.goo.gl/mbik4Jh8jSst1bQe8","Bahrain":"https://maps.app.goo.gl/sfTSAWCqERZxYdtT9","UAE":"https://maps.app.goo.gl/SGubn1kfCioQupp38"};
+  function salmanCard(country,t){
+    var url=SALMAN[country]; if(!url)return '';
+    var L=LANG;
+    var title=L==='ar'?'📍 اختيارات سلمانينيو':(L==='es'?'📍 Los lugares de Salmaninho':'📍 Salmaninho’s picks');
+    var body=L==='ar'?('أماكن مختارة في '+esc(country)+' جمعها صديقنا سلمانينيو على خرائط قوقل.'):
+             (L==='es'?('Lugares selectos en '+esc(country)+', reunidos por nuestro amigo Salmaninho en Google Maps.'):
+             ('Hand-picked spots across '+esc(country)+', curated by our friend Salmaninho on Google Maps.'));
+    var btn=L==='ar'?'افتح قائمته ←':(L==='es'?'Abrir su mapa →':'Open his map →');
+    var credit=L==='ar'?'باقي قوائمه':(L==='es'?'Sus otras listas':'His other lists');
+    return '<div class="bookbar salmancard"><div class="maphdr">'+title+'</div>'+
+      '<div class="salbody">'+body+'</div>'+
+      '<a class="salbtn" href="'+url+'" target="_blank" rel="noopener">'+btn+'</a>'+
+      '<a class="salcredit" href="https://linktr.ee/Salmaninho" target="_blank" rel="noopener">'+credit+' · linktr.ee/Salmaninho</a>'+
+      '</div>';
+  }
   function appsCard(country,t){
     var a=APPS[country]; if(!a)return '';
     var o=t.out;
@@ -3490,7 +3515,7 @@
       html+=budgetCard(o,t,catRows(baseTotal),transferUSD,totalUSD,null,adults,kids);
       html+=packingCard(ms[0],vibes,t,keys.join('-'));
       html+=goodToKnow(ms[0].country,t);
-      var __seenC={}; ms.forEach(function(m){ if(!__seenC[m.country]){__seenC[m.country]=1; html+=appsCard(m.country,t);} });
+      var __seenC={}; ms.forEach(function(m){ if(!__seenC[m.country]){__seenC[m.country]=1; html+=appsCard(m.country,t)+salmanCard(m.country,t);} });
       html+=faithBar(ms[0].city,ms[0].country,t);
       html+=flyCard(ms[0],t); html+=phrasesCard(ms[0],t); html+=converterCard(ms[0],t);
     }
@@ -3842,8 +3867,8 @@
         html+=budgetCard(o,t,catRows(base1+base2),trUSD,totalUSD,multi?null:keyOf(m1),adults,kids);
         html+=packingCard(m1,vibes,t,m1.city);
         html+=goodToKnow(m1.country,t);
-        html+=appsCard(m1.country,t);
-        if(multi&&m2&&m2.country!==m1.country)html+=appsCard(m2.country,t);
+        html+=appsCard(m1.country,t)+salmanCard(m1.country,t);
+        if(multi&&m2&&m2.country!==m1.country)html+=appsCard(m2.country,t)+salmanCard(m2.country,t);
         html+=faithBar(m1.city,m1.country,t);
         html+=flyCard(m1,t); html+=phrasesCard(m1,t); html+=converterCard(m1,t);
       }
