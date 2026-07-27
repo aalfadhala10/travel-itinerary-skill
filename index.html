@@ -2742,8 +2742,8 @@
   }
 
   var VOICELANG='en', VOICEOVERRIDE=false; // mic language — follows the app language unless the user picks one
-  (function(){ try{ var v=localStorage.getItem('bosla_voicelang'); if(v==='ar'||v==='en'||v==='es'||v==='auto'){ VOICELANG=v; VOICEOVERRIDE=true; } }catch(e){} })();
-  function voiceLabel(l){ return l==='ar'?'عربي':(l==='es'?'ES':(l==='auto'?'🌐 Mix':'EN')); }
+  (function(){ try{ var v=localStorage.getItem('bosla_voicelang'); if(v==='ar'||v==='en'||v==='es'){ VOICELANG=v; VOICEOVERRIDE=true; } }catch(e){} })();
+  function voiceLabel(l){ return l==='ar'?'عربي':(l==='es'?'ES':'EN'); }
   function applyLang(lang){
     LANG=lang; var t=I18N[lang],u=t.ui;
     if(!VOICEOVERRIDE)VOICELANG=lang; (function(){ var ml=$('micLang'); if(ml)ml.textContent=voiceLabel(VOICELANG); })();
@@ -3565,12 +3565,12 @@
     // On iOS, only Safari can use speech recognition; Chrome/Firefox/Edge/Opera/Google-app on iPhone
     // are blocked from it by Apple, so guide the user to Safari instead of failing on permission.
     var iosThirdParty=isIOS && /(CriOS|FxiOS|EdgiOS|OPiOS|GSA)/.test(navigator.userAgent);
-    function langCode(){ var v=(VOICELANG==='auto')?LANG:VOICELANG; return v==='ar'?'ar-SA':(v==='es'?'es-ES':'en-US'); } // Mix: use the app-language engine (it still catches foreign place names) — browsers can't truly mix
+    function langCode(){ return VOICELANG==='ar'?'ar-SA':(VOICELANG==='es'?'es-ES':'en-US'); }
     // Voice-language pill: lets you speak a different language than the app's UI (e.g. English UI, Arabic voice).
     var langPill=$('micLang');
     if(langPill && !iosThirdParty){
       langPill.classList.remove('is-hidden'); langPill.textContent=voiceLabel(VOICELANG);
-      langPill.addEventListener('click',function(){ var order=['en','ar','es','auto'], i=order.indexOf(VOICELANG); VOICELANG=order[(i+1)%order.length]; VOICEOVERRIDE=true; try{localStorage.setItem('bosla_voicelang',VOICELANG);}catch(e){} langPill.textContent=voiceLabel(VOICELANG); });
+      langPill.addEventListener('click',function(){ var order=['en','ar','es'], i=order.indexOf(VOICELANG); VOICELANG=order[(i+1)%order.length]; VOICEOVERRIDE=true; try{localStorage.setItem('bosla_voicelang',VOICELANG);}catch(e){} langPill.textContent=voiceLabel(VOICELANG); });
     }
     function showMicHint(){
       var u=I18N[LANG].ui, el=$('micHint'); if(!el)return; el.innerHTML='';
