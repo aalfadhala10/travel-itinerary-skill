@@ -46,6 +46,29 @@ You'll do this once. It takes about 15 minutes.
 
 ---
 
+## Part B2 — Remember built cities (5 min, so nothing is generated twice)
+
+This adds free storage so a city Claude builds once is cached forever — the next
+visitor who searches it gets it instantly and at no cost.
+
+1. In Cloudflare, left sidebar: **Storage & Databases → KV** → **Create a namespace**.
+   Name it `bosla-cities`. Create.
+2. Go back to your Worker (`shy-fire-8a78`) → **Settings → Bindings** (older UI:
+   **Settings → Variables → KV Namespace Bindings**) → **Add binding**:
+   - **Type:** KV namespace
+   - **Variable name:** `CITIES`  (exactly this)
+   - **KV namespace:** pick `bosla-cities`
+   - Save / Deploy.
+3. Re-paste the latest `ai/worker.js` into the Worker code editor and **Deploy** (the
+   updated code is what reads/writes the cache).
+
+That's it — caching turns on automatically once the `CITIES` binding exists. Nothing
+breaks if you skip this; you just pay to rebuild a city each time instead of once.
+
+> Peek at what's been built any time by POSTing `{"action":"list"}` to your Worker URL
+> (returns the cached city names). `{"action":"dump"}` returns their full data — that's
+> what Claude uses to bake popular cities permanently into the app.
+
 ## Part C — Send Claude the URL
 
 Paste that `workers.dev` URL back to me. I'll drop it into `CONFIG.aiEndpoint`, wire the
