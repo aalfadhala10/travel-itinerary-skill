@@ -49,6 +49,19 @@ Last updated: 2026-07-27.
   promises "Saved on this device only — no account or email", so this MUST NOT ship
   without first rewording that note to be honest (e.g. "we keep your first name to
   greet you and improve بوصلة"). Deferred — kept device-only for now by choice.
+- [ ] **Better handling of vibe/advice-style prompts (from a real friend's input).**
+  Input: "extreme adventure, don't know which country suits a Philippine passport —
+  bungee, scuba, wakeboard, adrenaline." Problems to solve:
+  - **No Adventure/Adrenaline vibe** — the tag set is Culture/Food/Nature/Shopping/
+    Relax, so "adrenaline" collapses to "Nature". Add an Adventure vibe (bungee,
+    diving, watersports, etc.) and surface those activities in the plan.
+  - **Answers a question with a rigid itinerary** — when the user is *asking*
+    ("which country suits my passport?") the app should *recommend* fitting
+    destinations, not force one fixed trip. Consider a short "here's what fits"
+    suggestion step before/instead of the itinerary.
+- [ ] **Visa-friendly-for-my-passport feature.** Let a user pick their passport and
+  filter/recommend only visa-free or visa-on-arrival destinations. (AI parser now
+  honors passport hints in free-text; this would bring it to the manual planner too.)
 - [ ] **Handy-apps Batch 2** (Europe + popular Asia/Americas) — awaiting go-ahead.
 - [ ] **Affiliate wiring** once IDs are in hand (Booking.com, GetYourGuide/Klook).
 - [ ] **Mirror this roadmap to the Google Drive "Bosla App" Playbook** (needs the
