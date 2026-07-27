@@ -2504,8 +2504,14 @@
   }
   function destOptions(query){
     var s=(query||'').toLowerCase().trim();
+    // empty box → browsable list of countries (tap one to see its cities), not 735 raw cities
+    if(!s){
+      var seen={}, out=[];
+      Object.keys(DEST).forEach(function(k){ var c=DEST[k].country; if(!seen[c])seen[c]={flag:DEST[k].flag,n:0}; seen[c].n++; });
+      Object.keys(seen).sort().forEach(function(c){ out.push({isCountry:true,country:c,flag:seen[c].flag,count:seen[c].n}); });
+      return out;
+    }
     var arr=Object.keys(DEST).map(function(k){return {k:k,d:DEST[k]};});
-    if(!s){ arr.sort(byCountryCity); return arr; }
     // rank: city starts-with (0) → country starts-with (1) → alias starts-with (2) → any contains (3)
     arr=arr.map(function(x){
       var city=x.d.city.toLowerCase(), country=x.d.country.toLowerCase(), sc=99;
@@ -2519,9 +2525,11 @@
     return arr;
   }
   function renderComboList(list, query){
-    var items=destOptions(query).slice(0,60);
+    var q=(query||'').trim();
+    var items=destOptions(query).slice(0, q?60:260); // show all countries when browsing empty
     if(!items.length){ list.innerHTML=''; list.classList.add('is-hidden'); return; }
     list.innerHTML=items.map(function(x){
+      if(x.isCountry){ return '<div class="comboitem iscountry" data-country="'+esc(x.country)+'"><span class="cflag">'+x.flag+'</span><span class="ccity">'+esc(x.country)+'</span><span class="ccountry">'+x.count+' ›</span></div>'; }
       return '<div class="comboitem" data-k="'+x.k+'"><span class="cflag">'+x.d.flag+'</span><span class="ccity">'+esc(x.d.city)+'</span><span class="ccountry">'+esc(x.d.country)+'</span></div>';
     }).join('');
     list.classList.remove('is-hidden');
@@ -2534,7 +2542,11 @@
     function setActive(i){ var a=its(); active=i; a.forEach(function(el,idx){el.classList.toggle('active',idx===active);}); if(a[active])a[active].scrollIntoView({block:'nearest'}); }
     function open(){ renderComboList(list, inp.value); active=-1; inp.setAttribute('aria-expanded','true'); toggleClear(); }
     function close(){ list.classList.add('is-hidden'); inp.setAttribute('aria-expanded','false'); active=-1; }
-    function pick(it){ var k=it.getAttribute('data-k'); inp.value=DEST[k].city; toggleClear(); close(); if(onPick)onPick(k,inp); }
+    function pick(it){
+      var cc=it.getAttribute('data-country');
+      if(cc){ inp.value=cc; toggleClear(); open(); inp.focus(); return; } // drill into that country's cities
+      var k=it.getAttribute('data-k'); inp.value=DEST[k].city; toggleClear(); close(); if(onPick)onPick(k,inp);
+    }
     inp.addEventListener('focus', open);
     inp.addEventListener('input', open);
     inp.addEventListener('keydown', function(e){
