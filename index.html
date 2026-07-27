@@ -2685,6 +2685,39 @@
     });
   }
 
+  // AI understanding of a free-text / voice description. Asks the Worker (Haiku) to structure the
+  // trip, resolves each named place to a key (building any we don't have), then plans. Resolves
+  // false if the Worker fails or returns nothing, so the caller can fall back to the local parser.
+  function aiParse(raw){
+    return new Promise(function(resolve){
+      if(!CONFIG.aiEndpoint){ resolve(false); return; }
+      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'parse',text:String(raw).slice(0,1200)})})
+        .then(function(r){return r.json();})
+        .then(function(d){
+          var pp=d&&d.parsed;
+          if(!pp||!Array.isArray(pp.cities)||!pp.cities.length){ resolve(false); return; }
+          Promise.all(pp.cities.slice(0,8).map(function(n){return aiCity(n);})).then(function(keys){
+            var seen={}, ks=[];
+            keys.forEach(function(k){ if(k&&DEST[k]&&!seen[k]){seen[k]=1;ks.push(k);} });
+            if(!ks.length){ resolve(false); return; }
+            newSeed(); DAYEDITS={}; DAYROT={};
+            var days=Math.max(1,Math.min(30,(pp.days|0)||(pp.roadtrip?12:5)));
+            var vibes=(Array.isArray(pp.vibes)&&pp.vibes.length)?pp.vibes:['Culture'];
+            var budget=(pp.budget==='Budget'||pp.budget==='Luxury')?pp.budget:'Mid-range';
+            $('days').value=days; syncDayChips();
+            document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',vibes.indexOf(c.dataset.v)>=0);});
+            document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===budget);});
+            $('pace').value='balanced';
+            $('dest').value=DEST[ks[0]].city;
+            if(ks.length>=2){ $('city2wrap').classList.remove('is-hidden'); $('addCity').classList.add('is-hidden'); $('dest2').value=DEST[ks[1]].city; } else { $('dest2').value=''; }
+            if(ks.length>=2){ planRoute(ks,days,vibes,budget,'balanced',!!pp.roadtrip); } else { ROUTE=null; plan(); }
+            resolve(true);
+          });
+        })
+        .catch(function(){ resolve(false); });
+    });
+  }
+
   var VOICELANG='en', VOICEOVERRIDE=false; // mic language — follows the app language unless the user picks one
   (function(){ try{ var v=localStorage.getItem('bosla_voicelang'); if(v==='ar'||v==='en'||v==='es'){ VOICELANG=v; VOICEOVERRIDE=true; } }catch(e){} })();
   function voiceLabel(l){ return l==='ar'?'عربي':(l==='es'?'ES':'EN'); }
@@ -3361,6 +3394,14 @@
   function runPrompt(){
     var raw=$('promptBox').value||'';
     if(!raw.trim()){ toast(I18N[LANG].ui.promptNone); return; }
+    if(CONFIG.aiEndpoint){ // let the AI understand the description; fall back to the local parser if it fails
+      toast(I18N[LANG].ui.aiThinking||'Understanding your trip…');
+      aiParse(raw).then(function(ok){ if(!ok) runPromptLocal(raw); });
+      return;
+    }
+    runPromptLocal(raw);
+  }
+  function runPromptLocal(raw){
     newSeed(); DAYEDITS={}; DAYROT={};
     var pp=parsePrompt(raw);
     (pp.unresolved||[]).forEach(function(q){ try{track('miss',{dest:q,src:'prompt'});}catch(e){} }); // places asked for but not in our data
