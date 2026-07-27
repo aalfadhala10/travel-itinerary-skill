@@ -2916,8 +2916,9 @@
       setTimeout(function(){ chatClose(); if(ks.length>=2){ planRoute(ks,days,vibes,budget,'balanced',!!p.roadtrip); } else { ROUTE=null; plan(); } }, 800);
     });
   }
+  var CHAT_ON=false; // keep the chat hidden until the Worker's `chat` action is deployed — flip to true then
   (function(){ var fab=$('chatFab'); if(!fab)return;
-    if(CONFIG.aiEndpoint)fab.classList.remove('is-hidden');
+    if(CONFIG.aiEndpoint && CHAT_ON)fab.classList.remove('is-hidden');
     fab.addEventListener('click',chatOpen);
     var x=$('chatX'); if(x)x.addEventListener('click',chatClose);
     var s=$('chatSend'); if(s)s.addEventListener('click',chatSend);
