@@ -3576,9 +3576,12 @@
       closeFeedback();
     }
     if(CONFIG.feedbackEndpoint){
-      fetch(CONFIG.feedbackEndpoint,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({rating:FBRATING,message:msg,email:contact,lang:LANG,page:location.href})})
-        .then(function(r){ if(r&&r.ok){ toast(u.fbThanks); closeFeedback(); } else { mailtoFallback(); } })
-        .catch(function(){ mailtoFallback(); });
+      // Google Apps Script / Drive sinks don't send CORS headers, so we POST as a simple
+      // (no-preflight) request and optimistically confirm; mailto stays as the catch fallback.
+      try{
+        fetch(CONFIG.feedbackEndpoint,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({type:'feedback',rating:FBRATING,message:msg,email:contact,lang:LANG,page:location.href})});
+        toast(u.fbThanks); closeFeedback();
+      }catch(e){ mailtoFallback(); }
     } else { mailtoFallback(); }
   });
 
