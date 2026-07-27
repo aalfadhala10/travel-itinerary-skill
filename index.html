@@ -2569,7 +2569,7 @@
     function toggleClear(){ if(clr) clr.classList.toggle('is-hidden', !inp.value); }
     function setActive(i){ var a=its(); active=i; a.forEach(function(el,idx){el.classList.toggle('active',idx===active);}); if(a[active])a[active].scrollIntoView({block:'nearest'}); }
     function open(){ renderComboList(list, inp.value); active=-1; inp.setAttribute('aria-expanded','true'); toggleClear(); }
-    function close(){ list.classList.add('is-hidden'); inp.setAttribute('aria-expanded','false'); active=-1; }
+    function close(){ var _v=(inp.value||'').trim(); if(_v.length>=3 && !destOptions(_v).length){ try{track('miss',{dest:_v.slice(0,60),src:'search'});}catch(e){} } list.classList.add('is-hidden'); inp.setAttribute('aria-expanded','false'); active=-1; }
     function pick(it){
       var cc=it.getAttribute('data-country');
       if(cc){ inp.value=cc; toggleClear(); open(); inp.focus(); return; } // drill into that country's cities
@@ -3204,6 +3204,8 @@
     // Fuzzy-match misspelled place names sitting in a destination slot ("to munech" -> Munich,
     // "then insbruck" -> Innsbruck). Only very close matches (1 typo) are accepted, to avoid noise.
     var slotRe=/(?:\bto|\bthen|\bfrom|\bvia|\bvisit|→|->)\s+([a-zà-ÿ]{4,})/g, sm;
+    var STOPW={there:1,here:1,home:1,back:1,visit:1,explore:1,driving:1,drive:1,stay:1,staying:1,sleep:1,rent:1,return:1,another:1,downtown:1,somewhere:1,anywhere:1,everywhere:1,around:1,airport:1,hotel:1,north:1,south:1,east:1,west:1,then:1,them:1};
+    var unresolved={};
     while((sm=slotRe.exec(s))){
       var tok=sm[1], tpos=sm.index+sm[0].lastIndexOf(tok);
       if(ALIASSET[tok])continue; // a known place/country word — already handled above
@@ -3211,12 +3213,13 @@
       Object.keys(DEST).forEach(function(k){ if(taken[k])return; var nm=DEST[k].city.toLowerCase();
         if(Math.abs(nm.length-tok.length)>2)return; var d=lev(tok,nm); if(d<bestD){bestD=d;bestK=k;} });
       if(bestK && (bestD===1 || (bestD===2 && DEST[bestK].city.length>=8))){ hits.push({k:bestK,pos:tpos}); taken[bestK]=1; }
+      else if(!STOPW[tok]) unresolved[tok]=1; // a place we don't have -> candidate to add (logged as a "miss")
     }
     hits.sort(function(a,b){return a.pos-b.pos;});
     // Country-name words present -> only used when the user named few/no specific cities.
     var ctyCities=[]; Object.keys(CTYWORD2CITIES).forEach(function(w){ if(w.length>=3){ var idx=wordAt(s,w); if(idx>=0)ctyCities.push({pos:idx,keys:CTYWORD2CITIES[w]}); } });
     ctyCities.sort(function(a,b){return a.pos-b.pos;});
-    return {days:days,vibes:v,budget:budget,pace:pace,roadtrip:roadtrip,regions:regions,hits:hits.map(function(h){return h.k;}),hitObjs:hits,ctyCities:ctyCities};
+    return {days:days,vibes:v,budget:budget,pace:pace,roadtrip:roadtrip,regions:regions,hits:hits.map(function(h){return h.k;}),hitObjs:hits,ctyCities:ctyCities,unresolved:Object.keys(unresolved)};
   }
   // Order a set of cities into a sensible drive — nearest-neighbour then 2-opt — so a road trip
   // never skips a city and doubles back. Uses approx coordinates; if any are missing it leaves the
@@ -3311,6 +3314,7 @@
     if(!raw.trim()){ toast(I18N[LANG].ui.promptNone); return; }
     newSeed(); DAYEDITS={}; DAYROT={};
     var pp=parsePrompt(raw);
+    (pp.unresolved||[]).forEach(function(q){ try{track('miss',{dest:q,src:'prompt'});}catch(e){} }); // places asked for but not in our data
     pp.days=pp.days||(pp.roadtrip?12:5);
     var keys=buildRoute(pp,SEED);
     if(!keys.length){ toast(I18N[LANG].ui.promptNone); return; }

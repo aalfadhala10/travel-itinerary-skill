@@ -67,7 +67,7 @@ function doGet(e) {
 
   var total = eRows.length;
   var pageViews = 0, plans = 0, saves = 0, shares = 0, outbound = 0;
-  var sessions = {}, dests = {}, countries = {}, hosts = {}, langs = {}, byDay = {};
+  var sessions = {}, dests = {}, countries = {}, hosts = {}, langs = {}, byDay = {}, misses = {}, missTotal = 0;
 
   for (var i = 0; i < eRows.length; i++) {
     var r = eRows[i];
@@ -79,6 +79,7 @@ function doGet(e) {
     else if (ev === 'save') saves++;
     else if (ev === 'share' || ev === 'wa') shares++;
     else if (ev === 'outbound') { outbound++; if (host) hosts[host] = (hosts[host] || 0) + 1; }
+    else if (ev === 'miss') { missTotal++; if (dest) misses[dest] = (misses[dest] || 0) + 1; }
     if (received instanceof Date) {
       var key = Utilities.formatDate(received, 'GMT', 'yyyy-MM-dd');
       byDay[key] = (byDay[key] || 0) + 1;
@@ -135,8 +136,12 @@ function doGet(e) {
     card_(pageViews, 'page views') + card_(plans, 'plans made') +
     card_(saves, 'trips saved') + card_(shares, 'shares') +
     card_(outbound, 'outbound clicks') + card_(fRows.length, 'feedback') + card_(avg, 'avg rating') +
+    card_(missTotal, 'searches w/ no result') +
     '</div>' +
     '<h3>Events per day (last 14)</h3><div class="spark">' + (spark || '<span style="opacity:.5">no data yet</span>') + '</div>' +
+    '<h3>Missing places — asked for, not in our data (add these next)</h3>' +
+    '<table><tr><th>What they typed</th><th class="n">Times</th></tr>' + rowsHtml(topList(misses, 30)) + '</table>' +
+    '<div style="height:24px"></div>' +
     '<div class="grid">' +
     tbl_('Top destinations', 'Destination', rowsHtml(topList(dests))) +
     tbl_('Top countries', 'Country', rowsHtml(topList(countries))) +
