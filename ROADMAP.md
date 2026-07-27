@@ -1,66 +1,84 @@
 # Bosla · بوصلة — Roadmap & To-Do
 
-Living to-do list. (Mirrored into the Google Drive "Bosla App" Playbook when the
-Drive connector is connected.)
+Living to-do list / playbook. (Mirror into the Google Drive "Bosla App"
+Playbook when the Drive connector is enabled for the chat.)
 
-## In progress / decided
+Last updated: 2026-07-27.
 
-- [ ] **AI voice/description understanding (optional upgrade).** Keep the free
-  local rule-based parser as the default; add an optional "understand anything"
-  path for the voice/description box that sends the text to Claude and gets back
-  a clean structured trip (handles any phrasing, mixed AR/EN, vague places like
-  "the Amalfi coast"). Needs: an Anthropic API key + a free Cloudflare Worker to
-  hold the key (can't expose it in the static page). Small per-request cost,
-  online-only. Claude to write the Worker + wiring; Ahmed to create the key +
-  Cloudflare account.
+## How the app is wired (quick reference)
 
-- [ ] **Real-time auto-generate missing cities (the big one).** Batch-adding
-  later is pointless — the user who searched has already left. The goal is
-  IN-SESSION: the instant a search/description hits a city we don't have, build
-  it on the spot (Claude via a Cloudflare Worker), inject it into the running
-  page, and render that user's trip in ~2-4s. Separately persist the generated
-  city so Ahmed can verify it and bake it in permanently for everyone. Needs the
-  same Worker + Anthropic key as the AI parser. See design note below.
+- **App**: one static file, `index.html` (~2.3 MB, inline CSS/JS), deployed via
+  GitHub Pages from `main`. Develop on `claude/app-creation-y2v2ob`, then merge to
+  `main` to go live. Working source copy lives in the scratchpad as `rihla.html` —
+  every edit is applied to BOTH.
+- **Analytics + feedback**: Google Apps Script web app (`analytics/Code.gs`) →
+  writes to a Google Sheet (Events + Feedback tabs). Same `/exec` URL is wired into
+  both `CONFIG.analyticsEndpoint` and `CONFIG.feedbackEndpoint`. Opening the `/exec`
+  URL shows a live dashboard. Cookieless.
+- **AI (real-time)**: Cloudflare Worker (`ai/worker.js`) holds the Anthropic key as
+  a secret; `CONFIG.aiEndpoint` points at it. Two actions: `city` (Sonnet — build a
+  missing city live) and `parse` (Haiku — understand a free-text/voice description).
+  Built cities are cached in a KV namespace (`CITIES`) so each place is generated
+  once, ever, then served free/instant. **Confirmed working.**
+
+## In progress / next up
+
+- [ ] **Salmaninho lists → per-country JSON files (refactor).** Move his embedded
+  place lists out of `index.html` into `data/salman/<country>.json`, lazy-loaded
+  only when a user plans that country (and cached offline by the service worker).
+  Keeps the HTML lean and makes "add a country" = drop in one small file. Decided,
+  not yet built.
+- [ ] **Salmaninho — remaining countries.** Only Turkey (112) + Netherlands (84)
+  are extracted/embedded so far. The other 31 need scraping from his Google Maps
+  lists (virtualised scroll) — needs a session with working browser/maps access, or
+  the user exports them. After the JSON refactor, each is just a new file.
 
 ## Backlog
 
-- [ ] Redeploy the analytics Apps Script (New version) so the "Missing places"
-  dashboard section appears. (Raw miss data already flows to the Events tab.)
-- [ ] City batches (rich data, no country left thin): A Alps/ski · B Europe
+- [ ] **AI voice upgrade (true AR+EN mixing).** Browser speech can't mix languages;
+  current voice is reliable single-language (EN/AR/ES). True code-switching needs AI
+  transcription (e.g. Whisper) via the Worker (~½¢/voice note, needs an OpenAI key).
+  Only if the free single-language version proves not enough.
+- [ ] **City batches** (rich data, no country left thin): A Alps/ski · B Europe
   scenic/secondary · C beach & island resorts · D nature/adventure bases ·
-  E Gulf/MENA secondary · F Asia secondary. Then long-tail from real `miss` data.
-- [ ] Handy-apps Batch 2 (Europe + popular Asia/Americas) — awaiting go-ahead.
-- [ ] Affiliate wiring once IDs are in hand (Booking.com, GetYourGuide/Klook).
-- [ ] Feedback + analytics: confirmed live; keep an eye on first real rows.
+  E Gulf/MENA secondary · F Asia secondary. Prioritise from real `miss` data +
+  the new "missing places" dashboard table.
+- [ ] **Handy-apps Batch 2** (Europe + popular Asia/Americas) — awaiting go-ahead.
+- [ ] **Affiliate wiring** once IDs are in hand (Booking.com, GetYourGuide/Klook).
+- [ ] **Mirror this roadmap to the Google Drive "Bosla App" Playbook** (needs the
+  Drive connector enabled in-chat).
+- [ ] Keep an eye on first real analytics/feedback rows and the country breakdown.
 
 ## Done (recent)
 
+- [x] **Country tracking by timezone** — anonymous, no permission, no precise
+  location. Sends `tz` with each event; dashboard shows "Where visitors are"
+  (visitors per country). Cookieless-friendly.
+- [x] **Voice "Mix" removed** — browser speech can't mix languages reliably; mic
+  now cycles EN / عربي / ES, each on its own engine.
+- [x] **Salmaninho lists embedded** (Turkey + Netherlands) — his real saved spots
+  render inline (first 8 + "more" expander), his red styling, credited.
+- [x] **Real-time AI city generation live** + **KV caching confirmed** (build once,
+  cached forever).
+- [x] **AI description parsing** (Haiku) with local rule-based fallback.
+- [x] **Cleaner PDF/print** output + destination-name filename.
 - [x] Privacy-friendly analytics + in-app feedback → Google Sheet (live).
-- [x] `miss` tracking: log places asked for but not in our data.
+- [x] `miss` tracking + "Missing places" dashboard section.
 - [x] Description parser fixes: multi-city order, night-summing, misspellings,
   country-word flood.
 - [x] Added Garmisch-Partenkirchen, Kaprun, Zell am See.
 - [x] Fixed clipped Adults/Kids stepper numbers.
 
-## How real-time auto-generate would work (design note)
+## How real-time auto-generate works (design note)
 
-Flow when a user searches a city we don't have:
-1. App detects the miss (already built) → shows "Building <city> for you…".
-2. App POSTs the name to a Cloudflare Worker (holds the Anthropic key as a secret).
-3. Worker calls Claude → returns a validated city object (blurb EN/AR/ES, POIs +
+When a user searches a city we don't have:
+1. App detects the miss → shows "Building <city>…".
+2. App POSTs the name to the Cloudflare Worker (holds the Anthropic key).
+3. Worker calls Claude (Sonnet) → validated city object (blurb EN/AR/ES, POIs +
    coords, hotels, food, cost, currency) in our exact schema.
-4. App injects it into the in-memory DEST/CO/POI_CO/HOTELS_X and renders the
-   trip immediately — that same user is served, no "come back later".
-5. Worker also stores the generated city (KV or a GitHub commit) so Claude can
-   verify it and bake it permanently into index.html for all users.
+4. App injects it into the in-memory DEST/CO/POI_CO/HOTELS_X and renders the trip
+   immediately — that same user is served, no "come back later".
+5. Worker caches the city in KV so it's generated at most once, ever.
 
-Requirements: a free Cloudflare account + an Anthropic API key (Ahmed). Claude
-writes the Worker + wiring. Small per-request cost.
-
-Guardrails against the risks of unreviewed generation:
-- Structural validation (coords in range, all required fields, tags from the
-  allowed set) before the city is shown; reject + fall back if malformed.
-- Only generate for plausible place names; cache by name; rate-limit per session
-  to control cost and block spam/abuse of the API.
-- Flag AI-generated cities for Ahmed's quick review before they're made permanent
-  (they still serve the live user instantly in the meantime).
+Guardrails: structural validation before showing; only plausible place names;
+cache by name; flag AI cities for review before baking permanently into the app.
