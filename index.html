@@ -279,6 +279,7 @@
   .manualtoggle:active{transform:translateY(1px)}
   .manualtoggle #promptOr{margin:0}
   .manualtoggle .mtspark{margin-right:2px}
+  .moreopts{margin-top:12px;padding:12px;background:transparent;color:var(--muted);font-size:14.5px;font-weight:600}
   .mtchev{width:9px;height:9px;border-right:2px solid var(--amber);border-bottom:2px solid var(--amber);transform:rotate(45deg);transition:transform .2s;margin-top:-3px}
   .manualtoggle.open .mtchev{transform:rotate(-135deg);margin-top:3px}
   .manualform.is-hidden{display:none}
@@ -627,6 +628,8 @@
       <button type="button" class="daychip" data-days="10">10</button>
       <button type="button" class="daychip" data-days="14">14</button>
     </div>
+    <button type="button" class="manualtoggle moreopts" id="moreToggle" aria-expanded="false"><span id="moreOptsLbl">More options</span><span class="mtchev" aria-hidden="true"></span></button>
+    <div class="is-hidden" id="moreOptions">
     <label for="pace" id="lblPace">Trip pace</label>
     <select id="pace"><option value="relaxed">Relaxed</option><option value="balanced" selected>Balanced</option><option value="packed">Packed</option></select>
 
@@ -675,6 +678,7 @@
       <div class="chip" data-v="Relax"></div>
     </div>
 
+    </div>
     <button class="btn" id="planBtn" type="button">Plan my trip →</button>
     </div>
     <button type="button" class="manualtoggle" id="describeToggle" aria-expanded="false"><span class="mtspark">✨</span><span id="promptOr">or describe your trip in words</span><span class="mtchev" aria-hidden="true"></span></button>
@@ -2695,7 +2699,13 @@
     var willOpen=(open===undefined)?f.classList.contains('is-hidden'):open;
     f.classList.toggle('is-hidden',!willOpen); t.classList.toggle('open',willOpen); t.setAttribute('aria-expanded',willOpen?'true':'false'); }
   $('describeToggle').addEventListener('click',function(){ showDescribe(); });
-  $('editFab').addEventListener('click',function(){ window.scrollTo({top:0,behavior:'smooth'}); });
+  // Advanced fields (pace, travellers, dates, currency, budget, vibes) live under "More options" —
+  // the main form stays just Where to? + days + Plan. Everything keeps sensible defaults.
+  function showMore(open){ var f=$('moreOptions'), t=$('moreToggle'); if(!f||!t)return;
+    var willOpen=(open===undefined)?f.classList.contains('is-hidden'):open;
+    f.classList.toggle('is-hidden',!willOpen); t.classList.toggle('open',willOpen); t.setAttribute('aria-expanded',willOpen?'true':'false'); }
+  $('moreToggle').addEventListener('click',function(){ showMore(); });
+  $('editFab').addEventListener('click',function(){ showMore(true); window.scrollTo({top:0,behavior:'smooth'}); });
   // quick day-length presets
   function syncDayChips(){ var v=String($('days').value); document.querySelectorAll('#dayPresets .daychip').forEach(function(c){c.classList.toggle('active',c.dataset.days===v);}); }
   $('dayPresets').addEventListener('click',function(e){ var b=e.target.closest('.daychip'); if(!b)return; $('days').value=b.dataset.days; syncDayChips(); });
@@ -2853,6 +2863,7 @@
     $('drawerEdit').textContent=u.profileTitle; $('navHow').textContent=u.navHow; $('navTrips').textContent=u.myTrips; $('navInstall').textContent=u.navInstall; $('navShare').textContent=u.navShare; $('navFeedback').textContent=u.navFeedback; $('drawerAbout').textContent=u.menuAbout;
     $('introTitle').textContent=u.introTitle; $('introS1').textContent=u.introS1; $('introS2').textContent=u.introS2; $('introS3').textContent=u.introS3;
     $('lblPrompt').textContent=u.lblPrompt; $('promptBox').setAttribute('placeholder',u.promptPh); $('promptBtn').textContent=u.promptBtn; $('promptOr').textContent=u.promptOr; renderPromptEx(u);
+    try{ $('moreOptsLbl').textContent=(lang==='ar'?'خيارات أكثر':(lang==='es'?'Más opciones':'More options')); }catch(e){}
     (function(){var mb=$('micBtn'); if(mb&&!mb.classList.contains('rec')){mb.setAttribute('aria-label',u.micStart);mb.setAttribute('title',u.micStart);}})();
     $('fbTitle').textContent=u.fbTitle; $('fbSub').textContent=u.fbSub; $('fbMsg').setAttribute('placeholder',u.fbMsgPh); $('fbContact').setAttribute('placeholder',u.fbContactPh); $('fbSend').textContent=u.fbSend; $('fbNote').textContent=u.fbNote;
     updateThemeBtn(); applyProfile(); renderMyTrips();
