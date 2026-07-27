@@ -534,6 +534,27 @@
   .fbnstar{background:none;border:none;font-size:28px;line-height:1;cursor:pointer;color:var(--line);transition:color .12s,transform .12s;padding:0}
   .fbnstar:hover,.fbnstar:active{transform:scale(1.15);color:var(--amber)}
   .fbnno{display:block;margin:2px auto 0;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px 8px}
+  .chatfab{position:fixed;right:16px;bottom:20px;z-index:7;display:flex;align-items:center;gap:7px;padding:12px 17px;border:none;border-radius:999px;background:var(--teal);color:#fff;font-size:14.5px;font-weight:700;font-family:var(--ff-body);box-shadow:var(--shadow);cursor:pointer}
+  #app[dir="rtl"] .chatfab{right:auto;left:16px}
+  .chatfab .chatfabic{font-size:16px}
+  .chatpanel{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .2s;display:flex;align-items:flex-end;justify-content:center}
+  .chatpanel.show{opacity:1;pointer-events:auto}
+  .chatsheet{width:100%;max-width:520px;height:82vh;background:var(--card);border-radius:18px 18px 0 0;display:flex;flex-direction:column;transform:translateY(24px);transition:transform .22s;overflow:hidden}
+  .chatpanel.show .chatsheet{transform:translateY(0)}
+  .chathead{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);flex:0 0 auto}
+  .chattitle{font-family:var(--ff-display);font-size:17px;font-weight:600;color:var(--ink)}
+  .chatx{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px}
+  .chatbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .chatmsg{max-width:82%;padding:10px 13px;border-radius:14px;font-size:14.5px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+  .chatmsg.bot{align-self:flex-start;background:var(--paper2);color:var(--ink);border-bottom-left-radius:5px}
+  .chatmsg.user{align-self:flex-end;background:var(--teal);color:#fff;border-bottom-right-radius:5px}
+  #app[dir="rtl"] .chatmsg.bot{border-bottom-left-radius:14px;border-bottom-right-radius:5px}
+  #app[dir="rtl"] .chatmsg.user{border-bottom-right-radius:14px;border-bottom-left-radius:5px}
+  .chatmsg.typing{color:var(--muted)}
+  .chatfoot{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--line);flex:0 0 auto}
+  .chatfoot input{flex:1;min-width:0;padding:12px 15px;border:1px solid var(--line);border-radius:999px;background:var(--paper2);color:var(--ink);font-size:15px;font-family:var(--ff-body);outline:none}
+  .chatfoot input:focus{border-color:var(--teal)}
+  .chatfoot #chatSend{flex:0 0 auto;width:44px;height:44px;border:none;border-radius:50%;background:var(--teal);color:#fff;font-size:19px;font-weight:700;cursor:pointer}
   .ticket .tip{margin-top:11px;font-size:12.5px;background:rgba(255,255,255,.1);border-left:3px solid #e9d6a8;padding:8px 11px;border-radius:6px;line-height:1.45}
   #app[dir="rtl"] .ticket .tip{border-left:none;border-right:3px solid #e9d6a8}
 
@@ -757,6 +778,17 @@
   </div>
 </div>
 <div class="toast" id="toast" aria-hidden="true"></div>
+<button type="button" class="chatfab is-hidden" id="chatFab" aria-label="Ask بوصلة"><span class="chatfabic">💬</span><span class="chatfablbl" id="chatFabLbl">Ask بوصلة</span></button>
+<div class="chatpanel" id="chatPanel" aria-hidden="true">
+  <div class="chatsheet">
+    <div class="chathead"><span class="chattitle" id="chatTitle">Ask بوصلة</span><button type="button" class="chatx" id="chatX" aria-label="Close">✕</button></div>
+    <div class="chatbody" id="chatBody"></div>
+    <div class="chatfoot">
+      <input id="chatInput" type="text" autocomplete="off" placeholder="Tell me about your trip…">
+      <button type="button" id="chatSend" aria-label="Send">→</button>
+    </div>
+  </div>
+</div>
 <div class="fbnudge" id="fbNudge" aria-hidden="true">
   <div class="fbnq" id="fbnQ"></div>
   <div class="fbnstars" id="fbnStars">
@@ -2838,6 +2870,61 @@
     if(CONFIG.aiEndpoint){ aiCity(place).then(apply); } else { apply(null); }
   }
 
+  // ---- AI chat assistant (optional extra) — chats a couple of turns, then builds the trip --------
+  var CHATMSGS=[], CHATBUSY=false;
+  function chatGreeting(){ return LANG==='ar'?'هلا! أنا بوصلة. خبّرني عن الرحلة اللي في بالك — مكان، أو أجواء تحبها — وأساعدك تخطّطها.':(LANG==='es'?'¡Hola! Soy Bosla. Cuéntame qué viaje tienes en mente — un lugar o un ambiente — y te ayudo a planearlo.':'Hi! I’m Bosla. Tell me about the trip you have in mind — a place, or just a vibe — and I’ll help you plan it.'); }
+  function chatRender(){
+    var body=$('chatBody'); if(!body)return;
+    body.innerHTML=CHATMSGS.map(function(m){ return '<div class="chatmsg '+(m.role==='user'?'user':'bot')+'">'+esc(m.content)+'</div>'; }).join('')+(CHATBUSY?'<div class="chatmsg bot typing">…</div>':'');
+    body.scrollTop=body.scrollHeight;
+  }
+  function chatOpen(){ var pn=$('chatPanel'); if(!pn)return;
+    if(!CHATMSGS.length)CHATMSGS.push({role:'assistant',content:chatGreeting()});
+    chatRender(); pn.classList.add('show'); pn.setAttribute('aria-hidden','false');
+    setTimeout(function(){ try{$('chatInput').focus();}catch(e){} },250); }
+  function chatClose(){ var pn=$('chatPanel'); if(pn){ pn.classList.remove('show'); pn.setAttribute('aria-hidden','true'); } }
+  function aiChat(messages){ return new Promise(function(resolve){
+    if(!CONFIG.aiEndpoint){ resolve(null); return; }
+    fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'chat',messages:messages})})
+      .then(function(r){return r.json();}).then(function(d){ resolve((d&&d.chat)||null); }).catch(function(){ resolve(null); }); }); }
+  function chatSend(){
+    if(CHATBUSY)return; var inp=$('chatInput'), text=(inp.value||'').trim(); if(!text)return;
+    var userTurns=CHATMSGS.filter(function(m){return m.role==='user';}).length;
+    if(userTurns>=14){ CHATMSGS.push({role:'assistant',content:(LANG==='ar'?'خلّينا نكمّل بالنموذج فوق — أو حدّث الصفحة لبداية جديدة.':(LANG==='es'?'Sigamos con el formulario de arriba — o recarga para empezar de nuevo.':'Let’s continue with the form above — or refresh to start fresh.'))}); chatRender(); return; }
+    CHATMSGS.push({role:'user',content:text}); inp.value=''; CHATBUSY=true; chatRender();
+    aiChat(CHATMSGS.slice()).then(function(res){ CHATBUSY=false;
+      if(!res){ CHATMSGS.push({role:'assistant',content:(LANG==='ar'?'ما قدرت أوصل للمخطّط الحين — جرّب النموذج فوق.':(LANG==='es'?'No pude conectar ahora — prueba el formulario de arriba.':'I couldn’t reach the planner just now — try the form above.'))}); chatRender(); return; }
+      CHATMSGS.push({role:'assistant',content:res.reply||'…'}); chatRender();
+      if(res.ready && Array.isArray(res.cities) && res.cities.length) buildFromChat(res);
+    });
+  }
+  function buildFromChat(p){
+    var cities=(p.cities||[]).slice(0,8); if(!cities.length)return;
+    Promise.all(cities.map(function(n){return aiCity(n);})).then(function(keys){
+      var seen={}, ks=[]; keys.forEach(function(k){ if(k&&DEST[k]&&!seen[k]){seen[k]=1;ks.push(k);} });
+      if(!ks.length)return;
+      newSeed(); DAYEDITS={}; DAYROT={};
+      var days=Math.max(1,Math.min(30,(p.days|0)||5));
+      var vibes=(Array.isArray(p.vibes)&&p.vibes.length)?p.vibes:['Culture'];
+      var budget=(p.budget==='Budget'||p.budget==='Luxury')?p.budget:'Mid-range';
+      $('days').value=days; syncDayChips();
+      document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',vibes.indexOf(c.dataset.v)>=0);});
+      document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===budget);});
+      $('pace').value='balanced';
+      $('dest').value=DEST[ks[0]].city;
+      if(ks.length>=2){ $('city2wrap').classList.remove('is-hidden'); $('addCity').classList.add('is-hidden'); $('dest2').value=DEST[ks[1]].city; } else { $('dest2').value=''; }
+      setTimeout(function(){ chatClose(); if(ks.length>=2){ planRoute(ks,days,vibes,budget,'balanced',!!p.roadtrip); } else { ROUTE=null; plan(); } }, 800);
+    });
+  }
+  (function(){ var fab=$('chatFab'); if(!fab)return;
+    if(CONFIG.aiEndpoint)fab.classList.remove('is-hidden');
+    fab.addEventListener('click',chatOpen);
+    var x=$('chatX'); if(x)x.addEventListener('click',chatClose);
+    var s=$('chatSend'); if(s)s.addEventListener('click',chatSend);
+    var i=$('chatInput'); if(i)i.addEventListener('keydown',function(e){ if(e.key==='Enter')chatSend(); });
+    var pn=$('chatPanel'); if(pn)pn.addEventListener('click',function(e){ if(e.target===pn)chatClose(); });
+  })();
+
   var VOICELANG='en', VOICEOVERRIDE=false; // mic language — follows the app language unless the user picks one
   (function(){ try{ var v=localStorage.getItem('bosla_voicelang'); if(v==='ar'||v==='en'||v==='es'){ VOICELANG=v; VOICEOVERRIDE=true; } }catch(e){} })();
   function voiceLabel(l){ return l==='ar'?'عربي':(l==='es'?'ES':'EN'); }
@@ -2864,6 +2951,7 @@
     $('introTitle').textContent=u.introTitle; $('introS1').textContent=u.introS1; $('introS2').textContent=u.introS2; $('introS3').textContent=u.introS3;
     $('lblPrompt').textContent=u.lblPrompt; $('promptBox').setAttribute('placeholder',u.promptPh); $('promptBtn').textContent=u.promptBtn; $('promptOr').textContent=u.promptOr; renderPromptEx(u);
     try{ $('moreOptsLbl').textContent=(lang==='ar'?'خيارات أكثر':(lang==='es'?'Más opciones':'More options')); }catch(e){}
+    try{ var askL=(lang==='ar'?'اسأل بوصلة':(lang==='es'?'Pregunta a بوصلة':'Ask بوصلة')); $('chatFabLbl').textContent=askL; $('chatTitle').textContent=askL; $('chatInput').setAttribute('placeholder', lang==='ar'?'خبّرني عن رحلتك…':(lang==='es'?'Cuéntame sobre tu viaje…':'Tell me about your trip…')); }catch(e){}
     (function(){var mb=$('micBtn'); if(mb&&!mb.classList.contains('rec')){mb.setAttribute('aria-label',u.micStart);mb.setAttribute('title',u.micStart);}})();
     $('fbTitle').textContent=u.fbTitle; $('fbSub').textContent=u.fbSub; $('fbMsg').setAttribute('placeholder',u.fbMsgPh); $('fbContact').setAttribute('placeholder',u.fbContactPh); $('fbSend').textContent=u.fbSend; $('fbNote').textContent=u.fbNote;
     updateThemeBtn(); applyProfile(); renderMyTrips();

@@ -65,6 +65,16 @@ export default {
         if (!text) return reply({ error: "empty text" }, 400, origin);
         return reply({ parsed: await parseTrip(text, env.ANTHROPIC_API_KEY) }, 200, origin);
       }
+      if (body.action === "chat") {
+        if (!env.ANTHROPIC_API_KEY) return reply({ error: "server not configured" }, 500, origin);
+        const msgs = Array.isArray(body.messages)
+          ? body.messages.filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+              .map((m) => ({ role: m.role, content: String(m.content).slice(0, 1000) }))
+              .slice(-20)
+          : [];
+        if (!msgs.length) return reply({ error: "no messages" }, 400, origin);
+        return reply({ chat: await chatTurn(msgs, env.ANTHROPIC_API_KEY) }, 200, origin);
+      }
       if (body.action === "suggest") {
         if (!env.ANTHROPIC_API_KEY) return reply({ error: "server not configured" }, 500, origin);
         const text = String(body.text || "").slice(0, 1200).trim();
@@ -126,7 +136,7 @@ async function claude(apiKey, model, system, user, schema, maxTokens) {
       model,
       max_tokens: maxTokens,
       system,
-      messages: [{ role: "user", content: user }],
+      messages: Array.isArray(user) ? user : [{ role: "user", content: user }],
       output_config: { format: { type: "json_schema", schema } },
     }),
   });
@@ -196,6 +206,38 @@ const PARSE_SCHEMA = {
     roadtrip: { type: "boolean" },
   },
 };
+
+// --- Conversational trip assistant (Haiku) — chats, then hands off a trip to build --------------
+const CHAT_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["reply", "ready", "cities", "days", "vibes", "budget", "roadtrip"],
+  properties: {
+    reply: { type: "string" },      // the message to show the user
+    ready: { type: "boolean" },     // true once there's enough to build a trip
+    cities: { type: "array", items: { type: "string" } }, // best base city per stop, in order (when ready)
+    days: { type: "integer" },
+    vibes: { type: "array", items: { type: "string", enum: TAGS } },
+    budget: { type: "string", enum: ["Budget", "Mid-range", "Luxury"] },
+    roadtrip: { type: "boolean" },
+  },
+};
+
+function chatTurn(messages, apiKey) {
+  const system =
+    "You are Bosla (بوصلة), a warm, concise travel assistant inside a trip-planning app. " +
+    "Your job: in AT MOST 2-3 short friendly turns, learn (a) roughly WHERE they want to go — a place, or " +
+    "a vibe you turn into a concrete suggestion — and (b) HOW MANY days. Ask ONE question at a time, keep every " +
+    "reply to 1-3 sentences, no lists. If they're unsure where, suggest 2-3 fitting destinations (respect any " +
+    "passport/visa or driving constraints; keep them geographically sensible) and let them pick. " +
+    "Once you have at least one concrete destination (named or agreed) AND a rough number of days, set ready=true, " +
+    "and fill cities (the best single base CITY per stop, in visit order, common English names), days, vibes (0-3), " +
+    "budget (default Mid-range), and roadtrip (true only if the stops are drivable). When ready, make your reply a " +
+    "short confirmation like 'Perfect — building your Kyoto trip now.' Until ready, set ready=false and cities=[]. " +
+    "Stay on travel. Never state hard specifics (exact prices, precise visa rules) as fact — speak generally and " +
+    "suggest they verify. Match the user's language (English/Arabic/Spanish).";
+  return claude(apiKey, "claude-haiku-4-5", system, messages, CHAT_SCHEMA, 700);
+}
 
 // --- Suggest destinations from a vibe/need when the user names no place (Haiku) ------------------
 const SUGGEST_SCHEMA = {
