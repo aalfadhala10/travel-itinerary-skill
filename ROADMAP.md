@@ -43,6 +43,12 @@ Last updated: 2026-07-27.
   scenic/secondary · C beach & island resorts · D nature/adventure bases ·
   E Gulf/MENA secondary · F Asia secondary. Prioritise from real `miss` data +
   the new "missing places" dashboard table.
+- [ ] **Record entered names to a Sheet (maybe, future).** Technically easy —
+  reuse the analytics endpoint, route `type:'name'` to a "Names" tab (name, time,
+  country, lang, session; guests record nothing). BUT the welcome screen currently
+  promises "Saved on this device only — no account or email", so this MUST NOT ship
+  without first rewording that note to be honest (e.g. "we keep your first name to
+  greet you and improve بوصلة"). Deferred — kept device-only for now by choice.
 - [ ] **Handy-apps Batch 2** (Europe + popular Asia/Americas) — awaiting go-ahead.
 - [ ] **Affiliate wiring** once IDs are in hand (Booking.com, GetYourGuide/Klook).
 - [ ] **Mirror this roadmap to the Google Drive "Bosla App" Playbook** (needs the
