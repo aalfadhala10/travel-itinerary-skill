@@ -411,6 +411,19 @@
   @media (prefers-color-scheme:dark){.provchip.on{color:#0a1310}}
   :root[data-theme="dark"] .provchip.on{color:#0a1310}
   :root[data-theme="light"] .provchip.on{color:#fff}
+  .sugcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+  .sughead{font-family:var(--ff-display);font-size:17px;font-weight:600;color:var(--ink);margin-bottom:12px}
+  .sugpick{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px;margin-bottom:9px;border:1px solid var(--line);border-radius:13px;background:var(--paper2);cursor:pointer;transition:border-color .15s,background .15s}
+  .sugpick:hover{border-color:var(--teal);background:var(--teal-soft)}
+  #app[dir="rtl"] .sugpick{text-align:right}
+  .sugflag{font-size:26px;flex-shrink:0;line-height:1}
+  .sugtext{flex:1;min-width:0}
+  .sugtext b{display:block;font-size:15.5px;color:var(--ink)}
+  .sugco{font-weight:500;color:var(--muted);font-size:13px;margin-left:7px}
+  #app[dir="rtl"] .sugco{margin-left:0;margin-right:7px}
+  .sugwhy{display:block;font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4}
+  .suggo{flex:0 0 auto;color:var(--amber);font-size:20px;font-weight:700}
+  .sugfoot{font-size:12.5px;color:var(--muted);margin-top:4px}
   .staysearch{width:100%;margin-top:14px;padding:13px;border:none;border-radius:12px;background-color:var(--amber);background-image:linear-gradient(180deg,rgba(255,255,255,.18),rgba(0,0,0,.08));color:#211605;font-size:14.5px;font-weight:700;font-family:var(--ff-body);cursor:pointer}
   .staysearch:active{transform:translateY(1px)}
   .tuner{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:14px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
@@ -2784,6 +2797,48 @@
     });
   }
 
+  // When a description names no place ("somewhere with safari by car"), ask the AI to SUGGEST a
+  // few fitting destinations. The user taps one (agree) before we build a full itinerary.
+  var SUGHINTS=null;
+  function aiSuggest(raw){
+    return new Promise(function(resolve){
+      if(!CONFIG.aiEndpoint){ resolve(null); return; }
+      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'suggest',text:String(raw).slice(0,1200)})})
+        .then(function(r){return r.json();})
+        .then(function(d){ var s=d&&d.suggest; resolve((s&&Array.isArray(s.suggestions)&&s.suggestions.length)?s:null); })
+        .catch(function(){ resolve(null); });
+    });
+  }
+  function showSuggestions(sg){
+    var ar=LANG==='ar', es=LANG==='es';
+    var intro=ar?'حسب وصفك، أقترح عليك:':(es?'Según lo que describes, te sugiero:':'Based on what you described, I’d suggest:');
+    var hint=ar?'اختر وجهة لأخطط لها — أو عدّل وصفك وحاول مرة ثانية.':(es?'Elige un destino para planearlo — o ajusta tu descripción.':'Tap a destination to plan it — or tweak your description and try again.');
+    SUGHINTS={days:sg.days||0,vibes:(sg.vibes||[]),budget:sg.budget||'Mid-range',roadtrip:!!sg.roadtrip};
+    var cards=sg.suggestions.slice(0,3).map(function(s){
+      return '<button type="button" class="sugpick" data-place="'+esc(s.place)+'"><span class="sugflag">'+esc(s.flag||'📍')+'</span>'+
+        '<span class="sugtext"><b>'+esc(s.place)+(s.country?'<span class="sugco">'+esc(s.country)+'</span>':'')+'</b><span class="sugwhy">'+esc(s.why||'')+'</span></span><span class="suggo">→</span></button>';
+    }).join('');
+    var html='<div class="sugcard"><div class="sughead">'+esc(intro)+'</div>'+cards+'<div class="sugfoot">'+esc(hint)+'</div></div>';
+    var out=$('out'); out.innerHTML=html; out.classList.add('show'); out.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  function pickSuggestion(place){
+    var ar=LANG==='ar',es=LANG==='es';
+    toast(ar?('نجهّز '+place+'…'):(es?('Preparando '+place+'…'):('Building '+place+'…')));
+    var apply=function(k){
+      if(!k||!DEST[k]){ toast(I18N[LANG].ui.promptNone); return; }
+      var h=SUGHINTS||{}, days=Math.max(1,Math.min(30,h.days||5));
+      newSeed(); DAYEDITS={}; DAYROT={};
+      $('days').value=days; syncDayChips();
+      if(h.vibes&&h.vibes.length)document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',h.vibes.indexOf(c.dataset.v)>=0);});
+      document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===(h.budget||'Mid-range'));});
+      $('pace').value='balanced';
+      $('dest').value=DEST[k].city; $('dest2').value=''; $('city2wrap').classList.add('is-hidden'); $('addCity').classList.remove('is-hidden');
+      ROUTE=null; plan();
+    };
+    var m=matchDest(place); if(m){ apply(keyOf(m)); return; }
+    if(CONFIG.aiEndpoint){ aiCity(place).then(apply); } else { apply(null); }
+  }
+
   var VOICELANG='en', VOICEOVERRIDE=false; // mic language — follows the app language unless the user picks one
   (function(){ try{ var v=localStorage.getItem('bosla_voicelang'); if(v==='ar'||v==='en'||v==='es'){ VOICELANG=v; VOICEOVERRIDE=true; } }catch(e){} })();
   function voiceLabel(l){ return l==='ar'?'عربي':(l==='es'?'ES':'EN'); }
@@ -3521,9 +3576,11 @@
   function runPrompt(){
     var raw=$('promptBox').value||'';
     if(!raw.trim()){ toast(I18N[LANG].ui.promptNone); return; }
-    if(CONFIG.aiEndpoint){ // let the AI understand the description; fall back to the local parser if it fails
+    if(CONFIG.aiEndpoint){ // AI understands the description; if it names no place, suggest some; else fall back to the local parser
       toast(I18N[LANG].ui.aiThinking||'Understanding your trip…');
-      aiParse(raw).then(function(ok){ if(!ok) runPromptLocal(raw); });
+      aiParse(raw).then(function(ok){ if(ok) return;
+        aiSuggest(raw).then(function(sg){ if(sg) showSuggestions(sg); else runPromptLocal(raw); });
+      });
       return;
     }
     runPromptLocal(raw);
@@ -4137,6 +4194,7 @@
     // trip tuner: adjust length, get another version, or jump to a day
     var tb=e.target.closest('.tunebtn'); if(tb){ retuneDays(+tb.getAttribute('data-tune')); return; }
     var av=e.target.closest('.tuneanother'); if(av){ anotherVersion(); return; }
+    var sp=e.target.closest('.sugpick'); if(sp){ pickSuggestion(sp.getAttribute('data-place')); return; }
     var dn=e.target.closest('.dnav'); if(dn){ var el=document.getElementById('day-'+dn.getAttribute('data-day')); if(el){ el.classList.remove('dcol'); el.scrollIntoView({behavior:'smooth',block:'start'}); } return; }
     // pick which hotel site to book on (remembered); highlight it, no navigation
     var pv=e.target.closest('button.provchip');
