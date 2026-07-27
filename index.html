@@ -2575,6 +2575,7 @@
       x._sc=sc; return x;
     }).filter(function(x){return x._sc<99;});
     arr.sort(function(a,b){ return a._sc!==b._sc ? a._sc-b._sc : byCountryCity(a,b); });
+    var seenCC={}; arr=arr.filter(function(x){ var cc=x.d.city.toLowerCase()+'|'+x.d.country.toLowerCase(); if(seenCC[cc])return false; seenCC[cc]=1; return true; }); // never show the same city+country twice
     return arr;
   }
   function renderComboList(list, query){
@@ -2689,6 +2690,7 @@
         .then(function(d){
           var c=d&&d.city;
           if(!c||!c.valid||!c.city||!Array.isArray(c.poi)||c.poi.length<3){ resolve(null); return; }
+          for(var dk in DEST){ if(DEST[dk].city===c.city&&(DEST[dk].country||'')===(c.country||'')){ resolve(dk); return; } } // already built this city — reuse it, don't duplicate
           var key=aiKey(c.city);
           var enArea=function(v){ v=v||''; return /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(v)?'':v; }; // area labels sit next to English POI names — drop any stray Arabic the model emits
           DEST[key]={city:c.city,country:c.country||'',flag:c.flag||'🏳️',region:c.region||'eu',
