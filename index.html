@@ -493,11 +493,19 @@
   .collapsed>*:not(h4):not(.maphdr){display:none!important}
 
   @media print{
-    #topo,.langbar,.hero,.card,.foot,.actions,.editfab{display:none!important}
-    .collapsed>*{display:revert!important}
-    body,.wrap{background:#fff;color:#000}
+    /* white paper, black text */
+    body,#app,.wrap{background:#fff!important;color:#000!important}
+    /* hide the app chrome + the input form entirely */
+    #topo,.hero,.langbar,.foot,.editfab,.card,.toast,.drawer,.scrim{display:none!important}
+    /* safety net: only the itinerary is visible even if something above was missed */
+    body *{visibility:hidden}
+    #out,#out *{visibility:visible}
     .out{margin:0}
-    .ticket{background:#173a5c!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    /* drop the interactive controls that don't belong on paper */
+    #out .tuner,#out .daynav,#out .realtag,#out .actions,#out .cvbar,#out .flycard,#out .staybar,#out .bookrow,#out .tuneanother,#out .dayshuffle,#out .swapbtn,#out .swappick,#out button{display:none!important}
+    .ticket{background:#173a5c!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .ticket,.day,.bud,.bookbar,.mapcard{break-inside:avoid}
+    a[href]:after{content:""!important} /* don't append raw URLs after links */
   }
 
   #app[dir="rtl"]{text-align:right}
@@ -3216,7 +3224,7 @@
       '<button type="button" class="staysearch">'+o.stayFind+'</button></div>';
   }
 
-  var LASTTEXT='';
+  var LASTTEXT='', LASTPLANNAME='';
   var ROUTE=null;
   var ROUTEDRIVE=false;
   var SEED=0;
@@ -3451,6 +3459,7 @@
     var totalUSD=baseTotal+transferUSD;
     var subVibes=vibes.map(function(x){return t.ui.vibes[x];}).join(' · ')+(di?' · '+di.range:'');
     var title=ms.map(function(m){return esc(m.city);}).join(' → ')+' · '+days+' '+o.daysUnit;
+    LASTPLANNAME=(function(){var cs=[];ms.forEach(function(m){if(m.country&&cs.indexOf(m.country)<0)cs.push(m.country);});return cs.length===1?cs[0]:ms.map(function(m){return m.city;}).join(' - ');})();
     var ml=di?di.monthLabel:null;
     var cd=di?(di.du>0?'<div class="season">'+o.countdown(di.du)+'</div> ':(di.du===0?'<div class="season">'+o.today+'</div> ':'')):'';
     var seasons=cd+'<div class="season">'+seasonLine(ms[0],t,ml)+'</div>'+timeThereLine(ms[0],t)+weatherBox(ms[0],$('startDate').value,t);
@@ -3796,6 +3805,7 @@
       var tr=multi?transferInfo(t,m1,m2):null, trUSD=tr?tr.usd:0;
       var totalUSD=base1+base2+trUSD;
       var title=multi?(esc(m1.city)+' → '+esc(m2.city)+' · '+days+' '+o.daysUnit):(esc(m1.city)+', '+esc(m1.country)+' · '+days+' '+o.daysUnit);
+      LASTPLANNAME=(multi&&m2)?(m1.city+' - '+m2.city):(m1.country||m1.city);
       var h1=hotelPick(m1,budget), h2=multi?hotelPick(m2,budget):'';
       var stay=multi?(link(h1,h1+' '+m1.city)+' / '+link(h2,h2+' '+m2.city)):(link(h1,h1+' '+m1.city)+' · <a href="'+bookUrl(h1+' '+m1.city)+'" target="_blank" rel="noopener">'+o.book+'</a>');
       var ml=di?di.monthLabel:null;
@@ -3894,6 +3904,13 @@
   $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; plan(); });
 
   function toast(msg){var el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove('show');},1800);}
+  // Print/save-as-PDF: name the file after the destination, and print only the itinerary (see @media print).
+  function printPlan(){
+    var prev=document.title;
+    try{ var nm=(LASTPLANNAME||'').replace(/\s+/g,' ').trim(); if(nm) document.title=nm+' — بوصلة'; }catch(e){}
+    try{ window.print(); }catch(e){}
+    setTimeout(function(){ try{ document.title=prev; }catch(e){} }, 800);
+  }
   $('out').addEventListener('click',function(e){
     var b=e.target.closest('[data-act]'); if(!b)return;
     var act=b.dataset.act, o=I18N[LANG].out;
@@ -3902,7 +3919,7 @@
     if(act==='buy'){ var pk=(CONFIG.packages||[])[+b.dataset.pkg]; if(!pk)return; if(pk.link){ window.open(pk.link,'_blank'); } else { setCredits(getCredits()+pk.credits); toast(o.creditsAdded(pk.credits)); plan(); } return; }
     if(act==='save'){ saveTrip(); toast(o.saved); return; }
     if(act==='wa'){ window.open('https://wa.me/?text='+encodeURIComponent(o.waMsg+'\n\n'+LASTTEXT+'\n\n'+shareLink()),'_blank'); return; }
-    if(act==='print'){window.print();return;}
+    if(act==='print'){printPlan();return;}
     if(act==='share'){
       var link=shareLink();
       if(navigator.share){navigator.share({title:'بوصلة · Bosla',text:o.waMsg+'\n\n'+LASTTEXT,url:link}).catch(function(){});return;}
