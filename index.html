@@ -3565,7 +3565,7 @@
     // On iOS, only Safari can use speech recognition; Chrome/Firefox/Edge/Opera/Google-app on iPhone
     // are blocked from it by Apple, so guide the user to Safari instead of failing on permission.
     var iosThirdParty=isIOS && /(CriOS|FxiOS|EdgiOS|OPiOS|GSA)/.test(navigator.userAgent);
-    function langCode(){ return VOICELANG==='ar'?'ar-SA':(VOICELANG==='es'?'es-ES':(VOICELANG==='auto'?'':'en-US')); } // '' = let the engine auto/mix
+    function langCode(){ var v=(VOICELANG==='auto')?LANG:VOICELANG; return v==='ar'?'ar-SA':(v==='es'?'es-ES':'en-US'); } // Mix: use the app-language engine (it still catches foreign place names) — browsers can't truly mix
     // Voice-language pill: lets you speak a different language than the app's UI (e.g. English UI, Arabic voice).
     var langPill=$('micLang');
     if(langPill && !iosThirdParty){
