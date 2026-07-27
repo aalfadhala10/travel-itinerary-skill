@@ -664,17 +664,6 @@
     <label for="budgetAmt" id="lblBudgetAmt">Your total budget (optional)</label>
     <div class="budgetamt">
       <input id="budgetAmt" type="number" min="0" inputmode="numeric" placeholder="e.g. 3000">
-      <select id="budgetCur" aria-label="Budget currency">
-        <option value="USD">USD $</option>
-        <option value="QAR">QAR ﷼</option>
-        <option value="SAR">SAR ﷼</option>
-        <option value="AED">AED د.إ</option>
-        <option value="KWD">KWD</option>
-        <option value="BHD">BHD</option>
-        <option value="OMR">OMR</option>
-        <option value="EUR">EUR €</option>
-        <option value="GBP">GBP £</option>
-      </select>
     </div>
 
     <label id="lblVibe">What are you into?</label>
@@ -3196,7 +3185,7 @@
     var groupUSD=Math.round(totalUSD*(adults||1)+totalUSD*0.7*(kids||0));
     if(trav>1){h+='<div class="budrow total"><span>'+o.groupTotal+' · '+trav+'</span><span class="amt">'+money(t,groupUSD)+'</span></div>';}
     // compare against the user's own budget, if they entered one
-    try{ var bAmt=parseFloat(($('budgetAmt')||{}).value)||0, bCur=(($('budgetCur')||{}).value)||HOME;
+    try{ var bAmt=parseFloat(($('budgetAmt')||{}).value)||0, bCur=HOME;
       if(bAmt>0){ var cs=CURRENCIES[bCur]||CURRENCIES.USD, bUSD=bAmt/cs.r, diff=bUSD-groupUSD;
         var f=function(usd){return cs.s+Math.round(usd*cs.r).toLocaleString(t.loc);};
         var fits=diff>=0, msg=fits?o.budUnder(f(diff)):o.budOver(f(-diff));
@@ -3672,7 +3661,7 @@
       html+=goodToKnow(ms[0].country,t);
       var __seenC={}; ms.forEach(function(m){ if(!__seenC[m.country]){__seenC[m.country]=1; html+=appsCard(m.country,t)+salmanCard(m.country,t);} });
       html+=faithBar(ms[0].city,ms[0].country,t);
-      html+=flyCard(ms[0],t); html+=phrasesCard(ms[0],t); html+=converterCard(ms[0],t);
+      html+=flyCard(ms[0],t); html+=phrasesCard(ms[0],t);
     }
     html+=staysBar(ms[0].city,ms[0].country,t); html+=bookingBar(ms[0].city,t);
     html+='<p class="note">'+o.note(ms.map(function(m){return esc(m.city);}).join(' & '))+'</p>';
@@ -3755,7 +3744,7 @@
     return {d:$('dest').value, d2:$('dest2').value, days:$('days').value, pace:$('pace').value,
       adults:$('adults').value, kids:$('kids').value, sd:$('startDate').value, cur:$('homeCur').value,
       budget:picked('budgetChips')[0]||'Mid-range', vibes:picked('vibeChips'), lang:LANG,
-      ba:$('budgetAmt').value, bc:$('budgetCur').value,
+      ba:$('budgetAmt').value, bc:$('homeCur').value,
       rt:(ROUTE&&ROUTE.length>=2?ROUTE:null), dr:ROUTEDRIVE, seed:SEED, edits:DAYEDITS, rot:DAYROT};
   }
   function saveState(){try{localStorage.setItem('rihla_v1',JSON.stringify(stateObj()));}catch(e){}}
@@ -3949,7 +3938,7 @@
     DAYEDITS=(s.edits&&typeof s.edits==='object')?s.edits:{}; DAYROT=(s.rot&&typeof s.rot==='object')?s.rot:{}; // restore per-day edits
     $('dest').value=s.d||''; $('days').value=s.days||5; $('pace').value=s.pace||'balanced';
     $('adults').value=s.adults||2; $('kids').value=s.kids||0; $('startDate').value=s.sd||''; $('homeCur').value=s.cur||'USD';
-    try{ $('budgetAmt').value=s.ba||''; $('budgetCur').value=s.bc||s.cur||'USD'; }catch(e){}
+    try{ $('budgetAmt').value=s.ba||''; }catch(e){}
     if(s.d2){ $('city2wrap').classList.remove('is-hidden'); $('addCity').classList.add('is-hidden'); $('dest2').value=s.d2; }
     if(s.budget)document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===s.budget);});
     if(s.vibes&&s.vibes.length)document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',s.vibes.indexOf(c.dataset.v)>=0);});
@@ -4052,7 +4041,7 @@
         html+=appsCard(m1.country,t)+salmanCard(m1.country,t);
         if(multi&&m2&&m2.country!==m1.country)html+=appsCard(m2.country,t)+salmanCard(m2.country,t);
         html+=faithBar(m1.city,m1.country,t);
-        html+=flyCard(m1,t); html+=phrasesCard(m1,t); html+=converterCard(m1,t);
+        html+=flyCard(m1,t); html+=phrasesCard(m1,t);
       }
       html+=staysBar(m1.city,m1.country,t); html+=bookingBar(m1.city,t);
       txt.push(''); txt.push(o.budTotal+' ('+o.perPerson+'): ~$'+Math.round(totalUSD));
@@ -4299,7 +4288,7 @@
       if(s){ applyState(s); }
       else {
         var lg=(navigator.language||navigator.userLanguage||'en').slice(0,2).toLowerCase(); if(lg==='ar')applyLang('ar'); else if(lg==='es')applyLang('es');
-        var cc=detectCurrency(); if(cc){ $('homeCur').value=cc; HOME=cc; try{$('budgetCur').value=cc;}catch(e){} }
+        var cc=detectCurrency(); if(cc){ $('homeCur').value=cc; HOME=cc; }
       }
     }catch(e){}
   })();
