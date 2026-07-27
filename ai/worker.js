@@ -65,6 +65,12 @@ export default {
         if (!text) return reply({ error: "empty text" }, 400, origin);
         return reply({ parsed: await parseTrip(text, env.ANTHROPIC_API_KEY) }, 200, origin);
       }
+      if (body.action === "suggest") {
+        if (!env.ANTHROPIC_API_KEY) return reply({ error: "server not configured" }, 500, origin);
+        const text = String(body.text || "").slice(0, 1200).trim();
+        if (!text) return reply({ error: "empty text" }, 400, origin);
+        return reply({ suggest: await suggestTrip(text, env.ANTHROPIC_API_KEY) }, 200, origin);
+      }
       if (body.action === "list")  return reply({ cities: await listNames(env) }, 200, origin);
       if (body.action === "dump")  return reply({ cities: await dumpAll(env) }, 200, origin);
       return reply({ error: "unknown action" }, 400, origin);
@@ -191,17 +197,45 @@ const PARSE_SCHEMA = {
   },
 };
 
+// --- Suggest destinations from a vibe/need when the user names no place (Haiku) ------------------
+const SUGGEST_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["suggestions", "days", "vibes", "budget", "roadtrip"],
+  properties: {
+    suggestions: { type: "array", items: { type: "object", additionalProperties: false,
+      required: ["place", "country", "flag", "why"], properties: {
+        place: { type: "string" }, country: { type: "string" },
+        flag: { type: "string" }, why: { type: "string" } } } },
+    days: { type: "integer" },
+    vibes: { type: "array", items: { type: "string", enum: TAGS } },
+    budget: { type: "string", enum: ["Budget", "Mid-range", "Luxury"] },
+    roadtrip: { type: "boolean" },
+  },
+};
+
+function suggestTrip(text, apiKey) {
+  const system =
+    "The user describes what they want from a trip but usually does NOT name a destination. " +
+    "Suggest 2-3 real destinations that genuinely fit. For each: place = the single best CITY to plan " +
+    "for that activity (e.g. safari → Nairobi or Arusha; skiing → Chamonix), country = its country, " +
+    "flag = the country's flag emoji, why = one short friendly sentence on why it fits. " +
+    "Make the suggestions genuinely distinct and relevant. " +
+    "Honor every constraint the user gives: if they mention a nationality/passport, only pick countries that are " +
+    "visa-free or visa-on-arrival for it (e.g. a Philippine passport: yes Thailand/Indonesia/Malaysia, no Australia/NZ); " +
+    "if they want to drive / self-drive / a road trip, set roadtrip true and pick places that suit driving. " +
+    "days: total days if stated, else 0. vibes: 0-3 from the allowed tags. budget: default Mid-range.";
+  return claude(apiKey, "claude-haiku-4-5", system, text, SUGGEST_SCHEMA, 700);
+}
+
 function parseTrip(text, apiKey) {
   const system =
     "Extract a structured trip from the user's description (any language, typos allowed). " +
-    "cities: the destinations IN THE ORDER visited, corrected to their common English names. " +
-    "If the user names NO specific city but describes a theme/vibe (e.g. 'extreme adventure', 'beach & relax'), " +
-    "SUGGEST 1-3 cities that fit AND make sense together — keep them within one country or one nearby region, " +
-    "never scattered across continents/oceans. " +
-    "If the user mentions their nationality or passport, ONLY choose countries that are visa-free or visa-on-arrival " +
-    "for that passport (e.g. a Philippine passport is visa-free for Thailand, Indonesia, Malaysia, Singapore, but NOT Australia or New Zealand). " +
-    "days: total days — if the text lists nights per stop, SUM them. vibes: 0-3 from the allowed tags. " +
+    "cities: ONLY destinations the user EXPLICITLY names, in the order visited, corrected to common English names. " +
+    "If the user names no specific city or country and only describes a vibe/need, return an EMPTY cities array — " +
+    "do NOT invent destinations (a separate step will suggest places to them). " +
+    "days: total days — if the text lists nights per stop, SUM them; 0 if not stated. vibes: 0-3 from the allowed tags. " +
     "budget: Budget, Mid-range, or Luxury (default Mid-range). " +
-    "roadtrip: true ONLY if the chosen cities can realistically be driven between (same country or landmass, not across an ocean).";
+    "roadtrip: true ONLY if the named cities can realistically be driven between (same country or landmass, not across an ocean).";
   return claude(apiKey, "claude-haiku-4-5", system, text, PARSE_SCHEMA, 500);
 }
