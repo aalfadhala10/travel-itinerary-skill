@@ -722,6 +722,9 @@
     feedbackEmail:"ahmed.alfadala@gmail.com", // where email-fallback feedback goes
     feedbackEndpoint:"",    // Formspree URL (e.g. https://formspree.io/f/xxxx) — when set,
                             // feedback POSTs here silently instead of opening the email app
+    analyticsEndpoint:"",   // paste a URL to turn on privacy-friendly usage tracking (cookieless).
+                            // Any sink that accepts a POST works — a Google Apps Script web app
+                            // (writes to a Sheet), Formspree, or your own endpoint. Empty = off.
     shortenerApi:"https://cleanuri.com/api/v1/shorten", // free CORS shortener for share links
                             // (falls back to the full link automatically if it ever fails)
     /* ---- Trip paywall (OFF until you flip paywallOn to true) ----
@@ -2471,6 +2474,24 @@
     return u;
   }
   function slug(s){return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');}
+  // Privacy-friendly, cookieless usage tracking. No personal data, no cookies; a random id lives in
+  // sessionStorage (gone when the tab closes). Sends only when CONFIG.analyticsEndpoint is set.
+  function track(ev,props){
+    try{
+      if(!CONFIG.analyticsEndpoint)return;
+      var sid; try{ sid=sessionStorage.getItem('bosla_sid'); if(!sid){ sid=Date.now().toString(36)+Math.random().toString(36).slice(2,8); sessionStorage.setItem('bosla_sid',sid);} }catch(e){ sid='na'; }
+      var body=JSON.stringify(Object.assign({ev:ev,sid:sid,lang:(typeof LANG!=='undefined'?LANG:''),t:new Date().toISOString(),ref:document.referrer||''},props||{}));
+      if(navigator.sendBeacon){ navigator.sendBeacon(CONFIG.analyticsEndpoint, body); }
+      else { fetch(CONFIG.analyticsEndpoint,{method:'POST',body:body,keepalive:true,mode:'no-cors'}); }
+    }catch(e){}
+  }
+  function trackPlan(){
+    try{
+      var days=parseInt(($('days')||{}).value,10)||0;
+      if(ROUTE&&ROUTE.length>=2){ track('plan',{mode:'route',dest:ROUTE[0],country:(DEST[ROUTE[0]]||{}).country||'',cities:ROUTE.length,days:days}); }
+      else { var m=matchDest(($('dest').value||'').trim()); track('plan',{mode:'single',dest:m?keyOf(m):'free',country:m?m.country:'',days:days}); }
+    }catch(e){}
+  }
   function klookSearchUrl(city){ return "https://www.klook.com/en-US/search/?query="+encodeURIComponent(city); }
   function toursLinkFor(city){
     var sub=slug(city);
@@ -3333,7 +3354,7 @@
     html+=acts+'</div>';
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
     var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden');
-    redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState();
+    redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   $('promptBtn').addEventListener('click',runPrompt);
@@ -3722,7 +3743,7 @@
     html+=acts+'</div>';
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
     var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden');
-    redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState();
+    redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; plan(); });
@@ -3731,6 +3752,7 @@
   $('out').addEventListener('click',function(e){
     var b=e.target.closest('[data-act]'); if(!b)return;
     var act=b.dataset.act, o=I18N[LANG].out;
+    if(act==='save'||act==='share'||act==='wa')track(act);
     if(act==='usecredit'){ if(getCredits()>0){ addUnlocked(currentDestKey()); setCredits(getCredits()-1); toast(o.unlocked); plan(); } return; }
     if(act==='buy'){ var pk=(CONFIG.packages||[])[+b.dataset.pkg]; if(!pk)return; if(pk.link){ window.open(pk.link,'_blank'); } else { setCredits(getCredits()+pk.credits); toast(o.creditsAdded(pk.credits)); plan(); } return; }
     if(act==='save'){ saveTrip(); toast(o.saved); return; }
@@ -3912,6 +3934,9 @@
   // first-time "how it works" intro (skipped when opening a shared trip link)
   (function(){ try{ if(localStorage.getItem('rihla_introseen')!=='1' && (location.hash||'').indexOf('#trip=')!==0){ showIntro(); } }catch(e){} })();
 
+  // usage tracking: one page view, and outbound clicks (booking / maps / tours / flights) to gauge intent
+  track('page_view',{});
+  $('out').addEventListener('click',function(e){ var a=e.target.closest('a[href^="http"]'); if(!a)return; try{ track('outbound',{host:new URL(a.href).hostname.replace(/^www\./,'')}); }catch(err){} });
   if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 </script>
 
