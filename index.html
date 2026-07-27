@@ -2774,9 +2774,12 @@
       '<input class="flyfrom" type="text" autocomplete="off" placeholder="'+o.flyFromPh+'" value="'+esc(saved)+'"></div>'+
       '<div class="flyout">'+flyEstimateHtml(saved,destKey,t)+'</div></div>';
   }
+  // show the neighbourhood only when it's a real short label — hide it when a data source put a
+  // whole description sentence in the area field, so the itinerary stays clean.
+  function areaLabel(a){ a=(a||'').trim(); if(!a)return ''; if(a.split(/\s+/).length>4||a.length>28)return ''; return ' <span class="area">· '+esc(a)+'</span>'; }
   function eslot(tm,poi,city,sk,o){
     return '<div class="slot" data-sk="'+sk+'"><div class="t">'+tm+'</div>'
-      +'<div class="d">'+link(poi.n,poi.n+' '+city)+' <span class="area">· '+esc(poi.a)+'</span></div>'
+      +'<div class="d">'+link(poi.n,poi.n+' '+city)+areaLabel(poi.a)+'</div>'
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
   }
   // Generated destination banner — a climate-tinted scene (no external images, works offline).
