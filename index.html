@@ -496,6 +496,13 @@
   #app[dir="rtl"] .pkgper{margin-left:0;margin-right:6px}
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:11px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s;z-index:5}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .fbnudge{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(30px);width:calc(100% - 32px);max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px 10px;z-index:6;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
+  .fbnudge.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+  .fbnq{font-size:14px;font-weight:600;color:var(--ink);text-align:center;margin-bottom:8px}
+  .fbnstars{display:flex;justify-content:center;gap:10px;margin-bottom:4px}
+  .fbnstar{background:none;border:none;font-size:28px;line-height:1;cursor:pointer;color:var(--line);transition:color .12s,transform .12s;padding:0}
+  .fbnstar:hover,.fbnstar:active{transform:scale(1.15);color:var(--amber)}
+  .fbnno{display:block;margin:2px auto 0;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px 8px}
   .ticket .tip{margin-top:11px;font-size:12.5px;background:rgba(255,255,255,.1);border-left:3px solid #e9d6a8;padding:8px 11px;border-radius:6px;line-height:1.45}
   #app[dir="rtl"] .ticket .tip{border-left:none;border-right:3px solid #e9d6a8}
 
@@ -724,6 +731,17 @@
   </div>
 </div>
 <div class="toast" id="toast" aria-hidden="true"></div>
+<div class="fbnudge" id="fbNudge" aria-hidden="true">
+  <div class="fbnq" id="fbnQ"></div>
+  <div class="fbnstars" id="fbnStars">
+    <button type="button" class="fbnstar" data-r="1" aria-label="1">★</button>
+    <button type="button" class="fbnstar" data-r="2" aria-label="2">★</button>
+    <button type="button" class="fbnstar" data-r="3" aria-label="3">★</button>
+    <button type="button" class="fbnstar" data-r="4" aria-label="4">★</button>
+    <button type="button" class="fbnstar" data-r="5" aria-label="5">★</button>
+  </div>
+  <button type="button" class="fbnno" id="fbnNo"></button>
+</div>
 
 <script>
   /* ================== MONEY CONFIG ==================
@@ -3552,7 +3570,7 @@
     if(access){ acts+='<button class="act" type="button" data-act="copy">'+o.copy+'</button><button class="act" type="button" data-act="print">'+o.print+'</button>'; }
     html+=acts+'</div>';
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
-    var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden');
+    var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden'); try{armFbNudge();}catch(e){}
     redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
@@ -3760,14 +3778,15 @@
   /* in-app feedback form */
   var FBRATING=0;
   function setFbRating(r){ FBRATING=r; document.querySelectorAll('#fbStars .fbstar').forEach(function(s){ s.classList.toggle('on', parseInt(s.getAttribute('data-r'),10)<=r); }); }
-  function openFeedback(){ FBRATING=0; setFbRating(0); $('fbMsg').value=''; $('fbContact').value=''; var m=$('fbModal'); m.classList.add('show'); m.setAttribute('aria-hidden','false'); try{$('fbMsg').focus();}catch(e){} }
+  function openFeedback(prefill){ var r=prefill||0; FBRATING=r; setFbRating(r); $('fbMsg').value=''; $('fbContact').value=''; var m=$('fbModal'); m.classList.add('show'); m.setAttribute('aria-hidden','false'); if(!r){try{$('fbMsg').focus();}catch(e){}} }
   function closeFeedback(){ var m=$('fbModal'); m.classList.remove('show'); m.setAttribute('aria-hidden','true'); }
   $('fbStars').addEventListener('click',function(e){ var b=e.target.closest('.fbstar'); if(b)setFbRating(parseInt(b.getAttribute('data-r'),10)); });
   $('fbClose').addEventListener('click',closeFeedback);
   $('fbModal').addEventListener('click',function(e){ if(e.target===this)closeFeedback(); });
   $('fbSend').addEventListener('click',function(){
     var u=I18N[LANG].ui, msg=($('fbMsg').value||'').trim(), contact=($('fbContact').value||'').trim();
-    if(!msg){ toast(u.fbEmpty); try{$('fbMsg').focus();}catch(e){} return; }
+    if(!msg && !FBRATING){ toast(u.fbEmpty); try{$('fbMsg').focus();}catch(e){} return; } // a star rating alone is enough (from the nudge)
+    try{ localStorage.setItem('bosla_fb_given','1'); }catch(e){} // don't nudge again once they've given feedback
     function mailtoFallback(){
       var subject='Bosla feedback'+(FBRATING?' ('+FBRATING+'/5)':'');
       var body=msg+(contact?'\n\nContact: '+contact:'')+'\n\n— sent from بوصلة ('+LANG+')';
@@ -3783,6 +3802,32 @@
       }catch(e){ mailtoFallback(); }
     } else { mailtoFallback(); }
   });
+
+  // Proactive feedback nudge — a small slide-up bar that appears once, after the user has
+  // actually engaged with a generated trip (scrolled through it, or ~45s in). Star-tap opens
+  // the feedback box with the rating pre-filled. Skipped if they already gave feedback, and
+  // it goes quiet for ~2 weeks after being shown/dismissed so it never nags.
+  var FBNUDGE_ARMED=false, FBNUDGE_T=null, FBNUDGE_SCROLL=null;
+  function fbNudgeQuiet(){ try{ if(localStorage.getItem('bosla_fb_given')==='1')return true; var t=parseInt(localStorage.getItem('bosla_fb_nudge')||'0',10); return !!t && (Date.now()-t) < 14*24*3600*1000; }catch(e){ return false; } }
+  function armFbNudge(){
+    if(FBNUDGE_ARMED || fbNudgeQuiet() || !CONFIG.feedbackEndpoint) return;
+    FBNUDGE_ARMED=true;
+    var fire=function(){ if(FBNUDGE_T){clearTimeout(FBNUDGE_T);FBNUDGE_T=null;} if(FBNUDGE_SCROLL){window.removeEventListener('scroll',FBNUDGE_SCROLL);FBNUDGE_SCROLL=null;} showFbNudge(); };
+    FBNUDGE_T=setTimeout(fire, 45000);
+    FBNUDGE_SCROLL=function(){ var out=$('out'); if(!out)return; var r=out.getBoundingClientRect(); if(r.bottom - window.innerHeight < 400) fire(); }; // they've scrolled near the end of the itinerary
+    window.addEventListener('scroll',FBNUDGE_SCROLL,{passive:true});
+  }
+  function showFbNudge(){
+    if(fbNudgeQuiet())return;
+    try{ localStorage.setItem('bosla_fb_nudge', String(Date.now())); }catch(e){} // start the cooldown whether or not they respond
+    var q=LANG==='ar'?'كيف كان برنامج رحلتك؟':(LANG==='es'?'¿Qué tal tu plan de viaje?':'How was your trip plan?');
+    var no=LANG==='ar'?'ليس الآن':(LANG==='es'?'Ahora no':'Not now');
+    $('fbnQ').textContent=q; $('fbnNo').textContent=no;
+    var n=$('fbNudge'); n.classList.add('show'); n.setAttribute('aria-hidden','false');
+  }
+  function hideFbNudge(){ var n=$('fbNudge'); n.classList.remove('show'); n.setAttribute('aria-hidden','true'); }
+  $('fbnStars').addEventListener('click',function(e){ var b=e.target.closest('.fbnstar'); if(!b)return; hideFbNudge(); openFeedback(parseInt(b.getAttribute('data-r'),10)); });
+  $('fbnNo').addEventListener('click',hideFbNudge);
 
   function applyState(s){
     if(s.lang&&I18N[s.lang])applyLang(s.lang);
@@ -3945,7 +3990,7 @@
     if(access){ acts+='<button class="act" type="button" data-act="copy">'+o.copy+'</button><button class="act" type="button" data-act="print">'+o.print+'</button>'; }
     html+=acts+'</div>';
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
-    var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden');
+    var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden'); try{armFbNudge();}catch(e){}
     redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
