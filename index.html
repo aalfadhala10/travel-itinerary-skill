@@ -195,7 +195,15 @@
   .swapbtn{flex:0 0 auto;width:30px;height:30px;padding:0;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.75;transition:opacity .15s,border-color .15s,color .15s}
   .swapbtn:hover{opacity:1;border-color:var(--teal);color:var(--teal)}
   .swapbtn svg{width:15px;height:15px}
-  .dhead{display:flex;align-items:center;gap:10px;justify-content:space-between}
+  .dhead{display:flex;align-items:flex-start;gap:10px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .dhtext{flex:1;min-width:0}
+  .dchev{flex:0 0 auto;width:8px;height:8px;margin-top:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
+  .day.dcol .dchev{transform:rotate(-45deg)}
+  .day.dcol .dbody,.day.dcol .dayshuffle{display:none}
+  .day .dsum{display:none}
+  .day.dcol .dsum{display:block;color:var(--muted);font-size:13px;margin:-4px 0 4px;line-height:1.45}
+  .day.dcol .dsum .dsmore{color:var(--amber);font-weight:600}
+  .day.dcol h3{margin-bottom:0}
   .dayshuffle{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);font-size:11px;font-weight:600;font-family:var(--ff-body);cursor:pointer}
   .dayshuffle:hover{border-color:var(--teal);color:var(--teal)}
   .dayshuffle svg{width:13px;height:13px}
@@ -524,7 +532,8 @@
     #out,#out *{visibility:visible}
     .out{margin:0}
     /* drop the interactive controls that don't belong on paper */
-    #out .tuner,#out .daynav,#out .realtag,#out .actions,#out .cvbar,#out .flycard,#out .staybar,#out .bookrow,#out .tuneanother,#out .dayshuffle,#out .swapbtn,#out .swappick,#out button{display:none!important}
+    #out .tuner,#out .daynav,#out .realtag,#out .actions,#out .cvbar,#out .flycard,#out .staybar,#out .bookrow,#out .tuneanother,#out .dayshuffle,#out .swapbtn,#out .swappick,#out .dchev,#out button{display:none!important}
+    #out .day.dcol .dbody{display:block!important} #out .dsum{display:none!important} /* PDF shows every day in full */
     .ticket{background:#173a5c!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .ticket,.day,.bud,.bookbar,.mapcard{break-inside:avoid}
     a[href]:after{content:""!important} /* don't append raw URLs after links */
@@ -3031,24 +3040,29 @@
     }
     for(var i=0;i<count;i++){
       var d=fromDay+i, title=d===1?o.arrival:d===total?o.last:o.explore, rot=DAYROT[ck+'|'+d]||0;
-      html+='<div class="day" id="day-'+d+'"><div class="dhead"><div class="dlabel">'+o.dayWord+' '+d+' · '+esc(match.city)+'</div>'
-        +'<button type="button" class="dayshuffle" data-shuf="'+ck+'|'+d+'" title="'+o.shuffleDay+'">'+SHUFSVG+'<span>'+o.shuffleDay+'</span></button></div><h3>'+title+'</h3>';
       txt.push(''); txt.push(o.dayWord+' '+d+' — '+title+' ('+match.city+')');
-      var dayPois=[];
+      var dayPois=[], body='', names=[];
       for(var s=0;s<spd;s++){
         var sk=ck+'|'+d+'|'+s, poi=DAYEDITS[sk]?poiByName(ck,DAYEDITS[sk]):null;
         if(!poi)poi=take(pool,usedA,rot,s);
-        usedA[poi.n]=1; dayPois.push(poi);
+        usedA[poi.n]=1; dayPois.push(poi); names.push(poi.n);
         if(stops)stops.push({n:poi.n,a:poi.a});
-        html+=eslot(tl[s],poi,match.city,sk,o);
+        body+=eslot(tl[s],poi,match.city,sk,o);
         txt.push('  '+tl[s]+': '+poi.n+' ('+poi.a+')');
       }
       var dsk=ck+'|'+d+'|d', fo=DAYEDITS[dsk]?poiByName(ck,DAYEDITS[dsk]):null;
       if(!fo)fo=nearestFood(ck,match.food,usedF,dayPois,rot);
       usedF[fo.n]=1;
-      html+=eslot(o.times.dinner,fo,match.city,dsk,o);
+      body+=eslot(o.times.dinner,fo,match.city,dsk,o);
       txt.push('  '+o.times.dinner+': '+fo.n+' ('+fo.a+')');
-      html+='</div>';
+      // Each day is collapsible — the first is open, the rest show a one-line summary until tapped.
+      var sum=esc(names.slice(0,3).join(' · '))+(names.length>3?' <span class="dsmore">+'+(names.length-3)+'</span>':'');
+      html+='<div class="day'+(d>1?' dcol':'')+'" id="day-'+d+'">'
+        +'<div class="dhead"><div class="dhtext"><div class="dlabel">'+o.dayWord+' '+d+' · '+esc(match.city)+'</div><h3>'+title+'</h3></div>'
+        +'<button type="button" class="dayshuffle" data-shuf="'+ck+'|'+d+'" title="'+o.shuffleDay+'">'+SHUFSVG+'<span>'+o.shuffleDay+'</span></button>'
+        +'<span class="dchev" aria-hidden="true"></span></div>'
+        +'<div class="dsum">'+sum+'</div>'
+        +'<div class="dbody">'+body+'</div></div>';
     }
     return html;
   }
@@ -4027,8 +4041,10 @@
     if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(LASTTEXT).then(function(){toast(o.copied);},function(){toast(o.copied);});}
     else{toast(o.copied);}
   });
-  // collapse / expand itinerary sections by tapping their header
+  // collapse / expand itinerary sections & individual days by tapping their header
   $('out').addEventListener('click',function(e){
+    var dh=e.target.closest('.dhead');
+    if(dh && !e.target.closest('.dayshuffle')){ dh.parentElement.classList.toggle('dcol'); return; }
     var hd=e.target.closest('.bud>h4,.pack>h4,.bookbar>.maphdr,.mapcard>.maphdr');
     if(!hd)return; hd.parentElement.classList.toggle('collapsed');
   });
@@ -4082,7 +4098,7 @@
     // trip tuner: adjust length, get another version, or jump to a day
     var tb=e.target.closest('.tunebtn'); if(tb){ retuneDays(+tb.getAttribute('data-tune')); return; }
     var av=e.target.closest('.tuneanother'); if(av){ anotherVersion(); return; }
-    var dn=e.target.closest('.dnav'); if(dn){ var el=document.getElementById('day-'+dn.getAttribute('data-day')); if(el)el.scrollIntoView({behavior:'smooth',block:'start'}); return; }
+    var dn=e.target.closest('.dnav'); if(dn){ var el=document.getElementById('day-'+dn.getAttribute('data-day')); if(el){ el.classList.remove('dcol'); el.scrollIntoView({behavior:'smooth',block:'start'}); } return; }
     // "Where to stay" filters: single-select property type, multi-select amenities, then search
     var ty=e.target.closest('.stychip');
     if(ty){ var was=ty.classList.contains('active'); ty.parentNode.querySelectorAll('.stychip').forEach(function(c){c.classList.remove('active');}); if(!was)ty.classList.add('active'); return; }
