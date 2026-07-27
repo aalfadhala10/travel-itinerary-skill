@@ -402,6 +402,14 @@
   :root[data-theme="light"] .stychip.active{color:#fff}
   .stayamenlbl{font-family:var(--ff-data);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin:14px 0 2px}
   #app[dir="rtl"] .stayamenlbl{letter-spacing:normal;font-family:var(--ff-body)}
+  .provrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 12px}
+  .provlbl{font-size:11.5px;color:var(--muted);width:100%;margin-bottom:1px}
+  .provchip{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);font-size:12.5px;font-weight:600;font-family:var(--ff-body);cursor:pointer;text-decoration:none;display:inline-block}
+  .provchip:hover{border-color:var(--teal)}
+  .provchip.on{background:var(--teal);border-color:var(--teal);color:#fff}
+  @media (prefers-color-scheme:dark){.provchip.on{color:#0a1310}}
+  :root[data-theme="dark"] .provchip.on{color:#0a1310}
+  :root[data-theme="light"] .provchip.on{color:#fff}
   .staysearch{width:100%;margin-top:14px;padding:13px;border:none;border-radius:12px;background-color:var(--amber);background-image:linear-gradient(180deg,rgba(255,255,255,.18),rgba(0,0,0,.08));color:#211605;font-size:14.5px;font-weight:700;font-family:var(--ff-body);cursor:pointer}
   .staysearch:active{transform:translateY(1px)}
   .tuner{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:14px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
@@ -532,7 +540,7 @@
     #out,#out *{visibility:visible}
     .out{margin:0}
     /* drop the interactive controls that don't belong on paper */
-    #out .tuner,#out .daynav,#out .realtag,#out .actions,#out .cvbar,#out .flycard,#out .staybar,#out .bookrow,#out .tuneanother,#out .dayshuffle,#out .swapbtn,#out .swappick,#out .dchev,#out button{display:none!important}
+    #out .tuner,#out .daynav,#out .realtag,#out .actions,#out .cvbar,#out .flycard,#out .staybar,#out .bookrow,#out .provrow,#out .tuneanother,#out .dayshuffle,#out .swapbtn,#out .swappick,#out .dchev,#out button{display:none!important}
     #out .day.dcol .dbody{display:block!important} #out .dsum{display:none!important} /* PDF shows every day in full */
     .ticket{background:#173a5c!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .ticket,.day,.bud,.bookbar,.mapcard{break-inside:avoid}
@@ -3275,18 +3283,39 @@
     if(CONFIG.esimLink) return CONFIG.esimLink;
     return CONFIG.airaloRef?('https://www.airalo.com/?rc='+encodeURIComponent(CONFIG.airaloRef)):'https://www.airalo.com/';
   }
+  // Let travellers pick which site to book on, instead of forcing one. Hotel choice is remembered
+  // (used by the "Find" button); activity sites are direct links (tap the one you want).
+  var HOTEL_SITES=[['booking','Booking.com'],['agoda','Agoda'],['hotels','Hotels.com'],['airbnb','Airbnb']];
+  var TOUR_SITES=[['klook','Klook'],['gyg','GetYourGuide'],['viator','Viator']];
+  function siteGet(kind,def){ try{ return localStorage.getItem('bosla_'+kind+'site')||def; }catch(e){ return def; } }
+  function hotelSearchUrl(site,ss,flt){
+    var q=encodeURIComponent(ss);
+    if(site==='agoda')  return 'https://www.agoda.com/search?query='+q;
+    if(site==='hotels') return 'https://www.hotels.com/Hotel-Search?destination='+q;
+    if(site==='airbnb') return 'https://www.airbnb.com/s/'+q+'/homes';
+    return bookUrl(ss)+(flt&&flt.length?'&nflt='+encodeURIComponent(flt.join(';')):''); // Booking keeps affiliate + filters
+  }
+  function activityUrl(site,city){
+    var q=encodeURIComponent(city);
+    if(site==='gyg')    return 'https://www.getyourguide.com/s/?q='+q;
+    if(site==='viator') return 'https://www.viator.com/searchResults/all?text='+q;
+    return toursLinkFor(city); // Klook (affiliate deep link)
+  }
+  function provLabel(kind){ return kind==='hotel'
+    ? (LANG==='ar'?'ابحث في:':(LANG==='es'?'Buscar en:':'Search on:'))
+    : (LANG==='ar'?'أنشطة وجولات:':(LANG==='es'?'Actividades y tours:':'Activities & tours:')); }
   function bookingBar(city,t){
     var o=t.out;
     var flights=flightsLinkFor(city);
     var hotels=CONFIG.hotelsLink||bookUrl(city);
-    var tours=toursLinkFor(city);
     var esim=esimLink();
+    var acts='<div class="provrow"><span class="provlbl">'+provLabel('tour')+'</span>'+
+      TOUR_SITES.map(function(x){ return '<a class="provchip" href="'+activityUrl(x[0],city)+'" target="_blank" rel="noopener">'+x[1]+'</a>'; }).join('')+'</div>';
     return '<div class="bookbar"><div class="maphdr">'+o.bookTitle+'</div><div class="bookrow">'+
       '<a class="bookbtn" href="'+flights+'" target="_blank" rel="noopener">'+o.bookFlights+'</a>'+
       '<a class="bookbtn" href="'+hotels+'" target="_blank" rel="noopener">'+o.bookHotels+'</a>'+
-      '<a class="bookbtn" href="'+tours+'" target="_blank" rel="noopener">'+o.bookTours+'</a>'+
       '<a class="bookbtn" href="'+esim+'" target="_blank" rel="noopener">'+o.bookEsim+'</a>'+
-      '</div></div>';
+      '</div>'+acts+'</div>';
   }
   // "Where to stay" — the plan suggests one hotel per budget, but travellers may want another type of
   // place; these open a search for that city filtered to apartments / resorts / villas / hostels etc.
@@ -3298,7 +3327,11 @@
     var o=t.out;
     var types=STAY_TYPES.map(function(x){ return '<button type="button" class="stychip" data-ht="'+x[1]+'">'+o.stayTypes[x[0]]+'</button>'; }).join('');
     var amen=STAY_AMEN.map(function(x){ return '<button type="button" class="samchip" data-code="'+x[1]+'">'+o.stayAmen[x[0]]+'</button>'; }).join('');
+    var hsel=siteGet('hotel','booking');
+    var hprov='<div class="provrow" data-provkind="hotel"><span class="provlbl">'+provLabel('hotel')+'</span>'+
+      HOTEL_SITES.map(function(x){ return '<button type="button" class="provchip'+(x[0]===hsel?' on':'')+'" data-site="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</div>';
     return '<div class="bookbar staybar" data-staycity="'+esc(city)+'" data-staycountry="'+esc(country||'')+'"><div class="maphdr">'+o.stayTitle+'</div>'+
+      hprov+
       '<div class="staychips">'+types+'</div>'+
       '<div class="stayamenlbl">'+o.stayAmenTitle+'</div><div class="staychips samen">'+amen+'</div>'+
       '<button type="button" class="staysearch">'+o.stayFind+'</button></div>';
@@ -4099,6 +4132,9 @@
     var tb=e.target.closest('.tunebtn'); if(tb){ retuneDays(+tb.getAttribute('data-tune')); return; }
     var av=e.target.closest('.tuneanother'); if(av){ anotherVersion(); return; }
     var dn=e.target.closest('.dnav'); if(dn){ var el=document.getElementById('day-'+dn.getAttribute('data-day')); if(el){ el.classList.remove('dcol'); el.scrollIntoView({behavior:'smooth',block:'start'}); } return; }
+    // pick which hotel site to book on (remembered); highlight it, no navigation
+    var pv=e.target.closest('button.provchip');
+    if(pv){ var kind=(pv.parentNode.getAttribute('data-provkind')||'hotel'); try{ localStorage.setItem('bosla_'+kind+'site',pv.getAttribute('data-site')); }catch(err){} pv.parentNode.querySelectorAll('.provchip').forEach(function(c){c.classList.remove('on');}); pv.classList.add('on'); return; }
     // "Where to stay" filters: single-select property type, multi-select amenities, then search
     var ty=e.target.closest('.stychip');
     if(ty){ var was=ty.classList.contains('active'); ty.parentNode.querySelectorAll('.stychip').forEach(function(c){c.classList.remove('active');}); if(!was)ty.classList.add('active'); return; }
@@ -4113,7 +4149,7 @@
       var tsel=bar.querySelector('.stychip.active'), ht=tsel?tsel.getAttribute('data-ht'):'';
       var flt=[].slice.call(bar.querySelectorAll('.samchip.active')).map(function(c){return c.getAttribute('data-code');});
       if(ht)flt.unshift('ht_id='+ht);
-      window.open(bookUrl(ss)+(flt.length?'&nflt='+encodeURIComponent(flt.join(';')):''),'_blank'); return; }
+      window.open(hotelSearchUrl(siteGet('hotel','booking'),ss,flt),'_blank'); return; }
   });
   // interactive packing checklist — tap an item to tick it, saved per destination
   $('out').addEventListener('click',function(e){
