@@ -14,10 +14,13 @@ Drive connector is connected.)
   online-only. Claude to write the Worker + wiring; Ahmed to create the key +
   Cloudflare account.
 
-- [ ] **Auto-add missing cities.** When a user asks for a city/country we don't
-  have, it's already logged as a `miss`. Goal: automatically generate that city
-  (blurb EN/AR/ES, POIs + coords, hotels, food, cost, currency), QA it, deploy,
-  and notify Ahmed — no approval needed. See "How auto-add would work" below.
+- [ ] **Real-time auto-generate missing cities (the big one).** Batch-adding
+  later is pointless — the user who searched has already left. The goal is
+  IN-SESSION: the instant a search/description hits a city we don't have, build
+  it on the spot (Claude via a Cloudflare Worker), inject it into the running
+  page, and render that user's trip in ~2-4s. Separately persist the generated
+  city so Ahmed can verify it and bake it in permanently for everyone. Needs the
+  same Worker + Anthropic key as the AI parser. See design note below.
 
 ## Backlog
 
@@ -39,22 +42,25 @@ Drive connector is connected.)
 - [x] Added Garmisch-Partenkirchen, Kaprun, Zell am See.
 - [x] Fixed clipped Adults/Kids stepper numbers.
 
-## How auto-add would work (design note)
+## How real-time auto-generate would work (design note)
 
-The generate → validate → deploy half is fully doable by Claude (proven with the
-3 Alpine towns): generate the city object, run the QA harness + alignment check,
-inject additively, commit & push to both branches, notify Ahmed with what changed.
+Flow when a user searches a city we don't have:
+1. App detects the miss (already built) → shows "Building <city> for you…".
+2. App POSTs the name to a Cloudflare Worker (holds the Anthropic key as a secret).
+3. Worker calls Claude → returns a validated city object (blurb EN/AR/ES, POIs +
+   coords, hotels, food, cost, currency) in our exact schema.
+4. App injects it into the in-memory DEST/CO/POI_CO/HOTELS_X and renders the
+   trip immediately — that same user is served, no "come back later".
+5. Worker also stores the generated city (KV or a GitHub commit) so Claude can
+   verify it and bake it permanently into index.html for all users.
 
-The trigger + data-read half has one real constraint in this environment: the
-sandbox network blocks Google's servers, and connectors may be absent in
-scheduled/headless runs — so an unattended job can't reliably read the Google
-Sheet on its own. Practical options:
+Requirements: a free Cloudflare account + an Anthropic API key (Ahmed). Claude
+writes the Worker + wiring. Small per-request cost.
 
-1. **Semi-auto (reliable today):** Ahmed pastes the "Missing places" list (or
-   just says "add them"); Claude auto-generates, QAs, deploys them all, and
-   reports — zero data work for Ahmed.
-2. **Scheduled reminder Routine:** a weekly nudge to surface the miss list, then
-   option 1 runs.
-3. **Fully autonomous:** feasible only if the miss list is readable from a
-   sandbox-reachable place (e.g. mirrored to the GitHub repo, which IS reachable)
-   or the Drive connector proves available in scheduled runs. Worth a spike.
+Guardrails against the risks of unreviewed generation:
+- Structural validation (coords in range, all required fields, tags from the
+  allowed set) before the city is shown; reject + fall back if malformed.
+- Only generate for plausible place names; cache by name; rate-limit per session
+  to control cost and block spam/abuse of the API.
+- Flag AI-generated cities for Ahmed's quick review before they're made permanent
+  (they still serve the live user instantly in the meantime).
