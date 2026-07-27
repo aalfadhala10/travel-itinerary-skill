@@ -2390,10 +2390,12 @@
     "DR Congo":["drc","democratic republic of congo","congo kinshasa"],"Congo":["congo brazzaville","republic of congo"],
     "Vatican City":["vatican","holy see"],"Palestine":["palestinian territories"],"China":["prc"]
   };
+  var CTYWORDS={}, CTYWORD2CITIES={}, ALIASSET={}; // tag country name/nickname words + index their cities
   Object.keys(DEST).forEach(function(k){
     var cty=DEST[k].country;
+    DEST[k].alias.forEach(function(a){ if(a)ALIASSET[a]=1; });
     var names=[cty.toLowerCase()].concat(COUNTRY_AR[cty]||[],COUNTRY_ES[cty]||[],COUNTRY_ALT[cty]||[]);
-    names.forEach(function(c){ if(c&&DEST[k].alias.indexOf(c)<0)DEST[k].alias.push(c); });
+    names.forEach(function(c){ if(c){ c=String(c).toLowerCase(); CTYWORDS[c]=1; ALIASSET[c]=1; (CTYWORD2CITIES[c]||(CTYWORD2CITIES[c]=[])).push(k); if(DEST[k].alias.indexOf(c)<0)DEST[k].alias.push(c); } });
   });
 
   var I18N={
@@ -3152,10 +3154,17 @@
   // make every destination reachable from its region's auto-route pool (covers newly added cities)
   Object.keys(DEST).forEach(function(k){ var rg=DEST[k].region; if(AUTOROUTE[rg]&&AUTOROUTE[rg].indexOf(k)<0)AUTOROUTE[rg].push(k); });
   function arabicDigits(s){return String(s).replace(/[٠-٩]/g,function(d){return "٠١٢٣٤٥٦٧٨٩".indexOf(d);});}
+  function lev(a,b){ var m=a.length,n=b.length,i,j,prev=[],cur=[]; for(j=0;j<=n;j++)prev[j]=j;
+    for(i=1;i<=m;i++){ cur[0]=i; for(j=1;j<=n;j++){ var cost=a.charAt(i-1)===b.charAt(j-1)?0:1; cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+cost); } for(j=0;j<=n;j++)prev[j]=cur[j]; } return prev[n]; }
   function parsePrompt(raw){
     var s=arabicDigits((raw||'').toLowerCase());
-    var dm=s.match(/(\d{1,2})\s*(?:day|days|d[ií]as?|يوم|أيام|ايام)/)||s.match(/(\d{1,2})/);
-    var days=dm?Math.max(1,Math.min(30,parseInt(dm[1],10))):null;
+    // Total days: if the trip lists per-stop nights/days ("4 nights ... 2 nights ... one night"),
+    // SUM them; otherwise use a single "N days" figure, else the first number.
+    var W2N={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14};
+    var stayRe=/(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen)\s*(?:nights?|days?|noches?|d[ií]as?|ليلة|ليالي|ليله|يوم|أيام|ايام)/g;
+    var _m,_sum=0,_cnt=0; while((_m=stayRe.exec(s))){ var _n=parseInt(_m[1],10); if(isNaN(_n))_n=W2N[_m[1]]||0; if(_n>0){_sum+=_n;_cnt++;} }
+    var days = _cnt>0 ? _sum : (s.match(/(\d{1,2})/)?parseInt(s.match(/(\d{1,2})/)[1],10):null);
+    days = days?Math.max(1,Math.min(30,days)):null;
     var v=[];
     if(/(cultur|histor|museum|sightsee|ثقاف|تاريخ|متاحف|معالم)/.test(s))v.push('Culture');
     if(/(food|eat|cuisine|restaurant|foodie|أكل|اكل|مطاعm|مطاعم|طعام)/.test(s))v.push('Food');
@@ -3179,14 +3188,30 @@
         if(!isLetter(b)&&!isLetter(a))return i; i=hay.indexOf(needle,i+1); }
       return -1;
     };
-    var hits=[];
+    // Explicit city mentions — real city aliases only (NOT country-name words, or a single word like
+    // "scotland" would pull in every UK city and hijack the route).
+    var hits=[], taken={};
     Object.keys(DEST).forEach(function(k){
       var best=-1;
-      DEST[k].alias.forEach(function(a){ if(a.length>=3){ var idx=wordAt(s,a); if(idx>=0&&(best<0||idx<best))best=idx; } }); // whole-word only: "nice" must not match inside "venice"
-      if(best>=0)hits.push({k:k,pos:best});
+      DEST[k].alias.forEach(function(a){ if(a.length>=3 && !CTYWORDS[a]){ var idx=wordAt(s,a); if(idx>=0&&(best<0||idx<best))best=idx; } }); // whole-word only: "nice" must not match inside "venice"
+      if(best>=0){ hits.push({k:k,pos:best}); taken[k]=1; }
     });
+    // Fuzzy-match misspelled place names sitting in a destination slot ("to munech" -> Munich,
+    // "then insbruck" -> Innsbruck). Only very close matches (1 typo) are accepted, to avoid noise.
+    var slotRe=/(?:\bto|\bthen|\bfrom|\bvia|\bvisit|→|->)\s+([a-zà-ÿ]{4,})/g, sm;
+    while((sm=slotRe.exec(s))){
+      var tok=sm[1], tpos=sm.index+sm[0].lastIndexOf(tok);
+      if(ALIASSET[tok])continue; // a known place/country word — already handled above
+      var bestK=null,bestD=99;
+      Object.keys(DEST).forEach(function(k){ if(taken[k])return; var nm=DEST[k].city.toLowerCase();
+        if(Math.abs(nm.length-tok.length)>2)return; var d=lev(tok,nm); if(d<bestD){bestD=d;bestK=k;} });
+      if(bestK && (bestD===1 || (bestD===2 && DEST[bestK].city.length>=8))){ hits.push({k:bestK,pos:tpos}); taken[bestK]=1; }
+    }
     hits.sort(function(a,b){return a.pos-b.pos;});
-    return {days:days,vibes:v,budget:budget,pace:pace,roadtrip:roadtrip,regions:regions,hits:hits.map(function(h){return h.k;}),hitObjs:hits};
+    // Country-name words present -> only used when the user named few/no specific cities.
+    var ctyCities=[]; Object.keys(CTYWORD2CITIES).forEach(function(w){ if(w.length>=3){ var idx=wordAt(s,w); if(idx>=0)ctyCities.push({pos:idx,keys:CTYWORD2CITIES[w]}); } });
+    ctyCities.sort(function(a,b){return a.pos-b.pos;});
+    return {days:days,vibes:v,budget:budget,pace:pace,roadtrip:roadtrip,regions:regions,hits:hits.map(function(h){return h.k;}),hitObjs:hits,ctyCities:ctyCities};
   }
   // Order a set of cities into a sensible drive — nearest-neighbour then 2-opt — so a road trip
   // never skips a city and doubles back. Uses approx coordinates; if any are missing it leaves the
@@ -3216,11 +3241,21 @@
   }
   function buildRoute(pp,seed){
     var keys=[], seen={};
+    // If the user explicitly named two or more real cities, that sequence IS the itinerary — keep
+    // them in the given order (deduped), don't truncate or pad with a country's other cities.
+    if(pp.hitObjs && pp.hitObjs.length>=2){
+      var seq=[], sset={};
+      pp.hitObjs.forEach(function(h){ if(DEST[h.k]&&!sset[h.k]){sset[h.k]=1;seq.push(h.k);} });
+      if(seq.length>=2) return seq.slice(0,12);
+    }
+    // Sparse: fold in country-name cities (e.g. "Italy road trip") so the vague-prompt logic still fills.
+    var objs=(pp.hitObjs||[]).slice();
+    if(objs.length<2 && pp.ctyCities){ pp.ctyCities.forEach(function(g){ g.keys.forEach(function(k){ objs.push({k:k,pos:g.pos}); }); }); }
     // Group hits by their position in the sentence. Cities matched at the SAME position came from one
     // country-name token (e.g. "Italy" → rome/milan/venice/florence) — shuffle those for variety.
     // Cities at DISTINCT positions were named explicitly ("Rome then Venice") — keep that order.
     var groups=[], lastPos=null;
-    (pp.hitObjs||pp.hits.map(function(k,i){return {k:k,pos:i};})).forEach(function(h){
+    objs.forEach(function(h){
       if(h.pos!==lastPos){ groups.push([]); lastPos=h.pos; }
       groups[groups.length-1].push(h.k);
     });
