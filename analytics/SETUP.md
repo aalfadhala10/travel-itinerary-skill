@@ -1,9 +1,14 @@
-# Bosla analytics — 5-minute setup (no coding)
+# Bosla analytics + feedback — 5-minute setup (no coding)
 
-This turns on the privacy-friendly usage tracking that's already built into the
-app. It's **cookieless** and collects **no personal data** — just anonymous
-counts (page views, which destinations get planned, outbound clicks). Everything
-lands in your own Google Sheet, and you get a live stats dashboard.
+This turns on two things at once, both stored in your own Google Sheet:
+
+1. **Usage stats** — cookieless, no personal data (page views, which
+   destinations get planned, outbound clicks) → the **Events** tab.
+2. **In-app feedback** — the star rating + message users type in the app's
+   "Send feedback" form → the **Feedback** tab.
+
+One web app handles both, and you get a live dashboard that shows the stats
+**and** the latest feedback.
 
 ## Step 1 — Make the Sheet + script
 
@@ -27,8 +32,10 @@ lands in your own Google Sheet, and you get a live stats dashboard.
 
 ## Step 3 — Send me the URL
 
-Paste that `.../exec` URL back to me. I'll drop it into `CONFIG.analyticsEndpoint`
-and redeploy. From then on, real visits start showing up.
+Paste that `.../exec` URL back to me. I'll drop it into **both**
+`CONFIG.analyticsEndpoint` and `CONFIG.feedbackEndpoint` and redeploy. From then
+on, real visits show up in the **Events** tab and any feedback users submit shows
+up in the **Feedback** tab — automatically, in your Drive.
 
 ## Viewing your stats
 

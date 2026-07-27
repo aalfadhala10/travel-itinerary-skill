@@ -1,44 +1,57 @@
 /**
- * Bosla · بوصلة — privacy-friendly analytics backend (Google Apps Script)
+ * Bosla · بوصلة — analytics + feedback backend (Google Apps Script)
  *
- * Receives cookieless usage events from the app and stores them in a Google Sheet.
- * Also serves a live stats dashboard when you open the web-app URL in a browser.
+ * One web app handles BOTH:
+ *   • cookieless usage events (page views, plans, outbound clicks), and
+ *   • in-app feedback (star rating + message + optional contact).
+ * Everything is stored in your own Google Sheet — two tabs, "Events" and
+ * "Feedback" — so it all lives in your Google Drive automatically.
  *
- * No personal data is collected — just a random session id (resets when the tab
- * closes), the page/plan/outbound event, language, destination, and days.
+ * No personal data beyond what a user chooses to type in the feedback box.
  *
- * SETUP: see analytics/SETUP.md (5 minutes, no coding).
+ * SETUP: see analytics/SETUP.md (5 minutes, no coding). Paste the deployed
+ * /exec URL into BOTH CONFIG.analyticsEndpoint and CONFIG.feedbackEndpoint.
  */
 
-var SHEET_NAME = 'Events';
-var HEADERS = ['received', 't', 'ev', 'sid', 'lang', 'mode', 'dest', 'country', 'days', 'cities', 'host', 'ref'];
+var EVENTS_SHEET = 'Events';
+var EVENTS_HEADERS = ['received', 't', 'ev', 'sid', 'lang', 'mode', 'dest', 'country', 'days', 'cities', 'host', 'ref'];
+var FEEDBACK_SHEET = 'Feedback';
+var FEEDBACK_HEADERS = ['received', 'rating', 'message', 'contact', 'lang', 'page'];
 
-function getSheet_() {
+function sheet_(name, headers) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(SHEET_NAME);
+  var sh = ss.getSheetByName(name);
   if (!sh) {
-    sh = ss.insertSheet(SHEET_NAME);
-    sh.appendRow(HEADERS);
+    sh = ss.insertSheet(name);
+    sh.appendRow(headers);
     sh.setFrozenRows(1);
   }
   return sh;
 }
 
-/** Receives an event from the app (navigator.sendBeacon / fetch POST). */
+/** Receives an event OR a feedback submission from the app. */
 function doPost(e) {
   try {
     var data = {};
     if (e && e.postData && e.postData.contents) {
       data = JSON.parse(e.postData.contents);
     }
-    var sh = getSheet_();
-    sh.appendRow([
-      new Date(),
-      data.t || '', data.ev || '', data.sid || '', data.lang || '',
-      data.mode || '', data.dest || '', data.country || '',
-      (data.days != null ? data.days : ''), (data.cities != null ? data.cities : ''),
-      data.host || '', data.ref || ''
-    ]);
+    var isFeedback = (data.type === 'feedback') || (data.message != null && data.ev == null);
+    if (isFeedback) {
+      sheet_(FEEDBACK_SHEET, FEEDBACK_HEADERS).appendRow([
+        new Date(), (data.rating != null ? data.rating : ''),
+        data.message || '', data.email || data.contact || '',
+        data.lang || '', data.page || ''
+      ]);
+    } else {
+      sheet_(EVENTS_SHEET, EVENTS_HEADERS).appendRow([
+        new Date(),
+        data.t || '', data.ev || '', data.sid || '', data.lang || '',
+        data.mode || '', data.dest || '', data.country || '',
+        (data.days != null ? data.days : ''), (data.cities != null ? data.cities : ''),
+        data.host || '', data.ref || ''
+      ]);
+    }
     return ContentService.createTextOutput(JSON.stringify({ ok: true }))
       .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
@@ -49,21 +62,16 @@ function doPost(e) {
 
 /** Opening the web-app URL in a browser shows a live stats dashboard. */
 function doGet(e) {
-  var sh = getSheet_();
-  var rows = sh.getDataRange().getValues();
-  rows.shift(); // drop header
+  var eRows = sheet_(EVENTS_SHEET, EVENTS_HEADERS).getDataRange().getValues(); eRows.shift();
+  var fRows = sheet_(FEEDBACK_SHEET, FEEDBACK_HEADERS).getDataRange().getValues(); fRows.shift();
 
-  var total = rows.length;
+  var total = eRows.length;
   var pageViews = 0, plans = 0, saves = 0, shares = 0, outbound = 0;
   var sessions = {}, dests = {}, countries = {}, hosts = {}, langs = {}, byDay = {};
 
-  var now = new Date();
-  var days7 = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
-
-  for (var i = 0; i < rows.length; i++) {
-    var r = rows[i];
-    var received = r[0], ev = r[2], sid = r[3], lang = r[4],
-        dest = r[6], country = r[7], host = r[10];
+  for (var i = 0; i < eRows.length; i++) {
+    var r = eRows[i];
+    var received = r[0], ev = r[2], sid = r[3], lang = r[4], dest = r[6], country = r[7], host = r[10];
     if (sid) sessions[sid] = 1;
     if (lang) langs[lang] = (langs[lang] || 0) + 1;
     if (ev === 'page_view') pageViews++;
@@ -83,37 +91,50 @@ function doGet(e) {
   }
   function rowsHtml(list) {
     if (!list.length) return '<tr><td colspan="2" style="opacity:.5">no data yet</td></tr>';
-    return list.map(function (x) {
-      return '<tr><td>' + escapeHtml_(x[0]) + '</td><td class="n">' + x[1] + '</td></tr>';
-    }).join('');
+    return list.map(function (x) { return '<tr><td>' + esc_(x[0]) + '</td><td class="n">' + x[1] + '</td></tr>'; }).join('');
   }
 
   var uniqueSessions = Object.keys(sessions).length;
   var dayKeys = Object.keys(byDay).sort();
   var spark = dayKeys.slice(-14).map(function (k) { return '<span title="' + k + ': ' + byDay[k] + '">' + byDay[k] + '</span>'; }).join(' · ');
 
+  // recent feedback (newest first)
+  var fb = fRows.slice().reverse().slice(0, 25);
+  var avg = 0, rated = 0;
+  for (var j = 0; j < fRows.length; j++) { var rt = parseFloat(fRows[j][1]); if (rt > 0) { avg += rt; rated++; } }
+  avg = rated ? (avg / rated).toFixed(1) : '—';
+  var fbHtml = fb.length ? fb.map(function (r) {
+    var stars = (parseFloat(r[1]) > 0) ? ('★'.repeat(parseFloat(r[1])) + '☆'.repeat(5 - parseFloat(r[1]))) : '';
+    var when = (r[0] instanceof Date) ? Utilities.formatDate(r[0], 'GMT', 'yyyy-MM-dd') : '';
+    var contact = r[3] ? (' · ' + esc_(r[3])) : '';
+    return '<div class="fb"><div class="fbtop"><span class="stars">' + stars + '</span><span class="fbmeta">' + when + ' · ' + esc_(r[4] || '') + contact + '</span></div><div class="fbmsg">' + esc_(r[2] || '') + '</div></div>';
+  }).join('') : '<div style="opacity:.5">no feedback yet</div>';
+
   var html =
     '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
     '<title>Bosla · Stats</title><style>' +
     'body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#0f1720;color:#e8eef5;padding:20px}' +
     'h1{font-size:20px;margin:0 0 4px}.sub{opacity:.6;font-size:13px;margin-bottom:20px}' +
-    '.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:24px}' +
+    '.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:24px}' +
     '.card{background:#182430;border:1px solid #26333f;border-radius:12px;padding:14px}' +
     '.card .big{font-size:26px;font-weight:700}.card .lbl{opacity:.6;font-size:12px;margin-top:2px}' +
-    '.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}' +
+    '.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:24px}' +
     'table{width:100%;border-collapse:collapse;background:#182430;border:1px solid #26333f;border-radius:12px;overflow:hidden}' +
     'th{text-align:left;font-size:12px;opacity:.6;padding:8px 12px;border-bottom:1px solid #26333f}' +
     'td{padding:7px 12px;font-size:14px;border-bottom:1px solid #1e2a35}td.n{text-align:right;font-variant-numeric:tabular-nums}' +
     'h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;opacity:.7;margin:0 0 8px}' +
     '.spark{background:#182430;border:1px solid #26333f;border-radius:12px;padding:12px;font-size:13px;margin-bottom:24px;line-height:1.8}' +
+    '.fb{background:#182430;border:1px solid #26333f;border-radius:10px;padding:10px 12px;margin-bottom:8px}' +
+    '.fbtop{display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-bottom:4px}' +
+    '.stars{color:#f5c451}.fbmeta{opacity:.55}.fbmsg{font-size:14px;line-height:1.4}' +
     '</style></head><body>' +
     '<h1>بوصلة · Bosla — usage stats</h1>' +
-    '<div class="sub">Cookieless. No personal data. Auto-refreshes on reload.</div>' +
+    '<div class="sub">Cookieless. Reload to refresh.</div>' +
     '<div class="cards">' +
     card_(total, 'total events') + card_(uniqueSessions, 'unique sessions') +
     card_(pageViews, 'page views') + card_(plans, 'plans made') +
-    card_(saves, 'trips saved') + card_(shares, 'shares / WhatsApp') +
-    card_(outbound, 'outbound clicks') +
+    card_(saves, 'trips saved') + card_(shares, 'shares') +
+    card_(outbound, 'outbound clicks') + card_(fRows.length, 'feedback') + card_(avg, 'avg rating') +
     '</div>' +
     '<h3>Events per day (last 14)</h3><div class="spark">' + (spark || '<span style="opacity:.5">no data yet</span>') + '</div>' +
     '<div class="grid">' +
@@ -121,11 +142,13 @@ function doGet(e) {
     tbl_('Top countries', 'Country', rowsHtml(topList(countries))) +
     tbl_('Outbound clicks by site', 'Site', rowsHtml(topList(hosts))) +
     tbl_('Language', 'Lang', rowsHtml(topList(langs))) +
-    '</div></body></html>';
+    '</div>' +
+    '<h3>Recent feedback</h3>' + fbHtml +
+    '</body></html>';
 
   return HtmlService.createHtmlOutput(html).setTitle('Bosla · Stats');
 }
 
 function card_(n, lbl) { return '<div class="card"><div class="big">' + n + '</div><div class="lbl">' + lbl + '</div></div>'; }
 function tbl_(title, col, body) { return '<div><h3>' + title + '</h3><table><tr><th>' + col + '</th><th class="n">Count</th></tr>' + body + '</table></div>'; }
-function escapeHtml_(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function esc_(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
