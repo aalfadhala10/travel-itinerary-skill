@@ -14,7 +14,7 @@
  */
 
 var EVENTS_SHEET = 'Events';
-var EVENTS_HEADERS = ['received', 't', 'ev', 'sid', 'lang', 'mode', 'dest', 'country', 'days', 'cities', 'host', 'ref'];
+var EVENTS_HEADERS = ['received', 't', 'ev', 'sid', 'lang', 'mode', 'dest', 'country', 'days', 'cities', 'host', 'ref', 'tz'];
 var FEEDBACK_SHEET = 'Feedback';
 var FEEDBACK_HEADERS = ['received', 'rating', 'message', 'contact', 'lang', 'page'];
 
@@ -25,6 +25,11 @@ function sheet_(name, headers) {
     sh = ss.insertSheet(name);
     sh.appendRow(headers);
     sh.setFrozenRows(1);
+    return sh;
+  }
+  // If new columns were added later (e.g. 'tz'), extend the header row without touching existing data.
+  if (headers && sh.getLastColumn() < headers.length) {
+    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
   }
   return sh;
 }
@@ -49,7 +54,7 @@ function doPost(e) {
         data.t || '', data.ev || '', data.sid || '', data.lang || '',
         data.mode || '', data.dest || '', data.country || '',
         (data.days != null ? data.days : ''), (data.cities != null ? data.cities : ''),
-        data.host || '', data.ref || ''
+        data.host || '', data.ref || '', data.tz || ''
       ]);
     }
     return ContentService.createTextOutput(JSON.stringify({ ok: true }))
@@ -68,11 +73,13 @@ function doGet(e) {
   var total = eRows.length;
   var pageViews = 0, plans = 0, saves = 0, shares = 0, outbound = 0;
   var sessions = {}, dests = {}, countries = {}, hosts = {}, langs = {}, byDay = {}, misses = {}, missTotal = 0;
+  var sessCountry = {}; // one visitor-country per session (from their timezone)
 
   for (var i = 0; i < eRows.length; i++) {
     var r = eRows[i];
-    var received = r[0], ev = r[2], sid = r[3], lang = r[4], dest = r[6], country = r[7], host = r[10];
+    var received = r[0], ev = r[2], sid = r[3], lang = r[4], dest = r[6], country = r[7], host = r[10], tz = r[12];
     if (sid) sessions[sid] = 1;
+    if (sid && tz && !sessCountry[sid]) sessCountry[sid] = tzCountry_(tz);
     if (lang) langs[lang] = (langs[lang] || 0) + 1;
     if (ev === 'page_view') pageViews++;
     else if (ev === 'plan') { plans++; if (dest) dests[dest] = (dests[dest] || 0) + 1; if (country) countries[country] = (countries[country] || 0) + 1; }
@@ -96,6 +103,8 @@ function doGet(e) {
   }
 
   var uniqueSessions = Object.keys(sessions).length;
+  var geo = {}; // visitors per country
+  Object.keys(sessCountry).forEach(function (s) { var c = sessCountry[s]; if (c) geo[c] = (geo[c] || 0) + 1; });
   var dayKeys = Object.keys(byDay).sort();
   var spark = dayKeys.slice(-14).map(function (k) { return '<span title="' + k + ': ' + byDay[k] + '">' + byDay[k] + '</span>'; }).join(' · ');
 
@@ -142,6 +151,9 @@ function doGet(e) {
     '<h3>Missing places — asked for, not in our data (add these next)</h3>' +
     '<table><tr><th>What they typed</th><th class="n">Times</th></tr>' + rowsHtml(topList(misses, 30)) + '</table>' +
     '<div style="height:24px"></div>' +
+    '<h3>Where visitors are (by timezone — approximate country, anonymous)</h3>' +
+    '<table><tr><th>Country</th><th class="n">Visitors</th></tr>' + rowsHtml(topList(geo, 40)) + '</table>' +
+    '<div style="height:24px"></div>' +
     '<div class="grid">' +
     tbl_('Top destinations', 'Destination', rowsHtml(topList(dests))) +
     tbl_('Top countries', 'Country', rowsHtml(topList(countries))) +
@@ -157,3 +169,37 @@ function doGet(e) {
 function card_(n, lbl) { return '<div class="card"><div class="big">' + n + '</div><div class="lbl">' + lbl + '</div></div>'; }
 function tbl_(title, col, body) { return '<div><h3>' + title + '</h3><table><tr><th>' + col + '</th><th class="n">Count</th></tr>' + body + '</table></div>'; }
 function esc_(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+/** Map an IANA timezone (e.g. "Asia/Riyadh") to a country name. Anonymous, approximate — a VPN
+ *  or traveler skews it, but it's a good read on where your audience is. Unknown zones fall back
+ *  to the city name so you still learn something. */
+function tzCountry_(tz) {
+  var M = {
+    'Asia/Riyadh': 'Saudi Arabia', 'Asia/Dubai': 'UAE', 'Asia/Qatar': 'Qatar', 'Asia/Bahrain': 'Bahrain',
+    'Asia/Kuwait': 'Kuwait', 'Asia/Muscat': 'Oman', 'Asia/Aden': 'Yemen', 'Asia/Baghdad': 'Iraq',
+    'Asia/Amman': 'Jordan', 'Asia/Beirut': 'Lebanon', 'Asia/Damascus': 'Syria', 'Asia/Gaza': 'Palestine',
+    'Asia/Hebron': 'Palestine', 'Africa/Cairo': 'Egypt', 'Africa/Khartoum': 'Sudan', 'Africa/Casablanca': 'Morocco',
+    'Africa/Tunis': 'Tunisia', 'Africa/Algiers': 'Algeria', 'Africa/Tripoli': 'Libya', 'Africa/Lagos': 'Nigeria',
+    'Africa/Johannesburg': 'South Africa', 'Africa/Nairobi': 'Kenya',
+    'Europe/London': 'United Kingdom', 'Europe/Dublin': 'Ireland', 'Europe/Paris': 'France', 'Europe/Madrid': 'Spain',
+    'Europe/Berlin': 'Germany', 'Europe/Rome': 'Italy', 'Europe/Amsterdam': 'Netherlands', 'Europe/Brussels': 'Belgium',
+    'Europe/Zurich': 'Switzerland', 'Europe/Vienna': 'Austria', 'Europe/Lisbon': 'Portugal', 'Europe/Athens': 'Greece',
+    'Europe/Istanbul': 'Turkey', 'Europe/Moscow': 'Russia', 'Europe/Stockholm': 'Sweden', 'Europe/Oslo': 'Norway',
+    'Europe/Copenhagen': 'Denmark', 'Europe/Warsaw': 'Poland', 'Europe/Prague': 'Czech Republic', 'Europe/Budapest': 'Hungary',
+    'Europe/Bucharest': 'Romania', 'Europe/Kiev': 'Ukraine', 'Europe/Helsinki': 'Finland',
+    'America/New_York': 'United States', 'America/Chicago': 'United States', 'America/Denver': 'United States',
+    'America/Los_Angeles': 'United States', 'America/Phoenix': 'United States', 'America/Toronto': 'Canada',
+    'America/Vancouver': 'Canada', 'America/Mexico_City': 'Mexico', 'America/Sao_Paulo': 'Brazil',
+    'America/Buenos_Aires': 'Argentina', 'America/Bogota': 'Colombia', 'America/Lima': 'Peru',
+    'Asia/Karachi': 'Pakistan', 'Asia/Kolkata': 'India', 'Asia/Calcutta': 'India', 'Asia/Dhaka': 'Bangladesh',
+    'Asia/Colombo': 'Sri Lanka', 'Asia/Kathmandu': 'Nepal', 'Asia/Tehran': 'Iran', 'Asia/Kabul': 'Afghanistan',
+    'Asia/Bangkok': 'Thailand', 'Asia/Jakarta': 'Indonesia', 'Asia/Kuala_Lumpur': 'Malaysia', 'Asia/Singapore': 'Singapore',
+    'Asia/Manila': 'Philippines', 'Asia/Ho_Chi_Minh': 'Vietnam', 'Asia/Saigon': 'Vietnam', 'Asia/Tokyo': 'Japan',
+    'Asia/Seoul': 'South Korea', 'Asia/Shanghai': 'China', 'Asia/Hong_Kong': 'Hong Kong', 'Asia/Taipei': 'Taiwan',
+    'Australia/Sydney': 'Australia', 'Australia/Melbourne': 'Australia', 'Australia/Perth': 'Australia',
+    'Pacific/Auckland': 'New Zealand'
+  };
+  if (M[tz]) return M[tz];
+  var city = String(tz || '').split('/').pop().replace(/_/g, ' ');
+  return city || 'Unknown';
+}
