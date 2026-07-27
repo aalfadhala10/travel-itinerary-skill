@@ -3657,11 +3657,9 @@
     if(!access)html+=paywallCard(t);
     if(access){
       html+=budgetCard(o,t,catRows(baseTotal),transferUSD,totalUSD,null,adults,kids);
-      html+=packingCard(ms[0],vibes,t,keys.join('-'));
-      html+=goodToKnow(ms[0].country,t);
       var __seenC={}; ms.forEach(function(m){ if(!__seenC[m.country]){__seenC[m.country]=1; html+=appsCard(m.country,t)+salmanCard(m.country,t);} });
       html+=faithBar(ms[0].city,ms[0].country,t);
-      html+=flyCard(ms[0],t); html+=phrasesCard(ms[0],t);
+      html+=flyCard(ms[0],t);
     }
     html+=staysBar(ms[0].city,ms[0].country,t); html+=bookingBar(ms[0].city,t);
     html+='<p class="note">'+o.note(ms.map(function(m){return esc(m.city);}).join(' & '))+'</p>';
@@ -4036,12 +4034,10 @@
       if(!access){ html+=paywallCard(t); paywallShown=true; }
       if(access){
         html+=budgetCard(o,t,catRows(base1+base2),trUSD,totalUSD,multi?null:keyOf(m1),adults,kids);
-        html+=packingCard(m1,vibes,t,m1.city);
-        html+=goodToKnow(m1.country,t);
         html+=appsCard(m1.country,t)+salmanCard(m1.country,t);
         if(multi&&m2&&m2.country!==m1.country)html+=appsCard(m2.country,t)+salmanCard(m2.country,t);
         html+=faithBar(m1.city,m1.country,t);
-        html+=flyCard(m1,t); html+=phrasesCard(m1,t);
+        html+=flyCard(m1,t);
       }
       html+=staysBar(m1.city,m1.country,t); html+=bookingBar(m1.city,t);
       txt.push(''); txt.push(o.budTotal+' ('+o.perPerson+'): ~$'+Math.round(totalUSD));
@@ -4072,7 +4068,6 @@
       if(!access){ html+=paywallCard(t); paywallShown=true; }
       if(access){
         html+=budgetCard(o,t,catRows(gbase),0,gbase,null,adults,kids);
-        html+=packingCard(null,vibes,t,cap(dest));
         html+=faithBar(cap(dest),'',t);
       }
       html+=staysBar(cap(dest),'',t); html+=bookingBar(cap(dest),t);
