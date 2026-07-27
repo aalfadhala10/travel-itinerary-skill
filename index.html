@@ -2690,14 +2690,15 @@
           var c=d&&d.city;
           if(!c||!c.valid||!c.city||!Array.isArray(c.poi)||c.poi.length<3){ resolve(null); return; }
           var key=aiKey(c.city);
+          var enArea=function(v){ v=v||''; return /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(v)?'':v; }; // area labels sit next to English POI names — drop any stray Arabic the model emits
           DEST[key]={city:c.city,country:c.country||'',flag:c.flag||'🏳️',region:c.region||'eu',
             alias:[].concat.apply([],[[c.city.toLowerCase(),String(name).toLowerCase()]]).filter(Boolean),
             blurb:{en:c.blurbEn||'',ar:c.blurbAr||'',es:c.blurbEs||''},
             summer:{emoji:AISUMEMO[c.summerCond]||'☀️',cond:c.summerCond||'warm',temp:c.summerTemp|0},
             cost:{Budget:c.costBudget|0,'Mid-range':c.costMid|0,Luxury:c.costLux|0},
             hotels:{Budget:(c.hotelsBudget||[])[0]||(c.city+' hotel'),'Mid-range':(c.hotelsMid||[])[0]||(c.city+' hotel'),Luxury:(c.hotelsLux||[])[0]||(c.city+' hotel')},
-            poi:c.poi.map(function(p){return {n:p.n,a:p.a||'',t:(Array.isArray(p.t)&&p.t.length?p.t:['Culture'])};}),
-            food:(c.food||[]).map(function(p){return {n:p.n,a:p.a||''};})};
+            poi:c.poi.map(function(p){return {n:p.n,a:enArea(p.a),t:(Array.isArray(p.t)&&p.t.length?p.t:['Culture'])};}),
+            food:(c.food||[]).map(function(p){return {n:p.n,a:enArea(p.a)};})};
           CUR[key]={s:c.curSymbol||'$',r:c.curRate||1};
           CO[key]=[c.lat,c.lng];
           var pc={}; c.poi.forEach(function(p){ if(p.lat!=null&&p.lng!=null)pc[p.n]=[p.lat,p.lng]; }); POI_CO[key]=pc;

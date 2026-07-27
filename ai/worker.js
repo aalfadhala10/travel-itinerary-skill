@@ -148,11 +148,14 @@ const CITY_SCHEMA = {
     lat: { type: "number" }, lng: { type: "number" },
     poi: { type: "array", items: { type: "object", additionalProperties: false,
       required: ["n","a","t","lat","lng"], properties: {
-        n: { type: "string" }, a: { type: "string" },
+        n: { type: "string", description: "attraction name in English" },
+        a: { type: "string", description: "short area/neighbourhood label in English, e.g. 'Old Town', 'Marina' — NOT a translation of the name, never Arabic" },
         t: { type: "array", items: { type: "string", enum: TAGS } },
         lat: { type: "number" }, lng: { type: "number" } } } },
     food: { type: "array", items: { type: "object", additionalProperties: false,
-      required: ["n","a"], properties: { n: { type: "string" }, a: { type: "string" } } } },
+      required: ["n","a"], properties: {
+        n: { type: "string", description: "restaurant name in English" },
+        a: { type: "string", description: "short cuisine/area label in English, e.g. 'Seafood · Marina' — never Arabic" } } } },
     hotelsBudget: { type: "array", items: { type: "string" } },
     hotelsMid: { type: "array", items: { type: "string" } },
     hotelsLux: { type: "array", items: { type: "string" } },
@@ -168,7 +171,8 @@ function generateCity(name, apiKey) {
     "currency symbol and its rate to 1 USD (e.g. EUR curRate 0.92). summerTemp is the typical August high in Celsius. " +
     "Give 7 POIs (each with 1-2 tags from Culture/Food/Nature/Shopping/Relax and real coordinates) and 5 food spots " +
     "(favor halal-friendly or clearly vegetarian options where they genuinely exist, matching real restaurants). " +
-    "Give 4-5 real hotel names per tier. blurbEn/Ar/Es are one short vivid sentence each (Arabic and Spanish translations). " +
+    "Give 4-5 real hotel names per tier. All POI names, food names, hotel names, and their area/label fields must be in ENGLISH " +
+    "(the ONLY Arabic/Spanish fields are blurbAr/blurbEs). blurbEn/Ar/Es are one short vivid sentence each (Arabic and Spanish translations). " +
     "flag is the country's flag emoji. Pick region from the allowed list.";
   return claude(apiKey, "claude-sonnet-5", system, "Generate travel data for: " + name, CITY_SCHEMA, 2200);
 }
