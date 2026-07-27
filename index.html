@@ -723,6 +723,7 @@
     feedbackEndpoint:"https://script.google.com/macros/s/AKfycbwSwgwp6VP0k4WdBph5iiB7r64OAGJh5ClSH9u-vsdl2jw7B2ZbrJyipWT5T2IUMcz3gg/exec",    // Apps Script web app (Feedback tab). When set,
                             // feedback POSTs here silently instead of opening the email app
     analyticsEndpoint:"https://script.google.com/macros/s/AKfycbwSwgwp6VP0k4WdBph5iiB7r64OAGJh5ClSH9u-vsdl2jw7B2ZbrJyipWT5T2IUMcz3gg/exec",   // Apps Script web app (Events tab). Cookieless usage tracking.
+    aiEndpoint:"https://shy-fire-8a78.ahmed-alfadala.workers.dev",   // Cloudflare Worker → Claude: builds missing cities on the fly. Empty = off.
                             // Any sink that accepts a POST works — a Google Apps Script web app
                             // (writes to a Sheet), Formspree, or your own endpoint. Empty = off.
     shortenerApi:"https://cleanuri.com/api/v1/shorten", // free CORS shortener for share links
@@ -2555,7 +2556,13 @@
   function renderComboList(list, query){
     var q=(query||'').trim();
     var items=destOptions(query).slice(0, q?60:260); // show all countries when browsing empty
-    if(!items.length){ list.innerHTML=''; list.classList.add('is-hidden'); return; }
+    if(!items.length){
+      if(q.length>=2 && CONFIG.aiEndpoint){ // nothing in our data — offer to build it with AI
+        list.innerHTML='<div class="comboitem aibuild" data-ai="'+esc(q)+'"><span class="cflag">✨</span><span class="ccity">'+(I18N[LANG].ui.aiBuild||'Build')+' “'+esc(q)+'”</span><span class="ccountry">AI ›</span></div>';
+        list.classList.remove('is-hidden'); return;
+      }
+      list.innerHTML=''; list.classList.add('is-hidden'); return;
+    }
     list.innerHTML=items.map(function(x){
       if(x.isCountry){ return '<div class="comboitem iscountry" data-country="'+esc(x.country)+'"><span class="cflag">'+x.flag+'</span><span class="ccity">'+esc(x.country)+'</span><span class="ccountry">'+x.count+' ›</span></div>'; }
       return '<div class="comboitem" data-k="'+x.k+'"><span class="cflag">'+x.d.flag+'</span><span class="ccity">'+esc(x.d.city)+'</span><span class="ccountry">'+esc(x.d.country)+'</span></div>';
@@ -2571,6 +2578,15 @@
     function open(){ renderComboList(list, inp.value); active=-1; inp.setAttribute('aria-expanded','true'); toggleClear(); }
     function close(){ var _v=(inp.value||'').trim(); if(_v.length>=3 && !destOptions(_v).length){ try{track('miss',{dest:_v.slice(0,60),src:'search'});}catch(e){} } list.classList.add('is-hidden'); inp.setAttribute('aria-expanded','false'); active=-1; }
     function pick(it){
+      var ai=it.getAttribute('data-ai');
+      if(ai){ // build this place with AI, then select it
+        it.innerHTML='<span class="cflag">⏳</span><span class="ccity">'+(I18N[LANG].ui.aiBuilding||'Building…')+'</span>';
+        aiCity(ai).then(function(key){
+          if(key){ inp.value=DEST[key].city; toggleClear(); close(); if(onPick)onPick(key,inp); }
+          else { it.innerHTML='<span class="cflag">🚫</span><span class="ccity">'+(I18N[LANG].ui.aiFail||'Couldn’t build that one — try another')+'</span>'; }
+        });
+        return;
+      }
       var cc=it.getAttribute('data-country');
       if(cc){ inp.value=cc; toggleClear(); open(); inp.focus(); return; } // drill into that country's cities
       var k=it.getAttribute('data-k'); inp.value=DEST[k].city; toggleClear(); close(); if(onPick)onPick(k,inp);
@@ -2634,6 +2650,39 @@
       if(s.length>=4 && s.indexOf(a)>=0) return DEST[keys[i]];    // typed text contains a full alias word
     } }
     return null;
+  }
+
+  // Real-time city builder: asks the AI Worker to generate a city we don't have, then injects it
+  // into the running app (DEST/CO/CUR/POI_CO/HOTELS_X) so the trip can be planned immediately.
+  var AISUMEMO={alpine:'⛅',mild:'⛅',warm:'⛅',tropical:'🌴',hothumid:'🌴',hotdry:'☀️',veryhot:'☀️'};
+  function aiKey(name){ var b=String(name||'').toLowerCase().replace(/[^a-z0-9]/g,''); if(!b)b='city'; var k=b,i=2; while(DEST[k]){k=b+i;i++;} return k; }
+  function aiCity(name){
+    return new Promise(function(resolve){
+      if(!CONFIG.aiEndpoint){ resolve(null); return; }
+      var have=matchDest(name); if(have){ resolve(keyOf(have)); return; } // already in our data
+      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'city',name:String(name).slice(0,60)})})
+        .then(function(r){return r.json();})
+        .then(function(d){
+          var c=d&&d.city;
+          if(!c||!c.valid||!c.city||!Array.isArray(c.poi)||c.poi.length<3){ resolve(null); return; }
+          var key=aiKey(c.city);
+          DEST[key]={city:c.city,country:c.country||'',flag:c.flag||'🏳️',region:c.region||'eu',
+            alias:[].concat.apply([],[[c.city.toLowerCase(),String(name).toLowerCase()]]).filter(Boolean),
+            blurb:{en:c.blurbEn||'',ar:c.blurbAr||'',es:c.blurbEs||''},
+            summer:{emoji:AISUMEMO[c.summerCond]||'☀️',cond:c.summerCond||'warm',temp:c.summerTemp|0},
+            cost:{Budget:c.costBudget|0,'Mid-range':c.costMid|0,Luxury:c.costLux|0},
+            hotels:{Budget:(c.hotelsBudget||[])[0]||(c.city+' hotel'),'Mid-range':(c.hotelsMid||[])[0]||(c.city+' hotel'),Luxury:(c.hotelsLux||[])[0]||(c.city+' hotel')},
+            poi:c.poi.map(function(p){return {n:p.n,a:p.a||'',t:(Array.isArray(p.t)&&p.t.length?p.t:['Culture'])};}),
+            food:(c.food||[]).map(function(p){return {n:p.n,a:p.a||''};})};
+          CUR[key]={s:c.curSymbol||'$',r:c.curRate||1};
+          CO[key]=[c.lat,c.lng];
+          var pc={}; c.poi.forEach(function(p){ if(p.lat!=null&&p.lng!=null)pc[p.n]=[p.lat,p.lng]; }); POI_CO[key]=pc;
+          HOTELS_X[key]={Budget:c.hotelsBudget||[],'Mid-range':c.hotelsMid||[],Luxury:c.hotelsLux||[]};
+          try{ track('ai_city',{dest:c.city,country:c.country}); }catch(e){}
+          resolve(key);
+        })
+        .catch(function(){ resolve(null); });
+    });
   }
 
   var VOICELANG='en', VOICEOVERRIDE=false; // mic language — follows the app language unless the user picks one
@@ -3315,6 +3364,14 @@
     newSeed(); DAYEDITS={}; DAYROT={};
     var pp=parsePrompt(raw);
     (pp.unresolved||[]).forEach(function(q){ try{track('miss',{dest:q,src:'prompt'});}catch(e){} }); // places asked for but not in our data
+    if(CONFIG.aiEndpoint && pp.unresolved && pp.unresolved.length){ // build the missing places, then re-parse & plan
+      toast(I18N[LANG].ui.aiBuilding||'Building your places…');
+      Promise.all(pp.unresolved.map(function(q){return aiCity(q);})).then(function(){ runPromptFinish(parsePrompt(raw)); });
+      return;
+    }
+    runPromptFinish(pp);
+  }
+  function runPromptFinish(pp){
     pp.days=pp.days||(pp.roadtrip?12:5);
     var keys=buildRoute(pp,SEED);
     if(!keys.length){ toast(I18N[LANG].ui.promptNone); return; }
