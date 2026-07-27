@@ -2829,7 +2829,7 @@
       'END:VEVENT','END:VCALENDAR'].join('\r\n');
   }
   function money(t,usd){var c=CURRENCIES[HOME]||CURRENCIES.USD;return '~'+c.s+Math.round(usd*c.r).toLocaleString(t.loc);}
-  function transferInfo(t,c1,c2){var ground=c1.region===c2.region;return {usd:ground?60:180,mode:ground?t.out.modeGround:t.out.modeFly,dur:ground?t.out.transDur.ground:t.out.transDur.fly};}
+  function transferInfo(t,c1,c2,km){var ground=(c1.region===c2.region)&&(km==null||km<1400);return {usd:ground?60:180,mode:ground?t.out.modeGround:t.out.modeFly,dur:ground?t.out.transDur.ground:t.out.transDur.fly};} // same landmass AND drivable distance → ground; else fly (Auckland↔Sydney is one "region" but an ocean apart)
   function catRows(base){return [['stay',0.42],['food',0.24],['activities',0.16],['localtx',0.08],['misc',0.10]].map(function(c){return {k:c[0],v:Math.round(base*c[1])};});}
 
   var SWAPSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h13M17 20l4-4-4-4M21 16H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -3508,6 +3508,9 @@
     ROUTE=keys; ROUTEDRIVE=!!drive;
     LASTPLAN=function(){ planRoute(keys,daysArg,vibes,budget,pace,drive); };
     var n=keys.length, ms=keys.map(function(k){return DEST[k];});
+    // A route is only a "road trip" if every leg is realistically drivable — same landmass and
+    // a sane distance. Otherwise it's a multi-city flight trip (don't call it a road trip / drive).
+    ROUTEDRIVE=(function(){ if(!drive)return false; for(var j=0;j<n-1;j++){ var kk=kmDist(CO[keys[j]]||[0,0],CO[keys[j+1]]||[0,0]); if(ms[j].region!==ms[j+1].region || kk>1400) return false; } return true; })();
     var days=Math.max(n,Math.min(30,parseInt(daysArg,10)||n*3));
     var spd=pace==='relaxed'?2:pace==='packed'?4:3; LASTSPD=spd;
     if(!vibes||!vibes.length)vibes=['Culture'];
@@ -3521,7 +3524,7 @@
     if(access&&CONFIG.paywallOn&&!getFreeDest())setFreeDest(keys[0]);
     var baseTotal=0,transferUSD=0,i;
     for(i=0;i<n;i++)baseTotal+=ms[i].cost[budget]*dc[i];
-    for(i=1;i<n;i++)transferUSD+=transferInfo(t,ms[i-1],ms[i]).usd;
+    for(i=1;i<n;i++)transferUSD+=transferInfo(t,ms[i-1],ms[i],kmDist(CO[keys[i-1]]||[0,0],CO[keys[i]]||[0,0])).usd;
     var totalUSD=baseTotal+transferUSD;
     var subVibes=vibes.map(function(x){return t.ui.vibes[x];}).join(' · ')+(di?' · '+di.range:'');
     var title=ms.map(function(m){return esc(m.city);}).join(' → ')+' · '+days+' '+o.daysUnit;
@@ -3533,7 +3536,8 @@
     var legs=ms.map(function(m,idx){return esc(m.city)+' ('+dc[idx]+' '+o.daysUnit+')';}).join(' → ');
     var stay=ms.map(function(m){var hn=hotelPick(m,budget);return link(hn,hn+' '+m.city);}).join(' / ');
     var txt=[]; txt.push(ms.map(function(m){return m.city;}).join(' → ')+' · '+days+' '+o.daysUnit); txt.push(t.ui.budgets[budget]+' · '+t.ui.paces[pace]+' · '+subVibes);
-    var html='<div class="ticket"><div class="eyebrow">'+o.routeEyebrow+'</div>'+
+    var eyebrow=ROUTEDRIVE?o.routeEyebrow:(LANG==='ar'?'رحلتك':(LANG==='es'?'Tu viaje':'Your trip'));
+    var html='<div class="ticket"><div class="eyebrow">'+eyebrow+'</div>'+
       '<h2>'+title+'</h2>'+
       '<div class="sub">'+t.ui.budgets[budget]+' · '+t.ui.paces[pace]+' · '+subVibes+'</div>'+
       '<div class="blurb">'+legs+'</div>'+seasons+stip+
@@ -3546,7 +3550,7 @@
     for(i=0;i<upto;i++){
       var stops=[], cnt=access?dc[i]:1;
       routeHtml+=emitDays(ms[i],startDay,cnt,days,vibes,spd,o,t,txt,stops);
-      if(access&&i<n-1){ var tr=transferInfo(t,ms[i],ms[i+1]); var mode=(ROUTEDRIVE&&ms[i].region===ms[i+1].region)?o.modeDrive:tr.mode; routeHtml+='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+mode+' · '+esc(ms[i].city)+' → '+esc(ms[i+1].city)+' · '+tr.dur+' · '+money(t,tr.usd)+'</div></div>'; txt.push(''); txt.push('» '+o.cats.transfer+': '+mode+' '+ms[i].city+' → '+ms[i+1].city+' ('+tr.dur+')'); }
+      if(access&&i<n-1){ var tr=transferInfo(t,ms[i],ms[i+1],kmDist(CO[keys[i]]||[0,0],CO[keys[i+1]]||[0,0])); var mode=ROUTEDRIVE?o.modeDrive:tr.mode; routeHtml+='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+mode+' · '+esc(ms[i].city)+' → '+esc(ms[i+1].city)+' · '+tr.dur+' · '+money(t,tr.usd)+'</div></div>'; txt.push(''); txt.push('» '+o.cats.transfer+': '+mode+' '+ms[i].city+' → '+ms[i+1].city+' ('+tr.dur+')'); }
       startDay+=dc[i];
     }
     mapHtml=routeStrip(ms.slice(0,upto).map(function(m){return m.city;}),t);
@@ -3895,7 +3899,7 @@
       var multi=!!(m2&&days>=2);
       var d1=multi?Math.ceil(days/2):days, d2=multi?days-d1:0;
       var base1=m1.cost[budget]*d1, base2=multi?m2.cost[budget]*d2:0;
-      var tr=multi?transferInfo(t,m1,m2):null, trUSD=tr?tr.usd:0;
+      var tr=multi?transferInfo(t,m1,m2,kmDist(CO[keyOf(m1)]||[0,0],CO[keyOf(m2)]||[0,0])):null, trUSD=tr?tr.usd:0;
       var totalUSD=base1+base2+trUSD;
       var title=multi?(esc(m1.city)+' → '+esc(m2.city)+' · '+days+' '+o.daysUnit):(esc(m1.city)+', '+esc(m1.country)+' · '+days+' '+o.daysUnit);
       LASTPLANNAME=(multi&&m2)?(m1.city+' - '+m2.city):(m1.country||m1.city);

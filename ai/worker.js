@@ -195,7 +195,13 @@ function parseTrip(text, apiKey) {
   const system =
     "Extract a structured trip from the user's description (any language, typos allowed). " +
     "cities: the destinations IN THE ORDER visited, corrected to their common English names. " +
+    "If the user names NO specific city but describes a theme/vibe (e.g. 'extreme adventure', 'beach & relax'), " +
+    "SUGGEST 1-3 cities that fit AND make sense together — keep them within one country or one nearby region, " +
+    "never scattered across continents/oceans. " +
+    "If the user mentions their nationality or passport, ONLY choose countries that are visa-free or visa-on-arrival " +
+    "for that passport (e.g. a Philippine passport is visa-free for Thailand, Indonesia, Malaysia, Singapore, but NOT Australia or New Zealand). " +
     "days: total days — if the text lists nights per stop, SUM them. vibes: 0-3 from the allowed tags. " +
-    "budget: Budget, Mid-range, or Luxury (default Mid-range). roadtrip: true if they drive/rent a car between stops.";
+    "budget: Budget, Mid-range, or Luxury (default Mid-range). " +
+    "roadtrip: true ONLY if the chosen cities can realistically be driven between (same country or landmass, not across an ocean).";
   return claude(apiKey, "claude-haiku-4-5", system, text, PARSE_SCHEMA, 500);
 }
