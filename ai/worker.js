@@ -270,6 +270,14 @@ function chatTurn(messages, apiKey) {
     "there)? Which city/airport will they fly home from? Then reflect the answer in `cities`: for a loop, make the " +
     "LAST stop the same city they started from (the return-to-airport leg); for one-way, make the last stop the " +
     "city they fly out of. Set roadtrip=true for these. " +
+    "ARRIVAL & DEPARTURE — ALWAYS ACCOUNT FOR THIS. Many towns have no airport, so the traveller lands somewhere " +
+    "else and continues by car or train. Before finishing, work out which airport they realistically fly into and " +
+    "out of, and SAY IT in your reply — e.g. for Garmisch-Partenkirchen: 'You'd fly into Munich, then it's about a " +
+    "1.5h drive to Garmisch — do you want a night in Munich first, or drive straight down?'. Reflect the answer in " +
+    "`cities`: if they arrive the night before, make the gateway city the FIRST stop; if they drive straight " +
+    "through, still mention the arrival drive in your reply. Do the same for the flight home — leave enough time to " +
+    "get back to the departure airport, and make that city the LAST stop when they need a night there. Never " +
+    "produce a plan that silently assumes they materialise in a town with no airport. " +
     "WHO'S TRAVELLING: also ask, in ONE short question, how many people are going and whether any children are " +
     "coming (e.g. 'How many of you are travelling — and any kids?'). Put the answer in `adults` and `kids` " +
     "(kids=0 when none). Ask it only ONCE, and if they already said (e.g. 'me and my wife', 'family of 4 with 2 " +
