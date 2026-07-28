@@ -3047,7 +3047,8 @@
       var days=Math.max(1,Math.min(30,(res.days|0)||(res.roadtrip?12:5)));
       var vibes=(Array.isArray(res.vibes)&&res.vibes.length)?res.vibes:['Culture'];
       var budget=(res.budget==='Budget'||res.budget==='Luxury')?res.budget:'Mid-range';
-      newSeed(); DAYEDITS={}; DAYROT={}; ROUTE=null;
+      STAYAREA=String(res.area||'').slice(0,60); // where they said they want to stay — pre-fills the hotel search
+      newSeed(); DAYEDITS={}; DAYROT={}; ROUTE=null; ROUTEDC=null;
       $('days').value=days; syncDayChips();
       document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',vibes.indexOf(c.dataset.v)>=0);});
       document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===budget);});
@@ -3696,7 +3697,7 @@
       '<div class="staychips">'+types+'</div>'+
       '<div class="stayamenlbl">'+areaLbl+'</div>'+
       '<div class="staychips">'+areaChips+'</div>'+
-      '<input type="text" class="stayarea" autocomplete="off" placeholder="'+esc(areaPh)+'">'+
+      '<input type="text" class="stayarea" autocomplete="off" placeholder="'+esc(areaPh)+'" value="'+esc(STAYAREA)+'">'+
       '<button type="button" class="staysearch">'+o.stayFind+'</button>'+
       '<div class="bookrow" style="margin-top:14px">'+
         '<a class="bookbtn" href="'+flights+'" target="_blank" rel="noopener">'+o.bookFlights+'</a>'+
@@ -3715,6 +3716,7 @@
   var LASTSPD=3;     // activity slots per day in the current plan
   var KEEPSCROLL=false; // when re-rendering after an in-place edit, don't jump back to the top
   var ROUTEDC=null, ROUTEDCSIG=''; // custom nights-per-city for the current route (null = even split); sig = keys@days
+  var STAYAREA=''; // area the traveller asked the bot for (e.g. "Patong") — pre-fills the stays search
   function newSeed(){ SEED=Math.floor(Math.random()*1e9)+1; }
   function srand(seed){ var x=(seed||1)>>>0; return function(){ x=(x*1103515245+12345)&0x7fffffff; return x/0x7fffffff; }; }
   function shuffle(arr,seed){ var r=srand(seed), a=arr.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(r()*(i+1)); var tmp=a[i];a[i]=a[j];a[j]=tmp; } return a; }
@@ -4388,7 +4390,7 @@
     redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
-  $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; plan(); });
+  $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; ROUTEDC=null; STAYAREA=''; plan(); });
 
   function toast(msg){var el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove('show');},1800);}
   // Print/save-as-PDF: name the file after the destination, and print only the itinerary (see @media print).
