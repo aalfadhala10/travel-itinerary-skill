@@ -3114,7 +3114,7 @@
   }
   // show the neighbourhood only when it's a real short label — hide it when a data source put a
   // whole description sentence in the area field, so the itinerary stays clean.
-  function areaLabel(a){ a=(a||'').trim(); if(!a)return ''; if(a.split(/\s+/).length>4||a.length>28)return ''; return ' <span class="area">· '+esc(a)+'</span>'; }
+  function areaLabel(a){ a=(a||'').trim(); if(!a)return ''; if(/[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(a))return ''; if(a.split(/\s+/).length>4||a.length>28)return ''; return ' <span class="area">· '+esc(a)+'</span>'; } // drop stray Arabic captions (they're just translations of the English name)
   function eslot(tm,poi,city,sk,o){
     return '<div class="slot" data-sk="'+sk+'"><div class="t">'+tm+'</div>'
       +'<div class="d">'+link(poi.n,poi.n+' '+city)+areaLabel(poi.a)+'</div>'
