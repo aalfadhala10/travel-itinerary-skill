@@ -3483,11 +3483,20 @@
     var hsel=siteGet('hotel','booking');
     var hprov='<div class="provrow" data-provkind="hotel"><span class="provlbl">'+provLabel('hotel')+'</span>'+
       HOTEL_SITES.map(function(x){ return '<button type="button" class="provchip'+(x[0]===hsel?' on':'')+'" data-site="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</div>';
-    return '<div class="bookbar staybar" data-staycity="'+esc(city)+'" data-staycountry="'+esc(country||'')+'"><div class="maphdr">'+o.stayTitle+'</div>'+
+    var flights=flightsLinkFor(city), esim=esimLink();
+    var acts='<div class="provrow"><span class="provlbl">'+provLabel('tour')+'</span>'+
+      TOUR_SITES.map(function(x){ return '<a class="provchip" href="'+activityUrl(x[0],city)+'" target="_blank" rel="noopener">'+x[1]+'</a>'; }).join('')+'</div>';
+    return '<div class="bookbar staybar" data-staycity="'+esc(city)+'" data-staycountry="'+esc(country||'')+'"><div class="maphdr">'+o.bookTitle+'</div>'+
+      '<div class="stayamenlbl">'+o.stayTitle+'</div>'+
       hprov+
       '<div class="staychips">'+types+'</div>'+
       '<div class="stayamenlbl">'+o.stayAmenTitle+'</div><div class="staychips samen">'+amen+'</div>'+
-      '<button type="button" class="staysearch">'+o.stayFind+'</button></div>';
+      '<button type="button" class="staysearch">'+o.stayFind+'</button>'+
+      '<div class="bookrow" style="margin-top:14px">'+
+        '<a class="bookbtn" href="'+flights+'" target="_blank" rel="noopener">'+o.bookFlights+'</a>'+
+        '<a class="bookbtn" href="'+esim+'" target="_blank" rel="noopener">'+o.bookEsim+'</a>'+
+      '</div>'+acts+
+      '</div>';
   }
 
   var LASTTEXT='', LASTPLANNAME='';
@@ -3762,7 +3771,7 @@
       html+=budgetCard(o,t,catRows(baseTotal),transferUSD,totalUSD,null,adults,kids);
       var __seenC={}; ms.forEach(function(m){ if(!__seenC[m.country]){__seenC[m.country]=1; html+=appsCard(m.country,t)+salmanCard(m.country,t);} });
     }
-    html+=staysBar(ms[0].city,ms[0].country,t); html+=bookingBar(ms[0].city,t);
+    html+=staysBar(ms[0].city,ms[0].country,t);
     html+='<p class="note">'+o.note(ms.map(function(m){return esc(m.city);}).join(' & '))+'</p>';
     var acts='<div class="actions">'+
       '<button class="act" type="button" data-act="save">'+o.save+'</button>'+
@@ -4138,7 +4147,7 @@
         html+=appsCard(m1.country,t)+salmanCard(m1.country,t);
         if(multi&&m2&&m2.country!==m1.country)html+=appsCard(m2.country,t)+salmanCard(m2.country,t);
       }
-      html+=staysBar(m1.city,m1.country,t); html+=bookingBar(m1.city,t);
+      html+=staysBar(m1.city,m1.country,t);
       txt.push(''); txt.push(o.budTotal+' ('+o.perPerson+'): ~$'+Math.round(totalUSD));
       note=o.note(esc(m1.city)+(multi?' & '+esc(m2.city):''));
     } else {
@@ -4168,7 +4177,7 @@
       if(access){
         html+=budgetCard(o,t,catRows(gbase),0,gbase,null,adults,kids);
       }
-      html+=staysBar(cap(dest),'',t); html+=bookingBar(cap(dest),t);
+      html+=staysBar(cap(dest),'',t);
       note='<span style="color:var(--clay)">'+o.notCurated(esc(cap(dest)))+'</span><br>'+o.note(esc(cap(dest)));
     }
 
