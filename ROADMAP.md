@@ -88,6 +88,19 @@ Last updated: 2026-07-28.
 
 ## Done (recent)
 
+- [x] **Edit the trip by chatting — the bot no longer disappears.** Building a trip
+  used to wipe the conversation, so changing anything meant starting over. Now the
+  plan renders, the bot asks "happy with this, or want to change something?" and the
+  same conversation carries on. Every message sends a one-line summary of the trip
+  that's on screen (`[Current plan - cities: … ; total days: … ]`) appended to the
+  user's turn — deliberately NOT in the system prompt, which stays byte-identical so
+  it keeps being cached. The bot returns the whole updated trip; edits keep the seed
+  and the user's own swaps so a day-count change doesn't reshuffle everything.
+  It can also add a small stop to a specific day (`extras: [{day, name}]` → a
+  removable line on that day), give an exact nights-per-city split (`nights: [8, 4]`),
+  and for a single place it points at the swap arrows instead of rebuilding.
+  "It's final" closes the chat with no API call.
+
 - [x] **Breakfast, lunch and dinner in every day** — the plan used to name only
   dinner. Lunch is now a second real restaurant, picked near wherever the morning
   ends (swappable like dinner); breakfast is one honest line that opens a
