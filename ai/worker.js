@@ -417,7 +417,7 @@ function chatTurn(messages, apiKey) {
     "that stops halfway. A single Arabic mistake is worse than a slower answer.";
   // Arabic is the one language a small model keeps getting wrong (broken grammar, half-translated
   // words). Real users noticed, so Arabic conversations go to the bigger model; EN/ES stay on Haiku.
-  return claude(apiKey, writesArabic(messages) ? "claude-sonnet-5" : "claude-haiku-4-5", system, messages, CHAT_SCHEMA, 700);
+  return claude(apiKey, writesArabic(messages) ? "claude-sonnet-5" : "claude-haiku-4-5", system, messages, CHAT_SCHEMA, 1200);
 }
 
 // True when the traveller is actually writing Arabic (not just one stray word).

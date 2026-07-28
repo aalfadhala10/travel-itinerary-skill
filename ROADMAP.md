@@ -82,6 +82,17 @@ Last updated: 2026-07-28.
 
 ## Done (recent)
 
+- [x] **A cut-off reply no longer looks like the bot ignored you.** Reported: after
+  "سويسرا" + "10 أيام" the chat showed the starter menu with no reply at all. Root
+  cause: `max_tokens: 700` on the chat call, which the grown schema (`nights`,
+  `extras`) plus token-heavy Arabic could overrun — the JSON is cut mid-object, parses
+  to nothing, and the app rendered chips under silence. Raised to 1200; the app now
+  retries once silently, treats an empty reply as a failure and SAYS so, and offers
+  "↻ Try again" (which resends the last message without duplicating their bubble)
+  instead of dumping the generic starter menu over an in-progress conversation. The
+  starters still show on the very first message, where they're a real offer. Worker
+  errors are console.warn'd so a recurring cause is diagnosable.
+
 - [x] **The chat can't dead-end any more.** Real case: destination, days and the car
   plan were all settled, the bot answered "تمام" and stopped — `ready=false` with an
   empty `chips` array left the reply sitting there with nothing to tap and no trip.
