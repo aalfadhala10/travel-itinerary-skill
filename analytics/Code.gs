@@ -14,7 +14,7 @@
  */
 
 var EVENTS_SHEET = 'Events';
-var EVENTS_HEADERS = ['received', 't', 'ev', 'sid', 'lang', 'mode', 'dest', 'country', 'days', 'cities', 'host', 'ref', 'tz'];
+var EVENTS_HEADERS = ['received', 't', 'ev', 'sid', 'lang', 'mode', 'dest', 'country', 'days', 'cities', 'host', 'ref', 'tz', 'msg'];
 var FEEDBACK_SHEET = 'Feedback';
 var FEEDBACK_HEADERS = ['received', 'rating', 'message', 'contact', 'lang', 'page'];
 
@@ -54,7 +54,7 @@ function doPost(e) {
         data.t || '', data.ev || '', data.sid || '', data.lang || '',
         data.mode || '', data.dest || '', data.country || '',
         (data.days != null ? data.days : ''), (data.cities != null ? data.cities : ''),
-        data.host || '', data.ref || '', data.tz || ''
+        data.host || '', data.ref || '', data.tz || '', data.msg || ''
       ]);
     }
     return ContentService.createTextOutput(JSON.stringify({ ok: true }))
@@ -74,12 +74,15 @@ function doGet(e) {
   var pageViews = 0, plans = 0, saves = 0, shares = 0, outbound = 0;
   var sessions = {}, dests = {}, countries = {}, hosts = {}, langs = {}, byDay = {}, misses = {}, missTotal = 0;
   var sessCountry = {}; // one visitor-country per session (from their timezone)
+  var chatMsgTotal = 0, chatPlanTotal = 0, chatDests = {}, chatMsgList = [];
 
   for (var i = 0; i < eRows.length; i++) {
     var r = eRows[i];
-    var received = r[0], ev = r[2], sid = r[3], lang = r[4], dest = r[6], country = r[7], host = r[10], tz = r[12];
+    var received = r[0], ev = r[2], sid = r[3], lang = r[4], dest = r[6], country = r[7], host = r[10], tz = r[12], msg = r[13];
     if (sid) sessions[sid] = 1;
     if (sid && tz && !sessCountry[sid]) sessCountry[sid] = tzCountry_(tz);
+    if (ev === 'chat_msg') { chatMsgTotal++; if (msg) chatMsgList.push([received, msg]); }
+    else if (ev === 'chat_plan') { chatPlanTotal++; if (dest) chatDests[dest] = (chatDests[dest] || 0) + 1; }
     if (lang) langs[lang] = (langs[lang] || 0) + 1;
     if (ev === 'page_view') pageViews++;
     else if (ev === 'plan') { plans++; if (dest) dests[dest] = (dests[dest] || 0) + 1; if (country) countries[country] = (countries[country] || 0) + 1; }
@@ -107,6 +110,12 @@ function doGet(e) {
   Object.keys(sessCountry).forEach(function (s) { var c = sessCountry[s]; if (c) geo[c] = (geo[c] || 0) + 1; });
   var dayKeys = Object.keys(byDay).sort();
   var spark = dayKeys.slice(-14).map(function (k) { return '<span title="' + k + ': ' + byDay[k] + '">' + byDay[k] + '</span>'; }).join(' · ');
+  // chat assistant — what people typed (newest first) and where those chats led
+  var chatRecent = chatMsgList.slice().reverse().slice(0, 40);
+  var chatHtml = chatRecent.length ? chatRecent.map(function (r) {
+    var when = (r[0] instanceof Date) ? Utilities.formatDate(r[0], 'GMT', 'yyyy-MM-dd') : '';
+    return '<div class="fb"><div class="fbtop"><span class="fbmeta">' + when + '</span></div><div class="fbmsg">' + esc_(r[1]) + '</div></div>';
+  }).join('') : '<div style="opacity:.5">no chat messages yet</div>';
 
   // recent feedback (newest first)
   var fb = fRows.slice().reverse().slice(0, 25);
@@ -146,6 +155,7 @@ function doGet(e) {
     card_(saves, 'trips saved') + card_(shares, 'shares') +
     card_(outbound, 'outbound clicks') + card_(fRows.length, 'feedback') + card_(avg, 'avg rating') +
     card_(missTotal, 'searches w/ no result') +
+    card_(chatMsgTotal, 'chat messages') + card_(chatPlanTotal, 'chat trips built') +
     '</div>' +
     '<h3>Events per day (last 14)</h3><div class="spark">' + (spark || '<span style="opacity:.5">no data yet</span>') + '</div>' +
     '<h3>Missing places — asked for, not in our data (add these next)</h3>' +
@@ -160,6 +170,11 @@ function doGet(e) {
     tbl_('Outbound clicks by site', 'Site', rowsHtml(topList(hosts))) +
     tbl_('Language', 'Lang', rowsHtml(topList(langs))) +
     '</div>' +
+    '<h3>Chat trips — by destination the assistant built</h3>' +
+    '<table><tr><th>Destination</th><th class="n">Trips</th></tr>' + rowsHtml(topList(chatDests, 30)) + '</table>' +
+    '<div style="height:24px"></div>' +
+    '<h3>Recent chat messages (what people asked the assistant)</h3>' + chatHtml +
+    '<div style="height:24px"></div>' +
     '<h3>Recent feedback</h3>' + fbHtml +
     '</body></html>';
 
