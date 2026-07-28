@@ -380,6 +380,13 @@
   .nnote{font-size:12.5px;color:var(--muted);margin-top:8px;font-style:italic}
   .picpop{position:fixed;z-index:30;max-width:240px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .15s}
   .picpop.show{opacity:1}
+  .picbtn{display:none;flex:0 0 auto;width:30px;height:30px;padding:0;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;align-items:center;justify-content:center;opacity:.75}
+  .picbtn svg{width:16px;height:16px}
+  .picbtn.on{border-color:var(--teal);color:var(--teal);opacity:1}
+  @media (hover:none){.picbtn{display:flex}}
+  .picinline{margin:6px 0 2px;padding:6px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)}
+  .picinline img{display:block;width:100%;max-height:200px;object-fit:cover;border-radius:8px}
+  .picinline .pinone{font-size:12.5px;color:var(--muted);text-align:center;padding:8px}
   .picpop img{display:block;width:100%;max-height:180px;object-fit:cover;border-radius:8px}
   .ndel{width:30px;height:30px;margin-inline-start:4px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;line-height:1;padding:0}
   .ndel:hover{border-color:#e5484d;color:#e5484d}
@@ -615,7 +622,7 @@
     #out,#out *{visibility:visible}
     .out{margin:0}
     /* drop the interactive controls that don't belong on paper */
-    .picpop,#out .tuner,#out .daynav,#out .realtag,#out .actions,#out .cvbar,#out .flycard,#out .staybar,#out .bookrow,#out .provrow,#out .tuneanother,#out .dayshuffle,#out .swapbtn,#out .swappick,#out .dchev,#out button{display:none!important}
+    .picpop,#out .picinline,#out .picbtn,#out .tuner,#out .daynav,#out .realtag,#out .actions,#out .cvbar,#out .flycard,#out .staybar,#out .bookrow,#out .provrow,#out .tuneanother,#out .dayshuffle,#out .swapbtn,#out .swappick,#out .dchev,#out button{display:none!important}
     #out .day.dcol .dbody{display:block!important} #out .dsum{display:none!important} /* PDF shows every day in full */
     .ticket{background:#173a5c!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .ticket,.day,.bud,.bookbar,.mapcard{break-inside:avoid}
@@ -3202,6 +3209,7 @@
   }
   function catRows(base){return [['stay',0.42],['food',0.24],['activities',0.16],['localtx',0.08],['misc',0.10]].map(function(c){return {k:c[0],v:Math.round(base*c[1])};});}
 
+  var PICSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2"/><circle cx="8.5" cy="10" r="1.5" fill="currentColor"/><path d="M21 16l-5-5-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var SWAPSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h13M17 20l4-4-4-4M21 16H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var SHUFSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 4v5h-5M3 20a9 9 0 0 1 15-6.7L21 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function poiByName(ck,name){ var d=DEST[ck]; if(!d)return null; var all=d.poi.concat(d.food); for(var i=0;i<all.length;i++)if(all[i].n===name)return all[i]; return null; }
@@ -3371,6 +3379,7 @@
   function eslot(tm,poi,city,sk,o){
     return '<div class="slot" data-sk="'+sk+'"><div class="t">'+tm+'</div>'
       +'<div class="d">'+link(poi.n,poi.n+' '+city,poi.n+' '+city)+areaLabel(poi.a)+'</div>'
+      +'<button type="button" class="picbtn" data-pic="'+esc(poi.n+' '+city)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>'
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
   }
   // Generated destination banner — a climate-tinted scene (no external images, works offline).
@@ -4497,6 +4506,23 @@
     });
   }
   function picHide(){ if(PICTIMER){ clearTimeout(PICTIMER); PICTIMER=null; } if(PICEL)PICEL.classList.remove('show'); }
+  function picLbl(){ return LANG==='ar'?'شوف صورة المكان':(LANG==='es'?'Ver foto del lugar':'See a photo'); }
+  // Touch devices can't hover, so the photo opens inline under the place — the name still opens Maps.
+  function picToggle(btn){
+    var slot=btn.closest('.slot'); if(!slot)return;
+    var nx=slot.nextElementSibling;
+    if(nx&&nx.classList&&nx.classList.contains('picinline')){ nx.parentNode.removeChild(nx); btn.classList.remove('on'); return; }
+    var open=$('out').querySelector('.picinline'); if(open){ var ob=open.previousElementSibling; if(ob){var pb=ob.querySelector('.picbtn'); if(pb)pb.classList.remove('on');} open.parentNode.removeChild(open); }
+    var box=document.createElement('div'); box.className='picinline';
+    box.innerHTML='<div class="pinone">…</div>';
+    slot.parentNode.insertBefore(box, slot.nextElementSibling);
+    btn.classList.add('on');
+    picFetch(btn.getAttribute('data-pic')).then(function(u){
+      if(!box.isConnected)return;
+      box.innerHTML=u?('<img alt="" src="'+esc(u)+'">')
+        :('<div class="pinone">'+(LANG==='ar'?'ما فيه صورة لهذا المكان':(LANG==='es'?'Sin foto para este lugar':'No photo for this place'))+'</div>');
+    });
+  }
   function picShow(a){
     var q=a.getAttribute('data-pic'); if(!q)return;
     picFetch(q).then(function(u){
@@ -4550,6 +4576,8 @@
     if(nb){ var tv=nb.getAttribute('data-tv');
       if(tv){ var pt=tv.split('|'); bumpTravellers(pt[0], +pt[1]); return; }
       var pn=nb.getAttribute('data-nb').split('|'); bumpNights(+pn[0], +pn[1]); return; }
+    var pb=e.target.closest('.picbtn');
+    if(pb){ e.preventDefault(); picToggle(pb); return; }
     var sw=e.target.closest('.swapbtn');
     if(sw){ e.preventDefault(); openSwap(sw); return; }
     // trip tuner: adjust length, get another version, or jump to a day
