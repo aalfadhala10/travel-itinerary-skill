@@ -2897,7 +2897,7 @@
     if(CONFIG.aiEndpoint){ aiCity(place).then(apply); } else { apply(null); }
   }
 
-  // ---- Trip assistant — a FREE, button-driven bot (zero API calls; picks from our own destinations) --
+  // ---- Trip assistant — smart AI chat (Worker/Haiku) that builds the trip, with button-driven quick-starts --
   var CHATMSGS=[], CHATCHIPS=[], CHATCAT=null, CHATKEY=null, CHATROUTE=null; // chips: [{t:label,a:action,v:value}]
   // curated multi-city drives — only shown when at least 2 of their cities exist in our data
   var ROADTRIPS=[
@@ -2909,7 +2909,9 @@
   function validRoutes(){ return ROADTRIPS.map(function(r){ var keys=[]; r.cities.forEach(function(n){ var m=matchDest(n); if(m){ var k=keyOf(m); if(keys.indexOf(k)<0)keys.push(k); } }); return {flag:r.flag,keys:keys}; }).filter(function(r){ return r.keys.length>=2; }); }
   function backLabel(){ return LANG==='ar'?'‹ رجوع':(LANG==='es'?'‹ Atrás':'‹ Back'); }
   function moreLabel(){ return LANG==='ar'?'🔀 غيّرها':(LANG==='es'?'🔀 Más':'🔀 More'); }
-  function chatGreeting(){ return LANG==='ar'?'هلا! وش نوع الرحلة اللي في بالك؟ (أو اكتب اسم مدينة)':(LANG==='es'?'¡Hola! ¿Qué tipo de viaje buscas? (o escribe una ciudad)':'Hi! What kind of trip are you after? (or type a city)'); }
+  function chatGreeting(){ return CONFIG.aiEndpoint
+      ? (LANG==='ar'?'هلا! احكِ لي عن رحلتك — وجهة، جو معيّن، أو مسار كامل بالسيارة — وأنا أجهّزها لك. أو اختر من تحت:':(LANG==='es'?'¡Hola! Cuéntame de tu viaje — un destino, un ambiente, o una ruta entera en coche — y lo armo. O elige abajo:':'Hi! Tell me about your trip — a place, a vibe, or a whole road trip — and I’ll build it. Or tap a starter:'))
+      : (LANG==='ar'?'هلا! وش نوع الرحلة اللي في بالك؟ (أو اكتب اسم مدينة)':(LANG==='es'?'¡Hola! ¿Qué tipo de viaje buscas? (o escribe una ciudad)':'Hi! What kind of trip are you after? (or type a city)')); }
   function dayWordN(n){ return n+' '+(LANG==='ar'?'أيام':(LANG==='es'?'días':'days')); }
   function catChips(){ var c=ideaCats().map(function(x){ return {t:x[1],a:'cat',v:x[0]}; });
     c.push({t:(LANG==='ar'?'🛣️ رحلة برية':(LANG==='es'?'🛣️ Ruta en coche':'🛣️ Road trip')),a:'road',v:''});
@@ -2951,6 +2953,7 @@
     if(a==='surprise'){ var ks=Object.keys(DEST), k=ks[Math.floor(Math.random()*ks.length)]; CHATKEY=k; CHATROUTE=null; CHATCAT=null;
       meSay(LANG==='ar'?'🎲 فاجئني':(LANG==='es'?'🎲 Sorpréndeme':'🎲 Surprise me'));
       botSay(DEST[k].flag+' '+DEST[k].city+'!'); askDays(DEST[k].city); chatRender(); return; }
+    if(a==='say'){ var inp=$('chatInput'); if(inp){ inp.value=v; } chatSubmitText(); return; } // AI quick-reply chip → send as a typed message
     if(a==='back'){ chatReset(); chatRender(); return; }
     if(a==='dest'){ CHATKEY=v; CHATROUTE=null; meSay(DEST[v].city); askDays(DEST[v].city); chatRender(); return; }
     if(a==='days'){ var days=Math.max(1,Math.min(30,parseInt(v,10)||5)); meSay(dayWordN(days));
@@ -2978,15 +2981,63 @@
     try{ track('chat_plan',{dest:DEST[keys[0]].city,country:DEST[keys[0]].country||'',cities:keys.length,days:days}); }catch(e){}
     setTimeout(function(){ chatClose(); planRoute(keys,days,['Culture'],'Mid-range','balanced',true); CHATMSGS=[]; CHATCHIPS=[]; },700);
   }
-  function chatSubmitText(){
-    var inp=$('chatInput'), text=(inp.value||'').trim(); if(!text)return; inp.value='';
-    meSay(text); try{ track('chat_msg',{msg:text.slice(0,200)}); }catch(e){}
+  // --- Smart AI path: type anything, the Worker (Haiku) chats and hands off a trip to build ------
+  var CHATBUSY=false;
+  function aiChat(){
+    return new Promise(function(resolve){
+      if(!CONFIG.aiEndpoint){ resolve(null); return; }
+      var msgs=CHATMSGS.map(function(m){ return {role:(m.role==='user'?'user':'assistant'),content:String(m.content||'')}; }).slice(-20);
+      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'chat',messages:msgs})})
+        .then(function(r){return r.json();})
+        .then(function(d){ resolve(d&&d.chat?d.chat:null); })
+        .catch(function(){ resolve(null); });
+    });
+  }
+  function botBuildFromAI(res){ // res.cities are base cities in visit order; resolve each (build if missing), then plan
+    var cities=(res.cities||[]).slice(0,8).filter(Boolean); if(!cities.length){ CHATCHIPS=catChips(); chatRender(); return; }
+    Promise.all(cities.map(function(n){return aiCity(n);})).then(function(keys){
+      var seen={}, ks=[];
+      keys.forEach(function(k){ if(k&&DEST[k]&&!seen[k]){ seen[k]=1; ks.push(k); } }); // keep order, drop repeats (incl. a return-to-start loop like Munich…Munich)
+      if(!ks.length){ botSay(LANG==='ar'?'ما قدرت أجهّز هالمسار — جرّب أماكن ثانية:':(LANG==='es'?'No pude armar esa ruta — prueba otros lugares:':'I couldn’t build that route — try other places:')); CHATCHIPS=catChips(); chatRender(); return; }
+      var days=Math.max(1,Math.min(30,(res.days|0)||(res.roadtrip?12:5)));
+      var vibes=(Array.isArray(res.vibes)&&res.vibes.length)?res.vibes:['Culture'];
+      var budget=(res.budget==='Budget'||res.budget==='Luxury')?res.budget:'Mid-range';
+      newSeed(); DAYEDITS={}; DAYROT={}; ROUTE=null;
+      $('days').value=days; syncDayChips();
+      document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',vibes.indexOf(c.dataset.v)>=0);});
+      document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===budget);});
+      $('pace').value='balanced';
+      $('dest').value=DEST[ks[0]].city;
+      if(ks.length>=2){ try{$('city2wrap').classList.remove('is-hidden'); $('addCity').classList.add('is-hidden');}catch(e){} $('dest2').value=DEST[ks[1]].city; }
+      else { $('dest2').value=''; try{$('city2wrap').classList.add('is-hidden'); $('addCity').classList.remove('is-hidden');}catch(e){} }
+      try{ track('chat_plan',{dest:DEST[ks[0]].city,country:DEST[ks[0]].country||'',cities:ks.length,days:days}); }catch(e){}
+      setTimeout(function(){ chatClose();
+        if(ks.length>=2){ planRoute(ks,days,vibes,budget,'balanced',!!res.roadtrip); } else { ROUTE=null; plan(); }
+        CHATMSGS=[]; CHATCHIPS=[]; },700);
+    });
+  }
+  function localChatSubmit(text){ // no AI configured — simple single-city match + button flow
     var m=matchDest(text);
     if(m){ CHATKEY=keyOf(m); CHATCAT=null; CHATROUTE=null; askDays(DEST[CHATKEY].city); }
     else { botSay(LANG==='ar'?'ما لقيت هالمكان — اختر نوع رحلة:':(LANG==='es'?'No lo encontré — elige un tipo de viaje:':'I don’t have that place — pick a trip type:')); CHATCHIPS=catChips(); }
     chatRender();
   }
-  var CHAT_ON=true; // free button-driven bot — no API calls, safe to show
+  function chatSubmitText(){
+    if(CHATBUSY)return;
+    var inp=$('chatInput'), text=(inp.value||'').trim(); if(!text)return; inp.value='';
+    meSay(text); try{ track('chat_msg',{msg:text.slice(0,200)}); }catch(e){}
+    if(!CONFIG.aiEndpoint){ localChatSubmit(text); return; }
+    CHATBUSY=true; CHATCHIPS=[]; var ph={role:'assistant',content:'…'}; CHATMSGS.push(ph); chatRender();
+    aiChat().then(function(res){
+      var i=CHATMSGS.indexOf(ph); if(i>=0)CHATMSGS.splice(i,1); CHATBUSY=false;
+      if(!res){ botSay(LANG==='ar'?'صار خلل بسيط، جرّب مرة ثانية أو اختر من تحت:':(LANG==='es'?'Hubo un problema, inténtalo otra vez o elige abajo:':'Something hiccuped — try again or tap a starter:')); CHATCHIPS=catChips(); chatRender(); return; }
+      if(res.reply)botSay(res.reply);
+      CHATCHIPS=(Array.isArray(res.chips)?res.chips:[]).slice(0,4).map(function(t){ return {t:String(t),a:'say',v:String(t)}; });
+      chatRender();
+      if(res.ready)botBuildFromAI(res);
+    });
+  }
+  var CHAT_ON=true; // AI-conversational bot (Haiku) with button-driven quick-starts as a fallback
   (function(){ var fab=$('chatFab'); if(!fab)return;
     if(CHAT_ON)fab.classList.remove('is-hidden');
     fab.addEventListener('click',chatOpen);
@@ -3023,7 +3074,7 @@
     $('introTitle').textContent=u.introTitle; $('introS1').textContent=u.introS1; $('introS2').textContent=u.introS2; $('introS3').textContent=u.introS3;
     $('lblPrompt').textContent=u.lblPrompt; $('promptBox').setAttribute('placeholder',u.promptPh); $('promptBtn').textContent=u.promptBtn; $('promptOr').textContent=u.promptOr; renderPromptEx(u);
     try{ $('moreOptsLbl').textContent=(lang==='ar'?'خيارات أكثر':(lang==='es'?'Más opciones':'More options')); }catch(e){}
-    try{ var askL=(lang==='ar'?'خطّط معي':(lang==='es'?'Planea conmigo':'Plan with me')); $('chatFabLbl').textContent=askL; $('chatTitle').textContent=askL; $('chatInput').setAttribute('placeholder', lang==='ar'?'اكتب اسم مدينة…':(lang==='es'?'Escribe una ciudad…':'Type a city…')); }catch(e){}
+    try{ var askL=(lang==='ar'?'خطّط معي':(lang==='es'?'Planea conmigo':'Plan with me')); $('chatFabLbl').textContent=askL; $('chatTitle').textContent=askL; $('chatInput').setAttribute('placeholder', lang==='ar'?'احكِ لي عن رحلتك…':(lang==='es'?'Cuéntame de tu viaje…':'Tell me about your trip…')); }catch(e){}
     (function(){var mb=$('micBtn'); if(mb&&!mb.classList.contains('rec')){mb.setAttribute('aria-label',u.micStart);mb.setAttribute('title',u.micStart);}})();
     $('fbTitle').textContent=u.fbTitle; $('fbSub').textContent=u.fbSub; $('fbMsg').setAttribute('placeholder',u.fbMsgPh); $('fbContact').setAttribute('placeholder',u.fbContactPh); $('fbSend').textContent=u.fbSend; $('fbNote').textContent=u.fbNote;
     updateThemeBtn(); applyProfile(); renderMyTrips();
