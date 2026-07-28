@@ -235,7 +235,9 @@ function chatTurn(messages, apiKey) {
     "budget (default Mid-range), and roadtrip (true only if the stops are drivable). When ready, make your reply a " +
     "short confirmation like 'Perfect — building your Kyoto trip now.' Until ready, set ready=false and cities=[]. " +
     "Stay on travel. Never state hard specifics (exact prices, precise visa rules) as fact — speak generally and " +
-    "suggest they verify. Match the user's language (English/Arabic/Spanish).";
+    "suggest they verify. Reply in the user's language. When they write in Arabic, reply in warm, natural " +
+    "GULF / KHALEEJI Arabic (Saudi style) — casual and friendly (e.g. 'وش رايك', 'تبي', 'خلّينا', 'عندك') — " +
+    "NOT Egyptian dialect and NOT stiff formal standard Arabic.";
   return claude(apiKey, "claude-haiku-4-5", system, messages, CHAT_SCHEMA, 700);
 }
 
@@ -266,6 +268,8 @@ function suggestTrip(text, apiKey) {
     "Honor every constraint the user gives: if they mention a nationality/passport, only pick countries that are " +
     "visa-free or visa-on-arrival for it (e.g. a Philippine passport: yes Thailand/Indonesia/Malaysia, no Australia/NZ); " +
     "if they want to drive / self-drive / a road trip, set roadtrip true and pick places that suit driving. " +
+    "Write `why` in the SAME language the user wrote in; if they wrote in Arabic, use warm Gulf/Khaleeji (Saudi) " +
+    "dialect, not Egyptian or formal standard Arabic. " +
     "days: total days if stated, else 0. vibes: 0-3 from the allowed tags. budget: default Mid-range.";
   return claude(apiKey, "claude-haiku-4-5", system, text, SUGGEST_SCHEMA, 700);
 }
