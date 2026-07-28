@@ -2892,6 +2892,7 @@
     var userTurns=CHATMSGS.filter(function(m){return m.role==='user';}).length;
     if(userTurns>=14){ CHATMSGS.push({role:'assistant',content:(LANG==='ar'?'خلّينا نكمّل بالنموذج فوق — أو حدّث الصفحة لبداية جديدة.':(LANG==='es'?'Sigamos con el formulario de arriba — o recarga para empezar de nuevo.':'Let’s continue with the form above — or refresh to start fresh.'))}); chatRender(); return; }
     CHATMSGS.push({role:'user',content:text}); inp.value=''; CHATBUSY=true; chatRender();
+    try{ track('chat_msg',{msg:text.slice(0,200)}); }catch(e){} // what people ask the assistant
     aiChat(CHATMSGS.slice()).then(function(res){ CHATBUSY=false;
       if(!res){ CHATMSGS.push({role:'assistant',content:(LANG==='ar'?'ما قدرت أوصل للمخطّط الحين — جرّب النموذج فوق.':(LANG==='es'?'No pude conectar ahora — prueba el formulario de arriba.':'I couldn’t reach the planner just now — try the form above.'))}); chatRender(); return; }
       CHATMSGS.push({role:'assistant',content:res.reply||'…'}); chatRender();
@@ -2913,6 +2914,7 @@
       $('pace').value='balanced';
       $('dest').value=DEST[ks[0]].city;
       if(ks.length>=2){ $('city2wrap').classList.remove('is-hidden'); $('addCity').classList.add('is-hidden'); $('dest2').value=DEST[ks[1]].city; } else { $('dest2').value=''; }
+      try{ track('chat_plan',{dest:DEST[ks[0]].city,country:DEST[ks[0]].country||'',cities:ks.length,days:days}); }catch(e){} // a trip produced by the chat assistant
       setTimeout(function(){ chatClose(); if(ks.length>=2){ planRoute(ks,days,vibes,budget,'balanced',!!p.roadtrip); } else { ROUTE=null; plan(); } }, 800);
     });
   }
@@ -2993,6 +2995,9 @@
       'BEGIN:VALARM','TRIGGER:-P2D','ACTION:DISPLAY','DESCRIPTION:'+ex(title),'END:VALARM',
       'END:VEVENT','END:VCALENDAR'].join('\r\n');
   }
+  // Calendar needs a date — if the user didn't set a start date (it's under "More options" now),
+  // default to today so "Add to calendar" always works; they can drag it in their calendar app.
+  function calStart(){ var v=($('startDate')||{}).value; if(v)return v; var d=new Date(); function z(n){return (n<10?'0':'')+n;} return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate()); }
   function money(t,usd){var c=CURRENCIES[HOME]||CURRENCIES.USD;return '~'+c.s+Math.round(usd*c.r).toLocaleString(t.loc);}
   function transferInfo(t,c1,c2,km){var ground=(c1.region===c2.region)&&(km==null||km<1400);return {usd:ground?60:180,mode:ground?t.out.modeGround:t.out.modeFly,dur:ground?t.out.transDur.ground:t.out.transDur.fly};} // same landmass AND drivable distance → ground; else fly (Auckland↔Sydney is one "region" but an ocean apart)
   function catRows(base){return [['stay',0.42],['food',0.24],['activities',0.16],['localtx',0.08],['misc',0.10]].map(function(c){return {k:c[0],v:Math.round(base*c[1])};});}
@@ -3765,7 +3770,7 @@
       '<button class="act" type="button" data-act="save">'+o.save+'</button>'+
       '<button class="act" type="button" data-act="wa">'+o.waShare+'</button>'+
       '<button class="act" type="button" data-act="share">'+o.share+'</button>';
-    if(di){ var ics=icsFor(ms.map(function(m){return m.city;}).join(' → ')+' — بوصلة',t.ui.budgets[budget]+' · '+subVibes,$('startDate').value,days); if(ics)acts+='<a class="act" download="bosla-route.ics" href="data:text/calendar;charset=utf-8,'+encodeURIComponent(ics)+'">'+o.addCal+'</a>'; }
+    var icsR=icsFor(ms.map(function(m){return m.city;}).join(' → ')+' — بوصلة',t.ui.budgets[budget]+' · '+subVibes,calStart(),days); if(icsR)acts+='<a class="act" download="bosla-route.ics" href="data:text/calendar;charset=utf-8,'+encodeURIComponent(icsR)+'">'+o.addCal+'</a>';
     if(access){ acts+='<button class="act" type="button" data-act="copy">'+o.copy+'</button><button class="act" type="button" data-act="print">'+o.print+'</button>'; }
     html+=acts+'</div>';
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
@@ -4174,12 +4179,10 @@
       '<button class="act" type="button" data-act="save">'+o.save+'</button>'+
       '<button class="act" type="button" data-act="wa">'+o.waShare+'</button>'+
       '<button class="act" type="button" data-act="share">'+o.share+'</button>';
-    if(di){
-      var calTitle=(m1?(m1.city+(m1.country?', '+m1.country:'')):cap(dest||raw||'Trip'))+' — بوصلة';
-      var calDesc=t.ui.budgets[budget]+' · '+t.ui.paces[pace]+(subVibes?' · '+subVibes:'');
-      var ics=icsFor(calTitle,calDesc,$('startDate').value,days);
-      if(ics){ acts+='<a class="act" download="'+slug(m1?m1.city:cap(dest||raw||'trip'))+'-bosla.ics" href="data:text/calendar;charset=utf-8,'+encodeURIComponent(ics)+'">'+o.addCal+'</a>'; }
-    }
+    var calTitle=(m1?(m1.city+(m1.country?', '+m1.country:'')):cap(dest||raw||'Trip'))+' — بوصلة';
+    var calDesc=t.ui.budgets[budget]+' · '+t.ui.paces[pace]+(subVibes?' · '+subVibes:'');
+    var icsP=icsFor(calTitle,calDesc,calStart(),days);
+    if(icsP){ acts+='<a class="act" download="'+slug(m1?m1.city:cap(dest||raw||'trip'))+'-bosla.ics" href="data:text/calendar;charset=utf-8,'+encodeURIComponent(icsP)+'">'+o.addCal+'</a>'; }
     if(access){ acts+='<button class="act" type="button" data-act="copy">'+o.copy+'</button><button class="act" type="button" data-act="print">'+o.print+'</button>'; }
     html+=acts+'</div>';
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
