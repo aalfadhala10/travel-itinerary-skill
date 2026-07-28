@@ -3462,13 +3462,11 @@
   function bookingBar(city,t){
     var o=t.out;
     var flights=flightsLinkFor(city);
-    var hotels=CONFIG.hotelsLink||bookUrl(city);
     var esim=esimLink();
     var acts='<div class="provrow"><span class="provlbl">'+provLabel('tour')+'</span>'+
       TOUR_SITES.map(function(x){ return '<a class="provchip" href="'+activityUrl(x[0],city)+'" target="_blank" rel="noopener">'+x[1]+'</a>'; }).join('')+'</div>';
     return '<div class="bookbar"><div class="maphdr">'+o.bookTitle+'</div><div class="bookrow">'+
       '<a class="bookbtn" href="'+flights+'" target="_blank" rel="noopener">'+o.bookFlights+'</a>'+
-      '<a class="bookbtn" href="'+hotels+'" target="_blank" rel="noopener">'+o.bookHotels+'</a>'+
       '<a class="bookbtn" href="'+esim+'" target="_blank" rel="noopener">'+o.bookEsim+'</a>'+
       '</div>'+acts+'</div>';
   }
