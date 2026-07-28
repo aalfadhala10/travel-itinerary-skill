@@ -374,7 +374,6 @@
   .transfer .tbody{font-size:14px;margin-top:3px}
   .transfer .troute{display:block;margin-top:7px;font-size:12.5px;font-weight:600;color:var(--teal);text-decoration:none}
   .transfer .troute:hover{text-decoration:underline}
-  .transfer .pit{font-size:12.5px;color:var(--muted);margin-top:5px;font-style:italic}
   .nightsbar{background:var(--paper2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:14px 0}
   .nightslbl{font-family:var(--ff-data);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--clay);font-weight:600;margin-bottom:6px}
   .nrow{display:flex;align-items:center;justify-content:space-between;padding:5px 0}
@@ -3299,11 +3298,6 @@
   function timeLabels(o,n){var m=o.times; return n===2?[m.morning,m.evening]:n===4?[m.morning,m.midday,m.afternoon,m.evening]:[m.morning,m.afternoon,m.evening];}
   function dayTitle(o,d,total){return d===1?o.arrival:d===total?o.last:o.explore;}
   // small rest stops along a drive — coffee / ice cream / leg-stretch. Varies by leg, text-only (no emoji).
-  function pitStopLine(idx){
-    var en=['Halfway: pull over for a coffee and a leg-stretch.','Midway: grab an ice cream and a short break.','On the way: a scenic café stop and a quick rest.'];
-    var ar=['بالنص: وقفة قهوة وتمشية بسيطة.','بالطريق: آيس كريم واستراحة سريعة.','بالطريق: وقفة كافيه وإطلالة حلوة.'];
-    var es=['A mitad de camino: para por un café y estira las piernas.','En el camino: un helado y un descanso corto.','En ruta: una parada en un café con vistas.'];
-    var a=LANG==='ar'?ar:(LANG==='es'?es:en); return a[Math.abs(idx)%a.length]; }
   // "Adventure" isn't a stored POI tag — detect it from the place name so it works across every city
   var ADV_RE=/\b(safari|scuba|div(e|ing)|snorkel|surf|kayak|canoe|raft|rafting|zip-?line|bungee|bungy|skydiv|paraglid|parasail|jet-?ski|quad|atv|dune|desert|hik(e|ing)|trek|climb|abseil|rappel|canyon|cav(e|ing)|waterfall|national park|reserve|wildlife|game drive|kitesurf|windsurf|paddle|snowboard|cable ?car|gondola|hot ?air balloon|balloon|off-?road|4x4|glacier|volcano|via ferrata|whitewater|wakeboard|flyboard|camel|horse ?rid)/i;
   function isAdventure(p){ return ADV_RE.test(p.n||'') || ADV_RE.test(p.a||''); }
@@ -3588,7 +3582,8 @@
     // weave: one outlier at the head of each day, then fill the day from the central route
     var result=[],oi=0,rc=0,dayCount=Math.max(1,Math.ceil(pool.length/spd));
     for(var day=0;day<dayCount;day++){
-      if(oi<outliers.length)result.push(outliers[oi++]);
+      // never on the first day in a city: you've just arrived (or just driven in from the last stop)
+      if(day>0&&oi<outliers.length)result.push(outliers[oi++]);
       while(result.length<(day+1)*spd && rc<route.length)result.push(route[rc++]);
     }
     while(oi<outliers.length)result.push(outliers[oi++]);
@@ -3604,10 +3599,14 @@
     var geoPool=geoOrderPool(ck,pool,spd), geoOn=(geoPool!==pool);
     if(geoOn)pool=geoPool;
     var off=geoOn?0:SEED%1000; // geo order is meaningful in-sequence, so don't rotate the start
-    var usedA={}, usedF={}; // never repeat the same place/restaurant within one city
+    var usedN={}; // one record for sights AND meals — a food market is in both lists, and picking it
+                  // twice in a day (afternoon + lunch) is exactly what that used to produce
     var outSet=pool._out||{};
-    function take(arr,used,rot,s){
+    function take(arr,used,rot,s,noFar){
       var avail=arr.filter(function(x){return !used[x.n];});
+      // The day you arrive in a city you've just landed or just driven in — an 80km day trip is the
+      // one thing that doesn't belong on it. Keep the far ones for a day you're actually settled.
+      if(noFar){ var near=avail.filter(function(x){return !outSet[x.n];}); if(near.length)avail=near; }
       if(!avail.length){ // pool exhausted (very long stay) — only then allow a repeat
         avail=arr.filter(function(x){return !outSet[x.n];}); // ...but never repeat a far day-trip
         if(!avail.length)avail=arr;
@@ -3641,23 +3640,23 @@
       txt.push('  '+o.times.breakfast+': '+o.bfastTxt);
       for(var s=0;s<spd;s++){
         var sk=ck+'|'+d+'|'+s, poi=DAYEDITS[sk]?poiByName(ck,DAYEDITS[sk]):null;
-        if(!poi)poi=take(pool,usedA,rot,s);
-        usedA[poi.n]=1; dayPois.push(poi); names.push(poi.n);
+        if(!poi)poi=take(pool,usedN,rot,s,i===0); // i===0 is the first day in THIS city
+        usedN[poi.n]=1; dayPois.push(poi); names.push(poi.n);
         if(stops)stops.push({n:poi.n,a:poi.a});
         body+=eslot(tl[s],poi,match.city,sk,o);
         txt.push('  '+tl[s]+': '+poi.n+' ('+poi.a+')');
         if(s===lunchAt-1){
           var lsk=ck+'|'+d+'|l', lu=DAYEDITS[lsk]?poiByName(ck,DAYEDITS[lsk]):null;
-          if(!lu)lu=nearestFood(ck,match.food,usedF,dayPois,rot);
-          usedF[lu.n]=1;
+          if(!lu)lu=nearestFood(ck,match.food,usedN,dayPois,rot);
+          usedN[lu.n]=1;
           body+=eslot(o.times.lunch,lu,match.city,lsk,o);
           txt.push('  '+o.times.lunch+': '+lu.n+' ('+lu.a+')');
         }
       }
       (DAYADD[d]||[]).forEach(function(x,xi){ body+=xslot(x.n,match.city,d,xi,o); txt.push('  '+o.extraLbl+': '+x.n); });
       var dsk=ck+'|'+d+'|d', fo=DAYEDITS[dsk]?poiByName(ck,DAYEDITS[dsk]):null;
-      if(!fo)fo=nearestFood(ck,match.food,usedF,dayPois,rot);
-      usedF[fo.n]=1;
+      if(!fo)fo=nearestFood(ck,match.food,usedN,dayPois,rot);
+      usedN[fo.n]=1;
       body+=eslot(o.times.dinner,fo,match.city,dsk,o);
       txt.push('  '+o.times.dinner+': '+fo.n+' ('+fo.a+')');
       // Each day is collapsible — the first is open, the rest show a one-line summary until tapped.
@@ -4292,7 +4291,7 @@
     for(i=0;i<upto;i++){
       var stops=[], cnt=access?dc[i]:1;
       routeHtml+=emitDays(ms[i],startDay,cnt,days,vibes,spd,o,t,txt,stops);
-      if(access&&i<n-1){ var tr=transferInfo(t,ms[i],ms[i+1],kmDist(CO[keys[i]]||[0,0],CO[keys[i+1]]||[0,0])); var mode=ROUTEDRIVE?o.modeDrive:tr.mode; var pit=ROUTEDRIVE?('<div class="pit">'+pitStopLine(i)+'</div>'):''; routeHtml+='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+mode+' · '+esc(ms[i].city)+' → '+esc(ms[i+1].city)+' · '+tr.dur+' · '+tr.km+kmUnit()+' · '+money(t,tr.usd)+pit+routeLink(ms[i].city,ms[i+1].city,!ROUTEDRIVE&&tr.mode===o.modeFly)+'</div></div>'; txt.push(''); txt.push('» '+o.cats.transfer+': '+mode+' '+ms[i].city+' → '+ms[i+1].city+' ('+tr.dur+')'); if(ROUTEDRIVE)txt.push('  '+pitStopLine(i)); }
+      if(access&&i<n-1){ var tr=transferInfo(t,ms[i],ms[i+1],kmDist(CO[keys[i]]||[0,0],CO[keys[i+1]]||[0,0])); var mode=ROUTEDRIVE?o.modeDrive:tr.mode; routeHtml+='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+mode+' · '+esc(ms[i].city)+' → '+esc(ms[i+1].city)+' · '+tr.dur+' · '+tr.km+kmUnit()+' · '+money(t,tr.usd)+routeLink(ms[i].city,ms[i+1].city,!ROUTEDRIVE&&tr.mode===o.modeFly)+'</div></div>'; txt.push(''); txt.push('» '+o.cats.transfer+': '+mode+' '+ms[i].city+' → '+ms[i+1].city+' ('+tr.dur+')'); }
       startDay+=dc[i];
     }
     mapHtml=routeStrip(ms.slice(0,upto).map(function(m){return m.city;}),t);
@@ -4644,9 +4643,8 @@
       var stops1=[], route1=emitDays(m1,1,freeN,days,vibes,spd,o,t,txt,stops1);
       var route2='', transHtml='';
       if(access&&multi){
-        var pit2=(tr.mode===o.modeGround)?('<div class="pit">'+pitStopLine(0)+'</div>'):'';
-        transHtml='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+tr.mode+' · '+esc(m1.city)+' → '+esc(m2.city)+' · '+tr.dur+' · '+tr.km+kmUnit()+' · '+money(t,tr.usd)+pit2+routeLink(m1.city,m2.city,tr.mode===o.modeFly)+'</div></div>';
-        txt.push(''); txt.push('» '+o.cats.transfer+': '+m1.city+' → '+m2.city+' ('+tr.dur+', ~$'+tr.usd+')'); if(pit2)txt.push('  '+pitStopLine(0));
+        transHtml='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+tr.mode+' · '+esc(m1.city)+' → '+esc(m2.city)+' · '+tr.dur+' · '+tr.km+kmUnit()+' · '+money(t,tr.usd)+routeLink(m1.city,m2.city,tr.mode===o.modeFly)+'</div></div>';
+        txt.push(''); txt.push('» '+o.cats.transfer+': '+m1.city+' → '+m2.city+' ('+tr.dur+', ~$'+tr.usd+')');
         var stops2=[]; route2=emitDays(m2,d1+1,d2,days,vibes,spd,o,t,txt,stops2);
       }
       html+=(access?travellersEditor():'')+tunerBar(o,days)+routeStrip((access&&multi)?[m1.city,m2.city]:[m1.city],t);

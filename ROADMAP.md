@@ -82,6 +82,20 @@ Last updated: 2026-07-28.
 
 ## Done (recent)
 
+- [x] **A place can't be both a sight and a meal on the same day.** Reported: Madrid
+  day 1 had "Mercado de San Miguel" as LUNCH and again as the AFTERNOON activity. The
+  food market is in both the `poi` and `food` lists, and `emitDays` kept two separate
+  "already used" maps (`usedA`, `usedF`), so each could pick it independently. Now one
+  shared record covers sights and meals alike.
+- [x] **No far day trip on the day you arrive.** Same screenshot had "Toledo Day Trip"
+  on day 1. `geoOrderPool` seeds one outlier at the head of every day including the
+  first; now it starts from day 2, and `take()` also refuses outliers outright on a
+  city's first day, so it holds even when a meal consumes a pool entry and shifts the
+  ordering.
+- [x] **Removed the drive pit-stop note** ("Halfway: pull over for a coffee and a
+  leg-stretch") — generic filler rather than a real place. The transfer line keeps the
+  mode, distance, duration, cost and the Maps route link.
+
 - [x] **A cut-off reply no longer looks like the bot ignored you.** Reported: after
   "سويسرا" + "10 أيام" the chat showed the starter menu with no reply at all. Root
   cause: `max_tokens: 700` on the chat call, which the grown schema (`nights`,
