@@ -2838,18 +2838,27 @@
 
   function keyOf(d){var ks=Object.keys(DEST);for(var i=0;i<ks.length;i++)if(DEST[ks[i]]===d)return ks[i];return null;}
 
+  // Score every destination and take the best, rather than the first one that happens to match.
+  // Nearby places list each other as aliases — Interlaken claims "zurich" as its gateway airport,
+  // Da Nang claims "hoi an" — and whichever sat earlier in the data used to win, so asking for
+  // Zurich handed you Interlaken. A destination's OWN name always beats somebody else's alias.
   function matchDest(input){
     var s=(input||'').toLowerCase().trim(); if(!s)return null;
-    var keys=Object.keys(DEST), i, j, al, a;
-    // 1) exact alias match wins — lets short aliases like "uk"/"uae" work only when typed exactly
-    for(i=0;i<keys.length;i++){ al=DEST[keys[i]].alias; for(j=0;j<al.length;j++){ if(s===al[j]) return DEST[keys[i]]; } }
-    // 2) prefix or whole-word contains — only for aliases 4+ chars, so "uk" can't match inside "phuket"
-    for(i=0;i<keys.length;i++){ al=DEST[keys[i]].alias; for(j=0;j<al.length;j++){ a=al[j];
-      if(a.length<4) continue;
-      if(s.length>=2 && a.indexOf(s)===0) return DEST[keys[i]];   // alias starts with typed text (paris <- par)
-      if(s.length>=4 && s.indexOf(a)>=0) return DEST[keys[i]];    // typed text contains a full alias word
-    } }
-    return null;
+    var keys=Object.keys(DEST), i, j, al, a, best=null, bestRank=99;
+    for(i=0;i<keys.length;i++){
+      var k=keys[i], own=String(DEST[k].city||'').toLowerCase(), rank=99;
+      if(s===own) rank=0;                                                    // its own name, exactly
+      else if(s.length>=2 && own.length>=4 && own.indexOf(s)===0) rank=2;    // its own name, typed partly
+      al=DEST[k].alias;
+      for(j=0;j<al.length&&rank>1;j++){ a=al[j];
+        if(s===a){ rank=1; break; }                                          // exact alias — "uk", "uae"
+        if(a.length<4) continue;                                             // so "uk" can't match inside "phuket"
+        if(s.length>=2 && a.indexOf(s)===0 && rank>3) rank=3;                // alias starts with what they typed
+        if(s.length>=4 && s.indexOf(a)>=0 && rank>4) rank=4;                 // what they typed contains an alias
+      }
+      if(rank<bestRank){ bestRank=rank; best=DEST[k]; if(rank===0)break; }
+    }
+    return best;
   }
 
   // Real-time city builder: asks the AI Worker to generate a city we don't have, then injects it
@@ -2993,7 +3002,17 @@
     : (LANG==='ar'?'خطّط معي':(LANG==='es'?'Planea conmigo':'Plan with me')); }
   function syncFab(){ try{ var l=fabLabel(); $('chatFabLbl').textContent=l; $('chatTitle').textContent=l; }catch(e){} }
   function finalLabel(){ return LANG==='ar'?'✓ خلاص، تمام':(LANG==='es'?'✓ Está perfecto':'✓ It\'s final'); }
-  function editChips(){ var c=editOpts().map(function(x){ return {t:x,a:'say',v:x}; }); c.push({t:finalLabel(),a:'final',v:''}); return c; }
+  // Cutting a route back to the one city they actually asked for. The bot sometimes bolts on a
+  // gateway city nobody wanted; this is the one tap that undoes it, without arguing with it.
+  function onlyCityLabel(){ var c=(ROUTE&&DEST[ROUTE[0]])?DEST[ROUTE[0]].city:''; if(!c)return '';
+    return LANG==='ar'?('فقط '+c):(LANG==='es'?('Solo '+c):('Only '+c)); }
+  function editChips(){
+    var c=[];
+    if(ROUTE&&ROUTE.length>1&&onlyCityLabel())c.push({t:onlyCityLabel(),a:'onlycity',v:''});
+    editOpts().forEach(function(x){ c.push({t:x,a:'say',v:x}); });
+    c.push({t:finalLabel(),a:'final',v:''});
+    return c;
+  }
   // The plan is built but the conversation keeps going — the bot asks what to change instead of
   // dead-ending, and the chat stays open for the next edit.
   function askWhatToChange(){
@@ -3068,6 +3087,17 @@
       meSay(LANG==='ar'?'🎲 فاجئني':(LANG==='es'?'🎲 Sorpréndeme':'🎲 Surprise me'));
       botSay(DEST[k].flag+' '+DEST[k].city+'!'); askDays(DEST[k].city); chatRender(); return; }
     if(a==='say'){ var inp=$('chatInput'); if(inp){ inp.value=v; } chatSubmitText(); return; } // AI quick-reply chip → send as a typed message
+    if(a==='onlycity'){ var only=ROUTE&&ROUTE[0]; if(!only||!DEST[only])return;
+      var lbl=onlyCityLabel(); meSay(lbl);
+      // the whole trip stays in that one city — not just the slice it had been given
+      var nights=Math.max(1,parseInt($('days').value,10)||3);
+      ROUTE=null; ROUTEDC=null; ROUTEDCSIG=''; DAYEDITS={}; DAYROT={}; DAYADD={};
+      $('dest').value=DEST[only].city; $('dest2').value='';
+      try{$('city2wrap').classList.add('is-hidden'); $('addCity').classList.remove('is-hidden');}catch(e){}
+      $('days').value=nights; syncDayChips();
+      botSay(LANG==='ar'?('تمام — '+DEST[only].city+' وبس، '+nights+' أيام.'):(LANG==='es'?('Hecho — solo '+DEST[only].city+', '+nights+' días.'):('Done — just '+DEST[only].city+', '+nights+' days.')));
+      CHATCHIPS=[]; chatRender();
+      setTimeout(function(){ chatClose(); plan(); askWhatToChange(); },500); return; }
     if(a==='final'){ meSay(finalLabel());
       botSay(LANG==='ar'?'بالتوفيق برحلتك! إذا بغيت تعدّل شي بعدين، أنا هنا.':(LANG==='es'?'¡Buen viaje! Si quieres cambiar algo más tarde, aquí estoy.':'Have a great trip! If you want to change anything later, I\'m here.'));
       CHATCHIPS=[]; chatRender(); setTimeout(chatClose,900); return; }
@@ -3625,22 +3655,29 @@
     var usedN={}; // one record for sights AND meals — a food market is in both lists, and picking it
                   // twice in a day (afternoon + lunch) is exactly what that used to produce
     var outSet=pool._out||{};
-    function take(arr,used,rot,s,noFar){
-      var avail=arr.filter(function(x){return !used[x.n];});
+    // `today` is a hard constraint the wrap-around must respect too: a two-week stay in a city with
+    // twelve real places has to repeat eventually, but never twice in the same day.
+    function take(arr,used,rot,s,noFar,today){
+      function fresh(list){ return today?list.filter(function(x){return !today[x.n];}):list; }
+      var avail=fresh(arr.filter(function(x){return !used[x.n];}));
       // The day you arrive in a city you've just landed or just driven in — an 80km day trip is the
       // one thing that doesn't belong on it. Keep the far ones for a day you're actually settled.
       if(noFar){ var near=avail.filter(function(x){return !outSet[x.n];}); if(near.length)avail=near; }
       if(!avail.length){ // pool exhausted (very long stay) — only then allow a repeat
-        avail=arr.filter(function(x){return !outSet[x.n];}); // ...but never repeat a far day-trip
-        if(!avail.length)avail=arr;
+        avail=fresh(arr.filter(function(x){return !outSet[x.n];})); // ...but never repeat a far day-trip
+        if(!avail.length)avail=fresh(arr);
+        if(!avail.length)avail=arr; // everything there is is already on today — nothing left to protect
       }
       var idx=((off+rot*spd+s)%avail.length+avail.length)%avail.length;
       return avail[idx];
     }
     // dinner near where the day actually ends: prefer a restaurant closest to the last activity
     // (by coordinates, else by matching neighbourhood), so you're not driving across town to eat.
-    function nearestFood(ck,food,used,dayPois,rot){
-      var avail=food.filter(function(x){return !used[x.n];}); if(!avail.length)avail=food;
+    function nearestFood(ck,food,used,dayPois,rot,today){
+      function fresh(list){ return today?list.filter(function(x){return !today[x.n];}):list; }
+      var avail=fresh(food.filter(function(x){return !used[x.n];}));
+      if(!avail.length)avail=fresh(food);
+      if(!avail.length)avail=food;
       var co=POI_CO[ck], anchor=dayPois[dayPois.length-1];
       if(co&&anchor&&co[anchor.n]){
         var ac=co[anchor.n];
@@ -3650,12 +3687,12 @@
       }
       var areas={}; dayPois.forEach(function(p){areas[p.a]=1;}); // fallback: same neighbourhood
       var same=avail.filter(function(f){return areas[f.a];}); if(same.length)return same[0];
-      return take(food,used,rot,0);
+      return take(food,used,rot,0,false,today);
     }
     for(var i=0;i<count;i++){
       var d=fromDay+i, title=d===1?o.arrival:d===total?o.last:o.explore, rot=DAYROT[ck+'|'+d]||0;
       txt.push(''); txt.push(o.dayWord+' '+d+' — '+title+' ('+match.city+')');
-      var dayPois=[], body='', names=[];
+      var dayPois=[], body='', names=[], todayN={}; // todayN: nothing appears twice in one day, ever
       // Three meals, in the right places: breakfast opens the day, lunch lands after the
       // morning block, dinner closes it — each near where you actually are at that hour.
       var lunchAt=(spd>=4?2:1);
@@ -3663,23 +3700,23 @@
       txt.push('  '+o.times.breakfast+': '+o.bfastTxt);
       for(var s=0;s<spd;s++){
         var sk=ck+'|'+d+'|'+s, poi=DAYEDITS[sk]?poiByName(ck,DAYEDITS[sk]):null;
-        if(!poi)poi=take(pool,usedN,rot,s,i===0); // i===0 is the first day in THIS city
-        usedN[poi.n]=1; dayPois.push(poi); names.push(poi.n);
+        if(!poi)poi=take(pool,usedN,rot,s,i===0,todayN); // i===0 is the first day in THIS city
+        usedN[poi.n]=1; todayN[poi.n]=1; dayPois.push(poi); names.push(poi.n);
         if(stops)stops.push({n:poi.n,a:poi.a});
         body+=eslot(tl[s],poi,match.city,sk,o);
         txt.push('  '+tl[s]+': '+poi.n+' ('+poi.a+')');
         if(s===lunchAt-1){
           var lsk=ck+'|'+d+'|l', lu=DAYEDITS[lsk]?poiByName(ck,DAYEDITS[lsk]):null;
-          if(!lu)lu=nearestFood(ck,match.food,usedN,dayPois,rot);
-          usedN[lu.n]=1;
+          if(!lu)lu=nearestFood(ck,match.food,usedN,dayPois,rot,todayN);
+          usedN[lu.n]=1; todayN[lu.n]=1;
           body+=eslot(o.times.lunch,lu,match.city,lsk,o);
           txt.push('  '+o.times.lunch+': '+lu.n+' ('+lu.a+')');
         }
       }
       (DAYADD[d]||[]).forEach(function(x,xi){ body+=xslot(x.n,match.city,d,xi,o); txt.push('  '+o.extraLbl+': '+x.n); });
       var dsk=ck+'|'+d+'|d', fo=DAYEDITS[dsk]?poiByName(ck,DAYEDITS[dsk]):null;
-      if(!fo)fo=nearestFood(ck,match.food,usedN,dayPois,rot);
-      usedN[fo.n]=1;
+      if(!fo)fo=nearestFood(ck,match.food,usedN,dayPois,rot,todayN);
+      usedN[fo.n]=1; todayN[fo.n]=1;
       body+=eslot(o.times.dinner,fo,match.city,dsk,o);
       txt.push('  '+o.times.dinner+': '+fo.n+' ('+fo.a+')');
       // Each day is collapsible — the first is open, the rest show a one-line summary until tapped.
@@ -4587,20 +4624,6 @@
   }
 
   // how many days a single city can fill before it starts repeating (~its POIs / 4, clamped 2–3)
-  function cityCapacity(ck,spd){ var p=(DEST[ck]&&DEST[ck].poi.length)||10; return Math.max(2,Math.min(3,Math.round(p/4))); }
-  // nearest other cities to build a mini-route from: same country first (any distance), then same
-  // region within ~1000km — so a long single-city stay spreads out instead of repeating one city
-  function nearbyCities(ck,n){
-    if(n<=0||!CO[ck]||!DEST[ck])return [];
-    var self=CO[ck], selfC=DEST[ck].country, selfR=DEST[ck].region, cand=[];
-    for(var k in DEST){ if(k===ck||!CO[k])continue;
-      var d=kmDist(self,CO[k]), sameC=DEST[k].country===selfC, sameR=DEST[k].region===selfR;
-      if(sameC)cand.push({k:k,d:d,pri:0});
-      else if(sameR&&d<=1000)cand.push({k:k,d:d,pri:1});
-    }
-    cand.sort(function(a,b){return a.pri-b.pri||a.d-b.d;});
-    return cand.slice(0,n).map(function(x){return x.k;});
-  }
   function plan(){
     ROUTE=null; ROUTEDRIVE=false;
     LASTPLAN=function(){ plan(); };
@@ -4620,15 +4643,10 @@
     var raw2=($('dest2').value||'').trim();
     var m2=raw2?matchDest(raw2):null;
     if(m2&&m2===m1)m2=null;
-    // A long stay in one city would just repeat its ~10–12 real spots. Spread 4+ day single-city
-    // trips across the nearest cities so it reads like a real trip, not a padded one.
-    if(m1&&!m2){ var ck1=keyOf(m1), cap=cityCapacity(ck1,spd);
-      if(days>=4 && days>cap){
-        var nCities=Math.min(Math.ceil(days/cap), Math.floor(days/2), 4);
-        var extra=nearbyCities(ck1, nCities-1);
-        if(extra.length){ planRoute([ck1].concat(extra), days, vibes, budget, pace, false); return; }
-      }
-    }
+    // One city means one city. This used to quietly spread any 4+ day single-city stay across
+    // nearby places so it wouldn't repeat its ~10-12 spots — which turned "5 nights in El Gouna"
+    // into "El Gouna 3 nights → Hurghada 2 nights", somewhere the traveller never asked to go.
+    // If a longer stay wants a second city, the assistant offers it and they say yes.
     var txt=[], html='', note='', paywallShown=false; MAPQ=[]; PRAYERQ=[];
     var destKey = m1 ? keyOf(m1) : ('x:'+slug(raw||'dest'));
     var access = tripAccess(destKey);
@@ -5009,6 +5027,21 @@
     el.addEventListener('change',clamp);
     el.addEventListener('input',clamp);
     el.addEventListener('focus',function(){ try{ el.min=today(); }catch(e){} });
+    // Tapping the field anywhere should open the calendar. By default only the little icon does,
+    // so tapping the date itself just parks a cursor on "04" and nothing happens.
+    var lastCal=0;
+    function openCal(e){
+      if(!el.showPicker)return;                       // older browsers: leave the native behaviour alone
+      var now=Date.now(); if(now-lastCal<400)return;  // pointerdown and click both fire — open once
+      lastCal=now;
+      try{ el.min=today(); el.showPicker(); if(e&&e.cancelable)e.preventDefault(); }
+      catch(err){}                                    // throws without a user gesture — harmless, ignore
+    }
+    // pointerdown, not click: the FIRST tap on an unfocused date field only focuses a segment and
+    // never produces a click event, so a click listener misses exactly the tap that matters.
+    el.addEventListener('pointerdown',openCal);
+    el.addEventListener('click',openCal);
+    el.addEventListener('keydown',function(e){ if(e.key==='Enter')openCal(e); });
   })();
 
   // restore saved theme preference before first render
