@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سند · Sanad — Variation Order register &amp; notice tracker</title>
+<meta name="description" content="Log every variation the moment it is instructed, never miss a contractual notice deadline, and generate the notice, the submission and the substantiation pack from the record you already kept.">
+<meta name="theme-color" content="#1f3d63">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3d63'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='20' fill='%23fff' text-anchor='middle'%3E%D8%B3%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<style>
+  :root{
+    --paper:#eceae5; --paper2:#f4f2ee; --card:#ffffff;
+    --ink:#161a22; --muted:#666d7c; --line:#d6d3cb;
+    --navy:#1f3d63; --navy-soft:#1f3d6312;
+    --amber:#a97b1e; --amber-soft:#a97b1e1f;
+    --red:#a32d3c;   --red-soft:#a32d3c1a;
+    --green:#2c6e4f; --green-soft:#2c6e4f1a;
+    --shadow:0 14px 34px rgba(28,32,38,.14);
+    --ff-display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    --ff-body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --ff-data:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#0b0f16; --paper2:#111826; --card:#16202f;
+      --ink:#e8e6df; --muted:#8b93a3; --line:#243347;
+      --navy:#6fa2d8; --navy-soft:#6fa2d81a;
+      --amber:#e0b055; --amber-soft:#e0b05522;
+      --red:#e2848d;   --red-soft:#e2848d1f;
+      --green:#6bbd92; --green-soft:#6bbd921f;
+      --shadow:0 18px 44px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="light"]{
+    --paper:#eceae5; --paper2:#f4f2ee; --card:#ffffff;
+    --ink:#161a22; --muted:#666d7c; --line:#d6d3cb;
+    --navy:#1f3d63; --navy-soft:#1f3d6312; --amber:#a97b1e; --amber-soft:#a97b1e1f;
+    --red:#a32d3c; --red-soft:#a32d3c1a; --green:#2c6e4f; --green-soft:#2c6e4f1a;
+    --shadow:0 14px 34px rgba(28,32,38,.14);
+  }
+  :root[data-theme="dark"]{
+    --paper:#0b0f16; --paper2:#111826; --card:#16202f;
+    --ink:#e8e6df; --muted:#8b93a3; --line:#243347;
+    --navy:#6fa2d8; --navy-soft:#6fa2d81a; --amber:#e0b055; --amber-soft:#e0b05522;
+    --red:#e2848d; --red-soft:#e2848d1f; --green:#6bbd92; --green-soft:#6bbd921f;
+    --shadow:0 18px 44px rgba(0,0,0,.55);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--ff-body);color:var(--ink);line-height:1.5;background:var(--paper);min-height:100vh}
+  .wrap{max-width:1080px;margin:0 auto;padding:16px 16px 60px}
+
+  /* ---- header ---- */
+  .top{display:flex;align-items:center;gap:10px;padding:6px 0 2px}
+  .brand{display:flex;align-items:center;gap:10px;margin-inline-end:auto}
+  .mark{width:38px;height:38px;border-radius:9px;background:var(--navy);color:#fff;display:grid;place-items:center;
+        font-family:var(--ff-display);font-size:21px;font-weight:600;flex:0 0 auto}
+  :root[data-theme="dark"] .mark{color:#0b0f16}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .mark{color:#0b0f16}}
+  .brandtext strong{display:block;font-family:var(--ff-display);font-size:22px;font-weight:600;line-height:1.1}
+  .brandtext span{display:block;font-family:var(--ff-data);font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+  .pill{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);
+        font-size:13px;cursor:pointer;font-family:var(--ff-body);transition:all .15s}
+  .pill:hover{border-color:var(--navy);color:var(--navy)}
+
+  /* ---- project bar ---- */
+  .projbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px;padding:12px 14px;
+           background:var(--card);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow)}
+  .projbar select{flex:1;min-width:170px}
+  .projmeta{font-family:var(--ff-data);font-size:11px;color:var(--muted);width:100%}
+
+  /* ---- tabs ---- */
+  .tabs{display:flex;gap:6px;margin-top:16px;border-bottom:1px solid var(--line);overflow-x:auto}
+  .tab{padding:10px 14px;border:none;background:none;color:var(--muted);font-size:14.5px;font-weight:600;
+       font-family:var(--ff-body);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+  .tab.active{color:var(--navy);border-bottom-color:var(--navy)}
+
+  /* ---- generic ---- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px;margin-top:16px}
+  h2{font-family:var(--ff-display);font-size:21px;margin:0 0 4px;font-weight:600}
+  h3{font-family:var(--ff-display);font-size:17px;margin:18px 0 6px;font-weight:600}
+  .sub{font-size:13.5px;color:var(--muted);margin:0 0 12px}
+  label{display:block;font-family:var(--ff-data);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;
+        color:var(--muted);margin:14px 0 6px;font-weight:600}
+  input,select,textarea{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--paper2);
+        color:var(--ink);font-size:15px;font-family:var(--ff-body);outline:none;transition:border-color .15s}
+  input:focus,select:focus,textarea:focus{border-color:var(--navy)}
+  textarea{min-height:84px;resize:vertical}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row > div{flex:1;min-width:150px}
+  .btn{padding:11px 16px;border-radius:10px;border:1px solid var(--navy);background:var(--navy);color:#fff;
+       font-size:14.5px;font-weight:600;font-family:var(--ff-body);cursor:pointer;transition:filter .15s}
+  :root[data-theme="dark"] .btn{color:#0b0f16}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn{color:#0b0f16}}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:transparent;color:var(--navy);border-color:var(--line)}
+  .btn.small{padding:7px 12px;font-size:13px;border-radius:9px}
+  .btn.danger{background:transparent;color:var(--red);border-color:var(--red)}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .empty{padding:26px 14px;text-align:center;color:var(--muted);font-size:14px}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+
+  /* ---- dashboard tiles ---- */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:4px}
+  .tile{background:var(--paper2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+  .tile .k{font-family:var(--ff-data);font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .tile .v{font-family:var(--ff-display);font-size:25px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums;line-height:1.15}
+  /* The currency rides small next to the number so "730,500 SAR" stays on one line
+     in a 150px tile — a figure that wraps mid-way reads as two numbers at a glance. */
+  .tile .v .cur{font-family:var(--ff-data);font-size:11.5px;font-weight:600;color:var(--muted);margin-inline-start:4px}
+  .tile.good .v .cur{color:var(--green)} .tile.warn .v .cur{color:var(--red)}
+  .tile.warn{background:var(--red-soft);border-color:var(--red)}
+  .tile.warn .v{color:var(--red)}
+  .tile.good .v{color:var(--green)}
+
+  /* ---- deadline board ---- */
+  .dl{display:flex;align-items:center;gap:12px;padding:12px 13px;border:1px solid var(--line);border-radius:11px;
+      background:var(--paper2);margin-top:8px;cursor:pointer}
+  .dl:hover{border-color:var(--navy)}
+  .dl .cnt{flex:0 0 74px;text-align:center;font-family:var(--ff-display);font-size:23px;font-weight:600;line-height:1.05;font-variant-numeric:tabular-nums}
+  .dl .cnt small{display:block;font-family:var(--ff-data);font-size:8.5px;letter-spacing:1.2px;text-transform:uppercase;font-weight:600;opacity:.85}
+  .dl .body{flex:1;min-width:0}
+  .dl .body b{display:block;font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dl .body span{font-size:12.5px;color:var(--muted)}
+  .dl.red{background:var(--red-soft);border-color:var(--red)} .dl.red .cnt{color:var(--red)}
+  .dl.amber{background:var(--amber-soft);border-color:var(--amber)} .dl.amber .cnt{color:var(--amber)}
+  .dl.green .cnt{color:var(--green)}
+
+  /* ---- register ---- */
+  .filters{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 4px}
+  .fchip{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);
+         font-size:12.5px;font-weight:600;font-family:var(--ff-data);cursor:pointer}
+  .fchip.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+  :root[data-theme="dark"] .fchip.active{color:#0b0f16}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .fchip.active{color:#0b0f16}}
+  .vo{display:flex;gap:12px;align-items:flex-start;padding:13px;border:1px solid var(--line);border-radius:11px;
+      background:var(--paper2);margin-top:9px;cursor:pointer}
+  .vo:hover{border-color:var(--navy)}
+  .vo .ref{font-family:var(--ff-data);font-size:11.5px;color:var(--muted);flex:0 0 auto;padding-top:2px}
+  .vo .main{flex:1;min-width:0}
+  .vo .main b{display:block;font-size:15px;font-weight:600}
+  .vo .main .meta{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .vo .amt{flex:0 0 auto;text-align:end;font-family:var(--ff-data);font-size:13.5px;font-variant-numeric:tabular-nums}
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-family:var(--ff-data);font-size:9.5px;
+         letter-spacing:.8px;text-transform:uppercase;font-weight:600;border:1px solid}
+  .b-draft{color:var(--muted);border-color:var(--line)}
+  .b-notice{color:var(--amber);border-color:var(--amber);background:var(--amber-soft)}
+  .b-submitted,.b-review{color:var(--navy);border-color:var(--navy);background:var(--navy-soft)}
+  .b-approved{color:var(--green);border-color:var(--green);background:var(--green-soft)}
+  .b-rejected,.b-disputed{color:var(--red);border-color:var(--red);background:var(--red-soft)}
+
+  /* ---- modal ---- */
+  .modal{position:fixed;inset:0;z-index:50;background:rgba(8,11,16,.55);display:none;overflow-y:auto;padding:18px}
+  .modal.open{display:block}
+  .sheet{max-width:760px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:15px;
+         box-shadow:var(--shadow);padding:20px}
+  .sheethead{display:flex;align-items:flex-start;gap:10px}
+  .sheethead h2{flex:1}
+  .x{border:none;background:none;color:var(--muted);font-size:26px;line-height:1;cursor:pointer;padding:0 4px}
+
+  /* ---- evidence log ---- */
+  .ev{display:flex;gap:10px;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:var(--paper2);margin-top:8px}
+  .ev .d{font-family:var(--ff-data);font-size:11px;color:var(--muted);flex:0 0 82px}
+  .ev .t{flex:1;font-size:13.5px}
+  .ev .t em{display:block;font-style:normal;font-family:var(--ff-data);font-size:10px;letter-spacing:1px;
+            text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+  .ev button{border:none;background:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 2px;flex:0 0 auto}
+
+  /* ---- document preview ---- */
+  #docPreview{background:#fff;color:#111;padding:34px 38px;border-radius:10px;font-family:Georgia,"Times New Roman",serif;
+              font-size:14px;line-height:1.65}
+  #docPreview h1{font-size:17px;margin:0 0 2px;text-align:center;text-transform:uppercase;letter-spacing:1px}
+  #docPreview h2{font-size:14.5px;margin:20px 0 6px;font-family:inherit}
+  #docPreview .lh{text-align:center;color:#555;font-size:11.5px;margin-bottom:20px;border-bottom:1px solid #ccc;padding-bottom:12px}
+  #docPreview table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12.5px}
+  #docPreview th,#docPreview td{border:1px solid #bbb;padding:6px 8px;text-align:start;vertical-align:top}
+  #docPreview th{background:#eee}
+  #docPreview .sig{margin-top:38px;font-size:13px}
+  #docPreview .kv{margin:1px 0}
+  html[dir="rtl"] #docPreview{font-family:"Times New Roman",Georgia,serif}
+
+  @media print{
+    body{background:#fff}
+    body *{visibility:hidden}
+    #docPreview,#docPreview *{visibility:visible}
+    #docPreview{position:absolute;inset-inline-start:0;top:0;width:100%;padding:0;border-radius:0;box-shadow:none}
+  }
+  @media (max-width:560px){
+    .wrap{padding:12px 12px 50px}
+    .dl .cnt{flex-basis:60px;font-size:20px}
+    #docPreview{padding:20px}
+  }
+</style>
+
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand">
+      <div class="mark">س</div>
+      <div class="brandtext"><strong id="brandName">سند · Sanad</strong><span id="brandTag">variation orders</span></div>
+    </div>
+    <button class="pill" id="langBtn">العربية</button>
+    <button class="pill" id="themeBtn">◐</button>
+  </div>
+
+  <div class="projbar">
+    <select id="projSel"></select>
+    <button class="btn small" id="newProjBtn"></button>
+    <button class="btn ghost small" id="editProjBtn"></button>
+    <div class="projmeta" id="projMeta"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="dash"></button>
+    <button class="tab" data-tab="reg"></button>
+    <button class="tab" data-tab="new"></button>
+    <button class="tab" data-tab="data"></button>
+  </div>
+
+  <!-- ============ DASHBOARD ============ -->
+  <section id="tab-dash">
+    <div class="card">
+      <h2 id="dashTitle"></h2>
+      <p class="sub" id="dashSub"></p>
+      <div class="tiles" id="tiles"></div>
+    </div>
+    <div class="card">
+      <h2 id="dlTitle"></h2>
+      <p class="sub" id="dlSub"></p>
+      <div id="dlBoard"></div>
+    </div>
+  </section>
+
+  <!-- ============ REGISTER ============ -->
+  <section id="tab-reg" hidden>
+    <div class="card">
+      <h2 id="regTitle"></h2>
+      <p class="sub" id="regSub"></p>
+      <input id="search" placeholder="">
+      <div class="filters" id="filters"></div>
+      <div id="regList"></div>
+    </div>
+  </section>
+
+  <!-- ============ NEW VO ============ -->
+  <section id="tab-new" hidden>
+    <div class="card">
+      <h2 id="aiTitle"></h2>
+      <p class="sub" id="aiSub"></p>
+      <textarea id="aiText" placeholder=""></textarea>
+      <div class="btnrow">
+        <button class="btn" id="aiBtn"></button>
+        <button class="btn ghost" id="aiClearBtn"></button>
+      </div>
+      <div class="hint" id="aiStatus"></div>
+    </div>
+
+    <div class="card">
+      <h2 id="newTitle"></h2>
+      <p class="sub" id="newSub"></p>
+      <form id="voForm">
+        <div class="row">
+          <div><label id="l-ref"></label><input id="f-ref" required></div>
+          <div><label id="l-date"></label><input id="f-date" type="date" required></div>
+        </div>
+        <label id="l-title"></label><input id="f-title" required>
+        <label id="l-desc"></label><textarea id="f-desc"></textarea>
+        <div class="row">
+          <div><label id="l-by"></label><input id="f-by"></div>
+          <div><label id="l-src"></label><select id="f-src"></select></div>
+        </div>
+        <div class="row">
+          <div><label id="l-clause"></label><input id="f-clause" list="clauses" placeholder="13.3">
+            <datalist id="clauses">
+              <option value="13.1"><option value="13.2"><option value="13.3"><option value="13.4">
+              <option value="20.1"><option value="20.2"><option value="8.4"><option value="12.3">
+            </datalist>
+          </div>
+          <div><label id="l-cost"></label><input id="f-cost" type="number" step="any" min="0"></div>
+          <div><label id="l-time"></label><input id="f-time" type="number" step="1" min="0"></div>
+        </div>
+        <div class="btnrow">
+          <button class="btn" type="submit" id="saveVoBtn"></button>
+          <button class="btn ghost" type="button" id="resetVoBtn"></button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ============ DATA ============ -->
+  <section id="tab-data" hidden>
+    <div class="card">
+      <h2 id="dataTitle"></h2>
+      <p class="sub" id="dataSub"></p>
+      <div class="btnrow">
+        <button class="btn ghost" id="expJson"></button>
+        <button class="btn ghost" id="expCsv"></button>
+        <button class="btn ghost" id="impBtn"></button>
+        <input type="file" id="impFile" accept="application/json,.json" hidden>
+      </div>
+      <h3 id="demoTitle"></h3>
+      <p class="sub" id="demoSub"></p>
+      <div class="btnrow">
+        <button class="btn ghost" id="demoBtn"></button>
+        <button class="btn danger" id="wipeBtn"></button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ VO DETAIL MODAL ============ -->
+<div class="modal" id="voModal">
+  <div class="sheet">
+    <div class="sheethead">
+      <h2 id="mTitle"></h2>
+      <button class="x" data-close="voModal">&times;</button>
+    </div>
+    <div id="mBody"></div>
+  </div>
+</div>
+
+<!-- ============ PROJECT MODAL ============ -->
+<div class="modal" id="projModal">
+  <div class="sheet">
+    <div class="sheethead">
+      <h2 id="pmTitle"></h2>
+      <button class="x" data-close="projModal">&times;</button>
+    </div>
+    <form id="projForm">
+      <label id="l-pname"></label><input id="p-name" required>
+      <div class="row">
+        <div><label id="l-pclient"></label><input id="p-client"></div>
+        <div><label id="l-pcontract"></label><input id="p-contract"></div>
+      </div>
+      <div class="row">
+        <div><label id="l-pcontractor"></label><input id="p-contractor"></div>
+        <div><label id="l-pengineer"></label><input id="p-engineer"></div>
+      </div>
+      <div class="row">
+        <div><label id="l-pform"></label><select id="p-form"></select></div>
+        <div><label id="l-pnotice"></label><input id="p-notice" type="number" min="1" max="365" value="28" required></div>
+        <div><label id="l-pcur"></label><input id="p-cur" value="SAR" maxlength="6"></div>
+      </div>
+      <p class="hint" id="noticeHint"></p>
+      <div class="btnrow">
+        <button class="btn" type="submit" id="saveProjBtn"></button>
+        <button class="btn danger" type="button" id="delProjBtn"></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ DOCUMENT MODAL ============ -->
+<div class="modal" id="docModal">
+  <div class="sheet">
+    <div class="sheethead">
+      <h2 id="dmTitle"></h2>
+      <button class="x" data-close="docModal">&times;</button>
+    </div>
+    <div class="btnrow" style="margin-top:0">
+      <button class="btn" id="printBtn"></button>
+      <button class="btn ghost" id="copyBtn"></button>
+      <button class="btn ghost" id="dlHtmlBtn"></button>
+    </div>
+    <div id="docPreview" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   Sanad · سند — variation order register & contractual notice tracker
+   Single static file. Everything lives in localStorage under LS_KEY,
+   so it opens and works with no account, no server and no network.
+   The only thing that talks out is the optional AI extractor, which
+   posts to a Cloudflare Worker that holds the Anthropic key
+   (same arrangement Bosla uses). Leave aiEndpoint empty and the app
+   falls back to a local rule-based extractor.
+   ================================================================ */
+
+const CONFIG = {
+  aiEndpoint: "",            // e.g. "https://sanad-ai.<you>.workers.dev"  — see vo/SETUP.md
+};
+const LS_KEY = "sanad_v1";
+
+/* ---------------- state ---------------- */
+let S = { projects: [], vos: [], active: null, lang: "ar", theme: "" };
+
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){
+      const p = JSON.parse(raw);
+      S = Object.assign(S, p);
+      S.projects = Array.isArray(S.projects) ? S.projects : [];
+      S.vos      = Array.isArray(S.vos) ? S.vos : [];
+    }
+  }catch(e){ console.warn("state load failed", e); }
+}
+function save(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }
+  catch(e){ console.warn("state save failed", e); }
+}
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+
+/* ---------------- i18n ---------------- */
+const T = {
+  en:{
+    tag:"variation orders", brand:"Sanad · سند",
+    tabs:{dash:"Dashboard", reg:"Register", new:"Log a variation", data:"Data"},
+    newProj:"+ Project", editProj:"Edit",
+    noProject:"No project yet — create one to start.",
+    projMeta:(p)=>`${p.contractRef||"no contract ref"} · ${p.form||"—"} · notice period ${p.noticeDays} days · ${p.currency}`,
+
+    dashTitle:"Where the money stands",
+    dashSub:"Every variation you have logged on this project, and what it is worth.",
+    t_open:"Open variations", t_claimed:"Total claimed", t_approved:"Approved",
+    t_pending:"Awaiting decision", t_risk:"Notice at risk", t_time:"Time impact (days)",
+
+    dlTitle:"Notice deadlines",
+    dlSub:"A variation you were instructed to do but never gave notice for is the one that gets refused. Days left to serve notice under the contract:",
+    dlEmpty:"Nothing waiting on a notice. Every logged variation has been noticed.",
+    daysLeft:"days left", daysOver:"days over", dueToday:"due today",
+    instructed:"Instructed", by:"by",
+
+    regTitle:"Variation register", regSub:"The full record for this project.",
+    searchPh:"Search by reference, title or who instructed it…",
+    regEmpty:"No variations logged yet.",
+    f_all:"All",
+
+    aiTitle:"Paste the instruction",
+    aiSub:"Drop in the email, the site instruction or the minute that started this variation. It gets read and the form below is filled in for you — check it, then save.",
+    aiPh:"e.g. Further to our site walk this morning, please proceed with relocating the 6 fan coil units on level 3 as marked on drawing M-304 rev C. Cost to be agreed…",
+    aiBtn:"Read it and fill the form", aiClear:"Clear",
+    aiWorking:"Reading…",
+    aiOffline:"Filled in using the built-in offline reader (no AI endpoint configured — see vo/SETUP.md). Check every field before saving.",
+    aiDone:"Filled in. Check every field before saving — this is a draft, not a decision.",
+    aiFail:"Could not read that. Fill the form in by hand below.",
+    aiEmpty:"Paste some text first.",
+
+    newTitle:"Log a variation", newSub:"The moment it is instructed — not the week it is priced.",
+    l_ref:"Our reference", l_date:"Date instructed", l_title:"Title",
+    l_desc:"What was instructed", l_by:"Instructed by", l_src:"How it was instructed",
+    l_clause:"Contract clause", l_cost:"Cost impact", l_time:"Time impact (days)",
+    saveVo:"Save to register", resetVo:"Clear form",
+    savedVo:"Saved. Notice deadline set.",
+
+    dataTitle:"Your data", dataSub:"Everything is stored on this device only. Take a backup before you change phone or clear the browser.",
+    expJson:"Download backup (JSON)", expCsv:"Export register (CSV)", impBtn:"Restore from backup",
+    demoTitle:"Show it to someone", demoSub:"Loads a worked example project so you can put the app in front of a commercial manager without typing anything.",
+    demoBtn:"Load the example project", wipe:"Erase everything",
+    wipeConfirm:"Erase every project and variation on this device? This cannot be undone.",
+    impFail:"That file could not be read as a Sanad backup.",
+    impOk:"Backup restored.",
+
+    pmNew:"New project", pmEdit:"Edit project",
+    l_pname:"Project name", l_pclient:"Employer / client", l_pcontract:"Contract reference",
+    l_pcontractor:"Contractor (you)", l_pengineer:"Engineer / consultant",
+    l_pform:"Form of contract", l_pnotice:"Notice period (days)", l_pcur:"Currency",
+    noticeHint:"The notice period is the window the contract gives you to notify a variation or a claim after it is instructed. FIDIC-based contracts commonly use 28 days — check your own conditions and set it here, because every deadline in the app is counted from this number.",
+    saveProj:"Save project", delProj:"Delete project",
+    delProjConfirm:"Delete this project and every variation logged under it?",
+
+    st:{draft:"Notice not served", notice:"Notice served", submitted:"Submitted",
+        review:"Under review", approved:"Approved", rejected:"Rejected", disputed:"In dispute"},
+    src:{si:"Site instruction", email:"Email", verbal:"Verbal", rfi:"RFI / TQ response",
+         drawing:"Drawing revision", minutes:"Meeting minutes", other:"Other"},
+    forms:{"FIDIC Red Book":"FIDIC Red Book","FIDIC Yellow Book":"FIDIC Yellow Book",
+           "FIDIC Silver Book":"FIDIC Silver Book","NEC":"NEC","Bespoke / other":"Bespoke / other"},
+
+    mStatus:"Status", mMove:"Move to", mEvidence:"Evidence trail",
+    mEvSub:"Every document that proves this happened. This list becomes the chronology in the substantiation pack.",
+    mAddEv:"Add", mEvDate:"Date", mEvType:"Type", mEvNote:"What it is",
+    mEvPh:"e.g. Engineer's email confirming the instruction",
+    mEvEmpty:"Nothing recorded yet. A variation with no evidence trail is a variation you will lose.",
+    mDocs:"Generate", mNotice:"Notice of variation", mSubmission:"Variation submission",
+    mPack:"Substantiation pack", mDelete:"Delete this variation",
+    mDelConfirm:"Delete this variation and its evidence trail?",
+    mApproved:"Amount approved", mSaveAmt:"Save",
+    mNoticeSent:"Notice served on",
+    mOverdue:"The notice window closed. Record the reason and take advice before submitting.",
+
+    print:"Print / save as PDF", copy:"Copy text", copied:"Copied", dlHtml:"Download",
+    docNotice:"NOTICE OF VARIATION", docSubmission:"VARIATION ORDER SUBMISSION", docPack:"SUBSTANTIATION PACK",
+    dTo:"To", dFrom:"From", dProject:"Project", dContract:"Contract", dDate:"Date",
+    dOurRef:"Our ref", dSubject:"Subject", dClause:"Clause",
+    dNoticeBody:(v,p,f)=>
+      `We refer to the instruction described below, issued on ${f(v.dateInstructed)}${v.instructedBy?` by ${v.instructedBy}`:""}${v.source?` (${v.source})`:""}.\n\n`+
+      `The work instructed constitutes a variation to the Works${v.clause?` under Clause ${v.clause} of the Contract`:""}. In accordance with the Contract we hereby give notice of that variation and of our intention to claim the resulting adjustment to the Contract Price and, where applicable, to the Time for Completion.\n\n`+
+      `Description of the instructed work:\n${v.description||v.title}\n\n`+
+      `Our present estimate of the effect is set out in the table below. This estimate is given for notice purposes on the information available at the date of this letter; it is not a fixed quotation and we reserve the right to adjust it once the work is fully defined and its effects are measured.\n\n`+
+      `Contemporary records of the resources and time expended are being kept and will be made available for inspection on request. All our rights under the Contract are reserved.`,
+    dSubmissionBody:(v,p,f)=>
+      `Further to our notice of variation, we submit below our detailed submission for the variation described, for your review and instruction.\n\n`+
+      `Description of the work:\n${v.description||v.title}\n\n`+
+      `The instruction was issued on ${f(v.dateInstructed)}${v.instructedBy?` by ${v.instructedBy}`:""}. The evaluation below is made${v.clause?` under Clause ${v.clause}`:""} and is supported by the records listed in the schedule of supporting documents.\n\n`+
+      `We request your written confirmation of the adjustment to the Contract Price and to the Time for Completion set out below.`,
+    dPackBody:(v,p,f)=>
+      `This pack sets out, in date order, the record supporting the variation described above. It is compiled from contemporary records kept at the time of the events.`,
+    dEffect:"Effect on the contract", dCostEffect:"Adjustment to the Contract Price",
+    dTimeEffect:"Extension of Time sought", dDays:"days", dNil:"Nil / to be advised",
+    dChronology:"Chronology", dDocs:"Schedule of supporting documents",
+    dNoDocs:"No supporting documents have been recorded against this variation.",
+    dSig:"Yours faithfully,", dFor:"for and on behalf of",
+    dNoticeDue:"Notice due by",
+    dDisclaimer:"Prepared from the project record. Review against your contract conditions before issue.",
+  },
+  ar:{
+    tag:"أوامر التغيير", brand:"سند · Sanad",
+    tabs:{dash:"اللوحة", reg:"السجل", new:"تسجيل أمر تغيير", data:"البيانات"},
+    newProj:"+ مشروع", editProj:"تعديل",
+    noProject:"ما فيه مشروع بعد — أنشئ واحد عشان تبدأ.",
+    projMeta:(p)=>`${p.contractRef||"بدون رقم عقد"} · ${p.form||"—"} · مهلة الإشعار ${p.noticeDays} يوم · ${p.currency}`,
+
+    dashTitle:"وين واقفة الفلوس",
+    dashSub:"كل أمر تغيير سجّلته في هذا المشروع، وكم يساوي.",
+    t_open:"أوامر مفتوحة", t_claimed:"إجمالي المطالبات", t_approved:"معتمد",
+    t_pending:"بانتظار القرار", t_risk:"إشعارات في خطر", t_time:"أثر زمني (يوم)",
+
+    dlTitle:"مهل الإشعارات",
+    dlSub:"أمر التغيير اللي نُفِّذ وما أُرسل عنه إشعار هو اللي يُرفض. الأيام المتبقية لإرسال الإشعار حسب العقد:",
+    dlEmpty:"ما فيه شي منتظر إشعار. كل أمر مسجّل أُرسل عنه إشعار.",
+    daysLeft:"يوم متبقي", daysOver:"يوم متأخر", dueToday:"اليوم آخر يوم",
+    instructed:"صدر في", by:"من",
+
+    regTitle:"سجل أوامر التغيير", regSub:"السجل الكامل لهذا المشروع.",
+    searchPh:"ابحث برقم الأمر أو العنوان أو مُصدِر التعليمات…",
+    regEmpty:"ما سُجِّل أي أمر تغيير بعد.",
+    f_all:"الكل",
+
+    aiTitle:"الصق التعليمات",
+    aiSub:"حط الإيميل أو تعليمات الموقع أو محضر الاجتماع اللي بدأ منه أمر التغيير. يُقرأ ويُعبّى النموذج تحت — راجعه، بعدين احفظ.",
+    aiPh:"مثال: بناءً على جولة الموقع صباح اليوم، يُرجى البدء بنقل وحدات المناولة الست في الدور الثالث حسب المخطط M-304 مراجعة C. التكلفة يُتفق عليها لاحقًا…",
+    aiBtn:"اقرأه وعبّي النموذج", aiClear:"مسح",
+    aiWorking:"جاري القراءة…",
+    aiOffline:"عُبِّئ بالقارئ المدمج بدون إنترنت (ما فيه نقطة ذكاء اصطناعي مربوطة — راجع vo/SETUP.md). راجع كل حقل قبل الحفظ.",
+    aiDone:"تم التعبئة. راجع كل حقل قبل الحفظ — هذي مسودة مو قرار.",
+    aiFail:"ما قدرت أقرأه. عبّي النموذج تحت يدويًا.",
+    aiEmpty:"الصق النص أولًا.",
+
+    newTitle:"تسجيل أمر تغيير", newSub:"لحظة ما تصدر التعليمات — مو الأسبوع اللي بعده لما تتسعّر.",
+    l_ref:"رقمنا المرجعي", l_date:"تاريخ صدور التعليمات", l_title:"العنوان",
+    l_desc:"وش اللي طُلب تنفيذه", l_by:"صدرت من", l_src:"طريقة إصدارها",
+    l_clause:"بند العقد", l_cost:"الأثر المالي", l_time:"الأثر الزمني (يوم)",
+    saveVo:"احفظ في السجل", resetVo:"تفريغ النموذج",
+    savedVo:"تم الحفظ. وضُبطت مهلة الإشعار.",
+
+    dataTitle:"بياناتك", dataSub:"كل شي محفوظ على هذا الجهاز فقط. خذ نسخة احتياطية قبل ما تغيّر جوالك أو تمسح المتصفح.",
+    expJson:"تحميل نسخة احتياطية (JSON)", expCsv:"تصدير السجل (CSV)", impBtn:"استرجاع من نسخة",
+    demoTitle:"اعرضه على أحد", demoSub:"يحمّل مشروعًا نموذجيًا كامل عشان تعرض التطبيق على مدير تجاري بدون ما تكتب حرف.",
+    demoBtn:"حمّل المشروع النموذجي", wipe:"امسح كل شي",
+    wipeConfirm:"مسح كل المشاريع وأوامر التغيير من هذا الجهاز؟ ما فيه تراجع.",
+    impFail:"ما قدرت أقرأ هذا الملف كنسخة سند.",
+    impOk:"تم الاسترجاع.",
+
+    pmNew:"مشروع جديد", pmEdit:"تعديل المشروع",
+    l_pname:"اسم المشروع", l_pclient:"المالك / العميل", l_pcontract:"رقم العقد",
+    l_pcontractor:"المقاول (أنت)", l_pengineer:"المهندس / الاستشاري",
+    l_pform:"نموذج العقد", l_pnotice:"مهلة الإشعار (يوم)", l_pcur:"العملة",
+    noticeHint:"مهلة الإشعار هي المدة اللي يعطيك إياها العقد عشان تُشعِر بأمر التغيير أو المطالبة بعد صدورها. عقود فيديك عادةً 28 يوم — راجع شروط عقدك أنت وحطها هنا، لأن كل المهل في التطبيق تُحسب من هذا الرقم.",
+    saveProj:"حفظ المشروع", delProj:"حذف المشروع",
+    delProjConfirm:"حذف هذا المشروع وكل أوامر التغيير المسجّلة تحته؟",
+
+    st:{draft:"ما أُرسل إشعار", notice:"أُرسل الإشعار", submitted:"مُقدَّم",
+        review:"تحت الدراسة", approved:"معتمد", rejected:"مرفوض", disputed:"متنازع عليه"},
+    src:{si:"تعليمات موقع", email:"إيميل", verbal:"شفهي", rfi:"رد على استفسار (RFI)",
+         drawing:"مراجعة مخطط", minutes:"محضر اجتماع", other:"غير ذلك"},
+    forms:{"FIDIC Red Book":"فيديك — الكتاب الأحمر","FIDIC Yellow Book":"فيديك — الكتاب الأصفر",
+           "FIDIC Silver Book":"فيديك — الكتاب الفضي","NEC":"NEC","Bespoke / other":"عقد خاص / غير ذلك"},
+
+    mStatus:"الحالة", mMove:"انقله إلى", mEvidence:"سلسلة الأدلة",
+    mEvSub:"كل مستند يثبت إن هذا صار. هذي القائمة تتحول للتسلسل الزمني في ملف الإسناد.",
+    mAddEv:"إضافة", mEvDate:"التاريخ", mEvType:"النوع", mEvNote:"وش هو",
+    mEvPh:"مثال: إيميل المهندس يؤكد التعليمات",
+    mEvEmpty:"ما سُجِّل شي بعد. أمر تغيير بلا سلسلة أدلة هو أمر خسرته من الآن.",
+    mDocs:"توليد المستندات", mNotice:"إشعار بأمر تغيير", mSubmission:"تقديم أمر التغيير",
+    mPack:"ملف الإسناد", mDelete:"حذف أمر التغيير",
+    mDelConfirm:"حذف أمر التغيير وسلسلة أدلته؟",
+    mApproved:"المبلغ المعتمد", mSaveAmt:"حفظ",
+    mNoticeSent:"أُرسل الإشعار في",
+    mOverdue:"انتهت مهلة الإشعار. سجّل السبب وخذ رأيًا فنيًا قبل التقديم.",
+
+    print:"طباعة / حفظ PDF", copy:"نسخ النص", copied:"تم النسخ", dlHtml:"تحميل",
+    docNotice:"إشعار بأمر تغيير", docSubmission:"تقديم أمر تغيير", docPack:"ملف الإسناد",
+    dTo:"إلى", dFrom:"من", dProject:"المشروع", dContract:"العقد", dDate:"التاريخ",
+    dOurRef:"مرجعنا", dSubject:"الموضوع", dClause:"البند",
+    dNoticeBody:(v,p,f)=>
+      // "عن طريق X" rather than "(X)": a source label like "رد على استفسار (RFI)" already
+      // carries its own brackets, and nesting them around mixed Arabic/Latin text makes the
+      // closing bracket jump to the wrong side of the line.
+      `نشير إلى التعليمات الموضحة أدناه، الصادرة بتاريخ ${f(v.dateInstructed)}${v.instructedBy?` من ${v.instructedBy}`:""}${v.source?` عن طريق ${v.source}`:""}.\n\n`+
+      `تُشكّل الأعمال المطلوبة تغييرًا في نطاق الأعمال${v.clause?` بموجب البند ${v.clause} من العقد`:""}. ووفقًا للعقد، نُشعركم بموجب هذا الكتاب بهذا التغيير وبعزمنا على المطالبة بما يترتب عليه من تعديل في قيمة العقد، وفي مدة الإنجاز متى انطبق ذلك.\n\n`+
+      `وصف الأعمال الصادرة بها التعليمات:\n${v.description||v.title}\n\n`+
+      `تقديرنا الحالي للأثر مبيّن في الجدول أدناه. وهذا التقدير مقدَّم لغرض الإشعار وبناءً على المعلومات المتاحة بتاريخ هذا الكتاب، وهو ليس عرض سعر نهائيًا، ونحتفظ بحقنا في تعديله بعد اكتمال تحديد الأعمال وقياس آثارها.\n\n`+
+      `ويجري الاحتفاظ بسجلات آنية للموارد والوقت المستهلك، وستكون متاحة للاطلاع عند الطلب. وجميع حقوقنا بموجب العقد محفوظة.`,
+    dSubmissionBody:(v,p,f)=>
+      `إلحاقًا بإشعارنا بأمر التغيير، نقدّم لكم أدناه تقديمنا التفصيلي لأمر التغيير الموضح، للمراجعة والتوجيه.\n\n`+
+      `وصف الأعمال:\n${v.description||v.title}\n\n`+
+      `صدرت التعليمات بتاريخ ${f(v.dateInstructed)}${v.instructedBy?` من ${v.instructedBy}`:""}. والتقييم أدناه معدّ${v.clause?` بموجب البند ${v.clause}`:""} ومدعوم بالسجلات المدرجة في جدول المستندات المؤيدة.\n\n`+
+      `نرجو تأكيدكم الخطي للتعديل في قيمة العقد وفي مدة الإنجاز المبيّن أدناه.`,
+    dPackBody:(v,p,f)=>
+      `يعرض هذا الملف، بالترتيب الزمني، السجل المؤيد لأمر التغيير الموضح أعلاه، وهو مُجمَّع من سجلات آنية حُفِظت وقت وقوع الأحداث.`,
+    dEffect:"الأثر على العقد", dCostEffect:"التعديل في قيمة العقد",
+    dTimeEffect:"تمديد المدة المطلوب", dDays:"يوم", dNil:"لا يوجد / يُبلَّغ لاحقًا",
+    dChronology:"التسلسل الزمني", dDocs:"جدول المستندات المؤيدة",
+    dNoDocs:"لم تُسجَّل مستندات مؤيدة لأمر التغيير هذا.",
+    dSig:"وتفضلوا بقبول فائق الاحترام،", dFor:"عن وبالنيابة عن",
+    dNoticeDue:"موعد الإشعار",
+    dDisclaimer:"أُعِدّ من سجل المشروع. راجعه مقابل شروط عقدك قبل الإصدار.",
+  }
+};
+const t = () => T[S.lang];
+
+/* ---------------- dates ---------------- */
+const DAY = 86400000;
+function today(){ const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function parseDate(s){
+  if(!s) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s).trim());
+  if(!m) return null;
+  const d = new Date(+m[1], +m[2]-1, +m[3]);
+  return isNaN(d.getTime()) ? null : d;
+}
+function isoDate(d){
+  const p = (n) => String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+function addDays(d, n){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()+n); }
+function daysBetween(a, b){ return Math.round((b - a) / DAY); }
+function fmtDate(s){
+  const d = parseDate(s);
+  if(!d) return s || "—";
+  const months = S.lang === "ar"
+    ? ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"]
+    : ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+function fmtMoney(n, cur){
+  const v = Number(n);
+  if(!isFinite(v) || !v) return "—";
+  // Western digits in both languages. Arabic-Indic numerals render fine, but contract
+  // sums in the Gulf are written 184,000 — a notice letter that says ١٨٤٬٠٠٠ looks wrong
+  // to the commercial manager reading it, and money is the one field nobody should squint at.
+  return v.toLocaleString("en-US", {maximumFractionDigits:2}) + " " + (cur || "");
+}
+
+/* ---------------- notice maths ----------------
+   The whole point of the product. A variation still sitting at "draft"
+   has an open contractual notice window running from the date it was
+   instructed. Once notice is served the clock stops and never restarts. */
+function noticeInfo(vo, proj){
+  const inst = parseDate(vo.dateInstructed);
+  const days = Number(proj && proj.noticeDays) || 28;
+  if(!inst) return null;
+  const due = addDays(inst, days);
+  const left = daysBetween(today(), due);
+  const served = vo.status !== "draft";
+  let state = "green";
+  if(!served){
+    if(left < 0) state = "red";
+    else if(left <= 7) state = "amber";
+  }
+  return { due, left, served, state };
+}
+
+/* ---------------- helpers ---------------- */
+const $  = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const activeProject = () => S.projects.find(p => p.id === S.active) || null;
+const projectVos = () => S.vos.filter(v => v.projectId === S.active);
+function srcLabel(key){ return t().src[key] || key || ""; }
+
+/* ================================================================
+   RENDER
+   ================================================================ */
+function applyLang(){
+  const L = t();
+  document.documentElement.lang = S.lang;
+  document.documentElement.dir  = S.lang === "ar" ? "rtl" : "ltr";
+  $("langBtn").textContent = S.lang === "ar" ? "English" : "العربية";
+  $("brandName").textContent = L.brand;
+  $("brandTag").textContent  = L.tag;
+  document.querySelectorAll(".tab").forEach(b => b.textContent = L.tabs[b.dataset.tab]);
+
+  $("newProjBtn").textContent = L.newProj;
+  $("editProjBtn").textContent = L.editProj;
+  $("dashTitle").textContent = L.dashTitle; $("dashSub").textContent = L.dashSub;
+  $("dlTitle").textContent = L.dlTitle;     $("dlSub").textContent = L.dlSub;
+  $("regTitle").textContent = L.regTitle;   $("regSub").textContent = L.regSub;
+  $("search").placeholder = L.searchPh;
+  $("aiTitle").textContent = L.aiTitle;     $("aiSub").textContent = L.aiSub;
+  $("aiText").placeholder = L.aiPh;
+  $("aiBtn").textContent = L.aiBtn;         $("aiClearBtn").textContent = L.aiClear;
+  $("newTitle").textContent = L.newTitle;   $("newSub").textContent = L.newSub;
+  $("l-ref").textContent = L.l_ref;   $("l-date").textContent = L.l_date;
+  $("l-title").textContent = L.l_title; $("l-desc").textContent = L.l_desc;
+  $("l-by").textContent = L.l_by;     $("l-src").textContent = L.l_src;
+  $("l-clause").textContent = L.l_clause; $("l-cost").textContent = L.l_cost;
+  $("l-time").textContent = L.l_time;
+  $("saveVoBtn").textContent = L.saveVo; $("resetVoBtn").textContent = L.resetVo;
+  $("dataTitle").textContent = L.dataTitle; $("dataSub").textContent = L.dataSub;
+  $("expJson").textContent = L.expJson; $("expCsv").textContent = L.expCsv; $("impBtn").textContent = L.impBtn;
+  $("demoTitle").textContent = L.demoTitle; $("demoSub").textContent = L.demoSub;
+  $("demoBtn").textContent = L.demoBtn; $("wipeBtn").textContent = L.wipe;
+  $("l-pname").textContent = L.l_pname; $("l-pclient").textContent = L.l_pclient;
+  $("l-pcontract").textContent = L.l_pcontract; $("l-pcontractor").textContent = L.l_pcontractor;
+  $("l-pengineer").textContent = L.l_pengineer; $("l-pform").textContent = L.l_pform;
+  $("l-pnotice").textContent = L.l_pnotice; $("l-pcur").textContent = L.l_pcur;
+  $("noticeHint").textContent = L.noticeHint;
+  $("saveProjBtn").textContent = L.saveProj; $("delProjBtn").textContent = L.delProj;
+  $("printBtn").textContent = L.print; $("copyBtn").textContent = L.copy; $("dlHtmlBtn").textContent = L.dlHtml;
+
+  // source + contract-form dropdowns
+  $("f-src").innerHTML = Object.keys(L.src).map(k => `<option value="${k}">${esc(L.src[k])}</option>`).join("");
+  $("p-form").innerHTML = Object.keys(L.forms).map(k => `<option value="${esc(k)}">${esc(L.forms[k])}</option>`).join("");
+}
+
+function renderProjBar(){
+  const L = t();
+  const sel = $("projSel");
+  sel.innerHTML = S.projects.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("")
+    || `<option value="">${esc(L.noProject)}</option>`;
+  if(S.active) sel.value = S.active;
+  const p = activeProject();
+  $("projMeta").textContent = p ? L.projMeta(p) : L.noProject;
+  $("editProjBtn").hidden = !p;
+}
+
+function renderDash(){
+  const L = t(), p = activeProject(), vos = projectVos();
+  const cur = p ? p.currency : "";
+  const open     = vos.filter(v => v.status !== "approved" && v.status !== "rejected");
+  const claimed  = vos.filter(v => v.status !== "rejected").reduce((s,v) => s + (Number(v.costImpact)||0), 0);
+  const approved = vos.filter(v => v.status === "approved")
+                      .reduce((s,v) => s + (Number(v.amountApproved != null && v.amountApproved !== "" ? v.amountApproved : v.costImpact)||0), 0);
+  const pending  = vos.filter(v => ["notice","submitted","review","disputed"].includes(v.status))
+                      .reduce((s,v) => s + (Number(v.costImpact)||0), 0);
+  const risk     = vos.filter(v => { const n = noticeInfo(v, p); return n && !n.served && n.left <= 7; }).length;
+  const timeDays = vos.filter(v => v.status !== "rejected").reduce((s,v) => s + (Number(v.timeImpact)||0), 0);
+
+  const money = (n) => Number(n)
+    ? `${esc(Number(n).toLocaleString("en-US", {maximumFractionDigits:2}))}<span class="cur">${esc(cur||"")}</span>`
+    : "—";
+  $("tiles").innerHTML = [
+    {k:L.t_open,     v:esc(open.length)},
+    {k:L.t_claimed,  v:money(claimed)},
+    {k:L.t_approved, v:money(approved), cls:approved ? "good" : ""},
+    {k:L.t_pending,  v:money(pending)},
+    {k:L.t_risk,     v:esc(risk), cls:risk ? "warn" : ""},
+    {k:L.t_time,     v:esc(timeDays)},
+  ].map(x => `<div class="tile ${x.cls||""}"><div class="k">${esc(x.k)}</div><div class="v">${x.v}</div></div>`).join("");
+
+  // deadline board — only variations with the notice clock still running
+  const waiting = vos.filter(v => v.status === "draft")
+                     .map(v => ({v, n:noticeInfo(v, p)}))
+                     .filter(x => x.n)
+                     .sort((a,b) => a.n.left - b.n.left);
+  $("dlBoard").innerHTML = waiting.length ? waiting.map(({v,n}) => {
+    const late = n.left < 0;
+    const num  = Math.abs(n.left);
+    const cap  = n.left === 0 ? L.dueToday : (late ? L.daysOver : L.daysLeft);
+    return `<div class="dl ${n.state}" data-vo="${v.id}">
+      <div class="cnt">${n.left === 0 ? "!" : num}<small>${esc(cap)}</small></div>
+      <div class="body">
+        <b>${esc(v.ref)} — ${esc(v.title)}</b>
+        <span>${esc(L.instructed)} ${esc(fmtDate(v.dateInstructed))}${v.instructedBy ? ` · ${esc(L.by)} ${esc(v.instructedBy)}` : ""}</span>
+      </div>
+    </div>`;
+  }).join("") : `<div class="empty">${esc(L.dlEmpty)}</div>`;
+
+  $("dlBoard").querySelectorAll("[data-vo]").forEach(el =>
+    el.addEventListener("click", () => openVo(el.dataset.vo)));
+}
+
+let filterStatus = "all";
+function renderRegister(){
+  const L = t(), p = activeProject();
+  const keys = ["all","draft","notice","submitted","review","approved","rejected","disputed"];
+  $("filters").innerHTML = keys.map(k =>
+    `<button class="fchip ${filterStatus === k ? "active" : ""}" data-f="${k}">${esc(k === "all" ? L.f_all : L.st[k])}</button>`).join("");
+  $("filters").querySelectorAll("[data-f]").forEach(b =>
+    b.addEventListener("click", () => { filterStatus = b.dataset.f; renderRegister(); }));
+
+  const q = ($("search").value || "").trim().toLowerCase();
+  let list = projectVos();
+  if(filterStatus !== "all") list = list.filter(v => v.status === filterStatus);
+  if(q) list = list.filter(v =>
+    [v.ref, v.title, v.instructedBy, v.description].some(x => String(x||"").toLowerCase().includes(q)));
+  list.sort((a,b) => String(b.dateInstructed).localeCompare(String(a.dateInstructed)));
+
+  $("regList").innerHTML = list.length ? list.map(v => {
+    const n = noticeInfo(v, p);
+    const flag = n && !n.served && n.left <= 7
+      ? ` <span class="badge b-${n.left < 0 ? "rejected" : "notice"}">${n.left < 0 ? esc(L.daysOver) : esc(L.daysLeft)}: ${Math.abs(n.left)}</span>` : "";
+    return `<div class="vo" data-vo="${v.id}">
+      <div class="ref">${esc(v.ref)}</div>
+      <div class="main">
+        <b>${esc(v.title)}</b>
+        <div class="meta">${esc(fmtDate(v.dateInstructed))}${v.instructedBy ? ` · ${esc(v.instructedBy)}` : ""}</div>
+        <div style="margin-top:5px"><span class="badge b-${v.status}">${esc(L.st[v.status])}</span>${flag}</div>
+      </div>
+      <div class="amt">${esc(fmtMoney(v.costImpact, p && p.currency))}${
+        Number(v.timeImpact) ? `<div style="color:var(--muted);font-size:11.5px">+${Number(v.timeImpact)} ${esc(L.dDays)}</div>` : ""}</div>
+    </div>`;
+  }).join("") : `<div class="empty">${esc(L.regEmpty)}</div>`;
+
+  $("regList").querySelectorAll("[data-vo]").forEach(el =>
+    el.addEventListener("click", () => openVo(el.dataset.vo)));
+}
+
+function renderAll(){ renderProjBar(); renderDash(); renderRegister(); }
+
+/* ================================================================
+   VO DETAIL
+   ================================================================ */
+let openVoId = null;
+function openVo(id){
+  const L = t(), p = activeProject(), v = S.vos.find(x => x.id === id);
+  if(!v) return;
+  openVoId = id;
+  const n = noticeInfo(v, p);
+  $("mTitle").textContent = `${v.ref} — ${v.title}`;
+
+  const statusOpts = Object.keys(L.st).map(k =>
+    `<option value="${k}" ${v.status === k ? "selected" : ""}>${esc(L.st[k])}</option>`).join("");
+
+  const ev = (v.evidence || []).slice().sort((a,b) => String(a.date).localeCompare(String(b.date)));
+
+  $("mBody").innerHTML = `
+    <div class="tiles" style="margin-bottom:6px">
+      <div class="tile"><div class="k">${esc(L.instructed)}</div><div class="v" style="font-size:16px">${esc(fmtDate(v.dateInstructed))}</div></div>
+      <div class="tile ${n && !n.served && n.left < 0 ? "warn" : ""}">
+        <div class="k">${esc(L.dNoticeDue)}</div>
+        <div class="v" style="font-size:16px">${n ? esc(fmtDate(isoDate(n.due))) : "—"}</div></div>
+      <div class="tile"><div class="k">${esc(L.l_cost)}</div><div class="v" style="font-size:16px">${esc(fmtMoney(v.costImpact, p && p.currency))}</div></div>
+      <div class="tile"><div class="k">${esc(L.l_time)}</div><div class="v" style="font-size:16px">${Number(v.timeImpact)||0}</div></div>
+    </div>
+    ${n && !n.served && n.left < 0 ? `<p class="hint" style="color:var(--red)">${esc(L.mOverdue)}</p>` : ""}
+
+    ${v.description ? `<p style="font-size:14.5px;white-space:pre-wrap;margin:12px 0 0">${esc(v.description)}</p>` : ""}
+    <p class="hint">${esc(L.l_src)}: ${esc(srcLabel(v.source))}${v.instructedBy ? ` · ${esc(L.l_by)}: ${esc(v.instructedBy)}` : ""}${v.clause ? ` · ${esc(L.dClause)} ${esc(v.clause)}` : ""}</p>
+
+    <h3>${esc(L.mStatus)}</h3>
+    <div class="row">
+      <div><label>${esc(L.mMove)}</label><select id="mStatusSel">${statusOpts}</select></div>
+      <div><label>${esc(L.mApproved)}</label><input id="mAmt" type="number" step="any" min="0" value="${v.amountApproved != null ? esc(v.amountApproved) : ""}"></div>
+    </div>
+    <div class="btnrow"><button class="btn small" id="mSaveStatus">${esc(L.mSaveAmt)}</button></div>
+    ${v.dateNotice ? `<p class="hint">${esc(L.mNoticeSent)} ${esc(fmtDate(v.dateNotice))}</p>` : ""}
+
+    <h3>${esc(L.mEvidence)}</h3>
+    <p class="sub">${esc(L.mEvSub)}</p>
+    <div class="row">
+      <div style="flex:0 0 150px"><label>${esc(L.mEvDate)}</label><input id="evDate" type="date" value="${esc(isoDate(today()))}"></div>
+      <div style="flex:0 0 160px"><label>${esc(L.mEvType)}</label><select id="evType">${
+        Object.keys(L.src).map(k => `<option value="${k}">${esc(L.src[k])}</option>`).join("")}</select></div>
+      <div><label>${esc(L.mEvNote)}</label><input id="evNote" placeholder="${esc(L.mEvPh)}"></div>
+    </div>
+    <div class="btnrow"><button class="btn small" id="evAdd">${esc(L.mAddEv)}</button></div>
+    <div id="evList">${ ev.length ? ev.map(e => `
+      <div class="ev">
+        <div class="d">${esc(fmtDate(e.date))}</div>
+        <div class="t"><em>${esc(srcLabel(e.type))}</em>${esc(e.note)}</div>
+        <button data-ev="${e.id}" title="delete">&times;</button>
+      </div>`).join("") : `<div class="empty">${esc(L.mEvEmpty)}</div>` }</div>
+
+    <h3>${esc(L.mDocs)}</h3>
+    <div class="btnrow">
+      <button class="btn" data-doc="notice">${esc(L.mNotice)}</button>
+      <button class="btn ghost" data-doc="submission">${esc(L.mSubmission)}</button>
+      <button class="btn ghost" data-doc="pack">${esc(L.mPack)}</button>
+    </div>
+    <div class="btnrow" style="margin-top:22px">
+      <button class="btn danger small" id="mDel">${esc(L.mDelete)}</button>
+    </div>`;
+
+  $("mSaveStatus").addEventListener("click", () => {
+    const prev = v.status;
+    v.status = $("mStatusSel").value;
+    const amt = $("mAmt").value;
+    v.amountApproved = amt === "" ? null : Number(amt);
+    // serving notice stops the clock — stamp the day it happened, once
+    if(prev === "draft" && v.status !== "draft" && !v.dateNotice) v.dateNotice = isoDate(today());
+    if(v.status === "draft") v.dateNotice = null;
+    save(); renderAll(); openVo(id);
+  });
+
+  $("evAdd").addEventListener("click", () => {
+    const note = $("evNote").value.trim();
+    if(!note) return;
+    v.evidence = v.evidence || [];
+    v.evidence.push({ id:uid(), date:$("evDate").value || isoDate(today()), type:$("evType").value, note });
+    save(); openVo(id);
+  });
+  $("evList").querySelectorAll("[data-ev]").forEach(b => b.addEventListener("click", () => {
+    v.evidence = (v.evidence || []).filter(e => e.id !== b.dataset.ev);
+    save(); openVo(id);
+  }));
+
+  $("mBody").querySelectorAll("[data-doc]").forEach(b =>
+    b.addEventListener("click", () => buildDoc(b.dataset.doc, v, p)));
+
+  $("mDel").addEventListener("click", () => {
+    if(!confirm(L.mDelConfirm)) return;
+    S.vos = S.vos.filter(x => x.id !== id);
+    save(); closeModal("voModal"); renderAll();
+  });
+
+  $("voModal").classList.add("open");
+}
+
+/* ================================================================
+   DOCUMENTS
+   ================================================================ */
+function buildDoc(kind, v, p){
+  const L = t();
+  const cur = p ? p.currency : "";
+  const n = noticeInfo(v, p);
+  const head = kind === "notice" ? L.docNotice : kind === "submission" ? L.docSubmission : L.docPack;
+  const bodyFn = kind === "notice" ? L.dNoticeBody : kind === "submission" ? L.dSubmissionBody : L.dPackBody;
+  const body = bodyFn(Object.assign({}, v, {source:srcLabel(v.source)}), p || {}, fmtDate);
+
+  const ev = (v.evidence || []).slice().sort((a,b) => String(a.date).localeCompare(String(b.date)));
+  const chron = ev.length ? `
+    <h2>${esc(kind === "pack" ? L.dChronology : L.dDocs)}</h2>
+    <table><thead><tr><th style="width:110px">${esc(L.dDate)}</th><th style="width:150px">${esc(L.mEvType)}</th><th>${esc(L.mEvNote)}</th></tr></thead>
+    <tbody>${ev.map(e => `<tr><td>${esc(fmtDate(e.date))}</td><td>${esc(srcLabel(e.type))}</td><td>${esc(e.note)}</td></tr>`).join("")}</tbody></table>`
+    : `<h2>${esc(kind === "pack" ? L.dChronology : L.dDocs)}</h2><p>${esc(L.dNoDocs)}</p>`;
+
+  const effect = `
+    <h2>${esc(L.dEffect)}</h2>
+    <table><tbody>
+      <tr><th style="width:45%">${esc(L.dCostEffect)}</th><td>${esc(Number(v.costImpact) ? fmtMoney(v.costImpact, cur) : L.dNil)}</td></tr>
+      <tr><th>${esc(L.dTimeEffect)}</th><td>${Number(v.timeImpact) ? `${Number(v.timeImpact)} ${esc(L.dDays)}` : esc(L.dNil)}</td></tr>
+      ${v.clause ? `<tr><th>${esc(L.dClause)}</th><td>${esc(v.clause)}</td></tr>` : ""}
+    </tbody></table>`;
+
+  $("dmTitle").textContent = head;
+  $("docPreview").innerHTML = `
+    <div class="lh">${esc((p && p.contractor) || "")}</div>
+    <h1>${esc(head)}</h1>
+    <div style="margin:16px 0 18px">
+      <div class="kv"><b>${esc(L.dTo)}:</b> ${esc((p && p.engineer) || (p && p.client) || "—")}</div>
+      <div class="kv"><b>${esc(L.dFrom)}:</b> ${esc((p && p.contractor) || "—")}</div>
+      <div class="kv"><b>${esc(L.dProject)}:</b> ${esc((p && p.name) || "—")}</div>
+      <div class="kv"><b>${esc(L.dContract)}:</b> ${esc((p && p.contractRef) || "—")}</div>
+      <div class="kv"><b>${esc(L.dOurRef)}:</b> ${esc(v.ref)}</div>
+      <div class="kv"><b>${esc(L.dDate)}:</b> ${esc(fmtDate(isoDate(today())))}</div>
+      ${kind === "notice" && n ? `<div class="kv"><b>${esc(L.dNoticeDue)}:</b> ${esc(fmtDate(isoDate(n.due)))}</div>` : ""}
+    </div>
+    <div style="margin-bottom:14px"><b>${esc(L.dSubject)}:</b> ${esc(v.title)}</div>
+    <div style="white-space:pre-wrap">${esc(body)}</div>
+    ${kind === "pack" ? "" : effect}
+    ${chron}
+    ${kind === "pack" ? effect : ""}
+    <div class="sig">
+      <div>${esc(L.dSig)}</div>
+      <div style="margin-top:34px;border-top:1px solid #999;width:230px;padding-top:5px">
+        ${esc(L.dFor)} ${esc((p && p.contractor) || "")}</div>
+    </div>
+    <p style="margin-top:26px;font-size:10.5px;color:#777;border-top:1px solid #ddd;padding-top:8px">${esc(L.dDisclaimer)}</p>`;
+
+  $("docModal").classList.add("open");
+}
+
+/* ================================================================
+   AI EXTRACTION
+   ================================================================ */
+async function readInstruction(){
+  const L = t(), text = $("aiText").value.trim();
+  if(!text){ $("aiStatus").textContent = L.aiEmpty; return; }
+  $("aiStatus").textContent = L.aiWorking;
+
+  let parsed = null, offline = false;
+  if(CONFIG.aiEndpoint){
+    try{
+      const r = await fetch(CONFIG.aiEndpoint, {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ action:"extract", text: text.slice(0, 6000), lang: S.lang }),
+      });
+      const j = await r.json();
+      if(j && j.vo) parsed = j.vo;
+    }catch(e){ console.warn("extract failed", e); }
+  }
+  if(!parsed){ parsed = localExtract(text); offline = true; }
+  if(!parsed){ $("aiStatus").textContent = L.aiFail; return; }
+
+  if(parsed.title)        $("f-title").value = parsed.title;
+  if(parsed.description)  $("f-desc").value  = parsed.description;
+  if(parsed.dateInstructed) $("f-date").value = parsed.dateInstructed;
+  if(parsed.instructedBy) $("f-by").value    = parsed.instructedBy;
+  if(parsed.source)       $("f-src").value   = parsed.source;
+  if(parsed.clause)       $("f-clause").value = parsed.clause;
+  if(parsed.costImpact != null && parsed.costImpact !== "") $("f-cost").value = parsed.costImpact;
+  if(parsed.timeImpact != null && parsed.timeImpact !== "") $("f-time").value = parsed.timeImpact;
+
+  $("aiStatus").textContent = offline ? L.aiOffline : L.aiDone;
+}
+
+/* A deliberately dumb local fallback so the app is never dead without a key.
+   It only claims what it can actually see in the text. */
+function localExtract(text){
+  const out = {};
+  const flat = text.replace(/\r/g, "");
+
+  const iso = /(\d{4})-(\d{2})-(\d{2})/.exec(flat);
+  const dmy = /\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})\b/.exec(flat);
+  if(iso) out.dateInstructed = `${iso[1]}-${iso[2]}-${iso[3]}`;
+  else if(dmy) out.dateInstructed = `${dmy[3]}-${String(dmy[2]).padStart(2,"0")}-${String(dmy[1]).padStart(2,"0")}`;
+
+  const money = /(?:SAR|AED|QAR|KWD|USD|ر\.?س|درهم|\$)\s*([\d,]+(?:\.\d+)?)|([\d,]{4,}(?:\.\d+)?)\s*(?:SAR|AED|QAR|KWD|USD|ر\.?س)/i.exec(flat);
+  if(money) out.costImpact = Number(String(money[1] || money[2]).replace(/,/g, "")) || "";
+
+  const days = /(\d{1,3})\s*(?:calendar\s*)?(?:days?|يوم|أيام)/i.exec(flat);
+  if(days) out.timeImpact = Number(days[1]);
+
+  const clause = /(?:clause|البند|بند)\s*([\d]+(?:\.\d+)*)/i.exec(flat);
+  if(clause) out.clause = clause[1];
+
+  const from = /(?:^|\n)\s*(?:from|من)\s*[:：]\s*(.+)/i.exec(flat);
+  if(from) out.instructedBy = from[1].trim().slice(0, 80);
+
+  if(/site\s*instruction|تعليمات\s*موقع|\bSI\b/i.test(flat)) out.source = "si";
+  else if(/\bRFI\b|استفسار/i.test(flat))                     out.source = "rfi";
+  else if(/minutes|محضر/i.test(flat))                        out.source = "minutes";
+  else if(/drawing|مخطط|rev\s*[A-Z]/i.test(flat))            out.source = "drawing";
+  else if(/@|subject\s*:|الموضوع\s*:/i.test(flat))           out.source = "email";
+
+  const firstReal = flat.split("\n").map(l => l.trim())
+    .filter(l => l && !/^(from|to|sent|date|subject|cc|من|إلى|التاريخ|الموضوع)\s*[:：]/i.test(l))[0] || "";
+  out.title = firstReal.slice(0, 90);
+  out.description = flat.slice(0, 1500);
+  return out;
+}
+
+/* ================================================================
+   EXPORT / IMPORT / DEMO
+   ================================================================ */
+function download(name, content, type){
+  const blob = new Blob([content], {type: type || "text/plain;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function exportCsv(){
+  const L = t(), p = activeProject();
+  const rows = [[
+    "ref","title","date_instructed","instructed_by","source","clause",
+    "cost_impact","currency","time_impact_days","status","notice_due","notice_served","evidence_items"
+  ]];
+  projectVos().forEach(v => {
+    const n = noticeInfo(v, p);
+    rows.push([
+      v.ref, v.title, v.dateInstructed, v.instructedBy || "", srcLabel(v.source), v.clause || "",
+      v.costImpact || "", (p && p.currency) || "", v.timeImpact || "", L.st[v.status] || v.status,
+      n ? isoDate(n.due) : "", v.dateNotice || "", (v.evidence || []).length
+    ]);
+  });
+  const csv = "﻿" + rows.map(r => r.map(c => `"${String(c == null ? "" : c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  download(`sanad-register-${(p && p.name || "project").replace(/[^\w؀-ۿ-]+/g,"-")}.csv`, csv, "text/csv;charset=utf-8");
+}
+
+function loadDemo(){
+  const pid = uid();
+  const base = today();
+  const d = (back) => isoDate(addDays(base, -back));
+  S.projects.push({
+    id: pid, name: S.lang === "ar" ? "برج المكاتب — المرحلة ٢" : "Office Tower — Phase 2",
+    client: S.lang === "ar" ? "شركة التطوير العقاري" : "Riyadh Development Co.",
+    contractRef: "CT-2024-118",
+    contractor: S.lang === "ar" ? "مؤسستك للمقاولات" : "Your Contracting Est.",
+    engineer: S.lang === "ar" ? "الاستشاري الهندسي" : "Consulting Engineer",
+    form: "FIDIC Red Book", noticeDays: 28, currency: "SAR",
+  });
+  const mk = (o) => Object.assign({ id:uid(), projectId:pid, evidence:[], amountApproved:null, dateNotice:null }, o);
+  S.vos.push(
+    mk({ ref:"VO-001", title: S.lang === "ar" ? "نقل ٦ وحدات مناولة هواء — الدور الثالث" : "Relocate 6 fan coil units — level 3",
+         description: S.lang === "ar" ? "نقل وحدات المناولة حسب المخطط M-304 مراجعة C بناءً على جولة الموقع." : "Relocate FCUs per drawing M-304 rev C following the site walk.",
+         dateInstructed:d(34), instructedBy: S.lang === "ar" ? "م. خالد — الاستشاري" : "K. Salem — Engineer",
+         source:"si", clause:"13.3", costImpact:184000, timeImpact:6, status:"draft" }),
+    mk({ ref:"VO-002", title: S.lang === "ar" ? "تغيير تشطيب أرضيات البهو إلى رخام" : "Change lobby flooring to marble",
+         description: S.lang === "ar" ? "استبدال البورسلين المحدد بالرخام حسب طلب المالك." : "Replace specified porcelain with marble at the Employer's request.",
+         dateInstructed:d(23), instructedBy: S.lang === "ar" ? "المالك" : "Employer",
+         source:"minutes", clause:"13.1", costImpact:412500, timeImpact:14, status:"draft" }),
+    mk({ ref:"VO-003", title: S.lang === "ar" ? "أعمال حفر إضافية — تربة صخرية" : "Additional excavation — rock encountered",
+         description: S.lang === "ar" ? "ظروف موقع غير متوقعة في المحور ٤." : "Unforeseen ground conditions at grid 4.",
+         dateInstructed:d(12), instructedBy: S.lang === "ar" ? "م. خالد — الاستشاري" : "K. Salem — Engineer",
+         source:"rfi", clause:"4.12", costImpact:96000, timeImpact:9, status:"notice", dateNotice:d(6),
+         evidence:[
+           {id:uid(), date:d(12), type:"rfi",     note: S.lang === "ar" ? "رد الاستشاري على الاستفسار RFI-088" : "Engineer's response to RFI-088"},
+           {id:uid(), date:d(11), type:"other",   note: S.lang === "ar" ? "تقرير فحص التربة + صور المحور ٤" : "Soil inspection report + photos at grid 4"},
+           {id:uid(), date:d(6),  type:"email",   note: S.lang === "ar" ? "إشعارنا رقم L-2210 مُرسل للاستشاري" : "Our notice L-2210 issued to the Engineer"},
+         ]}),
+    mk({ ref:"VO-004", title: S.lang === "ar" ? "إضافة نقاط كهرباء بغرفة الخوادم" : "Additional power outlets — server room",
+         dateInstructed:d(58), instructedBy: S.lang === "ar" ? "م. خالد — الاستشاري" : "K. Salem — Engineer",
+         source:"email", clause:"13.3", costImpact:38000, timeImpact:0, status:"approved",
+         amountApproved:35500, dateNotice:d(50) }),
+  );
+  S.active = pid;
+  save(); renderAll(); showTab("dash");
+}
+
+/* ================================================================
+   WIRING
+   ================================================================ */
+function showTab(name){
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+  ["dash","reg","new","data"].forEach(k => $("tab-" + k).hidden = (k !== name));
+}
+function closeModal(id){ $(id).classList.remove("open"); }
+
+function openProjModal(edit){
+  const L = t();
+  $("pmTitle").textContent = edit ? L.pmEdit : L.pmNew;
+  const p = edit ? activeProject() : null;
+  $("p-name").value = p ? p.name : "";
+  $("p-client").value = p ? (p.client || "") : "";
+  $("p-contract").value = p ? (p.contractRef || "") : "";
+  $("p-contractor").value = p ? (p.contractor || "") : "";
+  $("p-engineer").value = p ? (p.engineer || "") : "";
+  $("p-form").value = p ? (p.form || "FIDIC Red Book") : "FIDIC Red Book";
+  $("p-notice").value = p ? p.noticeDays : 28;
+  $("p-cur").value = p ? p.currency : "SAR";
+  $("delProjBtn").hidden = !edit;
+  $("projModal").dataset.edit = edit ? "1" : "";
+  $("projModal").classList.add("open");
+}
+
+function init(){
+  load();
+  if(S.theme) document.documentElement.setAttribute("data-theme", S.theme);
+  applyLang();
+  if(!S.active && S.projects.length) S.active = S.projects[0].id;
+  $("f-date").value = isoDate(today());
+  renderAll();
+
+  $("langBtn").addEventListener("click", () => {
+    S.lang = S.lang === "ar" ? "en" : "ar"; save(); applyLang(); renderAll();
+    if(openVoId && $("voModal").classList.contains("open")) openVo(openVoId);
+  });
+  $("themeBtn").addEventListener("click", () => {
+    const now = document.documentElement.getAttribute("data-theme");
+    const next = now === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    S.theme = next; save();
+  });
+
+  document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+  document.querySelectorAll("[data-close]").forEach(b =>
+    b.addEventListener("click", () => closeModal(b.dataset.close)));
+  document.querySelectorAll(".modal").forEach(m =>
+    m.addEventListener("click", (e) => { if(e.target === m) m.classList.remove("open"); }));
+
+  $("projSel").addEventListener("change", (e) => { S.active = e.target.value; save(); renderAll(); });
+  $("newProjBtn").addEventListener("click", () => openProjModal(false));
+  $("editProjBtn").addEventListener("click", () => openProjModal(true));
+
+  $("projForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const edit = $("projModal").dataset.edit === "1";
+    const data = {
+      name: $("p-name").value.trim(), client: $("p-client").value.trim(),
+      contractRef: $("p-contract").value.trim(), contractor: $("p-contractor").value.trim(),
+      engineer: $("p-engineer").value.trim(), form: $("p-form").value,
+      noticeDays: Math.max(1, Number($("p-notice").value) || 28),
+      currency: $("p-cur").value.trim() || "SAR",
+    };
+    if(edit){ Object.assign(activeProject(), data); }
+    else { const p = Object.assign({id:uid()}, data); S.projects.push(p); S.active = p.id; }
+    save(); closeModal("projModal"); renderAll();
+  });
+  $("delProjBtn").addEventListener("click", () => {
+    if(!confirm(t().delProjConfirm)) return;
+    S.vos = S.vos.filter(v => v.projectId !== S.active);
+    S.projects = S.projects.filter(p => p.id !== S.active);
+    S.active = S.projects.length ? S.projects[0].id : null;
+    save(); closeModal("projModal"); renderAll();
+  });
+
+  $("voForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if(!S.active){ openProjModal(false); return; }
+    S.vos.push({
+      id: uid(), projectId: S.active,
+      ref: $("f-ref").value.trim(), title: $("f-title").value.trim(),
+      description: $("f-desc").value.trim(), dateInstructed: $("f-date").value,
+      instructedBy: $("f-by").value.trim(), source: $("f-src").value,
+      clause: $("f-clause").value.trim(),
+      costImpact: $("f-cost").value === "" ? null : Number($("f-cost").value),
+      timeImpact: $("f-time").value === "" ? null : Number($("f-time").value),
+      status: "draft", amountApproved: null, dateNotice: null, evidence: [],
+    });
+    save();
+    e.target.reset();
+    $("f-date").value = isoDate(today());
+    $("aiText").value = ""; $("aiStatus").textContent = t().savedVo;
+    renderAll(); showTab("dash");
+  });
+  $("resetVoBtn").addEventListener("click", () => {
+    $("voForm").reset(); $("f-date").value = isoDate(today()); $("aiStatus").textContent = "";
+  });
+
+  $("search").addEventListener("input", renderRegister);
+  $("aiBtn").addEventListener("click", readInstruction);
+  $("aiClearBtn").addEventListener("click", () => { $("aiText").value = ""; $("aiStatus").textContent = ""; });
+
+  $("printBtn").addEventListener("click", () => window.print());
+  $("copyBtn").addEventListener("click", async () => {
+    try{
+      await navigator.clipboard.writeText($("docPreview").innerText);
+      $("copyBtn").textContent = t().copied;
+      setTimeout(() => $("copyBtn").textContent = t().copy, 1600);
+    }catch(e){ console.warn("clipboard blocked", e); }
+  });
+  $("dlHtmlBtn").addEventListener("click", () => {
+    const title = $("dmTitle").textContent;
+    download(`${title.replace(/[^\w؀-ۿ-]+/g,"-")}.html`,
+      `<!DOCTYPE html><html lang="${S.lang}" dir="${S.lang === "ar" ? "rtl" : "ltr"}"><meta charset="utf-8">`+
+      `<title>${esc(title)}</title><style>body{font-family:Georgia,serif;max-width:760px;margin:40px auto;padding:0 20px;`+
+      `line-height:1.65}table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}`+
+      `th,td{border:1px solid #bbb;padding:6px 8px;text-align:start;vertical-align:top}th{background:#eee}`+
+      `h1{font-size:17px;text-align:center;text-transform:uppercase;letter-spacing:1px}h2{font-size:15px;margin:20px 0 6px}`+
+      `.lh{text-align:center;color:#555;font-size:12px;border-bottom:1px solid #ccc;padding-bottom:12px;margin-bottom:20px}</style>`+
+      $("docPreview").innerHTML, "text/html;charset=utf-8");
+  });
+
+  $("expJson").addEventListener("click", () =>
+    download(`sanad-backup-${isoDate(today())}.json`, JSON.stringify(S, null, 2), "application/json"));
+  $("expCsv").addEventListener("click", exportCsv);
+  $("impBtn").addEventListener("click", () => $("impFile").click());
+  $("impFile").addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try{
+        const p = JSON.parse(r.result);
+        if(!p || !Array.isArray(p.projects) || !Array.isArray(p.vos)) throw new Error("shape");
+        S = Object.assign(S, p);
+        if(!S.active && S.projects.length) S.active = S.projects[0].id;
+        save(); applyLang(); renderAll();
+        alert(t().impOk);
+      }catch(err){ alert(t().impFail); }
+      e.target.value = "";
+    };
+    r.readAsText(f);
+  });
+
+  $("demoBtn").addEventListener("click", loadDemo);
+  $("wipeBtn").addEventListener("click", () => {
+    if(!confirm(t().wipeConfirm)) return;
+    S.projects = []; S.vos = []; S.active = null;
+    save(); renderAll();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
