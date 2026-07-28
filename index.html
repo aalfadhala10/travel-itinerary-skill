@@ -2897,10 +2897,23 @@
   }
 
   // ---- Trip assistant — a FREE, button-driven bot (zero API calls; picks from our own destinations) --
-  var CHATMSGS=[], CHATCHIPS=[], CHATCAT=null, CHATKEY=null; // chips: [{t:label,a:action,v:value}]
+  var CHATMSGS=[], CHATCHIPS=[], CHATCAT=null, CHATKEY=null, CHATROUTE=null; // chips: [{t:label,a:action,v:value}]
+  // curated multi-city drives — only shown when at least 2 of their cities exist in our data
+  var ROADTRIPS=[
+    {flag:'🇮🇹',cities:['Rome','Florence','Venice']},{flag:'🇨🇭',cities:['Zurich','Lucerne','Interlaken']},
+    {flag:'🇯🇵',cities:['Tokyo','Kyoto','Osaka']},{flag:'🇦🇪',cities:['Dubai','Abu Dhabi']},
+    {flag:'🇪🇸',cities:['Barcelona','Valencia','Madrid']},{flag:'🇹🇷',cities:['Istanbul','Cappadocia','Antalya']},
+    {flag:'🇴🇲',cities:['Muscat','Nizwa','Salalah']},{flag:'🇦🇹',cities:['Vienna','Salzburg','Innsbruck']}
+  ];
+  function validRoutes(){ return ROADTRIPS.map(function(r){ var keys=[]; r.cities.forEach(function(n){ var m=matchDest(n); if(m){ var k=keyOf(m); if(keys.indexOf(k)<0)keys.push(k); } }); return {flag:r.flag,keys:keys}; }).filter(function(r){ return r.keys.length>=2; }); }
+  function backLabel(){ return LANG==='ar'?'‹ رجوع':(LANG==='es'?'‹ Atrás':'‹ Back'); }
+  function moreLabel(){ return LANG==='ar'?'🔀 غيّرها':(LANG==='es'?'🔀 Más':'🔀 More'); }
   function chatGreeting(){ return LANG==='ar'?'هلا! وش نوع الرحلة اللي في بالك؟ (أو اكتب اسم مدينة)':(LANG==='es'?'¡Hola! ¿Qué tipo de viaje buscas? (o escribe una ciudad)':'Hi! What kind of trip are you after? (or type a city)'); }
   function dayWordN(n){ return n+' '+(LANG==='ar'?'أيام':(LANG==='es'?'días':'days')); }
-  function catChips(){ return ideaCats().map(function(c){ return {t:c[1],a:'cat',v:c[0]}; }); }
+  function catChips(){ var c=ideaCats().map(function(x){ return {t:x[1],a:'cat',v:x[0]}; });
+    c.push({t:(LANG==='ar'?'🛣️ رحلة برية':(LANG==='es'?'🛣️ Ruta en coche':'🛣️ Road trip')),a:'road',v:''});
+    c.push({t:(LANG==='ar'?'🎲 فاجئني':(LANG==='es'?'🎲 Sorpréndeme':'🎲 Surprise me')),a:'surprise',v:''});
+    return c; }
   function dayChips(){ return [3,5,7,10].map(function(n){ return {t:dayWordN(n),a:'days',v:String(n)}; }); }
   function chatRender(){
     var body=$('chatBody'); if(!body)return;
@@ -2910,24 +2923,37 @@
   }
   function botSay(t){ CHATMSGS.push({role:'assistant',content:t}); }
   function meSay(t){ CHATMSGS.push({role:'user',content:t}); }
-  function chatReset(){ CHATMSGS=[]; CHATCHIPS=[]; CHATCAT=null; CHATKEY=null; botSay(chatGreeting()); CHATCHIPS=catChips(); }
+  function chatReset(){ CHATMSGS=[]; CHATCHIPS=[]; CHATCAT=null; CHATKEY=null; CHATROUTE=null; botSay(chatGreeting()); CHATCHIPS=catChips(); }
   function chatOpen(){ var pn=$('chatPanel'); if(!pn)return;
     if(!CHATMSGS.length)chatReset();
     chatRender(); pn.classList.add('show'); pn.setAttribute('aria-hidden','false');
     setTimeout(function(){ try{$('chatInput').focus();}catch(e){} },250); }
   function chatClose(){ var pn=$('chatPanel'); if(pn){ pn.classList.remove('show'); pn.setAttribute('aria-hidden','true'); } }
   function askDays(cityName){ botSay(LANG==='ar'?('كم يوم في '+cityName+'؟'):(LANG==='es'?('¿Cuántos días en '+cityName+'?'):('How many days in '+cityName+'?'))); CHATCHIPS=dayChips(); }
+  function destChips(cat){ var keys=ideaKeys(cat);
+    var chips=keys.map(function(k){ return {t:DEST[k].flag+' '+DEST[k].city,a:'dest',v:k}; });
+    chips.push({t:moreLabel(),a:'more',v:cat}); chips.push({t:backLabel(),a:'back',v:''}); return chips; }
   function chatAct(a,v){
-    if(a==='cat'){ CHATCAT=v; var lbl=(ideaCats().filter(function(c){return c[0]===v;})[0]||['',v])[1]; meSay(lbl);
-      var keys=ideaKeys(v);
-      if(!keys.length){ chatReset(); chatRender(); return; }
+    if(a==='cat'){ CHATCAT=v; CHATROUTE=null; var lbl=(ideaCats().filter(function(c){return c[0]===v;})[0]||['',v])[1]; meSay(lbl);
+      if(!ideaKeys(v).length){ chatReset(); chatRender(); return; }
       botSay(LANG==='ar'?'حلو! اختر وجهة:':(LANG==='es'?'¡Genial! Elige un destino:':'Nice! Pick a destination:'));
-      CHATCHIPS=keys.map(function(k){ return {t:DEST[k].flag+' '+DEST[k].city,a:'dest',v:k}; });
-      CHATCHIPS.push({t:(LANG==='ar'?'‹ رجوع':(LANG==='es'?'‹ Atrás':'‹ Back')),a:'back',v:''});
-      chatRender(); return; }
+      CHATCHIPS=destChips(v); chatRender(); return; }
+    if(a==='more'){ CHATCHIPS=destChips(v||CHATCAT); chatRender(); return; } // reshuffle destinations
+    if(a==='road'){ meSay(LANG==='ar'?'🛣️ رحلة برية':(LANG==='es'?'🛣️ Ruta en coche':'🛣️ Road trip'));
+      var routes=validRoutes(); if(!routes.length){ chatReset(); chatRender(); return; }
+      botSay(LANG==='ar'?'حلو! اختر مسار:':(LANG==='es'?'¡Genial! Elige una ruta:':'Nice! Pick a route:'));
+      CHATCHIPS=routes.map(function(r,i){ return {t:r.flag+' '+r.keys.map(function(k){return DEST[k].city;}).join(' → '),a:'route',v:String(i)}; });
+      CHATCHIPS.push({t:backLabel(),a:'back',v:''}); chatRender(); return; }
+    if(a==='route'){ var r=validRoutes()[parseInt(v,10)]; if(!r){ chatReset(); chatRender(); return; }
+      CHATROUTE=r.keys; CHATKEY=null; CHATCAT=null; var nm=r.keys.map(function(k){return DEST[k].city;}).join(' → ');
+      meSay(nm); askDays(nm); chatRender(); return; }
+    if(a==='surprise'){ var ks=Object.keys(DEST), k=ks[Math.floor(Math.random()*ks.length)]; CHATKEY=k; CHATROUTE=null; CHATCAT=null;
+      meSay(LANG==='ar'?'🎲 فاجئني':(LANG==='es'?'🎲 Sorpréndeme':'🎲 Surprise me'));
+      botSay(DEST[k].flag+' '+DEST[k].city+'!'); askDays(DEST[k].city); chatRender(); return; }
     if(a==='back'){ chatReset(); chatRender(); return; }
-    if(a==='dest'){ CHATKEY=v; meSay(DEST[v].city); askDays(DEST[v].city); chatRender(); return; }
-    if(a==='days'){ var days=Math.max(1,Math.min(30,parseInt(v,10)||5)); meSay(dayWordN(days)); buildBot(CHATKEY,CHATCAT,days); }
+    if(a==='dest'){ CHATKEY=v; CHATROUTE=null; meSay(DEST[v].city); askDays(DEST[v].city); chatRender(); return; }
+    if(a==='days'){ var days=Math.max(1,Math.min(30,parseInt(v,10)||5)); meSay(dayWordN(days));
+      if(CHATROUTE&&CHATROUTE.length>=2) buildBotRoute(CHATROUTE,days); else buildBot(CHATKEY,CHATCAT,days); }
   }
   function buildBot(k,cat,days){
     if(!k||!DEST[k]){ chatReset(); chatRender(); return; }
@@ -2939,13 +2965,23 @@
     $('days').value=days; syncDayChips();
     document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===vibe);});
     try{ track('chat_plan',{dest:DEST[k].city,country:DEST[k].country||'',days:days}); }catch(e){} // trip built via the bot
-    setTimeout(function(){ chatClose(); ROUTE=null; plan(); },700);
+    setTimeout(function(){ chatClose(); ROUTE=null; plan(); CHATMSGS=[]; CHATCHIPS=[]; },700);
+  }
+  function buildBotRoute(keys,days){
+    keys=(keys||[]).filter(function(k){return DEST[k];}); if(keys.length<2){ buildBot(keys[0],null,days); return; }
+    var nm=keys.map(function(k){return DEST[k].city;}).join(' → ');
+    botSay(LANG==='ar'?('تمام! أجهّز رحلتك: '+nm+'…'):(LANG==='es'?('¡Listo! Preparando: '+nm+'…'):('Perfect — building your road trip: '+nm+'…')));
+    CHATCHIPS=[]; chatRender();
+    newSeed(); DAYEDITS={}; DAYROT={};
+    $('dest').value=DEST[keys[0]].city; $('days').value=days; syncDayChips();
+    try{ track('chat_plan',{dest:DEST[keys[0]].city,country:DEST[keys[0]].country||'',cities:keys.length,days:days}); }catch(e){}
+    setTimeout(function(){ chatClose(); planRoute(keys,days,['Culture'],'Mid-range','balanced',true); CHATMSGS=[]; CHATCHIPS=[]; },700);
   }
   function chatSubmitText(){
     var inp=$('chatInput'), text=(inp.value||'').trim(); if(!text)return; inp.value='';
     meSay(text); try{ track('chat_msg',{msg:text.slice(0,200)}); }catch(e){}
     var m=matchDest(text);
-    if(m){ CHATKEY=keyOf(m); CHATCAT=null; askDays(DEST[CHATKEY].city); }
+    if(m){ CHATKEY=keyOf(m); CHATCAT=null; CHATROUTE=null; askDays(DEST[CHATKEY].city); }
     else { botSay(LANG==='ar'?'ما لقيت هالمكان — اختر نوع رحلة:':(LANG==='es'?'No lo encontré — elige un tipo de viaje:':'I don’t have that place — pick a trip type:')); CHATCHIPS=catChips(); }
     chatRender();
   }
