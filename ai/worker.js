@@ -124,27 +124,51 @@ async function dumpAll(env) {
 }
 
 // --- Claude call with guaranteed-JSON output (structured outputs) ---------------
+// Retries transient upstream errors (429/500/502/503/529 — the API occasionally
+// answers "error code: 502" as plain text), and surfaces a clear error otherwise.
 async function claude(apiKey, model, system, user, schema, maxTokens) {
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      system,
-      messages: Array.isArray(user) ? user : [{ role: "user", content: user }],
-      output_config: { format: { type: "json_schema", schema } },
-    }),
+  const body = JSON.stringify({
+    model,
+    max_tokens: maxTokens,
+    system,
+    messages: Array.isArray(user) ? user : [{ role: "user", content: user }],
+    output_config: { format: { type: "json_schema", schema } },
   });
-  const data = await r.json();
-  if (data.type === "error") throw new Error(data.error && data.error.message || "api error");
-  const txt = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
-  return JSON.parse(txt);
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let r;
+    try {
+      r = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body,
+      });
+    } catch (e) {
+      lastErr = new Error("network: " + (e && e.message ? e.message : e));
+      await sleep(400 * (attempt + 1));
+      continue;
+    }
+    const raw = await r.text();
+    if (!r.ok) {
+      lastErr = new Error("anthropic " + r.status + ": " + raw.slice(0, 200));
+      if (r.status === 429 || r.status >= 500) { await sleep(500 * (attempt + 1)); continue; } // transient — retry
+      throw lastErr; // 4xx (bad request/auth/model) — don't retry
+    }
+    let data;
+    try { data = JSON.parse(raw); }
+    catch { throw new Error("non-JSON reply from Claude: " + raw.slice(0, 200)); }
+    if (data.type === "error") throw new Error(data.error && data.error.message || "api error");
+    const txt = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
+    try { return JSON.parse(txt); }
+    catch { throw new Error("Claude did not return valid JSON"); }
+  }
+  throw lastErr || new Error("api unavailable");
 }
+function sleep(ms) { return new Promise((res) => setTimeout(res, ms)); }
 
 // --- Generate a missing city (Sonnet — accuracy matters, and it's cached after) --
 const CITY_SCHEMA = {

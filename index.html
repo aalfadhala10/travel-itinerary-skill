@@ -3025,6 +3025,8 @@
     return new Promise(function(resolve){
       if(!CONFIG.aiEndpoint){ resolve(null); return; }
       var msgs=CHATMSGS.map(function(m){ return {role:(m.role==='user'?'user':'assistant'),content:String(m.content||'')}; }).slice(-20);
+      while(msgs.length && msgs[0].role!=='user')msgs.shift(); // Anthropic requires the first message to be 'user' — drop the greeting/assistant lead-in
+      if(!msgs.length){ resolve(null); return; }
       fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'chat',messages:msgs})})
         .then(function(r){return r.json();})
         .then(function(d){ resolve(d&&d.chat?d.chat:null); })
