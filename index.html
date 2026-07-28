@@ -3037,9 +3037,13 @@
   function botBuildFromAI(res){ // res.cities are base cities in visit order; resolve each (build if missing), then plan
     var cities=(res.cities||[]).slice(0,8).filter(Boolean); if(!cities.length){ CHATCHIPS=catChips(); chatRender(); return; }
     Promise.all(cities.map(function(n){return aiCity(n);})).then(function(keys){
-      var seen={}, ks=[];
-      keys.forEach(function(k){ if(k&&DEST[k]&&!seen[k]){ seen[k]=1; ks.push(k); } }); // keep order, drop repeats (incl. a return-to-start loop like Munich…Munich)
+      keys=keys.filter(function(k){return k&&DEST[k];});
+      var seq=[]; keys.forEach(function(k){ if(!seq.length||seq[seq.length-1]!==k)seq.push(k); }); // collapse consecutive repeats
+      var loop=seq.length>=3 && seq[0]===seq[seq.length-1]; // did the AI close the loop back to the start?
+      var core=loop?seq.slice(0,seq.length-1):seq.slice();
+      var seen={}, ks=[]; core.forEach(function(k){ if(!seen[k]){ seen[k]=1; ks.push(k); } }); // distinct stops, in order
       if(!ks.length){ botSay(LANG==='ar'?'ما قدرت أجهّز هالمسار — جرّب أماكن ثانية:':(LANG==='es'?'No pude armar esa ruta — prueba otros lugares:':'I couldn’t build that route — try other places:')); CHATCHIPS=catChips(); chatRender(); return; }
+      if((loop || !!res.roadtrip) && ks.length>=2){ ks.push(ks[0]); } // road trip → return to the start (drop the car / fly home from the same airport)
       var days=Math.max(1,Math.min(30,(res.days|0)||(res.roadtrip?12:5)));
       var vibes=(Array.isArray(res.vibes)&&res.vibes.length)?res.vibes:['Culture'];
       var budget=(res.budget==='Budget'||res.budget==='Luxury')?res.budget:'Mid-range';
@@ -3650,7 +3654,6 @@
   function staysBar(city,country,t){
     var o=t.out;
     var types=STAY_TYPES.map(function(x){ return '<button type="button" class="stychip" data-ht="'+x[1]+'">'+o.stayTypes[x[0]]+'</button>'; }).join('');
-    var amen=STAY_AMEN.map(function(x){ return '<button type="button" class="samchip" data-code="'+x[1]+'">'+o.stayAmen[x[0]]+'</button>'; }).join('');
     var hsel=siteGet('hotel','booking');
     var hprov='<div class="provrow" data-provkind="hotel"><span class="provlbl">'+provLabel('hotel')+'</span>'+
       HOTEL_SITES.map(function(x){ return '<button type="button" class="provchip'+(x[0]===hsel?' on':'')+'" data-site="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</div>';
@@ -3661,7 +3664,6 @@
       '<div class="stayamenlbl">'+o.stayTitle+'</div>'+
       hprov+
       '<div class="staychips">'+types+'</div>'+
-      '<div class="stayamenlbl">'+o.stayAmenTitle+'</div><div class="staychips samen">'+amen+'</div>'+
       '<button type="button" class="staysearch">'+o.stayFind+'</button>'+
       '<div class="bookrow" style="margin-top:14px">'+
         '<a class="bookbtn" href="'+flights+'" target="_blank" rel="noopener">'+o.bookFlights+'</a>'+
