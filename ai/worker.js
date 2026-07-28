@@ -132,7 +132,10 @@ async function claude(apiKey, model, system, user, schema, maxTokens) {
   const body = JSON.stringify({
     model,
     max_tokens: maxTokens,
-    system,
+    // The system prompt is the same every turn and every user, so we let Anthropic cache it:
+    // a cache read costs ~10% of a normal input token. The bot's prompt is ~2k tokens, which is
+    // most of each request — caching it roughly halves the cost of a whole conversation.
+    system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
     messages: Array.isArray(user) ? user : [{ role: "user", content: user }],
     output_config: { format: { type: "json_schema", schema } },
   });
