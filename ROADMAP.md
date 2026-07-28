@@ -88,6 +88,23 @@ Last updated: 2026-07-28.
 
 ## Done (recent)
 
+- [x] **Breakfast, lunch and dinner in every day** — the plan used to name only
+  dinner. Lunch is now a second real restaurant, picked near wherever the morning
+  ends (swappable like dinner); breakfast is one honest line that opens a
+  "breakfast near <your area>" map search, since breakfast is nearly always where
+  you slept and we'd rather not burn a curated restaurant on it.
+
+- [x] **Bigger, readable plan text** — day label, time column, place names and the
+  collapsed-day summary all stepped up (place names 15 → 16.5px), same layout.
+
+- [x] **Chat box grows with what you write** — the one-line input hid everything
+  past the first few words; it's now a textarea that expands up to a third of the
+  screen. Enter sends, Shift+Enter is a new line.
+
+- [x] **Arabic quality in the bot** — Arabic conversations now run on the bigger
+  model (Sonnet) instead of Haiku, which was producing broken grammar and
+  half-translated words; English/Spanish stay on Haiku. Prompt rule tightened too.
+
 - [x] **Place photos on hover** — hovering a place name shows a Wikipedia thumbnail
   in a small popover. Free (no key), fetched only on hover (never on render), cached
   30 days in localStorage, silent when there's no match. On touch devices (no hover)
