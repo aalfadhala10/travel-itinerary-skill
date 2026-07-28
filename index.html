@@ -221,7 +221,8 @@
   #app[dir="rtl"] .swappick .spk{letter-spacing:normal;font-family:var(--ff-body)}
   .swappick button{padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font-size:13.5px;font-family:var(--ff-body);cursor:pointer}
   .swappick button:hover{border-color:var(--teal)}
-  .swappick a.spkmore{width:100%;padding:8px 11px;border:1px dashed var(--teal);border-radius:10px;background:transparent;color:var(--teal);font-size:12.5px;font-weight:600;text-decoration:none;text-align:center}
+  .swappick a.spkmore,.swappick button.spkmore{width:100%;padding:8px 11px;border:1px dashed var(--teal);border-radius:10px;background:transparent;color:var(--teal);font-size:12.5px;font-weight:600;text-decoration:none;text-align:center;font-family:var(--ff-body);cursor:pointer}
+  .swappick button.spkmore[disabled]{opacity:.6;cursor:default}
   .note{color:var(--muted);font-size:12.5px;text-align:center;margin-top:22px;padding:0 8px;text-wrap:balance}
   .foot{color:var(--muted);font-size:12px;text-align:center;margin-top:34px;line-height:1.6}
   .foot b{color:var(--ink)}
@@ -3616,6 +3617,61 @@
   // Once the trip is on screen the bot shouldn't disappear — this asks whether it's final and
   // opens the same conversation with the change already typed.
   function planLive(){ try{ return $('out').classList.contains('show'); }catch(e){ return false; } }
+
+  // --- Wider restaurant lists ------------------------------------------------------------------
+  // A city ships with ~5 local places. Now that every day names breakfast, lunch and dinner, a long
+  // stay runs through those fast — and someone who doesn't want the local cuisine had no way out.
+  // The Worker builds a varied list once per city and caches it forever; we cache it here too, so a
+  // returning traveller pays nothing at all. Never blocks the plan: it lands and the page redraws.
+  var FOODGOT={};
+  function foodKeyLS(k){ return 'bosla_food_'+k; }
+  function foodCached(k){
+    try{ var raw=localStorage.getItem(foodKeyLS(k)); if(!raw)return null;
+      var o=JSON.parse(raw); if(!o||!o.t||!Array.isArray(o.f))return null;
+      if(Date.now()-o.t>90*864e5)return null; // restaurants close; re-ask after 3 months
+      return o.f; }catch(e){ return null; }
+  }
+  function foodStore(k,list){ try{ localStorage.setItem(foodKeyLS(k),JSON.stringify({t:Date.now(),f:list})); }catch(e){} }
+  function mergeFood(k,list){
+    var d=DEST[k]; if(!d||!Array.isArray(list)||!list.length)return false;
+    var have={}; d.food.forEach(function(f){ have[String(f.n).toLowerCase()]=1; });
+    var added=0;
+    list.forEach(function(f){
+      var n=String(f&&f.n||'').trim(), a=String(f&&f.a||'').trim();
+      if(!n||have[n.toLowerCase()])return;
+      have[n.toLowerCase()]=1; d.food.push(P(n,a)); added++;
+    });
+    return added>0;
+  }
+  function fetchFood(k){
+    return new Promise(function(resolve){
+      var d=DEST[k];
+      if(!d||!CONFIG.aiEndpoint){ resolve(false); return; }
+      var hit=foodCached(k);
+      if(hit){ resolve(mergeFood(k,hit)); return; }
+      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'food',name:d.city,country:d.country||''})})
+        .then(function(r){return r.json();})
+        .then(function(res){
+          var list=(res&&Array.isArray(res.food))?res.food:[];
+          if(!list.length){ resolve(false); return; }
+          foodStore(k,list); resolve(mergeFood(k,list));
+        })
+        .catch(function(){ resolve(false); });
+    });
+  }
+  // Two meals a day come from this list, so a stay needs roughly 2 real places per night before
+  // anything has to repeat.
+  function foodThin(k,nights){ var d=DEST[k]; return !!d && d.food.length < Math.max(6,(nights||1)*2); }
+  function ensureFood(keys,nights){
+    if(!CONFIG.aiEndpoint||!Array.isArray(keys))return;
+    keys.forEach(function(k,i){
+      if(!k||FOODGOT[k]||!foodThin(k,(nights&&nights[i])||1))return;
+      FOODGOT[k]=1;
+      fetchFood(k).then(function(added){ if(added&&planLive())rerenderKeep(); });
+    });
+  }
+  function moreFoodLbl(){ return LANG==='ar'?'جيب لي خيارات أكثر':(LANG==='es'?'Dame más opciones':'Show me more options'); }
   function editAsk(){ return LANG==='ar'?'الرحلة عاجبتك، ولا تبي نعدّل شي؟'
     :(LANG==='es'?'¿Te gusta este viaje o quieres cambiar algo?':'Happy with this trip, or want to change something?'); }
   function editOpts(){
@@ -4201,6 +4257,7 @@
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
     var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden'); try{armFbNudge();syncFab();}catch(e){}
     redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
+    ensureFood(keys,dc);
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   function stateObj(){
@@ -4561,6 +4618,7 @@
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
     var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden'); try{armFbNudge();syncFab();}catch(e){}
     redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
+    if(m1)ensureFood(multi?[keyOf(m1),keyOf(m2)]:[keyOf(m1)], multi?[d1,d2]:[days]);
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; ROUTEDC=null; STAYAREA=''; plan(); });
@@ -4706,7 +4764,8 @@
     var arr=isFood?dd.food:dd.poi, cur=((slot.querySelector('.d a')||{}).textContent||'').trim();
     var o=I18N[LANG].out, html='<div class="spk">'+o.pickTitle+'</div>';
     arr.forEach(function(pl,i){ if(pl.n===cur)return; html+='<button type="button" data-sk="'+sk+'" data-i="'+i+'">'+esc(pl.n)+' <span style="opacity:.6">· '+esc(pl.a)+'</span></button>'; });
-    if(isFood){ // not into the local picks? browse every kind of restaurant nearby on the map
+    if(isFood){ // don't want any of the local picks? widen the list, then fall back to the map
+      if(CONFIG.aiEndpoint&&!FOODGOT[ck])html+='<button type="button" class="spkmore spkfood" data-food="'+ck+'">'+esc(moreFoodLbl())+'</button>';
       var q=encodeURIComponent('restaurants in '+dd.city), lbl=LANG==='ar'?('كل المطاعم في '+dd.city+' على الخريطة ←'):(LANG==='es'?('Más restaurantes en '+dd.city+' →'):('More restaurants in '+dd.city+' →'));
       html+='<a class="spkmore" href="https://www.google.com/maps/search/'+q+'" target="_blank" rel="noopener">'+esc(lbl)+'</a>';
     }
@@ -4716,8 +4775,16 @@
   $('out').addEventListener('click',function(e){
     var sh=e.target.closest('.dayshuffle');
     if(sh){ var pr=sh.getAttribute('data-shuf').split('|'); shuffleDay(pr[0],pr[1]); return; }
+    var mf=e.target.closest('.spkfood');
+    if(mf){ var fk=mf.getAttribute('data-food'); if(FOODGOT[fk])return; FOODGOT[fk]=1;
+      mf.textContent='…'; mf.disabled=true;
+      fetchFood(fk).then(function(added){
+        if(added){ rerenderKeep(); }
+        else if(mf.isConnected){ mf.textContent=(LANG==='ar'?'ما لقيت زيادة':(LANG==='es'?'Sin más opciones':'No more to add')); }
+      });
+      return; }
     var pk=e.target.closest('.swappick button');
-    if(pk){ var sk=pk.getAttribute('data-sk'), i=+pk.getAttribute('data-i'), pr2=sk.split('|'), ck=pr2[0], isFood=(pr2[2]==='d'||pr2[2]==='l');
+    if(pk&&pk.getAttribute('data-sk')){ var sk=pk.getAttribute('data-sk'), i=+pk.getAttribute('data-i'), pr2=sk.split('|'), ck=pr2[0], isFood=(pr2[2]==='d'||pr2[2]==='l');
       var arr=isFood?DEST[ck].food:DEST[ck].poi, pl=arr&&arr[i]; if(pl){ DAYEDITS[sk]=pl.n; rerenderKeep(); } return; }
     var xd=e.target.closest('.exdel');
     if(xd){ var xp=xd.getAttribute('data-ex').split('|'), xday=+xp[0], arr=DAYADD[xday];

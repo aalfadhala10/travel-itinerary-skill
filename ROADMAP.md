@@ -47,12 +47,6 @@ Last updated: 2026-07-28.
   last day.
 
 
-- [ ] **Richer / non-local food.** Friend feedback: only ~5 (local-cuisine) food
-  spots per city, so over a long stay they repeat and there's no option for someone
-  who doesn't want the local cuisine. Interim: the food swap now links to a Google
-  Maps "restaurants in <city>" search. Real fix: expand food data per city with a
-  few international options (Italian/grill/veg/etc.), likely AI-generated + cached.
-
 - [ ] **AI voice upgrade (true AR+EN mixing).** Browser speech can't mix languages;
   current voice is reliable single-language (EN/AR/ES). True code-switching needs AI
   transcription (e.g. Whisper) via the Worker (~½¢/voice note, needs an OpenAI key).
@@ -87,6 +81,17 @@ Last updated: 2026-07-28.
 - [ ] Keep an eye on first real analytics/feedback rows and the country breakdown.
 
 ## Done (recent)
+
+- [x] **Richer / non-local food (Friend 3's open complaint — closed).** A city shipped
+  with ~5 local restaurants; naming breakfast, lunch and dinner drained that fast, and
+  someone who didn't want the local cuisine had no way out. New Worker action `food`
+  generates a varied list per city — local, Italian, grill, seafood, vegetarian, cafe,
+  family, street food, one more international kitchen — and caches it in the same KV as
+  cities, so it's generated at most ONCE ever, then free and instant. The app asks only
+  when the stay actually needs it (roughly 2 places per night), caches it in
+  localStorage for 90 days, and never asks twice for the same city. There's also a
+  "Show me more options" button in the food swap for anyone who just doesn't like the
+  picks, with the Google Maps search still there behind it.
 
 - [x] **Edit the trip by chatting — the bot no longer disappears.** Building a trip
   used to wipe the conversation, so changing anything meant starting over. Now the

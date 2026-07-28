@@ -96,12 +96,14 @@ The app answered with a fixed, geographically illogical multi-city trip.
 - **Food escape hatch** — the food swap now also links out to a Google Maps
   "restaurants in <city>" search.
 
-**Still open**
-- **Richer / non-local food data**: a few international options per city
-  (Italian / grill / vegetarian / etc.), likely AI-generated and cached, so a
-  long stay doesn't repeat and non-local cuisine is a real choice.
+- **Richer, non-local food** — the Worker now builds a varied list per city on
+  demand (local, Italian, grill, seafood, vegetarian, cafe, family, street food,
+  one more international kitchen) and caches it forever, so a long stay stops
+  repeating and there's a real choice for someone who doesn't want the local
+  cuisine. It's fetched only when the stay needs it, and there's a "Show me more
+  options" button in the food swap for anyone who just doesn't like the picks.
 
-**Status:** Partly done (food depth still Open).
+**Status:** Done.
 
 ---
 

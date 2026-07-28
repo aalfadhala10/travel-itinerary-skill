@@ -83,6 +83,13 @@ export default {
         if (!text) return reply({ error: "empty text" }, 400, origin);
         return reply({ suggest: await suggestTrip(text, env.ANTHROPIC_API_KEY) }, 200, origin);
       }
+      if (body.action === "food") {
+        if (!env.ANTHROPIC_API_KEY) return reply({ error: "server not configured" }, 500, origin);
+        const name = String(body.name || "").slice(0, 60).trim();
+        if (name.length < 2) return reply({ error: "name too short" }, 400, origin);
+        const out = await getOrBuildFood(name, String(body.country || "").slice(0, 60).trim(), env);
+        return reply({ food: out.food, cached: out.cached }, 200, origin);
+      }
       if (body.action === "list")  return reply({ cities: await listNames(env) }, 200, origin);
       if (body.action === "dump")  return reply({ cities: await dumpAll(env) }, 200, origin);
       return reply({ error: "unknown action" }, 400, origin);
@@ -107,6 +114,21 @@ async function getOrBuildCity(name, env) {
     if (ck && ck !== k) await kv.put(ck, JSON.stringify(city));
   }
   return { city, cached: false };
+}
+// A city ships with a handful of local restaurants, which repeat on a long stay and leave
+// nobody an option if they don't want the local cuisine. This widens the menu once per city
+// and remembers it in KV, so it is generated at most ONCE, ever, then served free and instant.
+async function getOrBuildFood(name, country, env) {
+  const kv = env.CITIES;
+  const k = "food:" + cityKey(name);
+  if (kv && k !== "food:") {
+    const hit = await kv.get(k, "json");
+    if (hit) return { food: hit, cached: true };
+  }
+  const res = await generateFood(name, country, env.ANTHROPIC_API_KEY);
+  const food = (res && res.valid && Array.isArray(res.food)) ? res.food.filter((f) => f && f.n && f.a) : [];
+  if (kv && food.length >= 4) await kv.put(k, JSON.stringify(food));
+  return { food, cached: false };
 }
 async function listNames(env) {
   if (!env.CITIES) return [];
@@ -220,6 +242,45 @@ function generateCity(name, apiKey) {
     "(the ONLY Arabic/Spanish fields are blurbAr/blurbEs). blurbEn/Ar/Es are one short vivid sentence each (Arabic and Spanish translations). " +
     "flag is the country's flag emoji. Pick region from the allowed list.";
   return claude(apiKey, "claude-sonnet-5", system, "Generate travel data for: " + name, CITY_SCHEMA, 2200);
+}
+
+// --- Widen a city's restaurant list (Sonnet — real names matter, and it's cached after) -------
+const FOOD_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["valid", "food"],
+  properties: {
+    valid: { type: "boolean" },
+    food: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["n", "a"],
+        properties: {
+          n: { type: "string", description: "the restaurant's real name, in English" },
+          a: { type: "string", description: "cuisine and area, in English, e.g. 'Italian · Old Town'" },
+        },
+      },
+    },
+  },
+};
+
+function generateFood(name, country, apiKey) {
+  const system =
+    "You list real, currently-open, well-known restaurants in a specific city for a travel app. " +
+    "If the place is not a real city, return valid=false and an empty list.\n" +
+    "Give 10 places and make them GENUINELY VARIED — a traveller on a long stay should never see the " +
+    "same cuisine twice in a row, and someone who does not want the local cuisine should still find " +
+    "several options. Cover, as far as the city honestly allows: 2 well-loved local places, one " +
+    "Italian/pizza, one grill or steakhouse, one seafood, one clearly vegetarian or vegan-friendly, " +
+    "one cafe or breakfast spot, one family-friendly casual place, one budget/street-food favourite, " +
+    "and one more international kitchen that genuinely exists there (Indian, Lebanese, Japanese, " +
+    "Turkish, whatever fits). Favour halal-friendly places where they genuinely exist. " +
+    "Never invent a restaurant, and never list a chain that isn't actually in that city. " +
+    "`n` is the real name and `a` is 'Cuisine · Neighbourhood' — BOTH in English, never Arabic, " +
+    "and keep `a` under 30 characters.";
+  return claude(apiKey, "claude-sonnet-5", system, "Restaurants in: " + name + (country ? ", " + country : ""), FOOD_SCHEMA, 1200);
 }
 
 // --- Parse a free-text / voice trip description (Haiku — cheap, runs per plan) ---
