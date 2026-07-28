@@ -3023,6 +3023,15 @@
   }
   function botSay(t){ CHATMSGS.push({role:'assistant',content:t}); }
   function meSay(t){ CHATMSGS.push({role:'user',content:t}); }
+  function lastUserText(){ for(var i=CHATMSGS.length-1;i>=0;i--){ if(CHATMSGS[i].role==='user')return CHATMSGS[i].content; } return ''; }
+  function retryLabel(){ return LANG==='ar'?'↻ أعد المحاولة':(LANG==='es'?'↻ Reintentar':'↻ Try again'); }
+  // At the very start the starters are a real offer. Once someone has told us where and how long,
+  // dumping that menu back at them looks like the bot forgot the whole conversation.
+  function fallbackChips(){
+    var turns=0; CHATMSGS.forEach(function(m){ if(m.role==='user')turns++; });
+    if(turns<=1)return catChips();
+    var c=[{t:retryLabel(),a:'retry',v:''}]; c.push({t:backLabel(),a:'back',v:''}); return c;
+  }
   function chatReset(){ CHATMSGS=[]; CHATCHIPS=[]; CHATCAT=null; CHATKEY=null; CHATROUTE=null; CHATPICK=[]; botSay(chatGreeting()); CHATCHIPS=catChips(); }
   function pickedLine(){ return CHATPICK.map(function(k){return DEST[k].city;}).join(' → '); }
   function pickMoreChips(){ var chips=[{t:doneLabel(),a:'done',v:''}]; // Done first, then a few more of the same vibe to add
@@ -3059,6 +3068,10 @@
     if(a==='final'){ meSay(finalLabel());
       botSay(LANG==='ar'?'بالتوفيق برحلتك! إذا بغيت تعدّل شي بعدين، أنا هنا.':(LANG==='es'?'¡Buen viaje! Si quieres cambiar algo más tarde, aquí estoy.':'Have a great trip! If you want to change anything later, I\'m here.'));
       CHATCHIPS=[]; chatRender(); setTimeout(chatClose,900); return; }
+    if(a==='retry'){ if(CHATBUSY||!lastUserText())return;
+      CHATBUSY=true; CHATCHIPS=[]; var rp={role:'assistant',content:'…'}; CHATMSGS.push(rp); chatRender();
+      aiChat().then(function(r){ var j=CHATMSGS.indexOf(rp); if(j>=0)CHATMSGS.splice(j,1); CHATBUSY=false; handleAI(r); });
+      return; }
     if(a==='back'){ chatReset(); chatRender(); return; }
     if(a==='dest'){ CHATROUTE=null; if(CHATPICK.indexOf(v)<0)CHATPICK.push(v); CHATKEY=(CHATPICK.length===1?v:null); meSay(DEST[v].city); // pick one or MORE
       botSay(CHATPICK.length>1
@@ -3120,10 +3133,18 @@
       while(msgs.length && msgs[msgs.length-1].role!=='user')msgs.pop(); // must not end on assistant (drop the "…" typing placeholder)
       if(!msgs.length){ resolve(null); return; }
       var ctx=tripContext(); if(ctx)msgs[msgs.length-1].content+=ctx; // only on the copy we send
-      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'chat',messages:msgs})})
-        .then(function(r){return r.json();})
-        .then(function(d){ resolve(d&&d.chat?d.chat:null); })
-        .catch(function(){ resolve(null); });
+      function ask(tries){
+        return fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'chat',messages:msgs})})
+          .then(function(r){return r.json();})
+          .then(function(d){
+            if(d&&d.chat&&(d.chat.reply||d.chat.ready))return d.chat;
+            if(d&&d.error)try{console.warn('bosla chat:',d.error);}catch(e){} // shows up in the console if it keeps happening
+            if(tries>0)return ask(tries-1);                                   // a cut-off reply is usually a one-off
+            return null;
+          })
+          .catch(function(){ return tries>0?ask(tries-1):null; });
+      }
+      ask(1).then(resolve);
     });
   }
   function buildingLine(cities){
@@ -3206,15 +3227,22 @@
     CHATBUSY=true; CHATCHIPS=[]; var ph={role:'assistant',content:'…'}; CHATMSGS.push(ph); chatRender();
     aiChat().then(function(res){
       var i=CHATMSGS.indexOf(ph); if(i>=0)CHATMSGS.splice(i,1); CHATBUSY=false;
-      if(!res){ botSay(LANG==='ar'?'صار خلل بسيط، جرّب مرة ثانية أو اختر من تحت:':(LANG==='es'?'Hubo un problema, inténtalo otra vez o elige abajo:':'Something hiccuped — try again or tap a starter:')); CHATCHIPS=catChips(); chatRender(); return; }
-      if(res.reply)botSay(res.reply);
-      CHATCHIPS=(Array.isArray(res.chips)?res.chips:[]).slice(0,4).map(function(t){ return {t:String(t),a:'say',v:String(t)}; });
-      // A reply with no chips and no trip is a dead end — the answer just sits there and nothing
-      // happens. If the AI isn't ready and offered nothing, put the starters back so there's a way on.
-      if(!res.ready&&!CHATCHIPS.length)CHATCHIPS=catChips();
-      chatRender();
-      if(res.ready)botBuildFromAI(res);
+      handleAI(res);
     });
+  }
+  function handleAI(res){
+    // No reply at all counts as a failure, not a turn — otherwise the chat shows chips under
+    // silence, which reads as the bot ignoring you.
+    if(!res||(!res.reply&&!res.ready)){
+      botSay(LANG==='ar'?'ما وصلني ردي عدل. جرّب مرة ثانية:':(LANG==='es'?'No me llegó bien la respuesta. Inténtalo otra vez:':'That reply didn’t come through. Let’s try that again:'));
+      CHATCHIPS=fallbackChips(); chatRender(); return;
+    }
+    if(res.reply)botSay(res.reply);
+    CHATCHIPS=(Array.isArray(res.chips)?res.chips:[]).slice(0,4).map(function(t){ return {t:String(t),a:'say',v:String(t)}; });
+    // A reply with nothing to tap and no trip is a dead end — keep a way forward open.
+    if(!res.ready&&!CHATCHIPS.length)CHATCHIPS=fallbackChips();
+    chatRender();
+    if(res.ready)botBuildFromAI(res);
   }
   var CHAT_ON=true; // AI-conversational bot (Haiku) with button-driven quick-starts as a fallback
   (function(){ var fab=$('chatFab'); if(!fab)return;
