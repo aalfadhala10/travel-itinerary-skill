@@ -546,14 +546,15 @@
   .chatfab{position:fixed;right:16px;bottom:20px;z-index:7;display:flex;align-items:center;gap:7px;padding:12px 17px;border:none;border-radius:999px;background:var(--teal);color:#fff;font-size:14.5px;font-weight:700;font-family:var(--ff-body);box-shadow:var(--shadow);cursor:pointer}
   #app[dir="rtl"] .chatfab{right:auto;left:16px}
   .chatfab .chatfabic{font-size:16px}
-  .chatpanel{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .2s;display:flex;align-items:flex-end;justify-content:center}
+  .chatpanel{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .2s;display:flex;align-items:flex-end;justify-content:center;overscroll-behavior:contain;touch-action:none}
+  body.chatlock{overflow:hidden}
   .chatpanel.show{opacity:1;pointer-events:auto}
   .chatsheet{width:100%;max-width:520px;height:82vh;background:var(--card);border-radius:18px 18px 0 0;display:flex;flex-direction:column;transform:translateY(24px);transition:transform .22s;overflow:hidden}
   .chatpanel.show .chatsheet{transform:translateY(0)}
   .chathead{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);flex:0 0 auto}
   .chattitle{font-family:var(--ff-display);font-size:17px;font-weight:600;color:var(--ink)}
   .chatx{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px}
-  .chatbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .chatbody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;padding:16px;display:flex;flex-direction:column;gap:10px}
   .chatmsg{max-width:82%;padding:10px 13px;border-radius:14px;font-size:14.5px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
   .chatmsg.bot{align-self:flex-start;background:var(--paper2);color:var(--ink);border-bottom-left-radius:5px}
   .chatmsg.user{align-self:flex-end;background:var(--teal);color:#fff;border-bottom-right-radius:5px}
@@ -2926,9 +2927,9 @@
   function chatReset(){ CHATMSGS=[]; CHATCHIPS=[]; CHATCAT=null; CHATKEY=null; CHATROUTE=null; botSay(chatGreeting()); CHATCHIPS=catChips(); }
   function chatOpen(){ var pn=$('chatPanel'); if(!pn)return;
     if(!CHATMSGS.length)chatReset();
-    chatRender(); pn.classList.add('show'); pn.setAttribute('aria-hidden','false');
+    chatRender(); pn.classList.add('show'); pn.setAttribute('aria-hidden','false'); document.body.classList.add('chatlock');
     setTimeout(function(){ try{$('chatInput').focus();}catch(e){} },250); }
-  function chatClose(){ var pn=$('chatPanel'); if(pn){ pn.classList.remove('show'); pn.setAttribute('aria-hidden','true'); } }
+  function chatClose(){ var pn=$('chatPanel'); if(pn){ pn.classList.remove('show'); pn.setAttribute('aria-hidden','true'); } document.body.classList.remove('chatlock'); }
   function askDays(cityName){ botSay(LANG==='ar'?('كم يوم في '+cityName+'؟'):(LANG==='es'?('¿Cuántos días en '+cityName+'?'):('How many days in '+cityName+'?'))); CHATCHIPS=dayChips(); }
   function destChips(cat){ var keys=ideaKeys(cat);
     var chips=keys.map(function(k){ return {t:DEST[k].flag+' '+DEST[k].city,a:'dest',v:k}; });
