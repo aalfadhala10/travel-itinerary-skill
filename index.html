@@ -566,6 +566,11 @@
   .chatfoot input{flex:1;min-width:0;padding:12px 15px;border:1px solid var(--line);border-radius:999px;background:var(--paper2);color:var(--ink);font-size:15px;font-family:var(--ff-body);outline:none}
   .chatfoot input:focus{border-color:var(--teal)}
   .chatfoot #chatSend{flex:0 0 auto;width:44px;height:44px;border:none;border-radius:50%;background:var(--teal);color:#fff;font-size:19px;font-weight:700;cursor:pointer}
+  .chatfoot #chatMic{flex:0 0 auto;width:44px;height:44px;border:1px solid var(--line);border-radius:50%;background:var(--paper);color:var(--teal);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+  .chatfoot #chatMic svg{width:20px;height:20px}
+  .chatfoot #chatMic:hover{border-color:var(--teal)}
+  .chatfoot #chatMic.is-hidden{display:none}
+  .chatfoot #chatMic.rec{background:#e5484d;border-color:#e5484d;color:#fff;animation:micpulse 1.2s infinite}
   .chatchips{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px;align-self:flex-start;max-width:100%}
   .chatchip{padding:8px 13px;border:1px solid var(--teal);border-radius:999px;background:var(--teal-soft);color:var(--ink);font-size:13.5px;font-weight:600;font-family:var(--ff-body);cursor:pointer}
   .chatchip:active{transform:translateY(1px)}
@@ -717,20 +722,6 @@
     </div>
     <button class="btn" id="planBtn" type="button">Plan my trip →</button>
     </div>
-    <button type="button" class="manualtoggle" id="describeToggle" aria-expanded="false"><span class="mtspark">✨</span><span id="promptOr">or describe your trip in words</span><span class="mtchev" aria-hidden="true"></span></button>
-    <div class="describe is-hidden" id="describeBlock">
-      <label id="lblPrompt">Plan by describing your trip</label>
-      <div class="promptwrap">
-        <textarea id="promptBox" class="promptbox" rows="2" placeholder="e.g. Europe road trip, 14 days, culture & food"></textarea>
-        <button type="button" class="miclang is-hidden" id="micLang" title="Voice language">EN</button>
-        <button type="button" class="micbtn is-hidden" id="micBtn" aria-label="Speak your trip" title="Speak your trip">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" fill="currentColor"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </button>
-      </div>
-      <div class="michint is-hidden" id="micHint" role="note"></div>
-      <button type="button" class="promptbtn" id="promptBtn">Plan from description →</button>
-      <div class="promptex" id="promptEx"></div>
-    </div>
   </div>
 
   <div id="mytrips" class="is-hidden"></div>
@@ -800,6 +791,9 @@
     <div class="chatbody" id="chatBody"></div>
     <div class="chatfoot">
       <input id="chatInput" type="text" autocomplete="off" placeholder="Tell me about your trip…">
+      <button type="button" id="chatMic" class="is-hidden" aria-label="Speak your trip" title="Speak your trip">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" fill="currentColor"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
       <button type="button" id="chatSend" aria-label="Send">→</button>
     </div>
   </div>
@@ -2762,11 +2756,6 @@
     if(inp.id==='days')syncDayChips();
   });
   // floating "edit trip" button — jump back to the form from a long itinerary
-  // The destination form leads; "describe your trip in words" is the secondary, collapsible path.
-  function showDescribe(open){ var f=$('describeBlock'), t=$('describeToggle'); if(!f||!t)return;
-    var willOpen=(open===undefined)?f.classList.contains('is-hidden'):open;
-    f.classList.toggle('is-hidden',!willOpen); t.classList.toggle('open',willOpen); t.setAttribute('aria-expanded',willOpen?'true':'false'); }
-  $('describeToggle').addEventListener('click',function(){ showDescribe(); });
   // Advanced fields (pace, travellers, dates, currency, budget, vibes) live under "More options" —
   // the main form stays just Where to? + days + Plan. Everything keeps sensible defaults.
   function showMore(open){ var f=$('moreOptions'), t=$('moreToggle'); if(!f||!t)return;
@@ -3117,10 +3106,9 @@
     renderWelcome(); $('editFab').textContent=u.editTrip;
     $('drawerEdit').textContent=u.profileTitle; $('navHow').textContent=u.navHow; $('navTrips').textContent=u.myTrips; $('navInstall').textContent=u.navInstall; $('navShare').textContent=u.navShare; $('navFeedback').textContent=u.navFeedback; $('drawerAbout').textContent=u.menuAbout;
     $('introTitle').textContent=u.introTitle; $('introS1').textContent=u.introS1; $('introS2').textContent=u.introS2; $('introS3').textContent=u.introS3;
-    $('lblPrompt').textContent=u.lblPrompt; $('promptBox').setAttribute('placeholder',u.promptPh); $('promptBtn').textContent=u.promptBtn; $('promptOr').textContent=u.promptOr; renderPromptEx(u);
     try{ $('moreOptsLbl').textContent=(lang==='ar'?'خيارات أكثر':(lang==='es'?'Más opciones':'More options')); }catch(e){}
     try{ var askL=(lang==='ar'?'خطّط معي':(lang==='es'?'Planea conmigo':'Plan with me')); $('chatFabLbl').textContent=askL; $('chatTitle').textContent=askL; $('chatInput').setAttribute('placeholder', lang==='ar'?'احكِ لي عن رحلتك…':(lang==='es'?'Cuéntame de tu viaje…':'Tell me about your trip…')); }catch(e){}
-    (function(){var mb=$('micBtn'); if(mb&&!mb.classList.contains('rec')){mb.setAttribute('aria-label',u.micStart);mb.setAttribute('title',u.micStart);}})();
+    (function(){var mb=$('chatMic'); if(mb&&!mb.classList.contains('rec')){mb.setAttribute('aria-label',u.micStart);mb.setAttribute('title',u.micStart);}})();
     $('fbTitle').textContent=u.fbTitle; $('fbSub').textContent=u.fbSub; $('fbMsg').setAttribute('placeholder',u.fbMsgPh); $('fbContact').setAttribute('placeholder',u.fbContactPh); $('fbSend').textContent=u.fbSend; $('fbNote').textContent=u.fbNote;
     updateThemeBtn(); applyProfile(); renderMyTrips();
     if($('out').classList.contains('show')) plan();
@@ -3958,12 +3946,10 @@
     redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
-  $('promptBtn').addEventListener('click',runPrompt);
-
-  // Voice input for the trip description — uses the browser's built-in speech recognition (no backend),
-  // transcribes live into the box in the current language, then the user verifies and taps Plan.
+  // Voice-to-text INSIDE the bot — browser speech recognition (no backend), transcribes live into the
+  // chat input in the app's current language (EN/AR/ES); the user verifies, then sends and the bot plans.
   (function(){
-    var SR=window.SpeechRecognition||window.webkitSpeechRecognition, btn=$('micBtn'); if(!btn)return;
+    var SR=window.SpeechRecognition||window.webkitSpeechRecognition, btn=$('chatMic'); if(!btn)return;
     if(!SR){ btn.classList.add('is-hidden'); return; }
     btn.classList.remove('is-hidden');
     var rec=null, listening=false, primed=false;
@@ -3971,44 +3957,25 @@
     // On iOS, only Safari can use speech recognition; Chrome/Firefox/Edge/Opera/Google-app on iPhone
     // are blocked from it by Apple, so guide the user to Safari instead of failing on permission.
     var iosThirdParty=isIOS && /(CriOS|FxiOS|EdgiOS|OPiOS|GSA)/.test(navigator.userAgent);
-    function langCode(){ return VOICELANG==='ar'?'ar-SA':(VOICELANG==='es'?'es-ES':'en-US'); }
-    // Voice-language pill: lets you speak a different language than the app's UI (e.g. English UI, Arabic voice).
-    var langPill=$('micLang');
-    if(langPill && !iosThirdParty){
-      langPill.classList.remove('is-hidden'); langPill.textContent=voiceLabel(VOICELANG);
-      langPill.addEventListener('click',function(){ var order=['en','ar','es'], i=order.indexOf(VOICELANG); VOICELANG=order[(i+1)%order.length]; VOICEOVERRIDE=true; try{localStorage.setItem('bosla_voicelang',VOICELANG);}catch(e){} langPill.textContent=voiceLabel(VOICELANG); });
-    }
-    function showMicHint(){
-      var u=I18N[LANG].ui, el=$('micHint'); if(!el)return; el.innerHTML='';
-      var msg=document.createElement('div'); msg.textContent=u.micSafari; el.appendChild(msg);
-      var row=document.createElement('div'); row.className='mhrow';
-      var copy=document.createElement('button'); copy.type='button'; copy.className='mhcopy'; copy.textContent=u.micCopyLink;
-      copy.addEventListener('click',function(){ var link=location.href.split('#')[0];
-        if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(link).then(function(){toast(u.micCopied);},function(){toast(u.micCopied);}); }
-        else { toast(u.micCopied); } });
-      var close=document.createElement('button'); close.type='button'; close.className='mhclose'; close.textContent=u.micHintClose;
-      close.addEventListener('click',function(){ el.classList.add('is-hidden'); });
-      row.appendChild(copy); row.appendChild(close); el.appendChild(row);
-      el.classList.remove('is-hidden');
-    }
+    function langCode(){ return VOICELANG==='ar'?'ar-SA':(VOICELANG==='es'?'es-ES':'en-US'); } // follows the app language
     function begin(){
       var u=I18N[LANG].ui;
       try{ rec=new SR(); }catch(e){ toast(u.micUnsupported); return; }
       var lc=langCode(); if(lc)rec.lang=lc; rec.interimResults=true; rec.continuous=true; rec.maxAlternatives=1;
-      var base=($('promptBox').value||'').trim(), finalTxt='';
+      var base=($('chatInput').value||'').trim(), finalTxt='';
       rec.onstart=function(){ listening=true; btn.classList.add('rec'); btn.setAttribute('aria-label',u.micListening); btn.setAttribute('title',u.micListening); };
       rec.onresult=function(e){ var interim='';
         for(var i=e.resultIndex;i<e.results.length;i++){ var r=e.results[i]; if(r.isFinal)finalTxt+=r[0].transcript; else interim+=r[0].transcript; }
-        $('promptBox').value=(base?base+' ':'')+(finalTxt+interim).replace(/\s+/g,' ').trim();
+        $('chatInput').value=(base?base+' ':'')+(finalTxt+interim).replace(/\s+/g,' ').trim();
       };
       rec.onerror=function(e){ if(e.error==='not-allowed'||e.error==='service-not-allowed'){ primed=false; toast(u.micDenied); }
         else if(e.error==='no-speech')toast(u.micNoSpeech); };
-      rec.onend=function(){ listening=false; btn.classList.remove('rec'); btn.setAttribute('aria-label',u.micStart); btn.setAttribute('title',u.micStart); try{$('promptBox').focus();}catch(e){} };
+      rec.onend=function(){ listening=false; btn.classList.remove('rec'); btn.setAttribute('aria-label',u.micStart); btn.setAttribute('title',u.micStart); try{$('chatInput').focus();}catch(e){} };
       try{ rec.start(); }catch(e){ listening=false; btn.classList.remove('rec'); }
     }
     btn.addEventListener('click',function(){
       var u=I18N[LANG].ui;
-      if(iosThirdParty){ showMicHint(); return; } // can't work here — show the "open in Safari" helper
+      if(iosThirdParty){ toast(u.micSafari); return; } // can't work here — tell them to open in Safari
       if(listening){ if(rec){try{rec.stop();}catch(e){}} return; }
       // Once permission is granted (or if we can't pre-request it) start recognition directly.
       if(primed || !(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){ begin(); return; }
