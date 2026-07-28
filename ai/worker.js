@@ -21,7 +21,7 @@ const ALLOWED_ORIGINS = [
   "http://127.0.0.1",
 ];
 
-const TAGS  = ["Culture", "Food", "Nature", "Shopping", "Relax"];
+const TAGS  = ["Culture", "Food", "Nature", "Adventure", "Shopping", "Relax"];
 const CONDS = ["veryhot", "hotdry", "hothumid", "warm", "mild", "tropical", "alpine"];
 
 function corsHeaders(origin) {
