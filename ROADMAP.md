@@ -94,8 +94,16 @@ Last updated: 2026-07-28.
   "breakfast near <your area>" map search, since breakfast is nearly always where
   you slept and we'd rather not burn a curated restaurant on it.
 
-- [x] **Bigger, readable plan text** — day label, time column, place names and the
-  collapsed-day summary all stepped up (place names 15 → 16.5px), same layout.
+- [x] **Bigger, readable plan text** — place names 15 → 16.5px, time column 10 →
+  12px, collapsed-day summary 13 → 14.5px, same layout. The "Day 1 · Rome" line was
+  the smallest thing on the page (11px, uppercase, letter-spaced); it's now 15.5px
+  bold in normal case.
+
+- [x] **The bot tells you what the app can already do.** When someone asks the chat
+  for something that's a feature of the finished plan (photos, picking a different
+  hotel or restaurant, more nights in one city), it now says so in one sentence
+  instead of refusing — and names the one most relevant feature when it confirms the
+  plan is ready.
 
 - [x] **Chat box grows with what you write** — the one-line input hid everything
   past the first few words; it's now a textarea that expands up to a third of the
