@@ -221,6 +221,7 @@
   #app[dir="rtl"] .swappick .spk{letter-spacing:normal;font-family:var(--ff-body)}
   .swappick button{padding:7px 11px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font-size:12.5px;font-family:var(--ff-body);cursor:pointer}
   .swappick button:hover{border-color:var(--teal)}
+  .swappick a.spkmore{width:100%;padding:8px 11px;border:1px dashed var(--teal);border-radius:10px;background:transparent;color:var(--teal);font-size:12.5px;font-weight:600;text-decoration:none;text-align:center}
   .note{color:var(--muted);font-size:12.5px;text-align:center;margin-top:22px;padding:0 8px;text-wrap:balance}
   .foot{color:var(--muted);font-size:12px;text-align:center;margin-top:34px;line-height:1.6}
   .foot b{color:var(--ink)}
@@ -367,6 +368,15 @@
   .transfer .tlabel{font-family:var(--ff-data);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--clay);font-weight:600}
   .transfer .tbody{font-size:14px;margin-top:3px}
   .transfer .pit{font-size:12.5px;color:var(--muted);margin-top:5px;font-style:italic}
+  .nightsbar{background:var(--paper2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:14px 0}
+  .nightslbl{font-family:var(--ff-data);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--clay);font-weight:600;margin-bottom:6px}
+  .nrow{display:flex;align-items:center;justify-content:space-between;padding:5px 0}
+  .nrow .ncity{font-size:14px;font-weight:600}
+  .nctl{display:flex;align-items:center;gap:10px}
+  .nctl .nnum{min-width:20px;text-align:center;font-family:var(--ff-data);font-weight:700}
+  .nbtn{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:16px;font-weight:700;cursor:pointer;line-height:1;padding:0}
+  .nbtn:hover{border-color:var(--teal)}
+  .nbtn:active{transform:translateY(1px)}
   .mapcard{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px;margin-top:16px}
   .maphdr{font-family:var(--ff-data);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
   #app[dir="rtl"] .maphdr{letter-spacing:normal;font-family:var(--ff-body)}
@@ -792,9 +802,6 @@
     <div class="chatbody" id="chatBody"></div>
     <div class="chatfoot">
       <input id="chatInput" type="text" autocomplete="off" placeholder="Tell me about your trip…">
-      <button type="button" id="chatMic" class="is-hidden" aria-label="Speak your trip" title="Speak your trip">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" fill="currentColor"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      </button>
       <button type="button" id="chatSend" aria-label="Send">→</button>
     </div>
   </div>
@@ -3183,6 +3190,22 @@
     return '<div class="daynav"><span class="dnavlbl">'+o.jumpTo+'</span>'+chips+'</div>';
   }
   function rerenderKeep(){ var y=window.pageYOffset||document.documentElement.scrollTop||0; KEEPSCROLL=true; if(LASTPLAN)LASTPLAN(); window.scrollTo(0,y); } // re-render without jumping to top
+  // Nights-per-city editor — the user decides how the total days split across cities (e.g. 8 Phuket / 4 Bangkok, not forced even).
+  function nightsEditor(ms,dc){
+    if(!ms||ms.length<2)return '';
+    var ar=LANG==='ar', es=LANG==='es', title=ar?'الليالي بكل مدينة':(es?'Noches por ciudad':'Nights per city');
+    var rows=ms.map(function(m,i){ return '<div class="nrow"><span class="ncity">'+esc(m.city)+'</span>'+
+      '<span class="nctl"><button type="button" class="nbtn" data-nb="'+i+'|-1" aria-label="-">−</button>'+
+      '<span class="nnum">'+dc[i]+'</span>'+
+      '<button type="button" class="nbtn" data-nb="'+i+'|1" aria-label="+">+</button></span></div>'; }).join('');
+    return '<div class="nightsbar"><div class="nightslbl">'+title+'</div>'+rows+'</div>';
+  }
+  function bumpNights(i,delta){ // move one night between cities, keeping the total fixed
+    if(!ROUTEDC||!ROUTEDC.length)return; var n=ROUTEDC.length; if(i<0||i>=n)return; var k;
+    if(delta>0){ var j=-1,mx=1; for(k=0;k<n;k++){ if(k!==i&&ROUTEDC[k]>mx){mx=ROUTEDC[k];j=k;} } if(j<0)return; ROUTEDC[j]--; ROUTEDC[i]++; }
+    else { if(ROUTEDC[i]<=1)return; var j2=-1,mn=1e9; for(k=0;k<n;k++){ if(k!==i&&ROUTEDC[k]<mn){mn=ROUTEDC[k];j2=k;} } if(j2<0)return; ROUTEDC[i]--; ROUTEDC[j2]++; }
+    rerenderKeep();
+  }
   function anotherVersion(){ newSeed(); DAYEDITS={}; DAYROT={}; if(LASTPLAN)LASTPLAN(); var out=$('out'); if(out)out.scrollIntoView({block:'start'}); }
   function retuneDays(delta){
     var cur=Math.max(1,Math.min(30,parseInt($('days').value,10)||5)), nn=Math.max(1,Math.min(30,cur+delta));
@@ -3670,6 +3693,7 @@
   var LASTPLAN=null; // re-renders the current plan in place (honouring edits) after a change
   var LASTSPD=3;     // activity slots per day in the current plan
   var KEEPSCROLL=false; // when re-rendering after an in-place edit, don't jump back to the top
+  var ROUTEDC=null, ROUTEDCSIG=''; // custom nights-per-city for the current route (null = even split); sig = keys@days
   function newSeed(){ SEED=Math.floor(Math.random()*1e9)+1; }
   function srand(seed){ var x=(seed||1)>>>0; return function(){ x=(x*1103515245+12345)&0x7fffffff; return x/0x7fffffff; }; }
   function shuffle(arr,seed){ var r=srand(seed), a=arr.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(r()*(i+1)); var tmp=a[i];a[i]=a[j];a[j]=tmp; } return a; }
@@ -3891,7 +3915,9 @@
     var kids=Math.max(0,Math.min(20,parseInt($('kids').value,10)||0));
     HOME=$('homeCur').value||'USD';
     var di=formatDates($('startDate').value,days,t);
-    var per=Math.floor(days/n), rem=days-per*n, dc=ms.map(function(_,i){return per+(i<rem?1:0);});
+    var dcsig=keys.join('|')+'@'+days, dc;
+    if(ROUTEDC && ROUTEDCSIG===dcsig && ROUTEDC.length===n){ dc=ROUTEDC.slice(); } // user set a custom nights-per-city split
+    else { var per=Math.floor(days/n), rem=days-per*n; dc=ms.map(function(_,i){return per+(i<rem?1:0);}); ROUTEDC=dc.slice(); ROUTEDCSIG=dcsig; }
     MAPQ=[]; PRAYERQ=[];
     var access=tripAccess(keys[0]);
     if(access&&CONFIG.paywallOn&&!getFreeDest())setFreeDest(keys[0]);
@@ -3927,7 +3953,7 @@
       startDay+=dc[i];
     }
     mapHtml=routeStrip(ms.slice(0,upto).map(function(m){return m.city;}),t);
-    html+=tunerBar(o,days)+mapHtml+'<div class="realtag">'+o.realTag+'</div>'+dayNav(access?days:1,o)+'<div class="route">'+routeHtml+'</div>';
+    html+=(access?nightsEditor(ms,dc):'')+tunerBar(o,days)+mapHtml+'<div class="realtag">'+o.realTag+'</div>'+dayNav(access?days:1,o)+'<div class="route">'+routeHtml+'</div>';
     if(!access)html+=paywallCard(t);
     if(access){
       html+=budgetCard(o,t,catRows(baseTotal),transferUSD,totalUSD,null,adults,kids);
@@ -4412,6 +4438,10 @@
     var arr=isFood?dd.food:dd.poi, cur=((slot.querySelector('.d a')||{}).textContent||'').trim();
     var o=I18N[LANG].out, html='<div class="spk">'+o.pickTitle+'</div>';
     arr.forEach(function(pl,i){ if(pl.n===cur)return; html+='<button type="button" data-sk="'+sk+'" data-i="'+i+'">'+esc(pl.n)+' <span style="opacity:.6">· '+esc(pl.a)+'</span></button>'; });
+    if(isFood){ // not into the local picks? browse every kind of restaurant nearby on the map
+      var q=encodeURIComponent('restaurants in '+dd.city), lbl=LANG==='ar'?('كل المطاعم في '+dd.city+' على الخريطة ←'):(LANG==='es'?('Más restaurantes en '+dd.city+' →'):('More restaurants in '+dd.city+' →'));
+      html+='<a class="spkmore" href="https://www.google.com/maps/search/'+q+'" target="_blank" rel="noopener">'+esc(lbl)+'</a>';
+    }
     var div=document.createElement('div'); div.className='swappick'; div.innerHTML=html;
     slot.parentNode.insertBefore(div, slot.nextElementSibling);
   }
@@ -4421,6 +4451,8 @@
     var pk=e.target.closest('.swappick button');
     if(pk){ var sk=pk.getAttribute('data-sk'), i=+pk.getAttribute('data-i'), pr2=sk.split('|'), ck=pr2[0], isFood=(pr2[2]==='d');
       var arr=isFood?DEST[ck].food:DEST[ck].poi, pl=arr&&arr[i]; if(pl){ DAYEDITS[sk]=pl.n; rerenderKeep(); } return; }
+    var nb=e.target.closest('.nbtn');
+    if(nb){ var pn=nb.getAttribute('data-nb').split('|'); bumpNights(+pn[0], +pn[1]); return; }
     var sw=e.target.closest('.swapbtn');
     if(sw){ e.preventDefault(); openSwap(sw); return; }
     // trip tuner: adjust length, get another version, or jump to a day

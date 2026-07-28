@@ -35,6 +35,17 @@ Last updated: 2026-07-27.
 
 ## Backlog
 
+- [ ] **Photos of suggested places (hover/tap to preview).** Friend feedback: it'd
+  be nice to see an image of a POI when hovering its name. Needs an image source —
+  plan: lazy-fetch a thumbnail from the Wikipedia/Wikimedia REST summary API by POI
+  name (free, no key), cache per name, show in a small popover on hover (desktop) /
+  tap (mobile); fall back to nothing when no match. Not built yet.
+- [ ] **Richer / non-local food.** Friend feedback: only ~5 (local-cuisine) food
+  spots per city, so over a long stay they repeat and there's no option for someone
+  who doesn't want the local cuisine. Interim: the food swap now links to a Google
+  Maps "restaurants in <city>" search. Real fix: expand food data per city with a
+  few international options (Italian/grill/veg/etc.), likely AI-generated + cached.
+
 - [ ] **AI voice upgrade (true AR+EN mixing).** Browser speech can't mix languages;
   current voice is reliable single-language (EN/AR/ES). True code-switching needs AI
   transcription (e.g. Whisper) via the Worker (~½¢/voice note, needs an OpenAI key).
