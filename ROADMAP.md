@@ -86,9 +86,9 @@ Last updated: 2026-07-27.
 
 - [x] **Place photos on hover** — hovering a place name shows a Wikipedia thumbnail
   in a small popover. Free (no key), fetched only on hover (never on render), cached
-  30 days in localStorage, silent when there's no match. Desktop/mouse only; touch
-  still opens Maps on tap. Mobile preview is still open — a per-day thumbnail strip
-  is the likely approach if we want it.
+  30 days in localStorage, silent when there's no match. On touch devices (no hover)
+  a small photo button next to each place opens the same image inline instead — the
+  place name still opens Google Maps on tap, unchanged.
 
 - [x] **Country tracking by timezone** — anonymous, no permission, no precise
   location. Sends `tz` with each event; dashboard shows "Where visitors are"
