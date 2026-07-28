@@ -125,6 +125,21 @@
   #app[dir="rtl"] .editfab{right:auto;left:18px}
   .surprise{display:inline-block;margin-top:9px;background:none;border:none;color:var(--amber);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--ff-body);text-decoration:underline;text-decoration-color:var(--amber);text-underline-offset:3px;padding:2px 0}
   .surprise:hover{filter:brightness(1.1)}
+  .ideasbtn{display:block;width:100%;margin-top:12px;padding:13px;border:1px dashed var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:14.5px;font-weight:600;font-family:var(--ff-body);cursor:pointer}
+  .ideasbtn:hover{border-color:var(--teal)}
+  .ideas{margin-top:10px}
+  .idearow,.ideacities{display:flex;flex-wrap:wrap;gap:8px}
+  .ideacat{padding:10px 14px;border:1px solid var(--line);border-radius:999px;background:var(--paper2);color:var(--ink);font-size:14px;font-weight:600;font-family:var(--ff-body);cursor:pointer}
+  .ideacat:hover{border-color:var(--teal);background:var(--teal-soft)}
+  .ideaback{background:none;border:none;color:var(--muted);font-size:13px;font-weight:600;font-family:var(--ff-body);cursor:pointer;padding:4px 2px;margin-bottom:8px}
+  .ideacities{flex-direction:column}
+  .ideacity{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);cursor:pointer}
+  .ideacity:hover{border-color:var(--teal);background:var(--teal-soft)}
+  #app[dir="rtl"] .ideacity{text-align:right}
+  .icflag{font-size:22px;flex-shrink:0}
+  .icname{font-size:15px;font-weight:600;color:var(--ink)}
+  .iccountry{color:var(--muted);font-size:13px;margin-left:auto}
+  #app[dir="rtl"] .iccountry{margin-left:0;margin-right:auto}
   .addcity{display:inline-flex;align-items:center;gap:4px;margin-top:12px;padding:9px 15px;border-radius:999px;border:1px dashed var(--line);background:transparent;color:var(--teal);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--ff-body);transition:all .15s}
   .addcity:hover{border-color:var(--teal);background:var(--teal-soft)}
   .is-hidden{display:none!important}
@@ -626,6 +641,8 @@
       <div class="combolist is-hidden" id="destList"></div>
     </div>
     <button type="button" class="surprise" id="surprise">Surprise me</button>
+    <button type="button" class="ideasbtn" id="ideasBtn">🧭 <span id="ideasLbl">Not sure? Get ideas</span></button>
+    <div class="ideas is-hidden" id="ideasPanel"></div>
 
     <button type="button" class="addcity" id="addCity">+ <span id="addCityLabel">Add a second city</span></button>
     <div id="city2wrap" class="is-hidden">
@@ -2713,6 +2730,34 @@
     var keys=Object.keys(DEST), k=keys[Math.floor(Math.random()*keys.length)];
     $('dest').value=DEST[k].city; newSeed(); DAYEDITS={}; DAYROT={}; plan();
   });
+  // Zero-cost "Get ideas" — a fully button-driven picker over OUR OWN destinations (no AI calls at all).
+  var IDEAS={
+    beach:{vibe:'Relax',cities:['Maafushi','Bali','Phuket','Krabi','Santorini','Mykonos','Zanzibar','Boracay','Mauritius','Bora Bora','Maldives','Langkawi','Seychelles','Phuket']},
+    city:{vibe:'Culture',cities:['Tokyo','Paris','Istanbul','Dubai','London','Rome','Barcelona','Singapore','Seoul','Kuala Lumpur','Vienna','Prague','Amsterdam','New York']},
+    adventure:{vibe:'Adventure',cities:['Interlaken','Queenstown','Chamonix','Arusha','Cape Town','Reykjavik','Zermatt','Cusco','Pokhara','Banff','Chiang Mai','Innsbruck']},
+    food:{vibe:'Food',cities:['Bangkok','Istanbul','Tokyo','Rome','Kuala Lumpur','Penang','Hanoi','Osaka','Marrakech','Naples','Lyon','Ho Chi Minh City']},
+    nature:{vibe:'Nature',cities:['Reykjavik','Interlaken','Banff','Queenstown','Kotor','Hallstatt','Lucerne','Bled','Zermatt','Chiang Mai']}
+  };
+  function ideaCats(){ return LANG==='ar'?[['beach','🏖️ شاطئ'],['city','🏛️ مدينة'],['adventure','⛰️ مغامرة'],['food','🍜 أكل'],['nature','🌿 طبيعة']]:(LANG==='es'?[['beach','🏖️ Playa'],['city','🏛️ Ciudad'],['adventure','⛰️ Aventura'],['food','🍜 Comida'],['nature','🌿 Naturaleza']]:[['beach','🏖️ Beach'],['city','🏛️ City'],['adventure','⛰️ Adventure'],['food','🍜 Food'],['nature','🌿 Nature']]); }
+  function ideaKeys(cat){ var list=((IDEAS[cat]||{}).cities||[]).slice(), seen={}, out=[];
+    list.forEach(function(name){ var m=matchDest(name); if(m){ var k=keyOf(m); if(!seen[k]){ seen[k]=1; out.push(k); } } });
+    for(var i=out.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), tmp=out[i]; out[i]=out[j]; out[j]=tmp; }
+    return out.slice(0,5); }
+  function renderIdeaCats(){ $('ideasPanel').innerHTML='<div class="idearow">'+ideaCats().map(function(c){ return '<button type="button" class="ideacat" data-cat="'+c[0]+'">'+c[1]+'</button>'; }).join('')+'</div>'; $('ideasPanel').classList.remove('is-hidden'); }
+  function renderIdeaCities(cat){ var keys=ideaKeys(cat); if(!keys.length){ renderIdeaCats(); return; }
+    var back=LANG==='ar'?'‹ رجوع':(LANG==='es'?'‹ Atrás':'‹ Back');
+    $('ideasPanel').innerHTML='<button type="button" class="ideaback">'+back+'</button><div class="ideacities">'+keys.map(function(k){ var d=DEST[k]; return '<button type="button" class="ideacity" data-k="'+k+'" data-cat="'+cat+'"><span class="icflag">'+d.flag+'</span><span class="icname">'+esc(d.city)+'</span><span class="iccountry">'+esc(d.country)+'</span></button>'; }).join('')+'</div>'; }
+  function buildIdea(k,cat){ var d=DEST[k]; if(!d)return; var vibe=(IDEAS[cat]||{}).vibe||'Culture';
+    newSeed(); DAYEDITS={}; DAYROT={}; ROUTE=null; $('dest').value=d.city; $('dest2').value=''; try{$('city2wrap').classList.add('is-hidden'); $('addCity').classList.remove('is-hidden');}catch(e){}
+    $('days').value=5; syncDayChips();
+    document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===vibe);});
+    $('ideasPanel').classList.add('is-hidden'); plan(); }
+  $('ideasBtn').addEventListener('click',function(){ var pn=$('ideasPanel'); if(pn.classList.contains('is-hidden'))renderIdeaCats(); else pn.classList.add('is-hidden'); });
+  $('ideasPanel').addEventListener('click',function(e){
+    var cat=e.target.closest('.ideacat'); if(cat){ renderIdeaCities(cat.getAttribute('data-cat')); return; }
+    if(e.target.closest('.ideaback')){ renderIdeaCats(); return; }
+    var city=e.target.closest('.ideacity'); if(city){ buildIdea(city.getAttribute('data-k'),city.getAttribute('data-cat')); return; }
+  });
   // tap-friendly number steppers for days / adults / kids
   document.addEventListener('click',function(e){
     var b=e.target.closest('.stepbtn'); if(!b)return;
@@ -2956,6 +3001,7 @@
     $('introTitle').textContent=u.introTitle; $('introS1').textContent=u.introS1; $('introS2').textContent=u.introS2; $('introS3').textContent=u.introS3;
     $('lblPrompt').textContent=u.lblPrompt; $('promptBox').setAttribute('placeholder',u.promptPh); $('promptBtn').textContent=u.promptBtn; $('promptOr').textContent=u.promptOr; renderPromptEx(u);
     try{ $('moreOptsLbl').textContent=(lang==='ar'?'خيارات أكثر':(lang==='es'?'Más opciones':'More options')); }catch(e){}
+    try{ $('ideasLbl').textContent=(lang==='ar'?'محتار وين؟ خذ أفكار':(lang==='es'?'¿Sin idea? Sugerencias':'Not sure where? Get ideas')); }catch(e){}
     try{ var askL=(lang==='ar'?'اسأل بوصلة':(lang==='es'?'Pregunta a بوصلة':'Ask بوصلة')); $('chatFabLbl').textContent=askL; $('chatTitle').textContent=askL; $('chatInput').setAttribute('placeholder', lang==='ar'?'خبّرني عن رحلتك…':(lang==='es'?'Cuéntame sobre tu viaje…':'Tell me about your trip…')); }catch(e){}
     (function(){var mb=$('micBtn'); if(mb&&!mb.classList.contains('rec')){mb.setAttribute('aria-label',u.micStart);mb.setAttribute('title',u.micStart);}})();
     $('fbTitle').textContent=u.fbTitle; $('fbSub').textContent=u.fbSub; $('fbMsg').setAttribute('placeholder',u.fbMsgPh); $('fbContact').setAttribute('placeholder',u.fbContactPh); $('fbSend').textContent=u.fbSend; $('fbNote').textContent=u.fbNote;
