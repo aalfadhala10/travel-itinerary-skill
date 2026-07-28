@@ -3126,9 +3126,24 @@
         .catch(function(){ resolve(null); });
     });
   }
+  function buildingLine(cities){
+    var nm=(cities||[]).join(' → ');
+    if(LANG==='ar')return 'أجهّز لك '+nm+'… ثانية وحدة.';
+    if(LANG==='es')return 'Preparando '+nm+'… un momento.';
+    return 'Building '+nm+'… one moment.';
+  }
   function botBuildFromAI(res){ // res.cities are base cities in visit order; resolve each (build if missing), then plan
-    var cities=(res.cities||[]).slice(0,8).filter(Boolean); if(!cities.length){ CHATCHIPS=catChips(); chatRender(); return; }
+    var cities=(res.cities||[]).slice(0,8).filter(Boolean);
+    if(!cities.length){
+      botSay(LANG==='ar'?'ما وصلتني الوجهة عدل — وين تحب تروح؟':(LANG==='es'?'No me quedó clara la ciudad — ¿a dónde quieres ir?':'I didn’t catch the destination — where would you like to go?'));
+      CHATCHIPS=catChips(); chatRender(); return;
+    }
+    // Resolving cities we don't have yet means building them live, which takes a while. Say so —
+    // otherwise the chat looks frozen on the last reply.
+    var wait={role:'assistant',content:buildingLine(cities)}; CHATMSGS.push(wait); CHATCHIPS=[]; chatRender();
+    function clearWait(){ var w=CHATMSGS.indexOf(wait); if(w>=0)CHATMSGS.splice(w,1); }
     Promise.all(cities.map(function(n){return aiCity(n);})).then(function(keys){
+      clearWait();
       keys=keys.filter(function(k){return k&&DEST[k];});
       var seq=[]; keys.forEach(function(k){ if(!seq.length||seq[seq.length-1]!==k)seq.push(k); }); // collapse consecutive repeats
       var loop=seq.length>=3 && seq[0]===seq[seq.length-1]; // did the AI close the loop back to the start?
@@ -3168,7 +3183,12 @@
       else { $('dest2').value=''; try{$('city2wrap').classList.add('is-hidden'); $('addCity').classList.remove('is-hidden');}catch(e){} }
       try{ track('chat_plan',{dest:DEST[ks[0]].city,country:DEST[ks[0]].country||'',cities:ks.length,days:days}); }catch(e){}
       setTimeout(function(){ chatClose();
-        if(ks.length>=2){ planRoute(ks,days,vibes,budget,'balanced',!!res.roadtrip); } else { ROUTE=null; plan(); }
+        try{
+          if(ks.length>=2){ planRoute(ks,days,vibes,budget,'balanced',!!res.roadtrip); } else { ROUTE=null; plan(); }
+        }catch(err){
+          botSay(LANG==='ar'?'ما قدرت أجهّز هالمسار — جرّب أماكن ثانية:':(LANG==='es'?'No pude armar esa ruta — prueba otros lugares:':'I couldn’t build that route — try other places:'));
+          CHATCHIPS=catChips(); chatOpen(); chatRender(); return;
+        }
         askWhatToChange(); },700); // the conversation stays alive so they can keep editing
     });
   }
@@ -3189,6 +3209,9 @@
       if(!res){ botSay(LANG==='ar'?'صار خلل بسيط، جرّب مرة ثانية أو اختر من تحت:':(LANG==='es'?'Hubo un problema, inténtalo otra vez o elige abajo:':'Something hiccuped — try again or tap a starter:')); CHATCHIPS=catChips(); chatRender(); return; }
       if(res.reply)botSay(res.reply);
       CHATCHIPS=(Array.isArray(res.chips)?res.chips:[]).slice(0,4).map(function(t){ return {t:String(t),a:'say',v:String(t)}; });
+      // A reply with no chips and no trip is a dead end — the answer just sits there and nothing
+      // happens. If the AI isn't ready and offered nothing, put the starters back so there's a way on.
+      if(!res.ready&&!CHATCHIPS.length)CHATCHIPS=catChips();
       chatRender();
       if(res.ready)botBuildFromAI(res);
     });

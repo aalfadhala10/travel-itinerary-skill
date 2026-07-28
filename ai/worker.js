@@ -373,7 +373,12 @@ function chatTurn(messages, apiKey) {
     "ALWAYS fill `chips` with 2-4 SHORT tappable quick-replies (under ~20 chars each, in the user's language) that " +
     "answer your current question effortlessly — e.g. day counts ('5 days','7 days','10 days'), the destinations you " +
     "just suggested, budgets, or for the car question ('Loop, same airport','One-way','Renting a car'). Leave chips " +
-    "empty only when ready=true. " +
+    "empty only when ready=true. NEVER end a turn with a bare acknowledgement. A reply like 'تمام', " +
+    "'Okay' or 'Got it' on its own is a dead end — the traveller is left with nothing to tap and no trip. " +
+    "Every single reply must do ONE of two things: ask the next question AND offer chips, or set " +
+    "ready=true and hand over the trip. If they have just answered your last open question and you have a " +
+    "destination and a rough number of days, you already have enough — set ready=true and build it rather " +
+    "than acknowledging and stopping. " +
     "WHAT THE APP ITSELF CAN DO — SAY SO WHEN IT'S RELEVANT. Many things people ask you for are already features " +
     "of the finished plan, so never answer 'I can't' and never promise to do it yourself in the chat. Instead say, " +
     "in ONE short sentence, that it's waiting for them on the plan — e.g. 'And once the plan is up you can tap any " +
