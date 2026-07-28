@@ -366,6 +366,7 @@
   .transfer{background:var(--paper2);border:1px dashed var(--clay);border-radius:12px;padding:12px 14px;margin:14px 0 4px}
   .transfer .tlabel{font-family:var(--ff-data);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--clay);font-weight:600}
   .transfer .tbody{font-size:14px;margin-top:3px}
+  .transfer .pit{font-size:12.5px;color:var(--muted);margin-top:5px;font-style:italic}
   .mapcard{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px;margin-top:16px}
   .maphdr{font-family:var(--ff-data);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
   #app[dir="rtl"] .maphdr{letter-spacing:normal;font-family:var(--ff-body)}
@@ -2738,10 +2739,18 @@
     nature:{vibe:'Nature',cities:['Reykjavik','Interlaken','Banff','Queenstown','Kotor','Hallstatt','Lucerne','Bled','Zermatt','Chiang Mai']}
   };
   function ideaCats(){ return LANG==='ar'?[['beach','🏖️ شاطئ'],['city','🏛️ مدينة'],['adventure','⛰️ مغامرة'],['food','🍜 أكل'],['nature','🌿 طبيعة']]:(LANG==='es'?[['beach','🏖️ Playa'],['city','🏛️ Ciudad'],['adventure','⛰️ Aventura'],['food','🍜 Comida'],['nature','🌿 Naturaleza']]:[['beach','🏖️ Beach'],['city','🏛️ City'],['adventure','⛰️ Adventure'],['food','🍜 Food'],['nature','🌿 Nature']]); }
-  function ideaKeys(cat){ var list=((IDEAS[cat]||{}).cities||[]).slice(), seen={}, out=[];
+  function ideaKeys(cat){ var list=((IDEAS[cat]||{}).cities||[]), seen={}, out=[]; // full de-duped pool, in list order
     list.forEach(function(name){ var m=matchDest(name); if(m){ var k=keyOf(m); if(!seen[k]){ seen[k]=1; out.push(k); } } });
-    for(var i=out.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), tmp=out[i]; out[i]=out[j]; out[j]=tmp; }
-    return out.slice(0,5); }
+    return out; }
+  var CHATSEEN={}; // per-category destinations already shown this session, so "More" always brings NEW ones
+  function nextDests(cat){ var pool=ideaKeys(cat); if(!pool.length)return {keys:[],more:false};
+    var shown=CHATSEEN[cat]||(CHATSEEN[cat]={});
+    var fresh=pool.filter(function(k){ return !shown[k]; });
+    if(!fresh.length){ CHATSEEN[cat]=shown={}; fresh=pool.slice(); } // seen them all → start the cycle over
+    for(var i=fresh.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)),t=fresh[i];fresh[i]=fresh[j];fresh[j]=t; }
+    var pick=fresh.slice(0,5); pick.forEach(function(k){ shown[k]=1; });
+    var more=pool.filter(function(k){ return !shown[k]; }).length>0;
+    return {keys:pick,more:more}; }
   // tap-friendly number steppers for days / adults / kids
   document.addEventListener('click',function(e){
     var b=e.target.closest('.stepbtn'); if(!b)return;
@@ -2898,16 +2907,32 @@
   }
 
   // ---- Trip assistant — smart AI chat (Worker/Haiku) that builds the trip, with button-driven quick-starts --
-  var CHATMSGS=[], CHATCHIPS=[], CHATCAT=null, CHATKEY=null, CHATROUTE=null; // chips: [{t:label,a:action,v:value}]
+  var CHATMSGS=[], CHATCHIPS=[], CHATCAT=null, CHATKEY=null, CHATROUTE=null, CHATPICK=[]; // chips: [{t:label,a:action,v:value}]; CHATPICK: cities chosen so far
   // curated multi-city drives — only shown when at least 2 of their cities exist in our data
   var ROADTRIPS=[
-    {flag:'🇮🇹',cities:['Rome','Florence','Venice']},{flag:'🇨🇭',cities:['Zurich','Lucerne','Interlaken']},
+    {flag:'🇮🇹',cities:['Rome','Florence','Venice']},{flag:'🇨🇭',cities:['Zurich','Lucerne','Interlaken','Zermatt']},
     {flag:'🇯🇵',cities:['Tokyo','Kyoto','Osaka']},{flag:'🇦🇪',cities:['Dubai','Abu Dhabi']},
     {flag:'🇪🇸',cities:['Barcelona','Valencia','Madrid']},{flag:'🇹🇷',cities:['Istanbul','Cappadocia','Antalya']},
-    {flag:'🇴🇲',cities:['Muscat','Nizwa','Salalah']},{flag:'🇦🇹',cities:['Vienna','Salzburg','Innsbruck']}
+    {flag:'🇴🇲',cities:['Muscat','Nizwa','Salalah']},{flag:'🇦🇹',cities:['Vienna','Salzburg','Innsbruck']},
+    {flag:'🇩🇪',cities:['Munich','Garmisch-Partenkirchen','Innsbruck','Kaprun']},
+    {flag:'🇵🇹',cities:['Lisbon','Porto']},{flag:'🇭🇷',cities:['Split','Dubrovnik']},
+    {flag:'🇹🇭',cities:['Bangkok','Chiang Mai']},{flag:'🇬🇧',cities:['London','Edinburgh']},
+    {flag:'🇳🇿',cities:['Queenstown','Wanaka']},{flag:'🇲🇦',cities:['Marrakech','Fes']},
+    {flag:'🇮🇹',cities:['Milan','Como','Verona']},{flag:'🇫🇷',cities:['Nice','Cannes','Monaco']}
   ];
   function validRoutes(){ return ROADTRIPS.map(function(r){ var keys=[]; r.cities.forEach(function(n){ var m=matchDest(n); if(m){ var k=keyOf(m); if(keys.indexOf(k)<0)keys.push(k); } }); return {flag:r.flag,keys:keys}; }).filter(function(r){ return r.keys.length>=2; }); }
+  var ROADSEEN={}; // road-trip routes already shown this session, so "More routes" brings fresh ones
+  function nextRoutes(){ var routes=validRoutes(); if(!routes.length)return {routes:[],more:false};
+    var fresh=routes.map(function(_,i){return i;}).filter(function(i){ return !ROADSEEN[i]; });
+    if(!fresh.length){ ROADSEEN={}; fresh=routes.map(function(_,i){return i;}); }
+    for(var i=fresh.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)),t=fresh[i];fresh[i]=fresh[j];fresh[j]=t; }
+    var pick=fresh.slice(0,6); pick.forEach(function(i){ ROADSEEN[i]=1; });
+    var more=routes.map(function(_,i){return i;}).filter(function(i){return !ROADSEEN[i];}).length>0;
+    return {routes:pick.map(function(i){return {i:i,r:routes[i]};}),more:more}; }
+  function roadChips(sub){ var chips=sub.routes.map(function(x){ return {t:x.r.flag+' '+x.r.keys.map(function(k){return DEST[k].city;}).join(' → '),a:'route',v:String(x.i)}; });
+    if(sub.more)chips.push({t:moreLabel(),a:'roadmore',v:''}); chips.push({t:backLabel(),a:'back',v:''}); return chips; }
   function backLabel(){ return LANG==='ar'?'‹ رجوع':(LANG==='es'?'‹ Atrás':'‹ Back'); }
+  function doneLabel(){ var n=CHATPICK.length; return (LANG==='ar'?('✓ تم'+(n?' ('+n+')':'')):(LANG==='es'?('✓ Listo'+(n?' ('+n+')':'')):('✓ Done'+(n?' ('+n+')':'')))); }
   function moreLabel(){ return LANG==='ar'?'🔀 غيّرها':(LANG==='es'?'🔀 Más':'🔀 More'); }
   function chatGreeting(){ return CONFIG.aiEndpoint
       ? (LANG==='ar'?'هلا! احكِ لي عن رحلتك — وجهة، جو معيّن، أو مسار كامل بالسيارة — وأنا أجهّزها لك. أو اختر من تحت:':(LANG==='es'?'¡Hola! Cuéntame de tu viaje — un destino, un ambiente, o una ruta entera en coche — y lo armo. O elige abajo:':'Hi! Tell me about your trip — a place, a vibe, or a whole road trip — and I’ll build it. Or tap a starter:'))
@@ -2926,38 +2951,50 @@
   }
   function botSay(t){ CHATMSGS.push({role:'assistant',content:t}); }
   function meSay(t){ CHATMSGS.push({role:'user',content:t}); }
-  function chatReset(){ CHATMSGS=[]; CHATCHIPS=[]; CHATCAT=null; CHATKEY=null; CHATROUTE=null; botSay(chatGreeting()); CHATCHIPS=catChips(); }
+  function chatReset(){ CHATMSGS=[]; CHATCHIPS=[]; CHATCAT=null; CHATKEY=null; CHATROUTE=null; CHATPICK=[]; botSay(chatGreeting()); CHATCHIPS=catChips(); }
+  function pickedLine(){ return CHATPICK.map(function(k){return DEST[k].city;}).join(' → '); }
+  function pickMoreChips(){ var chips=[{t:doneLabel(),a:'done',v:''}]; // Done first, then a few more of the same vibe to add
+    if(CHATCAT){ var r=nextDests(CHATCAT); r.keys.forEach(function(k){ if(CHATPICK.indexOf(k)<0)chips.push({t:DEST[k].flag+' '+DEST[k].city,a:'dest',v:k}); }); }
+    chips.push({t:backLabel(),a:'back',v:''}); return chips; }
   function chatOpen(){ var pn=$('chatPanel'); if(!pn)return;
     if(!CHATMSGS.length)chatReset();
     chatRender(); pn.classList.add('show'); pn.setAttribute('aria-hidden','false'); document.body.classList.add('chatlock');
     setTimeout(function(){ try{$('chatInput').focus();}catch(e){} },250); }
   function chatClose(){ var pn=$('chatPanel'); if(pn){ pn.classList.remove('show'); pn.setAttribute('aria-hidden','true'); } document.body.classList.remove('chatlock'); }
   function askDays(cityName){ botSay(LANG==='ar'?('كم يوم في '+cityName+'؟'):(LANG==='es'?('¿Cuántos días en '+cityName+'?'):('How many days in '+cityName+'?'))); CHATCHIPS=dayChips(); }
-  function destChips(cat){ var keys=ideaKeys(cat);
-    var chips=keys.map(function(k){ return {t:DEST[k].flag+' '+DEST[k].city,a:'dest',v:k}; });
-    chips.push({t:moreLabel(),a:'more',v:cat}); chips.push({t:backLabel(),a:'back',v:''}); return chips; }
+  function destChips(cat){ var r=nextDests(cat);
+    var chips=r.keys.filter(function(k){return CHATPICK.indexOf(k)<0;}).map(function(k){ return {t:DEST[k].flag+' '+DEST[k].city,a:'dest',v:k}; });
+    if(r.more)chips.push({t:moreLabel(),a:'more',v:cat}); chips.push({t:backLabel(),a:'back',v:''}); return chips; }
   function chatAct(a,v){
-    if(a==='cat'){ CHATCAT=v; CHATROUTE=null; var lbl=(ideaCats().filter(function(c){return c[0]===v;})[0]||['',v])[1]; meSay(lbl);
+    if(a==='cat'){ CHATCAT=v; CHATROUTE=null; CHATPICK=[]; CHATSEEN[v]={}; var lbl=(ideaCats().filter(function(c){return c[0]===v;})[0]||['',v])[1]; meSay(lbl);
       if(!ideaKeys(v).length){ chatReset(); chatRender(); return; }
-      botSay(LANG==='ar'?'حلو! اختر وجهة:':(LANG==='es'?'¡Genial! Elige un destino:':'Nice! Pick a destination:'));
+      botSay(LANG==='ar'?'حلو! اختر وجهة (تقدر تختار أكثر من وحدة):':(LANG==='es'?'¡Genial! Elige un destino (puedes elegir varios):':'Nice! Pick a destination (you can add more than one):'));
       CHATCHIPS=destChips(v); chatRender(); return; }
-    if(a==='more'){ CHATCHIPS=destChips(v||CHATCAT); chatRender(); return; } // reshuffle destinations
+    if(a==='more'){ CHATCHIPS=destChips(v||CHATCAT); chatRender(); return; } // NEW destinations, never repeats
     if(a==='road'){ meSay(LANG==='ar'?'🛣️ رحلة برية':(LANG==='es'?'🛣️ Ruta en coche':'🛣️ Road trip'));
-      var routes=validRoutes(); if(!routes.length){ chatReset(); chatRender(); return; }
+      ROADSEEN={}; var sub=nextRoutes(); if(!sub.routes.length){ chatReset(); chatRender(); return; }
       botSay(LANG==='ar'?'حلو! اختر مسار:':(LANG==='es'?'¡Genial! Elige una ruta:':'Nice! Pick a route:'));
-      CHATCHIPS=routes.map(function(r,i){ return {t:r.flag+' '+r.keys.map(function(k){return DEST[k].city;}).join(' → '),a:'route',v:String(i)}; });
-      CHATCHIPS.push({t:backLabel(),a:'back',v:''}); chatRender(); return; }
+      CHATCHIPS=roadChips(sub); chatRender(); return; }
+    if(a==='roadmore'){ CHATCHIPS=roadChips(nextRoutes()); chatRender(); return; } // fresh routes, no repeats
     if(a==='route'){ var r=validRoutes()[parseInt(v,10)]; if(!r){ chatReset(); chatRender(); return; }
-      CHATROUTE=r.keys; CHATKEY=null; CHATCAT=null; var nm=r.keys.map(function(k){return DEST[k].city;}).join(' → ');
+      CHATROUTE=r.keys; CHATKEY=null; CHATCAT=null; CHATPICK=[]; var nm=r.keys.map(function(k){return DEST[k].city;}).join(' → ');
       meSay(nm); askDays(nm); chatRender(); return; }
-    if(a==='surprise'){ var ks=Object.keys(DEST), k=ks[Math.floor(Math.random()*ks.length)]; CHATKEY=k; CHATROUTE=null; CHATCAT=null;
+    if(a==='surprise'){ var ks=Object.keys(DEST), k=ks[Math.floor(Math.random()*ks.length)]; CHATKEY=k; CHATROUTE=null; CHATCAT=null; CHATPICK=[];
       meSay(LANG==='ar'?'🎲 فاجئني':(LANG==='es'?'🎲 Sorpréndeme':'🎲 Surprise me'));
       botSay(DEST[k].flag+' '+DEST[k].city+'!'); askDays(DEST[k].city); chatRender(); return; }
     if(a==='say'){ var inp=$('chatInput'); if(inp){ inp.value=v; } chatSubmitText(); return; } // AI quick-reply chip → send as a typed message
     if(a==='back'){ chatReset(); chatRender(); return; }
-    if(a==='dest'){ CHATKEY=v; CHATROUTE=null; meSay(DEST[v].city); askDays(DEST[v].city); chatRender(); return; }
+    if(a==='dest'){ CHATROUTE=null; if(CHATPICK.indexOf(v)<0)CHATPICK.push(v); CHATKEY=(CHATPICK.length===1?v:null); meSay(DEST[v].city); // pick one or MORE
+      botSay(CHATPICK.length>1
+        ? (LANG==='ar'?('تمام! رحلتك للحين: '+pickedLine()+'. زِد مدينة ثانية أو اضغط تم.'):(LANG==='es'?('¡Listo! Tu viaje: '+pickedLine()+'. Añade otra ciudad o pulsa Listo.'):('Added! Trip so far: '+pickedLine()+'. Add another city, or tap Done.')))
+        : (LANG==='ar'?('حلو! زِد مدينة ثانية للرحلة، أو اضغط تم.'):(LANG==='es'?('¡Bien! Añade otra ciudad, o pulsa Listo.'):('Nice! Add another city for a multi-stop trip, or tap Done.'))));
+      CHATCHIPS=pickMoreChips(); chatRender(); return; }
+    if(a==='done'){ if(!CHATPICK.length){ chatReset(); chatRender(); return; } meSay(doneLabel()); askDays(pickedLine()); chatRender(); return; }
     if(a==='days'){ var days=Math.max(1,Math.min(30,parseInt(v,10)||5)); meSay(dayWordN(days));
-      if(CHATROUTE&&CHATROUTE.length>=2) buildBotRoute(CHATROUTE,days); else buildBot(CHATKEY,CHATCAT,days); }
+      if(CHATPICK.length>=2) buildBotRoute(CHATPICK.slice(),days,[(IDEAS[CHATCAT]||{}).vibe||'Culture']);
+      else if(CHATROUTE&&CHATROUTE.length>=2) buildBotRoute(CHATROUTE,days);
+      else if(CHATPICK.length===1) buildBot(CHATPICK[0],CHATCAT,days);
+      else buildBot(CHATKEY,CHATCAT,days); }
   }
   function buildBot(k,cat,days){
     if(!k||!DEST[k]){ chatReset(); chatRender(); return; }
@@ -2969,17 +3006,18 @@
     $('days').value=days; syncDayChips();
     document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===vibe);});
     try{ track('chat_plan',{dest:DEST[k].city,country:DEST[k].country||'',days:days}); }catch(e){} // trip built via the bot
-    setTimeout(function(){ chatClose(); ROUTE=null; plan(); CHATMSGS=[]; CHATCHIPS=[]; },700);
+    setTimeout(function(){ chatClose(); ROUTE=null; plan(); CHATMSGS=[]; CHATCHIPS=[]; CHATPICK=[]; },700);
   }
-  function buildBotRoute(keys,days){
+  function buildBotRoute(keys,days,vibes){
     keys=(keys||[]).filter(function(k){return DEST[k];}); if(keys.length<2){ buildBot(keys[0],null,days); return; }
+    vibes=(Array.isArray(vibes)&&vibes.length)?vibes:['Culture'];
     var nm=keys.map(function(k){return DEST[k].city;}).join(' → ');
     botSay(LANG==='ar'?('تمام! أجهّز رحلتك: '+nm+'…'):(LANG==='es'?('¡Listo! Preparando: '+nm+'…'):('Perfect — building your road trip: '+nm+'…')));
     CHATCHIPS=[]; chatRender();
     newSeed(); DAYEDITS={}; DAYROT={};
     $('dest').value=DEST[keys[0]].city; $('days').value=days; syncDayChips();
     try{ track('chat_plan',{dest:DEST[keys[0]].city,country:DEST[keys[0]].country||'',cities:keys.length,days:days}); }catch(e){}
-    setTimeout(function(){ chatClose(); planRoute(keys,days,['Culture'],'Mid-range','balanced',true); CHATMSGS=[]; CHATCHIPS=[]; },700);
+    setTimeout(function(){ chatClose(); planRoute(keys,days,vibes,'Mid-range','balanced',true); CHATMSGS=[]; CHATCHIPS=[]; CHATPICK=[]; },700);
   }
   // --- Smart AI path: type anything, the Worker (Haiku) chats and hands off a trip to build ------
   var CHATBUSY=false;
@@ -3085,6 +3123,12 @@
   function slot(ico,tm,d){return '<div class="slot"><div class="t">'+tm+'</div><div class="d">'+d+'</div></div>';}
   function timeLabels(o,n){var m=o.times; return n===2?[m.morning,m.evening]:n===4?[m.morning,m.midday,m.afternoon,m.evening]:[m.morning,m.afternoon,m.evening];}
   function dayTitle(o,d,total){return d===1?o.arrival:d===total?o.last:o.explore;}
+  // small rest stops along a drive — coffee / ice cream / leg-stretch. Varies by leg, text-only (no emoji).
+  function pitStopLine(idx){
+    var en=['Halfway: pull over for a coffee and a leg-stretch.','Midway: grab an ice cream and a short break.','On the way: a scenic café stop and a quick rest.'];
+    var ar=['بالنص: وقفة قهوة وتمشية بسيطة.','بالطريق: آيس كريم واستراحة سريعة.','بالطريق: وقفة كافيه وإطلالة حلوة.'];
+    var es=['A mitad de camino: para por un café y estira las piernas.','En el camino: un helado y un descanso corto.','En ruta: una parada en un café con vistas.'];
+    var a=LANG==='ar'?ar:(LANG==='es'?es:en); return a[Math.abs(idx)%a.length]; }
   // "Adventure" isn't a stored POI tag — detect it from the place name so it works across every city
   var ADV_RE=/\b(safari|scuba|div(e|ing)|snorkel|surf|kayak|canoe|raft|rafting|zip-?line|bungee|bungy|skydiv|paraglid|parasail|jet-?ski|quad|atv|dune|desert|hik(e|ing)|trek|climb|abseil|rappel|canyon|cav(e|ing)|waterfall|national park|reserve|wildlife|game drive|kitesurf|windsurf|paddle|snowboard|cable ?car|gondola|hot ?air balloon|balloon|off-?road|4x4|glacier|volcano|via ferrata|whitewater|wakeboard|flyboard|camel|horse ?rid)/i;
   function isAdventure(p){ return ADV_RE.test(p.n||'') || ADV_RE.test(p.a||''); }
@@ -3885,7 +3929,7 @@
     for(i=0;i<upto;i++){
       var stops=[], cnt=access?dc[i]:1;
       routeHtml+=emitDays(ms[i],startDay,cnt,days,vibes,spd,o,t,txt,stops);
-      if(access&&i<n-1){ var tr=transferInfo(t,ms[i],ms[i+1],kmDist(CO[keys[i]]||[0,0],CO[keys[i+1]]||[0,0])); var mode=ROUTEDRIVE?o.modeDrive:tr.mode; routeHtml+='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+mode+' · '+esc(ms[i].city)+' → '+esc(ms[i+1].city)+' · '+tr.dur+' · '+money(t,tr.usd)+'</div></div>'; txt.push(''); txt.push('» '+o.cats.transfer+': '+mode+' '+ms[i].city+' → '+ms[i+1].city+' ('+tr.dur+')'); }
+      if(access&&i<n-1){ var tr=transferInfo(t,ms[i],ms[i+1],kmDist(CO[keys[i]]||[0,0],CO[keys[i+1]]||[0,0])); var mode=ROUTEDRIVE?o.modeDrive:tr.mode; var pit=ROUTEDRIVE?('<div class="pit">'+pitStopLine(i)+'</div>'):''; routeHtml+='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+mode+' · '+esc(ms[i].city)+' → '+esc(ms[i+1].city)+' · '+tr.dur+' · '+money(t,tr.usd)+pit+'</div></div>'; txt.push(''); txt.push('» '+o.cats.transfer+': '+mode+' '+ms[i].city+' → '+ms[i+1].city+' ('+tr.dur+')'); if(ROUTEDRIVE)txt.push('  '+pitStopLine(i)); }
       startDay+=dc[i];
     }
     mapHtml=routeStrip(ms.slice(0,upto).map(function(m){return m.city;}),t);
@@ -4259,8 +4303,9 @@
       var stops1=[], route1=emitDays(m1,1,freeN,days,vibes,spd,o,t,txt,stops1);
       var route2='', transHtml='';
       if(access&&multi){
-        transHtml='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+tr.mode+' · '+esc(m1.city)+' → '+esc(m2.city)+' · '+tr.dur+' · '+money(t,tr.usd)+'</div></div>';
-        txt.push(''); txt.push('» '+o.cats.transfer+': '+m1.city+' → '+m2.city+' ('+tr.dur+', ~$'+tr.usd+')');
+        var pit2=(tr.mode===o.modeGround)?('<div class="pit">'+pitStopLine(0)+'</div>'):'';
+        transHtml='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+tr.mode+' · '+esc(m1.city)+' → '+esc(m2.city)+' · '+tr.dur+' · '+money(t,tr.usd)+pit2+'</div></div>';
+        txt.push(''); txt.push('» '+o.cats.transfer+': '+m1.city+' → '+m2.city+' ('+tr.dur+', ~$'+tr.usd+')'); if(pit2)txt.push('  '+pitStopLine(0));
         var stops2=[]; route2=emitDays(m2,d1+1,d2,days,vibes,spd,o,t,txt,stops2);
       }
       html+=tunerBar(o,days)+routeStrip((access&&multi)?[m1.city,m2.city]:[m1.city],t);
