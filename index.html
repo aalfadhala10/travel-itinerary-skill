@@ -388,6 +388,11 @@
   .slot.extra .t{color:var(--teal)}
   .exdel{flex:0 0 auto;width:30px;height:30px;padding:0;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);font-size:13px;line-height:1;cursor:pointer}
   .exdel:hover{border-color:var(--clay);color:var(--clay)}
+  .lasttrip{display:flex;align-items:center;gap:10px;margin:16px 0 0;padding:12px 14px;border:1px dashed var(--line);border-radius:12px;background:var(--paper2)}
+  .lasttrip .ltxt{flex:1;min-width:0;font-size:13.5px;color:var(--muted);line-height:1.45}
+  .lasttrip .ltxt b{color:var(--ink);font-weight:600}
+  .lasttrip .lopen{flex:0 0 auto;padding:8px 13px;border:1px solid var(--teal);border-radius:999px;background:transparent;color:var(--teal);font-size:13px;font-weight:600;font-family:var(--ff-body);cursor:pointer}
+  .lasttrip .lx{flex:0 0 auto;width:28px;height:28px;padding:0;border:none;border-radius:50%;background:transparent;color:var(--muted);font-size:14px;line-height:1;cursor:pointer}
   .editbar{margin:18px 0 4px;padding:14px;border:1px solid var(--line);border-radius:13px;background:var(--paper2)}
   .editq{font-size:14.5px;color:var(--ink);margin-bottom:10px;line-height:1.5}
   .editchips{display:flex;flex-wrap:wrap;gap:7px}
@@ -769,6 +774,7 @@
   </div>
 
   <div id="mytrips" class="is-hidden"></div>
+  <div class="lasttrip is-hidden" id="lastTrip"></div>
   <div class="out" id="out" aria-live="polite"></div>
   <p class="foot" id="foot"></p>
 
@@ -3225,6 +3231,7 @@
     $('drawerEdit').textContent=u.profileTitle; $('navHow').textContent=u.navHow; $('navTrips').textContent=u.myTrips; $('navInstall').textContent=u.navInstall; $('navShare').textContent=u.navShare; $('navFeedback').textContent=u.navFeedback; $('drawerAbout').textContent=u.menuAbout;
     $('introTitle').textContent=u.introTitle; $('introS1').textContent=u.introS1; $('introS2').textContent=u.introS2; $('introS3').textContent=u.introS3;
     try{ $('moreOptsLbl').textContent=(lang==='ar'?'خيارات أكثر':(lang==='es'?'Más opciones':'More options')); }catch(e){}
+    try{ if(LASTSTATE&&!$('lastTrip').classList.contains('is-hidden'))showLastTrip(LASTSTATE); }catch(e){}
     try{ syncFab(); $('chatInput').setAttribute('placeholder', lang==='ar'?'احكِ لي عن رحلتك…':(lang==='es'?'Cuéntame de tu viaje…':'Tell me about your trip…')); }catch(e){}
     (function(){var mb=$('chatMic'); if(mb&&!mb.classList.contains('rec')){mb.setAttribute('aria-label',u.micStart);mb.setAttribute('title',u.micStart);}})();
     $('fbTitle').textContent=u.fbTitle; $('fbSub').textContent=u.fbSub; $('fbMsg').setAttribute('placeholder',u.fbMsgPh); $('fbContact').setAttribute('placeholder',u.fbContactPh); $('fbSend').textContent=u.fbSend; $('fbNote').textContent=u.fbNote;
@@ -4461,7 +4468,9 @@
   $('fbnStars').addEventListener('click',function(e){ var b=e.target.closest('.fbnstar'); if(!b)return; hideFbNudge(); openFeedback(parseInt(b.getAttribute('data-r'),10)); });
   $('fbnNo').addEventListener('click',hideFbNudge);
 
-  function applyState(s){
+  // render=false restores the form only. Opening the app should land on the planner, not on a
+  // re-run of the last trip — that made it feel like it never started over.
+  function applyState(s,render){
     if(s.lang&&I18N[s.lang]&&!pickedLang())applyLang(s.lang);
     SEED=(typeof s.seed==='number'?s.seed:SEED); // reproduce the exact saved/shared trip
     DAYEDITS=(s.edits&&typeof s.edits==='object')?s.edits:{}; DAYROT=(s.rot&&typeof s.rot==='object')?s.rot:{}; // restore per-day edits
@@ -4471,8 +4480,36 @@
     if(s.d2){ $('city2wrap').classList.remove('is-hidden'); $('addCity').classList.add('is-hidden'); $('dest2').value=s.d2; }
     if(s.budget)document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===s.budget);});
     if(s.vibes&&s.vibes.length)document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',s.vibes.indexOf(c.dataset.v)>=0);});
+    if(render===false)return;
     if(s.rt&&s.rt.length>=2&&s.rt.every(function(k){return DEST[k];})){ planRoute(s.rt,s.days,s.vibes,s.budget,s.pace,s.dr); return; }
     if(s.d)plan();
+  }
+  // The last trip isn't lost — it's offered in one line, and only opens if they ask for it.
+  var LASTSTATE=null;
+  function lastTripName(s){
+    var names=[];
+    if(s.rt&&s.rt.length>=2){ names=s.rt.map(function(k){ return DEST[k]?DEST[k].city:k; }); }
+    else if(s.d){ names=[s.d]; if(s.d2)names.push(s.d2); }
+    if(!names.length)return '';
+    var seen={},out=[]; names.forEach(function(x){ if(!seen[x]){seen[x]=1;out.push(x);} });
+    return out.join(' → ');
+  }
+  function showLastTrip(s){
+    var nm=lastTripName(s); if(!nm)return;
+    LASTSTATE=s;
+    var o=I18N[LANG].out, d=parseInt(s.days,10)||0;
+    var lead=LANG==='ar'?'آخر رحلة خططتها':(LANG==='es'?'Tu último viaje':'Your last trip');
+    var open=LANG==='ar'?'افتحها':(LANG==='es'?'Abrir':'Open it');
+    var el=$('lastTrip');
+    el.innerHTML='<div class="ltxt">'+esc(lead)+': <b>'+esc(nm)+'</b>'+(d?(' · '+d+' '+o.daysUnit):'')+'</div>'
+      +'<button type="button" class="lopen" id="lastOpen">'+esc(open)+'</button>'
+      +'<button type="button" class="lx" id="lastX" aria-label="'+esc(open)+'">✕</button>';
+    el.classList.remove('is-hidden');
+    $('lastOpen').addEventListener('click',function(){
+      el.classList.add('is-hidden');
+      if(LASTSTATE)applyState(LASTSTATE,true);
+    });
+    $('lastX').addEventListener('click',function(){ el.classList.add('is-hidden'); });
   }
 
   // how many days a single city can fill before it starts repeating (~its POIs / 4, clamped 2–3)
@@ -4621,7 +4658,8 @@
     if(m1)ensureFood(multi?[keyOf(m1),keyOf(m2)]:[keyOf(m1)], multi?[d1,d2]:[days]);
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
-  $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; ROUTEDC=null; STAYAREA=''; plan(); });
+  $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYADD={}; ROUTEDC=null; STAYAREA='';
+    try{ $('lastTrip').classList.add('is-hidden'); }catch(e){} plan(); });
 
   function toast(msg){var el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove('show');},1800);}
   // Print/save-as-PDF: name the file after the destination, and print only the itinerary (see @media print).
@@ -4908,10 +4946,11 @@
   // restore from a shared trip link, else the last saved trip
   (function(){
     try{
-      var s=null, h=location.hash||'';
-      if(h.indexOf('#trip=')===0){ s=JSON.parse(decodeURIComponent(h.slice(6))); }
-      if(!s){ s=JSON.parse(localStorage.getItem('rihla_v1')||'null'); }
-      if(s){ applyState(s); }
+      var s=null, h=location.hash||'', shared=(h.indexOf('#trip=')===0);
+      if(shared){ s=JSON.parse(decodeURIComponent(h.slice(6))); }
+      if(!s){ s=JSON.parse(localStorage.getItem('rihla_v1')||'null'); shared=false; }
+      if(s&&shared){ applyState(s,true); }            // someone opened a shared trip — show it
+      else if(s){ applyState(s,false); showLastTrip(s); } // your own last trip — offer it, don't force it
       else {
         var cc=detectCurrency(); if(cc){ $('homeCur').value=cc; HOME=cc; }
       }
