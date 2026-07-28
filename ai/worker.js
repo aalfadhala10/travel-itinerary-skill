@@ -72,6 +72,8 @@ export default {
               .map((m) => ({ role: m.role, content: String(m.content).slice(0, 1000) }))
               .slice(-20)
           : [];
+        while (msgs.length && msgs[0].role !== "user") msgs.shift();                       // must START on a user turn
+        while (msgs.length && msgs[msgs.length - 1].role !== "user") msgs.pop();            // must NOT end on assistant (a trailing "…"/prefill breaks structured outputs)
         if (!msgs.length) return reply({ error: "no messages" }, 400, origin);
         return reply({ chat: await chatTurn(msgs, env.ANTHROPIC_API_KEY) }, 200, origin);
       }
