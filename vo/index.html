@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>سند · Sanad — Variation Order register &amp; notice tracker</title>
-<meta name="description" content="Log every variation the moment it is instructed, never miss a contractual notice deadline, and generate the notice, the submission and the substantiation pack from the record you already kept.">
+<title>سند · Sanad — سجل أوامر التغيير ومهل الإشعارات · قطر</title>
+<meta name="description" content="سجل أوامر التغيير للمشاريع في قطر: تتبّع مهل الإشعارات التعاقدية، سلسلة أدلة لكل أمر، سقف الـ20% للعقود الحكومية، وتوليد الإشعار والمطالبة وملف الإسناد.">
 <meta name="theme-color" content="#1f3d63">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3d63'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='20' fill='%23fff' text-anchor='middle'%3E%D8%B3%3C/text%3E%3C/svg%3E">
 </head>
@@ -52,7 +52,6 @@
   body{margin:0;font-family:var(--ff-body);color:var(--ink);line-height:1.5;background:var(--paper);min-height:100vh}
   .wrap{max-width:1080px;margin:0 auto;padding:16px 16px 60px}
 
-  /* ---- header ---- */
   .top{display:flex;align-items:center;gap:10px;padding:6px 0 2px}
   .brand{display:flex;align-items:center;gap:10px;margin-inline-end:auto}
   .mark{width:38px;height:38px;border-radius:9px;background:var(--navy);color:#fff;display:grid;place-items:center;
@@ -65,19 +64,19 @@
         font-size:13px;cursor:pointer;font-family:var(--ff-body);transition:all .15s}
   .pill:hover{border-color:var(--navy);color:var(--navy)}
 
-  /* ---- project bar ---- */
   .projbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px;padding:12px 14px;
            background:var(--card);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow)}
   .projbar select{flex:1;min-width:170px}
-  .projmeta{font-family:var(--ff-data);font-size:11px;color:var(--muted);width:100%}
+  .projmeta{font-family:var(--ff-data);font-size:11px;color:var(--muted);width:100%;line-height:1.7}
+  .projmeta b{color:var(--ink);font-weight:600}
 
-  /* ---- tabs ---- */
-  .tabs{display:flex;gap:6px;margin-top:16px;border-bottom:1px solid var(--line);overflow-x:auto}
-  .tab{padding:10px 14px;border:none;background:none;color:var(--muted);font-size:14.5px;font-weight:600;
+  .tabs{display:flex;gap:4px;margin-top:16px;border-bottom:1px solid var(--line);overflow-x:auto}
+  .tab{padding:10px 13px;border:none;background:none;color:var(--muted);font-size:14.5px;font-weight:600;
        font-family:var(--ff-body);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
   .tab.active{color:var(--navy);border-bottom-color:var(--navy)}
+  .tab .dot{display:inline-block;min-width:17px;padding:0 4px;margin-inline-start:5px;border-radius:999px;
+            background:var(--red);color:#fff;font-size:10.5px;font-family:var(--ff-data);vertical-align:1px}
 
-  /* ---- generic ---- */
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px;margin-top:16px}
   h2{font-family:var(--ff-display);font-size:21px;margin:0 0 4px;font-weight:600}
   h3{font-family:var(--ff-display);font-size:17px;margin:18px 0 6px;font-weight:600}
@@ -100,22 +99,42 @@
   .btn.danger{background:transparent;color:var(--red);border-color:var(--red)}
   .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
   .empty{padding:26px 14px;text-align:center;color:var(--muted);font-size:14px}
-  .hint{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.5}
 
-  /* ---- dashboard tiles ---- */
   .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:4px}
   .tile{background:var(--paper2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
   .tile .k{font-family:var(--ff-data);font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);font-weight:600}
   .tile .v{font-family:var(--ff-display);font-size:25px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums;line-height:1.15}
-  /* The currency rides small next to the number so "730,500 SAR" stays on one line
-     in a 150px tile — a figure that wraps mid-way reads as two numbers at a glance. */
   .tile .v .cur{font-family:var(--ff-data);font-size:11.5px;font-weight:600;color:var(--muted);margin-inline-start:4px}
-  .tile.good .v .cur{color:var(--green)} .tile.warn .v .cur{color:var(--red)}
-  .tile.warn{background:var(--red-soft);border-color:var(--red)}
-  .tile.warn .v{color:var(--red)}
-  .tile.good .v{color:var(--green)}
+  .tile.warn{background:var(--red-soft);border-color:var(--red)} .tile.warn .v{color:var(--red)}
+  .tile.warn .v .cur{color:var(--red)}
+  .tile.good .v{color:var(--green)} .tile.good .v .cur{color:var(--green)}
 
-  /* ---- deadline board ---- */
+  /* --- procurement cap meter --- */
+  .cap{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--paper2)}
+  .caphead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:13.5px}
+  .caphead b{font-family:var(--ff-display);font-size:20px}
+  .caphead .of{color:var(--muted);font-size:12.5px;font-family:var(--ff-data)}
+  .capbar{position:relative;height:16px;border-radius:999px;background:var(--line);margin-top:10px;overflow:hidden}
+  .capfill{height:100%;background:var(--green);transition:width .3s}
+  .capfill.amber{background:var(--amber)} .capfill.red{background:var(--red)}
+  .capmark{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.45}
+  .capscale{display:flex;justify-content:space-between;font-family:var(--ff-data);font-size:10px;color:var(--muted);margin-top:5px}
+
+  /* --- risk feed --- */
+  .risk{display:flex;gap:11px;padding:12px 13px;border:1px solid var(--line);border-inline-start-width:4px;
+        border-radius:11px;background:var(--paper2);margin-top:9px}
+  .risk.high{border-inline-start-color:var(--red);background:var(--red-soft)}
+  .risk.medium{border-inline-start-color:var(--amber);background:var(--amber-soft)}
+  .risk.low{border-inline-start-color:var(--muted)}
+  .risk.info{border-inline-start-color:var(--navy);background:var(--navy-soft)}
+  .risk .rbody{flex:1;min-width:0}
+  .risk .rref{font-family:var(--ff-data);font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline;
+              text-underline-offset:3px;background:none;border:none;padding:0;display:block;margin-bottom:3px}
+  .risk b{display:block;font-size:14.5px;font-weight:600;margin-bottom:3px}
+  .risk .why{font-size:12.5px;color:var(--muted);line-height:1.55}
+  .risk .todo{font-size:13px;margin-top:6px;font-weight:600}
+
   .dl{display:flex;align-items:center;gap:12px;padding:12px 13px;border:1px solid var(--line);border-radius:11px;
       background:var(--paper2);margin-top:8px;cursor:pointer}
   .dl:hover{border-color:var(--navy)}
@@ -128,7 +147,6 @@
   .dl.amber{background:var(--amber-soft);border-color:var(--amber)} .dl.amber .cnt{color:var(--amber)}
   .dl.green .cnt{color:var(--green)}
 
-  /* ---- register ---- */
   .filters{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 4px}
   .fchip{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);
          font-size:12.5px;font-weight:600;font-family:var(--ff-data);cursor:pointer}
@@ -150,35 +168,40 @@
   .b-submitted,.b-review{color:var(--navy);border-color:var(--navy);background:var(--navy-soft)}
   .b-approved{color:var(--green);border-color:var(--green);background:var(--green-soft)}
   .b-rejected,.b-disputed{color:var(--red);border-color:var(--red);background:var(--red-soft)}
+  .riskdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-inline-start:6px;vertical-align:1px}
+  .riskdot.high{background:var(--red)} .riskdot.medium{background:var(--amber)}
 
-  /* ---- modal ---- */
   .modal{position:fixed;inset:0;z-index:50;background:rgba(8,11,16,.55);display:none;overflow-y:auto;padding:18px}
   .modal.open{display:block}
-  .sheet{max-width:760px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:15px;
+  .sheet{max-width:780px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:15px;
          box-shadow:var(--shadow);padding:20px}
   .sheethead{display:flex;align-items:flex-start;gap:10px}
   .sheethead h2{flex:1}
   .x{border:none;background:none;color:var(--muted);font-size:26px;line-height:1;cursor:pointer;padding:0 4px}
 
-  /* ---- evidence log ---- */
   .ev{display:flex;gap:10px;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:var(--paper2);margin-top:8px}
   .ev .d{font-family:var(--ff-data);font-size:11px;color:var(--muted);flex:0 0 82px}
-  .ev .t{flex:1;font-size:13.5px}
+  .ev .t{flex:1;font-size:13.5px;min-width:0}
   .ev .t em{display:block;font-style:normal;font-family:var(--ff-data);font-size:10px;letter-spacing:1px;
             text-transform:uppercase;color:var(--muted);margin-bottom:2px}
-  .ev button{border:none;background:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 2px;flex:0 0 auto}
+  .ev .att{display:inline-flex;align-items:center;gap:5px;margin-top:5px;font-family:var(--ff-data);font-size:11px;
+           color:var(--navy);background:none;border:1px solid var(--line);border-radius:8px;padding:3px 8px;cursor:pointer}
+  .ev button.del{border:none;background:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 2px;flex:0 0 auto}
+  .filepick{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
 
-  /* ---- document preview ---- */
   #docPreview{background:#fff;color:#111;padding:34px 38px;border-radius:10px;font-family:Georgia,"Times New Roman",serif;
               font-size:14px;line-height:1.65}
   #docPreview h1{font-size:17px;margin:0 0 2px;text-align:center;text-transform:uppercase;letter-spacing:1px}
   #docPreview h2{font-size:14.5px;margin:20px 0 6px;font-family:inherit}
-  #docPreview .lh{text-align:center;color:#555;font-size:11.5px;margin-bottom:20px;border-bottom:1px solid #ccc;padding-bottom:12px}
+  #docPreview .lh{text-align:center;border-bottom:1px solid #ccc;padding-bottom:12px;margin-bottom:20px}
+  #docPreview .lh .co{font-size:16px;font-weight:bold;letter-spacing:.5px}
+  #docPreview .lh .ad{color:#555;font-size:11.5px;white-space:pre-wrap;margin-top:3px}
   #docPreview table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12.5px}
   #docPreview th,#docPreview td{border:1px solid #bbb;padding:6px 8px;text-align:start;vertical-align:top}
   #docPreview th{background:#eee}
   #docPreview .sig{margin-top:38px;font-size:13px}
   #docPreview .kv{margin:1px 0}
+  #docPreview .legal{margin-top:22px;font-size:11px;color:#666;border-top:1px solid #ddd;padding-top:8px;line-height:1.5}
   html[dir="rtl"] #docPreview{font-family:"Times New Roman",Georgia,serif}
 
   @media print{
@@ -199,9 +222,9 @@
   <div class="top">
     <div class="brand">
       <div class="mark">س</div>
-      <div class="brandtext"><strong id="brandName">سند · Sanad</strong><span id="brandTag">variation orders</span></div>
+      <div class="brandtext"><strong id="brandName"></strong><span id="brandTag"></span></div>
     </div>
-    <button class="pill" id="langBtn">العربية</button>
+    <button class="pill" id="langBtn"></button>
     <button class="pill" id="themeBtn">◐</button>
   </div>
 
@@ -225,6 +248,12 @@
       <h2 id="dashTitle"></h2>
       <p class="sub" id="dashSub"></p>
       <div class="tiles" id="tiles"></div>
+      <div id="capWrap"></div>
+    </div>
+    <div class="card">
+      <h2 id="riskTitle"></h2>
+      <p class="sub" id="riskSub"></p>
+      <div id="riskFeed"></div>
     </div>
     <div class="card">
       <h2 id="dlTitle"></h2>
@@ -263,21 +292,18 @@
       <form id="voForm">
         <div class="row">
           <div><label id="l-ref"></label><input id="f-ref" required></div>
-          <div><label id="l-date"></label><input id="f-date" type="date" required></div>
+          <div><label id="l-date"></label><input id="f-date" type="date" required>
+            <div class="hint" id="f-date-hijri"></div></div>
         </div>
         <label id="l-title"></label><input id="f-title" required>
         <label id="l-desc"></label><textarea id="f-desc"></textarea>
         <div class="row">
           <div><label id="l-by"></label><input id="f-by"></div>
-          <div><label id="l-src"></label><select id="f-src"></select></div>
+          <div><label id="l-src"></label><select id="f-src"></select>
+            <div class="hint" id="f-src-warn"></div></div>
         </div>
         <div class="row">
-          <div><label id="l-clause"></label><input id="f-clause" list="clauses" placeholder="13.3">
-            <datalist id="clauses">
-              <option value="13.1"><option value="13.2"><option value="13.3"><option value="13.4">
-              <option value="20.1"><option value="20.2"><option value="8.4"><option value="12.3">
-            </datalist>
-          </div>
+          <div><label id="l-clause"></label><input id="f-clause"></div>
           <div><label id="l-cost"></label><input id="f-cost" type="number" step="any" min="0"></div>
           <div><label id="l-time"></label><input id="f-time" type="number" step="1" min="0"></div>
         </div>
@@ -300,17 +326,20 @@
         <button class="btn ghost" id="impBtn"></button>
         <input type="file" id="impFile" accept="application/json,.json" hidden>
       </div>
+      <div class="hint" id="storageInfo"></div>
       <h3 id="demoTitle"></h3>
       <p class="sub" id="demoSub"></p>
       <div class="btnrow">
         <button class="btn ghost" id="demoBtn"></button>
         <button class="btn danger" id="wipeBtn"></button>
       </div>
+      <h3 id="legalTitle"></h3>
+      <div class="hint" id="legalBody"></div>
     </div>
   </section>
 </div>
 
-<!-- ============ VO DETAIL MODAL ============ -->
+<!-- ============ VO DETAIL ============ -->
 <div class="modal" id="voModal">
   <div class="sheet">
     <div class="sheethead">
@@ -321,7 +350,7 @@
   </div>
 </div>
 
-<!-- ============ PROJECT MODAL ============ -->
+<!-- ============ PROJECT ============ -->
 <div class="modal" id="projModal">
   <div class="sheet">
     <div class="sheethead">
@@ -332,18 +361,36 @@
       <label id="l-pname"></label><input id="p-name" required>
       <div class="row">
         <div><label id="l-pclient"></label><input id="p-client"></div>
+        <div><label id="l-pemployer"></label><select id="p-employer"></select></div>
+      </div>
+      <div class="row">
         <div><label id="l-pcontract"></label><input id="p-contract"></div>
+        <div><label id="l-psum"></label><input id="p-sum" type="number" step="any" min="0"></div>
+        <div><label id="l-pcur"></label><input id="p-cur" maxlength="6"></div>
       </div>
       <div class="row">
         <div><label id="l-pcontractor"></label><input id="p-contractor"></div>
         <div><label id="l-pengineer"></label><input id="p-engineer"></div>
       </div>
+      <label id="l-pletterhead"></label><textarea id="p-letterhead" style="min-height:60px"></textarea>
       <div class="row">
-        <div><label id="l-pform"></label><select id="p-form"></select></div>
-        <div><label id="l-pnotice"></label><input id="p-notice" type="number" min="1" max="365" value="28" required></div>
-        <div><label id="l-pcur"></label><input id="p-cur" value="SAR" maxlength="6"></div>
+        <div><label id="l-pcompletion"></label><input id="p-completion" type="date"></div>
+      </div>
+
+      <h3 id="formTitle"></h3>
+      <label id="l-pform"></label><select id="p-form"></select>
+      <p class="hint" id="formSrc"></p>
+      <div class="row">
+        <div><label id="l-pnotice"></label><input id="p-notice" type="number" min="1" max="365" required></div>
+        <div><label id="l-pdetail"></label><input id="p-detail" type="number" min="0" max="365"></div>
+      </div>
+      <div class="row">
+        <div><label id="l-pclv"></label><input id="p-clv"></div>
+        <div><label id="l-pclc"></label><input id="p-clc"></div>
+        <div><label id="l-pcle"></label><input id="p-cle"></div>
       </div>
       <p class="hint" id="noticeHint"></p>
+
       <div class="btnrow">
         <button class="btn" type="submit" id="saveProjBtn"></button>
         <button class="btn danger" type="button" id="delProjBtn"></button>
@@ -352,7 +399,7 @@
   </div>
 </div>
 
-<!-- ============ DOCUMENT MODAL ============ -->
+<!-- ============ DOCUMENT ============ -->
 <div class="modal" id="docModal">
   <div class="sheet">
     <div class="sheethead">
@@ -364,313 +411,327 @@
       <button class="btn ghost" id="copyBtn"></button>
       <button class="btn ghost" id="dlHtmlBtn"></button>
     </div>
+    <div class="hint" id="docWarn"></div>
     <div id="docPreview" style="margin-top:14px"></div>
   </div>
 </div>
 
+<script src="qatar.js"></script>
 <script>
 /* ================================================================
-   Sanad · سند — variation order register & contractual notice tracker
-   Single static file. Everything lives in localStorage under LS_KEY,
-   so it opens and works with no account, no server and no network.
-   The only thing that talks out is the optional AI extractor, which
-   posts to a Cloudflare Worker that holds the Anthropic key
-   (same arrangement Bosla uses). Leave aiEndpoint empty and the app
-   falls back to a local rule-based extractor.
+   Sanad · سند — variation order register, Qatar edition
+   The contract forms, the Civil Code checks, the procurement ceiling
+   and the calendar all live in qatar.js. This file is the app around them.
    ================================================================ */
 
-const CONFIG = {
-  aiEndpoint: "",            // e.g. "https://sanad-ai.<you>.workers.dev"  — see vo/SETUP.md
-};
-const LS_KEY = "sanad_v1";
+const CONFIG = { aiEndpoint: "" };   // see SETUP.md
+const LS_KEY = "sanad_qa_v2";
+const OLD_KEY = "sanad_v1";
 
-/* ---------------- state ---------------- */
 let S = { projects: [], vos: [], active: null, lang: "ar", theme: "" };
 
+/* ---------------- attachments (IndexedDB) ----------------
+   Photos and PDFs are the actual evidence, and they do not fit in
+   localStorage — a couple of site photos would blow the ~5MB quota and
+   take the whole register down with them. Files go in IndexedDB; only
+   their names and ids sit in the register.                              */
+const DB_NAME = "sanad_files", DB_STORE = "files";
+let dbp = null;
+function db(){
+  if(dbp) return dbp;
+  dbp = new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => { if(!r.result.objectStoreNames.contains(DB_STORE)) r.result.createObjectStore(DB_STORE); };
+    r.onsuccess = () => res(r.result);
+    r.onerror  = () => rej(r.error);
+  });
+  return dbp;
+}
+async function putFile(id, blob){
+  const d = await db();
+  return new Promise((res, rej) => {
+    const tx = d.transaction(DB_STORE, "readwrite");
+    tx.objectStore(DB_STORE).put(blob, id);
+    tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error);
+  });
+}
+async function getFile(id){
+  const d = await db();
+  return new Promise((res, rej) => {
+    const tx = d.transaction(DB_STORE, "readonly");
+    const q = tx.objectStore(DB_STORE).get(id);
+    q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error);
+  });
+}
+async function delFile(id){
+  const d = await db();
+  return new Promise((res) => {
+    const tx = d.transaction(DB_STORE, "readwrite");
+    tx.objectStore(DB_STORE).delete(id);
+    tx.oncomplete = () => res(); tx.onerror = () => res();
+  });
+}
+
+/* ---------------- state ---------------- */
 function load(){
   try{
     const raw = localStorage.getItem(LS_KEY);
     if(raw){
-      const p = JSON.parse(raw);
-      S = Object.assign(S, p);
-      S.projects = Array.isArray(S.projects) ? S.projects : [];
-      S.vos      = Array.isArray(S.vos) ? S.vos : [];
+      S = Object.assign(S, JSON.parse(raw));
+    } else {
+      const old = localStorage.getItem(OLD_KEY);
+      if(old) migrateV1(JSON.parse(old));
     }
+    S.projects = Array.isArray(S.projects) ? S.projects : [];
+    S.vos      = Array.isArray(S.vos) ? S.vos : [];
+    S.projects.forEach(applyFormDefaults);
   }catch(e){ console.warn("state load failed", e); }
+}
+// The first version had one notice period and no contract form. Bring those
+// projects forward rather than stranding anyone's register.
+function migrateV1(p){
+  if(!p || !Array.isArray(p.projects)) return;
+  S.projects = p.projects.map(x => Object.assign({}, x, {
+    form: "bespoke",
+    employerType: "private",
+    noticeDays: x.noticeDays || 28,
+    detailDays: 0,
+    contractSum: null,
+    currency: x.currency === "SAR" ? "QAR" : (x.currency || "QAR"),
+  }));
+  S.vos = p.vos || [];
+  S.active = p.active || null;
+  S.lang = p.lang || "ar";
+  save();
+}
+function applyFormDefaults(p){
+  const f = CONTRACT_FORMS[p.form] || CONTRACT_FORMS.bespoke;
+  p.formSrcEn = f.srcEn; p.formSrcAr = f.srcAr; p.forum = f.forum;
+  p.clauseVariation = p.clauseVariation != null ? p.clauseVariation : f.clauses.variation;
 }
 function save(){
   try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }
-  catch(e){ console.warn("state save failed", e); }
+  catch(e){ console.warn("state save failed", e); alert(t().quotaFull); }
 }
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 
 /* ---------------- i18n ---------------- */
 const T = {
-  en:{
-    tag:"variation orders", brand:"Sanad · سند",
-    tabs:{dash:"Dashboard", reg:"Register", new:"Log a variation", data:"Data"},
-    newProj:"+ Project", editProj:"Edit",
-    noProject:"No project yet — create one to start.",
-    projMeta:(p)=>`${p.contractRef||"no contract ref"} · ${p.form||"—"} · notice period ${p.noticeDays} days · ${p.currency}`,
-
-    dashTitle:"Where the money stands",
-    dashSub:"Every variation you have logged on this project, and what it is worth.",
-    t_open:"Open variations", t_claimed:"Total claimed", t_approved:"Approved",
-    t_pending:"Awaiting decision", t_risk:"Notice at risk", t_time:"Time impact (days)",
-
-    dlTitle:"Notice deadlines",
-    dlSub:"A variation you were instructed to do but never gave notice for is the one that gets refused. Days left to serve notice under the contract:",
-    dlEmpty:"Nothing waiting on a notice. Every logged variation has been noticed.",
-    daysLeft:"days left", daysOver:"days over", dueToday:"due today",
-    instructed:"Instructed", by:"by",
-
-    regTitle:"Variation register", regSub:"The full record for this project.",
-    searchPh:"Search by reference, title or who instructed it…",
-    regEmpty:"No variations logged yet.",
-    f_all:"All",
-
-    aiTitle:"Paste the instruction",
-    aiSub:"Drop in the email, the site instruction or the minute that started this variation. It gets read and the form below is filled in for you — check it, then save.",
-    aiPh:"e.g. Further to our site walk this morning, please proceed with relocating the 6 fan coil units on level 3 as marked on drawing M-304 rev C. Cost to be agreed…",
-    aiBtn:"Read it and fill the form", aiClear:"Clear",
-    aiWorking:"Reading…",
-    aiOffline:"Filled in using the built-in offline reader (no AI endpoint configured — see vo/SETUP.md). Check every field before saving.",
-    aiDone:"Filled in. Check every field before saving — this is a draft, not a decision.",
-    aiFail:"Could not read that. Fill the form in by hand below.",
-    aiEmpty:"Paste some text first.",
-
-    newTitle:"Log a variation", newSub:"The moment it is instructed — not the week it is priced.",
-    l_ref:"Our reference", l_date:"Date instructed", l_title:"Title",
-    l_desc:"What was instructed", l_by:"Instructed by", l_src:"How it was instructed",
-    l_clause:"Contract clause", l_cost:"Cost impact", l_time:"Time impact (days)",
-    saveVo:"Save to register", resetVo:"Clear form",
-    savedVo:"Saved. Notice deadline set.",
-
-    dataTitle:"Your data", dataSub:"Everything is stored on this device only. Take a backup before you change phone or clear the browser.",
-    expJson:"Download backup (JSON)", expCsv:"Export register (CSV)", impBtn:"Restore from backup",
-    demoTitle:"Show it to someone", demoSub:"Loads a worked example project so you can put the app in front of a commercial manager without typing anything.",
-    demoBtn:"Load the example project", wipe:"Erase everything",
-    wipeConfirm:"Erase every project and variation on this device? This cannot be undone.",
-    impFail:"That file could not be read as a Sanad backup.",
-    impOk:"Backup restored.",
-
-    pmNew:"New project", pmEdit:"Edit project",
-    l_pname:"Project name", l_pclient:"Employer / client", l_pcontract:"Contract reference",
-    l_pcontractor:"Contractor (you)", l_pengineer:"Engineer / consultant",
-    l_pform:"Form of contract", l_pnotice:"Notice period (days)", l_pcur:"Currency",
-    noticeHint:"The notice period is the window the contract gives you to notify a variation or a claim after it is instructed. FIDIC-based contracts commonly use 28 days — check your own conditions and set it here, because every deadline in the app is counted from this number.",
-    saveProj:"Save project", delProj:"Delete project",
-    delProjConfirm:"Delete this project and every variation logged under it?",
-
-    st:{draft:"Notice not served", notice:"Notice served", submitted:"Submitted",
-        review:"Under review", approved:"Approved", rejected:"Rejected", disputed:"In dispute"},
-    src:{si:"Site instruction", email:"Email", verbal:"Verbal", rfi:"RFI / TQ response",
-         drawing:"Drawing revision", minutes:"Meeting minutes", other:"Other"},
-    forms:{"FIDIC Red Book":"FIDIC Red Book","FIDIC Yellow Book":"FIDIC Yellow Book",
-           "FIDIC Silver Book":"FIDIC Silver Book","NEC":"NEC","Bespoke / other":"Bespoke / other"},
-
-    mStatus:"Status", mMove:"Move to", mEvidence:"Evidence trail",
-    mEvSub:"Every document that proves this happened. This list becomes the chronology in the substantiation pack.",
-    mAddEv:"Add", mEvDate:"Date", mEvType:"Type", mEvNote:"What it is",
-    mEvPh:"e.g. Engineer's email confirming the instruction",
-    mEvEmpty:"Nothing recorded yet. A variation with no evidence trail is a variation you will lose.",
-    mDocs:"Generate", mNotice:"Notice of variation", mSubmission:"Variation submission",
-    mPack:"Substantiation pack", mDelete:"Delete this variation",
-    mDelConfirm:"Delete this variation and its evidence trail?",
-    mApproved:"Amount approved", mSaveAmt:"Save",
-    mNoticeSent:"Notice served on",
-    mOverdue:"The notice window closed. Record the reason and take advice before submitting.",
-
-    print:"Print / save as PDF", copy:"Copy text", copied:"Copied", dlHtml:"Download",
-    docNotice:"NOTICE OF VARIATION", docSubmission:"VARIATION ORDER SUBMISSION", docPack:"SUBSTANTIATION PACK",
-    dTo:"To", dFrom:"From", dProject:"Project", dContract:"Contract", dDate:"Date",
-    dOurRef:"Our ref", dSubject:"Subject", dClause:"Clause",
-    dNoticeBody:(v,p,f)=>
-      `We refer to the instruction described below, issued on ${f(v.dateInstructed)}${v.instructedBy?` by ${v.instructedBy}`:""}${v.source?` (${v.source})`:""}.\n\n`+
-      `The work instructed constitutes a variation to the Works${v.clause?` under Clause ${v.clause} of the Contract`:""}. In accordance with the Contract we hereby give notice of that variation and of our intention to claim the resulting adjustment to the Contract Price and, where applicable, to the Time for Completion.\n\n`+
-      `Description of the instructed work:\n${v.description||v.title}\n\n`+
-      `Our present estimate of the effect is set out in the table below. This estimate is given for notice purposes on the information available at the date of this letter; it is not a fixed quotation and we reserve the right to adjust it once the work is fully defined and its effects are measured.\n\n`+
-      `Contemporary records of the resources and time expended are being kept and will be made available for inspection on request. All our rights under the Contract are reserved.`,
-    dSubmissionBody:(v,p,f)=>
-      `Further to our notice of variation, we submit below our detailed submission for the variation described, for your review and instruction.\n\n`+
-      `Description of the work:\n${v.description||v.title}\n\n`+
-      `The instruction was issued on ${f(v.dateInstructed)}${v.instructedBy?` by ${v.instructedBy}`:""}. The evaluation below is made${v.clause?` under Clause ${v.clause}`:""} and is supported by the records listed in the schedule of supporting documents.\n\n`+
-      `We request your written confirmation of the adjustment to the Contract Price and to the Time for Completion set out below.`,
-    dPackBody:(v,p,f)=>
-      `This pack sets out, in date order, the record supporting the variation described above. It is compiled from contemporary records kept at the time of the events.`,
-    dEffect:"Effect on the contract", dCostEffect:"Adjustment to the Contract Price",
-    dTimeEffect:"Extension of Time sought", dDays:"days", dNil:"Nil / to be advised",
-    dChronology:"Chronology", dDocs:"Schedule of supporting documents",
-    dNoDocs:"No supporting documents have been recorded against this variation.",
-    dSig:"Yours faithfully,", dFor:"for and on behalf of",
-    dNoticeDue:"Notice due by",
-    dDisclaimer:"Prepared from the project record. Review against your contract conditions before issue.",
-  },
   ar:{
-    tag:"أوامر التغيير", brand:"سند · Sanad",
-    tabs:{dash:"اللوحة", reg:"السجل", new:"تسجيل أمر تغيير", data:"البيانات"},
-    newProj:"+ مشروع", editProj:"تعديل",
+    brand:"سند · Sanad", tag:"أوامر التغيير · قطر",
+    tabs:{dash:"اللوحة", reg:"السجل", new:"تسجيل أمر", data:"البيانات"},
+    newProj:"+ مشروع", editProj:"إعدادات المشروع",
     noProject:"ما فيه مشروع بعد — أنشئ واحد عشان تبدأ.",
-    projMeta:(p)=>`${p.contractRef||"بدون رقم عقد"} · ${p.form||"—"} · مهلة الإشعار ${p.noticeDays} يوم · ${p.currency}`,
 
-    dashTitle:"وين واقفة الفلوس",
-    dashSub:"كل أمر تغيير سجّلته في هذا المشروع، وكم يساوي.",
+    dashTitle:"وين واقفة الفلوس", dashSub:"كل أمر تغيير سجّلته في هذا المشروع، وكم يساوي.",
     t_open:"أوامر مفتوحة", t_claimed:"إجمالي المطالبات", t_approved:"معتمد",
-    t_pending:"بانتظار القرار", t_risk:"إشعارات في خطر", t_time:"أثر زمني (يوم)",
+    t_pending:"بانتظار القرار", t_risk:"إشعارات في خطر", t_time:"تمديد مطلوب (يوم)",
+
+    capTitle:"نسبة أوامر التغيير من قيمة العقد",
+    capOf:"من قيمة العقد",
+    capNote:"السقف النظامي للعقود الحكومية ٢٠٪ (قانون ٢٤/٢٠١٥ م. ٨١).",
+
+    riskTitle:"وش اللي بيوقع", riskSub:"المخاطر المفتوحة مرتّبة بالخطورة. كل واحدة معها سندها النظامي عشان تتحقق بنفسك.",
+    riskEmpty:"ما فيه شي مفتوح. كل أمر مسجّل عليه إشعاره ودليله.",
 
     dlTitle:"مهل الإشعارات",
-    dlSub:"أمر التغيير اللي نُفِّذ وما أُرسل عنه إشعار هو اللي يُرفض. الأيام المتبقية لإرسال الإشعار حسب العقد:",
-    dlEmpty:"ما فيه شي منتظر إشعار. كل أمر مسجّل أُرسل عنه إشعار.",
+    dlSub:"أمر التغيير اللي نُفِّذ وما أُرسل عنه إشعار هو اللي يُرفض. الأيام المتبقية حسب عقدك:",
+    dlEmpty:"ما فيه شي منتظر إشعار.",
     daysLeft:"يوم متبقي", daysOver:"يوم متأخر", dueToday:"اليوم آخر يوم",
-    instructed:"صدر في", by:"من",
+    instructed:"صدر في", by:"من", detailDue:"المطالبة التفصيلية",
 
     regTitle:"سجل أوامر التغيير", regSub:"السجل الكامل لهذا المشروع.",
     searchPh:"ابحث برقم الأمر أو العنوان أو مُصدِر التعليمات…",
-    regEmpty:"ما سُجِّل أي أمر تغيير بعد.",
-    f_all:"الكل",
+    regEmpty:"ما سُجِّل أي أمر تغيير بعد.", f_all:"الكل",
 
     aiTitle:"الصق التعليمات",
-    aiSub:"حط الإيميل أو تعليمات الموقع أو محضر الاجتماع اللي بدأ منه أمر التغيير. يُقرأ ويُعبّى النموذج تحت — راجعه، بعدين احفظ.",
-    aiPh:"مثال: بناءً على جولة الموقع صباح اليوم، يُرجى البدء بنقل وحدات المناولة الست في الدور الثالث حسب المخطط M-304 مراجعة C. التكلفة يُتفق عليها لاحقًا…",
-    aiBtn:"اقرأه وعبّي النموذج", aiClear:"مسح",
-    aiWorking:"جاري القراءة…",
-    aiOffline:"عُبِّئ بالقارئ المدمج بدون إنترنت (ما فيه نقطة ذكاء اصطناعي مربوطة — راجع vo/SETUP.md). راجع كل حقل قبل الحفظ.",
+    aiSub:"حط الإيميل أو تعليمات الموقع أو محضر الاجتماع. يُقرأ ويُعبّى النموذج تحت — راجعه، بعدين احفظ.",
+    aiPh:"مثال: بناءً على جولة الموقع صباح اليوم، يُرجى البدء بنقل وحدات المناولة الست في الدور الثالث حسب المخطط M-304 مراجعة C…",
+    aiBtn:"اقرأه وعبّي النموذج", aiClear:"مسح", aiWorking:"جاري القراءة…",
+    aiOffline:"عُبِّئ بالقارئ المدمج بدون إنترنت (ما فيه نقطة ذكاء اصطناعي مربوطة — راجع SETUP.md). راجع كل حقل قبل الحفظ.",
     aiDone:"تم التعبئة. راجع كل حقل قبل الحفظ — هذي مسودة مو قرار.",
-    aiFail:"ما قدرت أقرأه. عبّي النموذج تحت يدويًا.",
-    aiEmpty:"الصق النص أولًا.",
+    aiFail:"ما قدرت أقرأه. عبّي النموذج تحت يدويًا.", aiEmpty:"الصق النص أولًا.",
 
     newTitle:"تسجيل أمر تغيير", newSub:"لحظة ما تصدر التعليمات — مو الأسبوع اللي بعده لما تتسعّر.",
     l_ref:"رقمنا المرجعي", l_date:"تاريخ صدور التعليمات", l_title:"العنوان",
     l_desc:"وش اللي طُلب تنفيذه", l_by:"صدرت من", l_src:"طريقة إصدارها",
-    l_clause:"بند العقد", l_cost:"الأثر المالي", l_time:"الأثر الزمني (يوم)",
-    saveVo:"احفظ في السجل", resetVo:"تفريغ النموذج",
-    savedVo:"تم الحفظ. وضُبطت مهلة الإشعار.",
+    l_clause:"بند العقد", l_cost:"الأثر المالي", l_time:"التمديد المطلوب (يوم)",
+    saveVo:"احفظ في السجل", resetVo:"تفريغ النموذج", savedVo:"تم الحفظ. وضُبطت مهلة الإشعار.",
+    verbalWarn:"تعليمات شفهية: بدون تأكيد خطي من المالك، م. ٧٠٩ من القانون المدني تمنع المطالبة بالزيادة في العقد المقطوع. أرسل كتاب تأكيد اليوم.",
 
-    dataTitle:"بياناتك", dataSub:"كل شي محفوظ على هذا الجهاز فقط. خذ نسخة احتياطية قبل ما تغيّر جوالك أو تمسح المتصفح.",
+    dataTitle:"بياناتك", dataSub:"كل شي محفوظ على هذا الجهاز فقط — السجل في المتصفح والمرفقات في قاعدة بيانات محلية. خذ نسخة احتياطية قبل ما تغيّر جهازك.",
     expJson:"تحميل نسخة احتياطية (JSON)", expCsv:"تصدير السجل (CSV)", impBtn:"استرجاع من نسخة",
-    demoTitle:"اعرضه على أحد", demoSub:"يحمّل مشروعًا نموذجيًا كامل عشان تعرض التطبيق على مدير تجاري بدون ما تكتب حرف.",
+    demoTitle:"اعرضه على أحد", demoSub:"يحمّل مشروعًا نموذجيًا على شروط أشغال، فيه أمر متأخر عن مهلته وأمر شفهي بلا تأكيد خطي.",
     demoBtn:"حمّل المشروع النموذجي", wipe:"امسح كل شي",
-    wipeConfirm:"مسح كل المشاريع وأوامر التغيير من هذا الجهاز؟ ما فيه تراجع.",
-    impFail:"ما قدرت أقرأ هذا الملف كنسخة سند.",
-    impOk:"تم الاسترجاع.",
+    wipeConfirm:"مسح كل المشاريع وأوامر التغيير والمرفقات من هذا الجهاز؟ ما فيه تراجع.",
+    impFail:"ما قدرت أقرأ هذا الملف كنسخة سند.", impOk:"تم الاسترجاع.",
+    impNoFiles:"ملاحظة: النسخة الاحتياطية تحفظ السجل فقط، والمرفقات تبقى على الجهاز الأصلي.",
+    quotaFull:"امتلأت مساحة التخزين في المتصفح. صدّر نسخة احتياطية واحذف مشروعًا قديمًا.",
+    legalTitle:"تنبيه",
+    legalBody:"سند أداة تنظيم سجلات، وليس استشارة قانونية. المدد وأرقام البنود المعروضة هي قيم افتراضية للنماذج الشائعة في قطر، والشروط الخاصة في عقدك تعدّلها عادةً — تحقق منها بنفسك. المراجع النظامية مذكورة عشان تراجعها، لا عشان تعتمد عليها.",
 
-    pmNew:"مشروع جديد", pmEdit:"تعديل المشروع",
-    l_pname:"اسم المشروع", l_pclient:"المالك / العميل", l_pcontract:"رقم العقد",
+    pmNew:"مشروع جديد", pmEdit:"إعدادات المشروع",
+    l_pname:"اسم المشروع", l_pclient:"المالك / العميل", l_pemployer:"صفة المالك",
+    l_pcontract:"رقم العقد", l_psum:"قيمة العقد", l_pcur:"العملة",
     l_pcontractor:"المقاول (أنت)", l_pengineer:"المهندس / الاستشاري",
-    l_pform:"نموذج العقد", l_pnotice:"مهلة الإشعار (يوم)", l_pcur:"العملة",
-    noticeHint:"مهلة الإشعار هي المدة اللي يعطيك إياها العقد عشان تُشعِر بأمر التغيير أو المطالبة بعد صدورها. عقود فيديك عادةً 28 يوم — راجع شروط عقدك أنت وحطها هنا، لأن كل المهل في التطبيق تُحسب من هذا الرقم.",
-    saveProj:"حفظ المشروع", delProj:"حذف المشروع",
+    l_pletterhead:"ترويسة المراسلات (العنوان، الهاتف، السجل التجاري)",
+    l_pcompletion:"تاريخ الإنجاز (للضمان العشري)",
+    formTitle:"شروط العقد", l_pform:"نموذج العقد",
+    l_pnotice:"مهلة الإشعار (يوم)", l_pdetail:"مهلة المطالبة التفصيلية (يوم، صفر = لا يوجد)",
+    l_pclv:"بند التغييرات", l_pclc:"بند المطالبات", l_pcle:"بند تمديد المدة",
+    noticeHint:"هذي القيم افتراضية للنموذج المختار. الشروط الخاصة في عقدك تعدّلها غالبًا — عدّلها هنا، لأن كل مهلة في التطبيق تُحسب منها.",
+    saveProj:"حفظ", delProj:"حذف المشروع",
     delProjConfirm:"حذف هذا المشروع وكل أوامر التغيير المسجّلة تحته؟",
 
     st:{draft:"ما أُرسل إشعار", notice:"أُرسل الإشعار", submitted:"مُقدَّم",
         review:"تحت الدراسة", approved:"معتمد", rejected:"مرفوض", disputed:"متنازع عليه"},
     src:{si:"تعليمات موقع", email:"إيميل", verbal:"شفهي", rfi:"رد على استفسار (RFI)",
-         drawing:"مراجعة مخطط", minutes:"محضر اجتماع", other:"غير ذلك"},
-    forms:{"FIDIC Red Book":"فيديك — الكتاب الأحمر","FIDIC Yellow Book":"فيديك — الكتاب الأصفر",
-           "FIDIC Silver Book":"فيديك — الكتاب الفضي","NEC":"NEC","Bespoke / other":"عقد خاص / غير ذلك"},
+         drawing:"مراجعة مخطط", minutes:"محضر اجتماع", photo:"صورة", daywork:"ورقة عمل يومي", other:"غير ذلك"},
 
     mStatus:"الحالة", mMove:"انقله إلى", mEvidence:"سلسلة الأدلة",
-    mEvSub:"كل مستند يثبت إن هذا صار. هذي القائمة تتحول للتسلسل الزمني في ملف الإسناد.",
+    mEvSub:"كل مستند يثبت إن هذا صار. هذي القائمة تتحول للتسلسل الزمني في ملف الإسناد، وتقدر ترفق الملف نفسه.",
     mAddEv:"إضافة", mEvDate:"التاريخ", mEvType:"النوع", mEvNote:"وش هو",
-    mEvPh:"مثال: إيميل المهندس يؤكد التعليمات",
+    mEvPh:"مثال: إيميل المهندس يؤكد التعليمات", mEvFile:"إرفاق ملف",
     mEvEmpty:"ما سُجِّل شي بعد. أمر تغيير بلا سلسلة أدلة هو أمر خسرته من الآن.",
     mDocs:"توليد المستندات", mNotice:"إشعار بأمر تغيير", mSubmission:"تقديم أمر التغيير",
     mPack:"ملف الإسناد", mDelete:"حذف أمر التغيير",
-    mDelConfirm:"حذف أمر التغيير وسلسلة أدلته؟",
-    mApproved:"المبلغ المعتمد", mSaveAmt:"حفظ",
-    mNoticeSent:"أُرسل الإشعار في",
-    mOverdue:"انتهت مهلة الإشعار. سجّل السبب وخذ رأيًا فنيًا قبل التقديم.",
+    mDelConfirm:"حذف أمر التغيير وسلسلة أدلته ومرفقاته؟",
+    mApproved:"المبلغ المعتمد", mSaveAmt:"حفظ", mNoticeSent:"أُرسل الإشعار في",
+    mRisks:"ملاحظات على هذا الأمر", mNoRisks:"ما فيه ملاحظات مفتوحة على هذا الأمر.",
 
     print:"طباعة / حفظ PDF", copy:"نسخ النص", copied:"تم النسخ", dlHtml:"تحميل",
     docNotice:"إشعار بأمر تغيير", docSubmission:"تقديم أمر تغيير", docPack:"ملف الإسناد",
     dTo:"إلى", dFrom:"من", dProject:"المشروع", dContract:"العقد", dDate:"التاريخ",
-    dOurRef:"مرجعنا", dSubject:"الموضوع", dClause:"البند",
-    dNoticeBody:(v,p,f)=>
-      // "عن طريق X" rather than "(X)": a source label like "رد على استفسار (RFI)" already
-      // carries its own brackets, and nesting them around mixed Arabic/Latin text makes the
-      // closing bracket jump to the wrong side of the line.
-      `نشير إلى التعليمات الموضحة أدناه، الصادرة بتاريخ ${f(v.dateInstructed)}${v.instructedBy?` من ${v.instructedBy}`:""}${v.source?` عن طريق ${v.source}`:""}.\n\n`+
-      `تُشكّل الأعمال المطلوبة تغييرًا في نطاق الأعمال${v.clause?` بموجب البند ${v.clause} من العقد`:""}. ووفقًا للعقد، نُشعركم بموجب هذا الكتاب بهذا التغيير وبعزمنا على المطالبة بما يترتب عليه من تعديل في قيمة العقد، وفي مدة الإنجاز متى انطبق ذلك.\n\n`+
-      `وصف الأعمال الصادرة بها التعليمات:\n${v.description||v.title}\n\n`+
-      `تقديرنا الحالي للأثر مبيّن في الجدول أدناه. وهذا التقدير مقدَّم لغرض الإشعار وبناءً على المعلومات المتاحة بتاريخ هذا الكتاب، وهو ليس عرض سعر نهائيًا، ونحتفظ بحقنا في تعديله بعد اكتمال تحديد الأعمال وقياس آثارها.\n\n`+
-      `ويجري الاحتفاظ بسجلات آنية للموارد والوقت المستهلك، وستكون متاحة للاطلاع عند الطلب. وجميع حقوقنا بموجب العقد محفوظة.`,
-    dSubmissionBody:(v,p,f)=>
-      `إلحاقًا بإشعارنا بأمر التغيير، نقدّم لكم أدناه تقديمنا التفصيلي لأمر التغيير الموضح، للمراجعة والتوجيه.\n\n`+
-      `وصف الأعمال:\n${v.description||v.title}\n\n`+
-      `صدرت التعليمات بتاريخ ${f(v.dateInstructed)}${v.instructedBy?` من ${v.instructedBy}`:""}. والتقييم أدناه معدّ${v.clause?` بموجب البند ${v.clause}`:""} ومدعوم بالسجلات المدرجة في جدول المستندات المؤيدة.\n\n`+
-      `نرجو تأكيدكم الخطي للتعديل في قيمة العقد وفي مدة الإنجاز المبيّن أدناه.`,
-    dPackBody:(v,p,f)=>
-      `يعرض هذا الملف، بالترتيب الزمني، السجل المؤيد لأمر التغيير الموضح أعلاه، وهو مُجمَّع من سجلات آنية حُفِظت وقت وقوع الأحداث.`,
+    dOurRef:"مرجعنا", dSubject:"الموضوع", dClause:"البند", dForm:"نموذج العقد",
     dEffect:"الأثر على العقد", dCostEffect:"التعديل في قيمة العقد",
     dTimeEffect:"تمديد المدة المطلوب", dDays:"يوم", dNil:"لا يوجد / يُبلَّغ لاحقًا",
     dChronology:"التسلسل الزمني", dDocs:"جدول المستندات المؤيدة",
     dNoDocs:"لم تُسجَّل مستندات مؤيدة لأمر التغيير هذا.",
     dSig:"وتفضلوا بقبول فائق الاحترام،", dFor:"عن وبالنيابة عن",
-    dNoticeDue:"موعد الإشعار",
-    dDisclaimer:"أُعِدّ من سجل المشروع. راجعه مقابل شروط عقدك قبل الإصدار.",
+    dNoticeDue:"موعد الإشعار", dAttached:"مرفق",
+    dDisclaimer:"أُعِدّ من سجل المشروع بواسطة سند. راجعه مقابل شروط عقدك قبل الإصدار.",
+    docArabicOk:"",
+  },
+  en:{
+    brand:"Sanad · سند", tag:"variation orders · qatar",
+    tabs:{dash:"Dashboard", reg:"Register", new:"Log a variation", data:"Data"},
+    newProj:"+ Project", editProj:"Project settings",
+    noProject:"No project yet — create one to start.",
+
+    dashTitle:"Where the money stands", dashSub:"Every variation logged on this project, and what it is worth.",
+    t_open:"Open variations", t_claimed:"Total claimed", t_approved:"Approved",
+    t_pending:"Awaiting decision", t_risk:"Notices at risk", t_time:"EOT sought (days)",
+
+    capTitle:"Variations as a share of the contract value",
+    capOf:"of contract value",
+    capNote:"The statutory ceiling for government contracts is 20% (Law 24/2015, Art. 81).",
+
+    riskTitle:"What is about to go wrong", riskSub:"Open risks, worst first. Each carries the authority behind it so you can check rather than take our word.",
+    riskEmpty:"Nothing open. Every logged variation has its notice and its evidence.",
+
+    dlTitle:"Notice deadlines",
+    dlSub:"A variation you were instructed to do but never gave notice for is the one that gets refused. Days left under your contract:",
+    dlEmpty:"Nothing waiting on a notice.",
+    daysLeft:"days left", daysOver:"days over", dueToday:"due today",
+    instructed:"Instructed", by:"by", detailDue:"Detailed claim",
+
+    regTitle:"Variation register", regSub:"The full record for this project.",
+    searchPh:"Search by reference, title or who instructed it…",
+    regEmpty:"No variations logged yet.", f_all:"All",
+
+    aiTitle:"Paste the instruction",
+    aiSub:"Drop in the email, the site instruction or the minute. It gets read and the form below is filled in — check it, then save.",
+    aiPh:"e.g. Further to our site walk this morning, please proceed with relocating the 6 fan coil units on level 3 as marked on drawing M-304 rev C…",
+    aiBtn:"Read it and fill the form", aiClear:"Clear", aiWorking:"Reading…",
+    aiOffline:"Filled in using the built-in offline reader (no AI endpoint configured — see SETUP.md). Check every field before saving.",
+    aiDone:"Filled in. Check every field before saving — this is a draft, not a decision.",
+    aiFail:"Could not read that. Fill the form in by hand below.", aiEmpty:"Paste some text first.",
+
+    newTitle:"Log a variation", newSub:"The moment it is instructed — not the week it is priced.",
+    l_ref:"Our reference", l_date:"Date instructed", l_title:"Title",
+    l_desc:"What was instructed", l_by:"Instructed by", l_src:"How it was instructed",
+    l_clause:"Contract clause", l_cost:"Cost impact", l_time:"EOT sought (days)",
+    saveVo:"Save to register", resetVo:"Clear form", savedVo:"Saved. Notice deadline set.",
+    verbalWarn:"Verbal instruction: without written confirmation from the employer, Civil Code Art. 709 bars a claim for the increase on a lump-sum contract. Send a confirmation letter today.",
+
+    dataTitle:"Your data", dataSub:"Everything is stored on this device only — the register in the browser, attachments in a local database. Take a backup before you change device.",
+    expJson:"Download backup (JSON)", expCsv:"Export register (CSV)", impBtn:"Restore from backup",
+    demoTitle:"Show it to someone", demoSub:"Loads a worked project on Ashghal conditions, including one variation past its notice deadline and one verbal instruction with nothing in writing.",
+    demoBtn:"Load the example project", wipe:"Erase everything",
+    wipeConfirm:"Erase every project, variation and attachment on this device? This cannot be undone.",
+    impFail:"That file could not be read as a Sanad backup.", impOk:"Backup restored.",
+    impNoFiles:"Note: the backup holds the register only — attachments stay on the original device.",
+    quotaFull:"Browser storage is full. Export a backup and delete an old project.",
+    legalTitle:"A caveat",
+    legalBody:"Sanad organises records; it is not legal advice. The periods and clause numbers shown are defaults for standard forms common in Qatar, and the Particular Conditions in your contract usually move them — verify them yourself. The legal references are there to be checked, not relied on.",
+
+    pmNew:"New project", pmEdit:"Project settings",
+    l_pname:"Project name", l_pclient:"Employer / client", l_pemployer:"Employer type",
+    l_pcontract:"Contract reference", l_psum:"Contract value", l_pcur:"Currency",
+    l_pcontractor:"Contractor (you)", l_pengineer:"Engineer / consultant",
+    l_pletterhead:"Letterhead (address, phone, CR number)",
+    l_pcompletion:"Completion date (for decennial liability)",
+    formTitle:"Contract conditions", l_pform:"Form of contract",
+    l_pnotice:"Notice period (days)", l_pdetail:"Detailed claim period (days, 0 = none)",
+    l_pclv:"Variations clause", l_pclc:"Claims clause", l_pcle:"EOT clause",
+    noticeHint:"These are defaults for the selected form. Your Particular Conditions usually move them — change them here, because every deadline in the app is counted from these numbers.",
+    saveProj:"Save", delProj:"Delete project",
+    delProjConfirm:"Delete this project and every variation logged under it?",
+
+    st:{draft:"Notice not served", notice:"Notice served", submitted:"Submitted",
+        review:"Under review", approved:"Approved", rejected:"Rejected", disputed:"In dispute"},
+    src:{si:"Site instruction", email:"Email", verbal:"Verbal", rfi:"RFI / TQ response",
+         drawing:"Drawing revision", minutes:"Meeting minutes", photo:"Photograph", daywork:"Daywork sheet", other:"Other"},
+
+    mStatus:"Status", mMove:"Move to", mEvidence:"Evidence trail",
+    mEvSub:"Every document that proves this happened. This list becomes the chronology in the substantiation pack, and you can attach the file itself.",
+    mAddEv:"Add", mEvDate:"Date", mEvType:"Type", mEvNote:"What it is",
+    mEvPh:"e.g. Engineer's email confirming the instruction", mEvFile:"Attach file",
+    mEvEmpty:"Nothing recorded yet. A variation with no evidence trail is a variation you will lose.",
+    mDocs:"Generate", mNotice:"Notice of variation", mSubmission:"Variation submission",
+    mPack:"Substantiation pack", mDelete:"Delete this variation",
+    mDelConfirm:"Delete this variation, its evidence trail and its attachments?",
+    mApproved:"Amount approved", mSaveAmt:"Save", mNoticeSent:"Notice served on",
+    mRisks:"Notes on this variation", mNoRisks:"Nothing open on this variation.",
+
+    print:"Print / save as PDF", copy:"Copy text", copied:"Copied", dlHtml:"Download",
+    docNotice:"NOTICE OF VARIATION", docSubmission:"VARIATION ORDER SUBMISSION", docPack:"SUBSTANTIATION PACK",
+    dTo:"To", dFrom:"From", dProject:"Project", dContract:"Contract", dDate:"Date",
+    dOurRef:"Our ref", dSubject:"Subject", dClause:"Clause", dForm:"Form of contract",
+    dEffect:"Effect on the contract", dCostEffect:"Adjustment to the Contract Price",
+    dTimeEffect:"Extension of Time sought", dDays:"days", dNil:"Nil / to be advised",
+    dChronology:"Chronology", dDocs:"Schedule of supporting documents",
+    dNoDocs:"No supporting documents have been recorded against this variation.",
+    dSig:"Yours faithfully,", dFor:"for and on behalf of",
+    dNoticeDue:"Notice due by", dAttached:"attached",
+    dDisclaimer:"Prepared from the project record by Sanad. Review against your contract conditions before issue.",
+    docArabicOk:"This employer is a government entity. Under Law No. 7 of 2019 government bodies correspond in Arabic, and Qatari court proceedings are in Arabic — switch to العربية before issuing, or issue both versions.",
   }
 };
 const t = () => T[S.lang];
 
-/* ---------------- dates ---------------- */
-const DAY = 86400000;
-function today(){ const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
-function parseDate(s){
-  if(!s) return null;
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s).trim());
-  if(!m) return null;
-  const d = new Date(+m[1], +m[2]-1, +m[3]);
-  return isNaN(d.getTime()) ? null : d;
-}
-function isoDate(d){
-  const p = (n) => String(n).padStart(2,"0");
-  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
-}
-function addDays(d, n){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()+n); }
-function daysBetween(a, b){ return Math.round((b - a) / DAY); }
+/* ---------------- formatting ---------------- */
 function fmtDate(s){
-  const d = parseDate(s);
+  const d = parseISO(s);
   if(!d) return s || "—";
   const months = S.lang === "ar"
     ? ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"]
     : ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
+// Western digits in both languages: contract sums in Qatar are written 184,000.
 function fmtMoney(n, cur){
   const v = Number(n);
   if(!isFinite(v) || !v) return "—";
-  // Western digits in both languages. Arabic-Indic numerals render fine, but contract
-  // sums in the Gulf are written 184,000 — a notice letter that says ١٨٤٬٠٠٠ looks wrong
-  // to the commercial manager reading it, and money is the one field nobody should squint at.
   return v.toLocaleString("en-US", {maximumFractionDigits:2}) + " " + (cur || "");
 }
-
-/* ---------------- notice maths ----------------
-   The whole point of the product. A variation still sitting at "draft"
-   has an open contractual notice window running from the date it was
-   instructed. Once notice is served the clock stops and never restarts. */
-function noticeInfo(vo, proj){
-  const inst = parseDate(vo.dateInstructed);
-  const days = Number(proj && proj.noticeDays) || 28;
-  if(!inst) return null;
-  const due = addDays(inst, days);
-  const left = daysBetween(today(), due);
-  const served = vo.status !== "draft";
-  let state = "green";
-  if(!served){
-    if(left < 0) state = "red";
-    else if(left <= 7) state = "amber";
-  }
-  return { due, left, served, state };
-}
-
-/* ---------------- helpers ---------------- */
 const $  = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? "" : s)
   .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 const activeProject = () => S.projects.find(p => p.id === S.active) || null;
 const projectVos = () => S.vos.filter(v => v.projectId === S.active);
 function srcLabel(key){ return t().src[key] || key || ""; }
+const RANK = { high:0, medium:1, low:2, info:3 };
 
 /* ================================================================
    RENDER
@@ -680,52 +741,68 @@ function applyLang(){
   document.documentElement.lang = S.lang;
   document.documentElement.dir  = S.lang === "ar" ? "rtl" : "ltr";
   $("langBtn").textContent = S.lang === "ar" ? "English" : "العربية";
-  $("brandName").textContent = L.brand;
-  $("brandTag").textContent  = L.tag;
-  document.querySelectorAll(".tab").forEach(b => b.textContent = L.tabs[b.dataset.tab]);
+  $("brandName").textContent = L.brand;  $("brandTag").textContent = L.tag;
+  document.querySelectorAll(".tab").forEach(b => b.dataset.label = L.tabs[b.dataset.tab]);
 
-  $("newProjBtn").textContent = L.newProj;
-  $("editProjBtn").textContent = L.editProj;
-  $("dashTitle").textContent = L.dashTitle; $("dashSub").textContent = L.dashSub;
-  $("dlTitle").textContent = L.dlTitle;     $("dlSub").textContent = L.dlSub;
-  $("regTitle").textContent = L.regTitle;   $("regSub").textContent = L.regSub;
+  const set = (id, v) => { const e = $(id); if(e) e.textContent = v; };
+  set("newProjBtn", L.newProj); set("editProjBtn", L.editProj);
+  set("dashTitle", L.dashTitle); set("dashSub", L.dashSub);
+  set("riskTitle", L.riskTitle); set("riskSub", L.riskSub);
+  set("dlTitle", L.dlTitle);     set("dlSub", L.dlSub);
+  set("regTitle", L.regTitle);   set("regSub", L.regSub);
   $("search").placeholder = L.searchPh;
-  $("aiTitle").textContent = L.aiTitle;     $("aiSub").textContent = L.aiSub;
-  $("aiText").placeholder = L.aiPh;
-  $("aiBtn").textContent = L.aiBtn;         $("aiClearBtn").textContent = L.aiClear;
-  $("newTitle").textContent = L.newTitle;   $("newSub").textContent = L.newSub;
-  $("l-ref").textContent = L.l_ref;   $("l-date").textContent = L.l_date;
-  $("l-title").textContent = L.l_title; $("l-desc").textContent = L.l_desc;
-  $("l-by").textContent = L.l_by;     $("l-src").textContent = L.l_src;
-  $("l-clause").textContent = L.l_clause; $("l-cost").textContent = L.l_cost;
-  $("l-time").textContent = L.l_time;
-  $("saveVoBtn").textContent = L.saveVo; $("resetVoBtn").textContent = L.resetVo;
-  $("dataTitle").textContent = L.dataTitle; $("dataSub").textContent = L.dataSub;
-  $("expJson").textContent = L.expJson; $("expCsv").textContent = L.expCsv; $("impBtn").textContent = L.impBtn;
-  $("demoTitle").textContent = L.demoTitle; $("demoSub").textContent = L.demoSub;
-  $("demoBtn").textContent = L.demoBtn; $("wipeBtn").textContent = L.wipe;
-  $("l-pname").textContent = L.l_pname; $("l-pclient").textContent = L.l_pclient;
-  $("l-pcontract").textContent = L.l_pcontract; $("l-pcontractor").textContent = L.l_pcontractor;
-  $("l-pengineer").textContent = L.l_pengineer; $("l-pform").textContent = L.l_pform;
-  $("l-pnotice").textContent = L.l_pnotice; $("l-pcur").textContent = L.l_pcur;
-  $("noticeHint").textContent = L.noticeHint;
-  $("saveProjBtn").textContent = L.saveProj; $("delProjBtn").textContent = L.delProj;
-  $("printBtn").textContent = L.print; $("copyBtn").textContent = L.copy; $("dlHtmlBtn").textContent = L.dlHtml;
+  set("aiTitle", L.aiTitle); set("aiSub", L.aiSub); $("aiText").placeholder = L.aiPh;
+  set("aiBtn", L.aiBtn); set("aiClearBtn", L.aiClear);
+  set("newTitle", L.newTitle); set("newSub", L.newSub);
+  set("l-ref", L.l_ref); set("l-date", L.l_date); set("l-title", L.l_title);
+  set("l-desc", L.l_desc); set("l-by", L.l_by); set("l-src", L.l_src);
+  set("l-clause", L.l_clause); set("l-cost", L.l_cost); set("l-time", L.l_time);
+  set("saveVoBtn", L.saveVo); set("resetVoBtn", L.resetVo);
+  set("dataTitle", L.dataTitle); set("dataSub", L.dataSub);
+  set("expJson", L.expJson); set("expCsv", L.expCsv); set("impBtn", L.impBtn);
+  set("demoTitle", L.demoTitle); set("demoSub", L.demoSub);
+  set("demoBtn", L.demoBtn); set("wipeBtn", L.wipe);
+  set("legalTitle", L.legalTitle); set("legalBody", L.legalBody);
+  set("l-pname", L.l_pname); set("l-pclient", L.l_pclient); set("l-pemployer", L.l_pemployer);
+  set("l-pcontract", L.l_pcontract); set("l-psum", L.l_psum); set("l-pcur", L.l_pcur);
+  set("l-pcontractor", L.l_pcontractor); set("l-pengineer", L.l_pengineer);
+  set("l-pletterhead", L.l_pletterhead); set("l-pcompletion", L.l_pcompletion);
+  set("formTitle", L.formTitle); set("l-pform", L.l_pform);
+  set("l-pnotice", L.l_pnotice); set("l-pdetail", L.l_pdetail);
+  set("l-pclv", L.l_pclv); set("l-pclc", L.l_pclc); set("l-pcle", L.l_pcle);
+  set("noticeHint", L.noticeHint);
+  set("saveProjBtn", L.saveProj); set("delProjBtn", L.delProj);
+  set("printBtn", L.print); set("copyBtn", L.copy); set("dlHtmlBtn", L.dlHtml);
 
-  // source + contract-form dropdowns
-  $("f-src").innerHTML = Object.keys(L.src).map(k => `<option value="${k}">${esc(L.src[k])}</option>`).join("");
-  $("p-form").innerHTML = Object.keys(L.forms).map(k => `<option value="${esc(k)}">${esc(L.forms[k])}</option>`).join("");
+  $("f-src").innerHTML  = Object.keys(L.src).map(k => `<option value="${k}">${esc(L.src[k])}</option>`).join("");
+  $("p-form").innerHTML = Object.keys(CONTRACT_FORMS)
+    .map(k => `<option value="${k}">${esc(CONTRACT_FORMS[k][S.lang])}</option>`).join("");
+  $("p-employer").innerHTML = Object.keys(EMPLOYER_TYPES)
+    .map(k => `<option value="${k}">${esc(EMPLOYER_TYPES[k][S.lang])}</option>`).join("");
 }
 
 function renderProjBar(){
-  const L = t();
-  const sel = $("projSel");
+  const L = t(), sel = $("projSel");
   sel.innerHTML = S.projects.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("")
     || `<option value="">${esc(L.noProject)}</option>`;
   if(S.active) sel.value = S.active;
   const p = activeProject();
-  $("projMeta").textContent = p ? L.projMeta(p) : L.noProject;
-  $("editProjBtn").hidden = !p;
+  if(!p){ $("projMeta").textContent = L.noProject; $("editProjBtn").hidden = true; return; }
+  const f = CONTRACT_FORMS[p.form] || CONTRACT_FORMS.bespoke;
+  $("projMeta").innerHTML =
+    `<b>${esc(f[S.lang])}</b> · ${esc(p.contractRef || "—")} · ${esc(EMPLOYER_TYPES[p.employerType][S.lang])}<br>` +
+    `${esc(L.l_pnotice)}: <b>${p.noticeDays}</b>` +
+    (Number(p.detailDays) ? ` · ${esc(L.l_pdetail.split("(")[0].trim())}: <b>${p.detailDays}</b>` : "") +
+    (Number(p.contractSum) ? ` · ${esc(fmtMoney(p.contractSum, p.currency))}` : "");
+  $("editProjBtn").hidden = false;
+}
+
+function allRisks(){
+  const p = activeProject(); if(!p) return [];
+  const out = [];
+  projectVos().forEach(v => voRisks(v, p, S.lang).forEach(r => out.push(Object.assign({vo:v}, r))));
+  projectRisks(p, projectVos(), S.lang).forEach(r => out.push(Object.assign({vo:null}, r)));
+  return out.sort((a,b) => RANK[a.level] - RANK[b.level]);
 }
 
 function renderDash(){
@@ -737,12 +814,11 @@ function renderDash(){
                       .reduce((s,v) => s + (Number(v.amountApproved != null && v.amountApproved !== "" ? v.amountApproved : v.costImpact)||0), 0);
   const pending  = vos.filter(v => ["notice","submitted","review","disputed"].includes(v.status))
                       .reduce((s,v) => s + (Number(v.costImpact)||0), 0);
-  const risk     = vos.filter(v => { const n = noticeInfo(v, p); return n && !n.served && n.left <= 7; }).length;
+  const risk     = vos.filter(v => { const n = voDeadlines(v, p, S.lang); return n && !n.served && n.noticeLeft <= 7; }).length;
   const timeDays = vos.filter(v => v.status !== "rejected").reduce((s,v) => s + (Number(v.timeImpact)||0), 0);
 
   const money = (n) => Number(n)
-    ? `${esc(Number(n).toLocaleString("en-US", {maximumFractionDigits:2}))}<span class="cur">${esc(cur||"")}</span>`
-    : "—";
+    ? `${esc(Number(n).toLocaleString("en-US",{maximumFractionDigits:2}))}<span class="cur">${esc(cur||"")}</span>` : "—";
   $("tiles").innerHTML = [
     {k:L.t_open,     v:esc(open.length)},
     {k:L.t_claimed,  v:money(claimed)},
@@ -752,26 +828,67 @@ function renderDash(){
     {k:L.t_time,     v:esc(timeDays)},
   ].map(x => `<div class="tile ${x.cls||""}"><div class="k">${esc(x.k)}</div><div class="v">${x.v}</div></div>`).join("");
 
-  // deadline board — only variations with the notice clock still running
+  // --- procurement ceiling meter, government/semi-government only
+  const sum = p ? Number(p.contractSum) || 0 : 0;
+  if(sum > 0 && p && (p.employerType === "government" || p.employerType === "semi")){
+    const varied = vos.filter(v => v.status !== "rejected")
+      .reduce((s,v) => s + (Number(v.amountApproved != null && v.amountApproved !== "" ? v.amountApproved : v.costImpact)||0), 0);
+    const pct = varied / sum;
+    const cls = pct >= PROCUREMENT_CAP ? "red" : pct >= CAP_WARN_AT ? "amber" : "";
+    // The bar runs to 25% so the 20% ceiling sits inside the track, not at its end.
+    const scale = 0.25, w = Math.min(100, (pct / scale) * 100);
+    $("capWrap").innerHTML = `<div class="cap">
+      <div class="caphead"><b>${(pct*100).toFixed(1)}%</b>
+        <span class="of">${esc(L.capOf)} · ${esc(fmtMoney(varied, cur))} / ${esc(fmtMoney(sum, cur))}</span></div>
+      <div class="capbar">
+        <div class="capfill ${cls}" style="width:${w}%"></div>
+        <div class="capmark" style="inset-inline-start:${(CAP_WARN_AT/scale)*100}%"></div>
+        <div class="capmark" style="inset-inline-start:${(PROCUREMENT_CAP/scale)*100}%"></div>
+      </div>
+      <div class="capscale"><span>0%</span><span>15%</span><span>20%</span><span>25%</span></div>
+      <div class="hint">${esc(L.capNote)}</div>
+    </div>`;
+  } else $("capWrap").innerHTML = "";
+
+  // --- risk feed
+  const risks = allRisks();
+  $("riskFeed").innerHTML = risks.length ? risks.map(r => `
+    <div class="risk ${r.level}">
+      <div class="rbody">
+        ${r.vo ? `<button class="rref" data-vo="${r.vo.id}">${esc(r.vo.ref)} — ${esc(r.vo.title)}</button>` : ""}
+        <b>${esc(r.text)}</b>
+        ${r.why ? `<div class="why">${esc(r.why)}</div>` : ""}
+        ${r.todo ? `<div class="todo">← ${esc(r.todo)}</div>` : ""}
+      </div>
+    </div>`).join("") : `<div class="empty">${esc(L.riskEmpty)}</div>`;
+  $("riskFeed").querySelectorAll("[data-vo]").forEach(el =>
+    el.addEventListener("click", () => openVo(el.dataset.vo)));
+
+  // --- deadline board
   const waiting = vos.filter(v => v.status === "draft")
-                     .map(v => ({v, n:noticeInfo(v, p)}))
-                     .filter(x => x.n)
-                     .sort((a,b) => a.n.left - b.n.left);
+                     .map(v => ({v, n:voDeadlines(v, p, S.lang)}))
+                     .filter(x => x.n).sort((a,b) => a.n.noticeLeft - b.n.noticeLeft);
   $("dlBoard").innerHTML = waiting.length ? waiting.map(({v,n}) => {
-    const late = n.left < 0;
-    const num  = Math.abs(n.left);
-    const cap  = n.left === 0 ? L.dueToday : (late ? L.daysOver : L.daysLeft);
+    const late = n.noticeLeft < 0, num = Math.abs(n.noticeLeft);
+    const cap  = n.noticeLeft === 0 ? L.dueToday : (late ? L.daysOver : L.daysLeft);
     return `<div class="dl ${n.state}" data-vo="${v.id}">
-      <div class="cnt">${n.left === 0 ? "!" : num}<small>${esc(cap)}</small></div>
+      <div class="cnt">${n.noticeLeft === 0 ? "!" : num}<small>${esc(cap)}</small></div>
       <div class="body">
         <b>${esc(v.ref)} — ${esc(v.title)}</b>
-        <span>${esc(L.instructed)} ${esc(fmtDate(v.dateInstructed))}${v.instructedBy ? ` · ${esc(L.by)} ${esc(v.instructedBy)}` : ""}</span>
+        <span>${esc(L.instructed)} ${esc(fmtDate(v.dateInstructed))}${v.instructedBy ? ` · ${esc(L.by)} ${esc(v.instructedBy)}` : ""}${
+          n.detailDue ? ` · ${esc(L.detailDue)}: ${esc(fmtDate(isoOf(n.detailDue)))}` : ""}</span>
       </div>
     </div>`;
   }).join("") : `<div class="empty">${esc(L.dlEmpty)}</div>`;
-
   $("dlBoard").querySelectorAll("[data-vo]").forEach(el =>
     el.addEventListener("click", () => openVo(el.dataset.vo)));
+
+  // --- tab badge: how many high risks
+  const high = risks.filter(r => r.level === "high").length;
+  document.querySelectorAll(".tab").forEach(b => {
+    b.innerHTML = esc(b.dataset.label || "") +
+      (b.dataset.tab === "dash" && high ? `<span class="dot">${high}</span>` : "");
+  });
 }
 
 let filterStatus = "all";
@@ -786,26 +903,26 @@ function renderRegister(){
   const q = ($("search").value || "").trim().toLowerCase();
   let list = projectVos();
   if(filterStatus !== "all") list = list.filter(v => v.status === filterStatus);
-  if(q) list = list.filter(v =>
-    [v.ref, v.title, v.instructedBy, v.description].some(x => String(x||"").toLowerCase().includes(q)));
+  if(q) list = list.filter(v => [v.ref, v.title, v.instructedBy, v.description]
+    .some(x => String(x||"").toLowerCase().includes(q)));
   list.sort((a,b) => String(b.dateInstructed).localeCompare(String(a.dateInstructed)));
 
   $("regList").innerHTML = list.length ? list.map(v => {
-    const n = noticeInfo(v, p);
-    const flag = n && !n.served && n.left <= 7
-      ? ` <span class="badge b-${n.left < 0 ? "rejected" : "notice"}">${n.left < 0 ? esc(L.daysOver) : esc(L.daysLeft)}: ${Math.abs(n.left)}</span>` : "";
+    const rs = p ? voRisks(v, p, S.lang) : [];
+    const worst = rs.length ? rs.sort((a,b) => RANK[a.level]-RANK[b.level])[0].level : null;
     return `<div class="vo" data-vo="${v.id}">
       <div class="ref">${esc(v.ref)}</div>
       <div class="main">
         <b>${esc(v.title)}</b>
-        <div class="meta">${esc(fmtDate(v.dateInstructed))}${v.instructedBy ? ` · ${esc(v.instructedBy)}` : ""}</div>
-        <div style="margin-top:5px"><span class="badge b-${v.status}">${esc(L.st[v.status])}</span>${flag}</div>
+        <div class="meta">${esc(fmtDate(v.dateInstructed))}${v.instructedBy ? ` · ${esc(v.instructedBy)}` : ""}${
+          (v.evidence||[]).length ? ` · ${(v.evidence||[]).length} ${esc(L.mEvidence)}` : ""}</div>
+        <div style="margin-top:5px"><span class="badge b-${v.status}">${esc(L.st[v.status])}</span>${
+          worst === "high" || worst === "medium" ? `<span class="riskdot ${worst}"></span>` : ""}</div>
       </div>
       <div class="amt">${esc(fmtMoney(v.costImpact, p && p.currency))}${
         Number(v.timeImpact) ? `<div style="color:var(--muted);font-size:11.5px">+${Number(v.timeImpact)} ${esc(L.dDays)}</div>` : ""}</div>
     </div>`;
   }).join("") : `<div class="empty">${esc(L.regEmpty)}</div>`;
-
   $("regList").querySelectorAll("[data-vo]").forEach(el =>
     el.addEventListener("click", () => openVo(el.dataset.vo)));
 }
@@ -818,28 +935,36 @@ function renderAll(){ renderProjBar(); renderDash(); renderRegister(); }
 let openVoId = null;
 function openVo(id){
   const L = t(), p = activeProject(), v = S.vos.find(x => x.id === id);
-  if(!v) return;
+  if(!v || !p) return;
   openVoId = id;
-  const n = noticeInfo(v, p);
+  const n = voDeadlines(v, p, S.lang);
+  const rs = voRisks(v, p, S.lang);
   $("mTitle").textContent = `${v.ref} — ${v.title}`;
 
   const statusOpts = Object.keys(L.st).map(k =>
     `<option value="${k}" ${v.status === k ? "selected" : ""}>${esc(L.st[k])}</option>`).join("");
-
   const ev = (v.evidence || []).slice().sort((a,b) => String(a.date).localeCompare(String(b.date)));
 
   $("mBody").innerHTML = `
     <div class="tiles" style="margin-bottom:6px">
-      <div class="tile"><div class="k">${esc(L.instructed)}</div><div class="v" style="font-size:16px">${esc(fmtDate(v.dateInstructed))}</div></div>
-      <div class="tile ${n && !n.served && n.left < 0 ? "warn" : ""}">
+      <div class="tile"><div class="k">${esc(L.instructed)}</div><div class="v" style="font-size:15px">${esc(fmtDate(v.dateInstructed))}</div></div>
+      <div class="tile ${n && !n.served && n.noticeLeft < 0 ? "warn" : ""}">
         <div class="k">${esc(L.dNoticeDue)}</div>
-        <div class="v" style="font-size:16px">${n ? esc(fmtDate(isoDate(n.due))) : "—"}</div></div>
-      <div class="tile"><div class="k">${esc(L.l_cost)}</div><div class="v" style="font-size:16px">${esc(fmtMoney(v.costImpact, p && p.currency))}</div></div>
-      <div class="tile"><div class="k">${esc(L.l_time)}</div><div class="v" style="font-size:16px">${Number(v.timeImpact)||0}</div></div>
+        <div class="v" style="font-size:15px">${n ? esc(fmtDate(isoOf(n.noticeDue))) : "—"}</div></div>
+      ${n && n.detailDue ? `<div class="tile"><div class="k">${esc(L.detailDue)}</div>
+        <div class="v" style="font-size:15px">${esc(fmtDate(isoOf(n.detailDue)))}</div></div>` : ""}
+      <div class="tile"><div class="k">${esc(L.l_cost)}</div><div class="v" style="font-size:15px">${esc(fmtMoney(v.costImpact, p.currency))}</div></div>
+      <div class="tile"><div class="k">${esc(L.l_time)}</div><div class="v" style="font-size:15px">${Number(v.timeImpact)||0}</div></div>
     </div>
-    ${n && !n.served && n.left < 0 ? `<p class="hint" style="color:var(--red)">${esc(L.mOverdue)}</p>` : ""}
 
-    ${v.description ? `<p style="font-size:14.5px;white-space:pre-wrap;margin:12px 0 0">${esc(v.description)}</p>` : ""}
+    <h3>${esc(L.mRisks)}</h3>
+    ${rs.length ? rs.map(r => `<div class="risk ${r.level}"><div class="rbody">
+        <b>${esc(r.text)}</b>
+        ${r.why ? `<div class="why">${esc(r.why)}</div>` : ""}
+        ${r.todo ? `<div class="todo">← ${esc(r.todo)}</div>` : ""}
+      </div></div>`).join("") : `<p class="hint">${esc(L.mNoRisks)}</p>`}
+
+    ${v.description ? `<p style="font-size:14.5px;white-space:pre-wrap;margin:14px 0 0">${esc(v.description)}</p>` : ""}
     <p class="hint">${esc(L.l_src)}: ${esc(srcLabel(v.source))}${v.instructedBy ? ` · ${esc(L.l_by)}: ${esc(v.instructedBy)}` : ""}${v.clause ? ` · ${esc(L.dClause)} ${esc(v.clause)}` : ""}</p>
 
     <h3>${esc(L.mStatus)}</h3>
@@ -853,17 +978,23 @@ function openVo(id){
     <h3>${esc(L.mEvidence)}</h3>
     <p class="sub">${esc(L.mEvSub)}</p>
     <div class="row">
-      <div style="flex:0 0 150px"><label>${esc(L.mEvDate)}</label><input id="evDate" type="date" value="${esc(isoDate(today()))}"></div>
-      <div style="flex:0 0 160px"><label>${esc(L.mEvType)}</label><select id="evType">${
+      <div style="flex:0 0 145px"><label>${esc(L.mEvDate)}</label><input id="evDate" type="date" value="${esc(isoOf(startOfToday()))}"></div>
+      <div style="flex:0 0 165px"><label>${esc(L.mEvType)}</label><select id="evType">${
         Object.keys(L.src).map(k => `<option value="${k}">${esc(L.src[k])}</option>`).join("")}</select></div>
       <div><label>${esc(L.mEvNote)}</label><input id="evNote" placeholder="${esc(L.mEvPh)}"></div>
     </div>
-    <div class="btnrow"><button class="btn small" id="evAdd">${esc(L.mAddEv)}</button></div>
+    <div class="btnrow">
+      <label class="filepick"><input type="file" id="evFile" style="display:none">
+        <button type="button" class="btn ghost small" id="evFileBtn">📎 ${esc(L.mEvFile)}</button>
+        <span id="evFileName"></span></label>
+      <button class="btn small" id="evAdd">${esc(L.mAddEv)}</button>
+    </div>
     <div id="evList">${ ev.length ? ev.map(e => `
       <div class="ev">
         <div class="d">${esc(fmtDate(e.date))}</div>
-        <div class="t"><em>${esc(srcLabel(e.type))}</em>${esc(e.note)}</div>
-        <button data-ev="${e.id}" title="delete">&times;</button>
+        <div class="t"><em>${esc(srcLabel(e.type))}</em>${esc(e.note)}
+          ${e.fileId ? `<button class="att" data-file="${e.fileId}" data-name="${esc(e.fileName||"file")}">📎 ${esc(e.fileName||"")}</button>` : ""}</div>
+        <button class="del" data-ev="${e.id}" title="delete">&times;</button>
       </div>`).join("") : `<div class="empty">${esc(L.mEvEmpty)}</div>` }</div>
 
     <h3>${esc(L.mDocs)}</h3>
@@ -881,29 +1012,52 @@ function openVo(id){
     v.status = $("mStatusSel").value;
     const amt = $("mAmt").value;
     v.amountApproved = amt === "" ? null : Number(amt);
-    // serving notice stops the clock — stamp the day it happened, once
-    if(prev === "draft" && v.status !== "draft" && !v.dateNotice) v.dateNotice = isoDate(today());
+    if(prev === "draft" && v.status !== "draft" && !v.dateNotice) v.dateNotice = isoOf(startOfToday());
     if(v.status === "draft") v.dateNotice = null;
     save(); renderAll(); openVo(id);
   });
 
-  $("evAdd").addEventListener("click", () => {
-    const note = $("evNote").value.trim();
-    if(!note) return;
-    v.evidence = v.evidence || [];
-    v.evidence.push({ id:uid(), date:$("evDate").value || isoDate(today()), type:$("evType").value, note });
-    save(); openVo(id);
+  let pending = null;
+  $("evFileBtn").addEventListener("click", () => $("evFile").click());
+  $("evFile").addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0];
+    pending = f || null;
+    $("evFileName").textContent = f ? `${f.name} (${Math.round(f.size/1024)} KB)` : "";
   });
-  $("evList").querySelectorAll("[data-ev]").forEach(b => b.addEventListener("click", () => {
+  $("evAdd").addEventListener("click", async () => {
+    const note = $("evNote").value.trim();
+    if(!note && !pending) return;
+    const entry = { id:uid(), date:$("evDate").value || isoOf(startOfToday()),
+                    type:$("evType").value, note: note || (pending ? pending.name : "") };
+    if(pending){
+      entry.fileId = uid(); entry.fileName = pending.name; entry.fileSize = pending.size;
+      try{ await putFile(entry.fileId, pending); }
+      catch(err){ console.warn("attach failed", err); delete entry.fileId; }
+    }
+    v.evidence = v.evidence || [];
+    v.evidence.push(entry);
+    save(); renderAll(); openVo(id);
+  });
+  $("evList").querySelectorAll("[data-ev]").forEach(b => b.addEventListener("click", async () => {
+    const entry = (v.evidence || []).find(e => e.id === b.dataset.ev);
+    if(entry && entry.fileId) await delFile(entry.fileId);
     v.evidence = (v.evidence || []).filter(e => e.id !== b.dataset.ev);
-    save(); openVo(id);
+    save(); renderAll(); openVo(id);
+  }));
+  $("evList").querySelectorAll("[data-file]").forEach(b => b.addEventListener("click", async () => {
+    const blob = await getFile(b.dataset.file);
+    if(!blob) return;
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }));
 
   $("mBody").querySelectorAll("[data-doc]").forEach(b =>
     b.addEventListener("click", () => buildDoc(b.dataset.doc, v, p)));
 
-  $("mDel").addEventListener("click", () => {
+  $("mDel").addEventListener("click", async () => {
     if(!confirm(L.mDelConfirm)) return;
+    for(const e of (v.evidence || [])) if(e.fileId) await delFile(e.fileId);
     S.vos = S.vos.filter(x => x.id !== id);
     save(); closeModal("voModal"); renderAll();
   });
@@ -914,19 +1068,68 @@ function openVo(id){
 /* ================================================================
    DOCUMENTS
    ================================================================ */
+function docBody(kind, v, p){
+  const f = (s) => fmtDate(s);
+  const form = CONTRACT_FORMS[p.form] || CONTRACT_FORMS.bespoke;
+  const src = srcLabel(v.source);
+  const clause = v.clause || p.clauseVariation || "";
+  if(S.lang === "ar"){
+    if(kind === "notice") return (
+      `نشير إلى التعليمات الموضحة أدناه، الصادرة بتاريخ ${f(v.dateInstructed)}` +
+      `${v.instructedBy?` من ${v.instructedBy}`:""}${src?` عن طريق ${src}`:""}.\n\n` +
+      `تُشكّل الأعمال المطلوبة تغييرًا في نطاق الأعمال${clause?` بموجب البند ${clause} من العقد`:""}. ` +
+      `ووفقًا للعقد، نُشعركم بموجب هذا الكتاب بهذا التغيير وبعزمنا على المطالبة بما يترتب عليه من تعديل ` +
+      `في قيمة العقد، وفي مدة الإنجاز متى انطبق ذلك.\n\n` +
+      `وصف الأعمال الصادرة بها التعليمات:\n${v.description || v.title}\n\n` +
+      `تقديرنا الحالي للأثر مبيّن في الجدول أدناه، وهو مقدَّم لغرض الإشعار وبناءً على المعلومات المتاحة ` +
+      `بتاريخ هذا الكتاب، وليس عرض سعر نهائيًا، ونحتفظ بحقنا في تعديله بعد اكتمال تحديد الأعمال وقياس آثارها.\n\n` +
+      `ويجري الاحتفاظ بسجلات آنية للموارد والوقت المستهلك، وستكون متاحة للاطلاع عند الطلب. ` +
+      `وجميع حقوقنا بموجب العقد محفوظة.`);
+    if(kind === "submission") return (
+      `إلحاقًا بإشعارنا بأمر التغيير، نقدّم لكم أدناه تقديمنا التفصيلي لأمر التغيير الموضح، للمراجعة والتوجيه.\n\n` +
+      `وصف الأعمال:\n${v.description || v.title}\n\n` +
+      `صدرت التعليمات بتاريخ ${f(v.dateInstructed)}${v.instructedBy?` من ${v.instructedBy}`:""}. ` +
+      `والتقييم أدناه معدّ${clause?` بموجب البند ${clause}`:""} ومدعوم بالسجلات المدرجة في جدول المستندات المؤيدة.\n\n` +
+      `نرجو تأكيدكم الخطي للتعديل في قيمة العقد وفي مدة الإنجاز المبيّن أدناه.`);
+    return (`يعرض هذا الملف، بالترتيب الزمني، السجل المؤيد لأمر التغيير الموضح أعلاه، ` +
+      `وهو مُجمَّع من سجلات آنية حُفِظت وقت وقوع الأحداث، ومحفوظ لدينا وفق نموذج العقد ` +
+      `(${form.ar}).`);
+  }
+  if(kind === "notice") return (
+    `We refer to the instruction described below, issued on ${f(v.dateInstructed)}` +
+    `${v.instructedBy?` by ${v.instructedBy}`:""}${src?` (${src})`:""}.\n\n` +
+    `The work instructed constitutes a variation to the Works${clause?` under Clause ${clause} of the Contract`:""}. ` +
+    `In accordance with the Contract we hereby give notice of that variation and of our intention to claim the ` +
+    `resulting adjustment to the Contract Price and, where applicable, to the Time for Completion.\n\n` +
+    `Description of the instructed work:\n${v.description || v.title}\n\n` +
+    `Our present estimate of the effect is set out below. It is given for notice purposes on the information ` +
+    `available at the date of this letter; it is not a fixed quotation and we reserve the right to adjust it once ` +
+    `the work is fully defined and its effects measured.\n\n` +
+    `Contemporary records of the resources and time expended are being kept and will be made available for ` +
+    `inspection on request. All our rights under the Contract are reserved.`);
+  if(kind === "submission") return (
+    `Further to our notice of variation, we submit below our detailed submission for the variation described, ` +
+    `for your review and instruction.\n\nDescription of the work:\n${v.description || v.title}\n\n` +
+    `The instruction was issued on ${f(v.dateInstructed)}${v.instructedBy?` by ${v.instructedBy}`:""}. ` +
+    `The evaluation below is made${clause?` under Clause ${clause}`:""} and is supported by the records listed ` +
+    `in the schedule of supporting documents.\n\nWe request your written confirmation of the adjustment to the ` +
+    `Contract Price and to the Time for Completion set out below.`);
+  return (`This pack sets out, in date order, the record supporting the variation described above. It is compiled ` +
+    `from contemporary records kept at the time of the events and held under the contract form (${form.en}).`);
+}
+
 function buildDoc(kind, v, p){
-  const L = t();
-  const cur = p ? p.currency : "";
-  const n = noticeInfo(v, p);
+  const L = t(), cur = p.currency, n = voDeadlines(v, p, S.lang);
+  const form = CONTRACT_FORMS[p.form] || CONTRACT_FORMS.bespoke;
   const head = kind === "notice" ? L.docNotice : kind === "submission" ? L.docSubmission : L.docPack;
-  const bodyFn = kind === "notice" ? L.dNoticeBody : kind === "submission" ? L.dSubmissionBody : L.dPackBody;
-  const body = bodyFn(Object.assign({}, v, {source:srcLabel(v.source)}), p || {}, fmtDate);
+  const today = startOfToday();
 
   const ev = (v.evidence || []).slice().sort((a,b) => String(a.date).localeCompare(String(b.date)));
   const chron = ev.length ? `
     <h2>${esc(kind === "pack" ? L.dChronology : L.dDocs)}</h2>
     <table><thead><tr><th style="width:110px">${esc(L.dDate)}</th><th style="width:150px">${esc(L.mEvType)}</th><th>${esc(L.mEvNote)}</th></tr></thead>
-    <tbody>${ev.map(e => `<tr><td>${esc(fmtDate(e.date))}</td><td>${esc(srcLabel(e.type))}</td><td>${esc(e.note)}</td></tr>`).join("")}</tbody></table>`
+    <tbody>${ev.map(e => `<tr><td>${esc(fmtDate(e.date))}</td><td>${esc(srcLabel(e.type))}</td><td>${esc(e.note)}${
+      e.fileName ? ` <i>(${esc(L.dAttached)}: ${esc(e.fileName)})</i>` : ""}</td></tr>`).join("")}</tbody></table>`
     : `<h2>${esc(kind === "pack" ? L.dChronology : L.dDocs)}</h2><p>${esc(L.dNoDocs)}</p>`;
 
   const effect = `
@@ -935,32 +1138,41 @@ function buildDoc(kind, v, p){
       <tr><th style="width:45%">${esc(L.dCostEffect)}</th><td>${esc(Number(v.costImpact) ? fmtMoney(v.costImpact, cur) : L.dNil)}</td></tr>
       <tr><th>${esc(L.dTimeEffect)}</th><td>${Number(v.timeImpact) ? `${Number(v.timeImpact)} ${esc(L.dDays)}` : esc(L.dNil)}</td></tr>
       ${v.clause ? `<tr><th>${esc(L.dClause)}</th><td>${esc(v.clause)}</td></tr>` : ""}
+      <tr><th>${esc(L.dForm)}</th><td>${esc(form[S.lang])}</td></tr>
     </tbody></table>`;
 
   $("dmTitle").textContent = head;
+  // Law 7/2019: a government employer corresponds in Arabic. Say so rather than
+  // letting someone issue an English notice to Ashghal and find out later.
+  $("docWarn").textContent = (p.employerType === "government" && S.lang === "en") ? L.docArabicOk : "";
+
   $("docPreview").innerHTML = `
-    <div class="lh">${esc((p && p.contractor) || "")}</div>
+    <div class="lh">
+      <div class="co">${esc(p.contractor || "")}</div>
+      ${p.letterhead ? `<div class="ad">${esc(p.letterhead)}</div>` : ""}
+    </div>
     <h1>${esc(head)}</h1>
     <div style="margin:16px 0 18px">
-      <div class="kv"><b>${esc(L.dTo)}:</b> ${esc((p && p.engineer) || (p && p.client) || "—")}</div>
-      <div class="kv"><b>${esc(L.dFrom)}:</b> ${esc((p && p.contractor) || "—")}</div>
-      <div class="kv"><b>${esc(L.dProject)}:</b> ${esc((p && p.name) || "—")}</div>
-      <div class="kv"><b>${esc(L.dContract)}:</b> ${esc((p && p.contractRef) || "—")}</div>
+      <div class="kv"><b>${esc(L.dTo)}:</b> ${esc(p.engineer || p.client || "—")}</div>
+      <div class="kv"><b>${esc(L.dFrom)}:</b> ${esc(p.contractor || "—")}</div>
+      <div class="kv"><b>${esc(L.dProject)}:</b> ${esc(p.name || "—")}</div>
+      <div class="kv"><b>${esc(L.dContract)}:</b> ${esc(p.contractRef || "—")}</div>
       <div class="kv"><b>${esc(L.dOurRef)}:</b> ${esc(v.ref)}</div>
-      <div class="kv"><b>${esc(L.dDate)}:</b> ${esc(fmtDate(isoDate(today())))}</div>
-      ${kind === "notice" && n ? `<div class="kv"><b>${esc(L.dNoticeDue)}:</b> ${esc(fmtDate(isoDate(n.due)))}</div>` : ""}
+      <div class="kv"><b>${esc(L.dDate)}:</b> ${esc(fmtDate(isoOf(today)))}${
+        S.lang === "ar" && hijri(today) ? ` — ${esc(hijri(today))}` : ""}</div>
+      ${kind === "notice" && n ? `<div class="kv"><b>${esc(L.dNoticeDue)}:</b> ${esc(fmtDate(isoOf(n.noticeDue)))}</div>` : ""}
     </div>
     <div style="margin-bottom:14px"><b>${esc(L.dSubject)}:</b> ${esc(v.title)}</div>
-    <div style="white-space:pre-wrap">${esc(body)}</div>
+    <div style="white-space:pre-wrap">${esc(docBody(kind, v, p))}</div>
     ${kind === "pack" ? "" : effect}
     ${chron}
     ${kind === "pack" ? effect : ""}
     <div class="sig">
       <div>${esc(L.dSig)}</div>
       <div style="margin-top:34px;border-top:1px solid #999;width:230px;padding-top:5px">
-        ${esc(L.dFor)} ${esc((p && p.contractor) || "")}</div>
+        ${esc(L.dFor)} ${esc(p.contractor || "")}</div>
     </div>
-    <p style="margin-top:26px;font-size:10.5px;color:#777;border-top:1px solid #ddd;padding-top:8px">${esc(L.dDisclaimer)}</p>`;
+    <div class="legal">${esc(L.dDisclaimer)}</div>`;
 
   $("docModal").classList.add("open");
 }
@@ -987,46 +1199,45 @@ async function readInstruction(){
   if(!parsed){ parsed = localExtract(text); offline = true; }
   if(!parsed){ $("aiStatus").textContent = L.aiFail; return; }
 
-  if(parsed.title)        $("f-title").value = parsed.title;
-  if(parsed.description)  $("f-desc").value  = parsed.description;
-  if(parsed.dateInstructed) $("f-date").value = parsed.dateInstructed;
-  if(parsed.instructedBy) $("f-by").value    = parsed.instructedBy;
-  if(parsed.source)       $("f-src").value   = parsed.source;
-  if(parsed.clause)       $("f-clause").value = parsed.clause;
+  if(parsed.title)          $("f-title").value = parsed.title;
+  if(parsed.description)    $("f-desc").value  = parsed.description;
+  if(parsed.dateInstructed) { $("f-date").value = parsed.dateInstructed; showHijri(); }
+  if(parsed.instructedBy)   $("f-by").value    = parsed.instructedBy;
+  if(parsed.source)         { $("f-src").value = parsed.source; srcWarn(); }
+  if(parsed.clause)         $("f-clause").value = parsed.clause;
   if(parsed.costImpact != null && parsed.costImpact !== "") $("f-cost").value = parsed.costImpact;
   if(parsed.timeImpact != null && parsed.timeImpact !== "") $("f-time").value = parsed.timeImpact;
 
   $("aiStatus").textContent = offline ? L.aiOffline : L.aiDone;
 }
 
-/* A deliberately dumb local fallback so the app is never dead without a key.
-   It only claims what it can actually see in the text. */
+/* Local fallback so the app is never dead without a key. It only claims what
+   it can actually see; day-first is assumed on ambiguous dates, the Gulf norm. */
 function localExtract(text){
-  const out = {};
-  const flat = text.replace(/\r/g, "");
-
+  const out = {}, flat = text.replace(/\r/g, "");
   const iso = /(\d{4})-(\d{2})-(\d{2})/.exec(flat);
   const dmy = /\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})\b/.exec(flat);
   if(iso) out.dateInstructed = `${iso[1]}-${iso[2]}-${iso[3]}`;
   else if(dmy) out.dateInstructed = `${dmy[3]}-${String(dmy[2]).padStart(2,"0")}-${String(dmy[1]).padStart(2,"0")}`;
 
-  const money = /(?:SAR|AED|QAR|KWD|USD|ر\.?س|درهم|\$)\s*([\d,]+(?:\.\d+)?)|([\d,]{4,}(?:\.\d+)?)\s*(?:SAR|AED|QAR|KWD|USD|ر\.?س)/i.exec(flat);
+  const money = /(?:QAR|SAR|AED|USD|ر\.?ق|ريال|\$)\s*([\d,]+(?:\.\d+)?)|([\d,]{4,}(?:\.\d+)?)\s*(?:QAR|SAR|AED|USD|ر\.?ق|ريال)/i.exec(flat);
   if(money) out.costImpact = Number(String(money[1] || money[2]).replace(/,/g, "")) || "";
 
   const days = /(\d{1,3})\s*(?:calendar\s*)?(?:days?|يوم|أيام)/i.exec(flat);
   if(days) out.timeImpact = Number(days[1]);
 
-  const clause = /(?:clause|البند|بند)\s*([\d]+(?:\.\d+)*)/i.exec(flat);
+  const clause = /(?:clause|sub-?clause|البند|بند)\s*([\d]+(?:[.\-]\d+)*)/i.exec(flat);
   if(clause) out.clause = clause[1];
 
   const from = /(?:^|\n)\s*(?:from|من)\s*[:：]\s*(.+)/i.exec(flat);
   if(from) out.instructedBy = from[1].trim().slice(0, 80);
 
-  if(/site\s*instruction|تعليمات\s*موقع|\bSI\b/i.test(flat)) out.source = "si";
-  else if(/\bRFI\b|استفسار/i.test(flat))                     out.source = "rfi";
-  else if(/minutes|محضر/i.test(flat))                        out.source = "minutes";
-  else if(/drawing|مخطط|rev\s*[A-Z]/i.test(flat))            out.source = "drawing";
-  else if(/@|subject\s*:|الموضوع\s*:/i.test(flat))           out.source = "email";
+  if(/verbal|شفهي|شفوي/i.test(flat))                          out.source = "verbal";
+  else if(/site\s*instruction|تعليمات\s*موقع|\bSI\b/i.test(flat)) out.source = "si";
+  else if(/\bRFI\b|\bTQ\b|استفسار/i.test(flat))               out.source = "rfi";
+  else if(/minutes|محضر/i.test(flat))                          out.source = "minutes";
+  else if(/drawing|مخطط|rev\s*[A-Z]/i.test(flat))              out.source = "drawing";
+  else if(/@|subject\s*:|الموضوع\s*:/i.test(flat))             out.source = "email";
 
   const firstReal = flat.split("\n").map(l => l.trim())
     .filter(l => l && !/^(from|to|sent|date|subject|cc|من|إلى|التاريخ|الموضوع)\s*[:：]/i.test(l))[0] || "";
@@ -1041,23 +1252,25 @@ function localExtract(text){
 function download(name, content, type){
   const blob = new Blob([content], {type: type || "text/plain;charset=utf-8"});
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
+  a.href = URL.createObjectURL(blob); a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 function exportCsv(){
   const L = t(), p = activeProject();
   const rows = [[
-    "ref","title","date_instructed","instructed_by","source","clause",
-    "cost_impact","currency","time_impact_days","status","notice_due","notice_served","evidence_items"
+    "ref","title","date_instructed","instructed_by","source","clause","cost_impact","currency",
+    "eot_days","status","notice_due","detail_due","notice_served","evidence_items","attachments","open_risks",
   ]];
   projectVos().forEach(v => {
-    const n = noticeInfo(v, p);
+    const n = voDeadlines(v, p, S.lang);
+    const rs = voRisks(v, p, S.lang);
     rows.push([
       v.ref, v.title, v.dateInstructed, v.instructedBy || "", srcLabel(v.source), v.clause || "",
-      v.costImpact || "", (p && p.currency) || "", v.timeImpact || "", L.st[v.status] || v.status,
-      n ? isoDate(n.due) : "", v.dateNotice || "", (v.evidence || []).length
+      v.costImpact || "", p.currency || "", v.timeImpact || "", L.st[v.status] || v.status,
+      n ? isoOf(n.noticeDue) : "", n && n.detailDue ? isoOf(n.detailDue) : "", v.dateNotice || "",
+      (v.evidence || []).length, (v.evidence || []).filter(e => e.fileId).length,
+      rs.map(r => r.text).join(" | "),
     ]);
   });
   const csv = "﻿" + rows.map(r => r.map(c => `"${String(c == null ? "" : c).replace(/"/g,'""')}"`).join(",")).join("\n");
@@ -1065,40 +1278,56 @@ function exportCsv(){
 }
 
 function loadDemo(){
-  const pid = uid();
-  const base = today();
-  const d = (back) => isoDate(addDays(base, -back));
-  S.projects.push({
-    id: pid, name: S.lang === "ar" ? "برج المكاتب — المرحلة ٢" : "Office Tower — Phase 2",
-    client: S.lang === "ar" ? "شركة التطوير العقاري" : "Riyadh Development Co.",
-    contractRef: "CT-2024-118",
-    contractor: S.lang === "ar" ? "مؤسستك للمقاولات" : "Your Contracting Est.",
-    engineer: S.lang === "ar" ? "الاستشاري الهندسي" : "Consulting Engineer",
-    form: "FIDIC Red Book", noticeDays: 28, currency: "SAR",
-  });
+  const pid = uid(), base = startOfToday(), d = (back) => isoOf(addDays(base, -back));
+  const ar = S.lang === "ar";
+  const p = {
+    id: pid,
+    name: ar ? "توسعة شبكة الصرف — الحزمة ٣" : "Drainage Network Expansion — Package 3",
+    client: ar ? "هيئة الأشغال العامة (أشغال)" : "Public Works Authority (Ashghal)",
+    employerType: "government",
+    contractRef: "PWA/2025/CT-4471",
+    contractSum: 48000000,
+    currency: "QAR",
+    contractor: ar ? "شركتك للمقاولات ذ.م.م" : "Your Contracting Co. W.L.L.",
+    engineer: ar ? "الاستشاري المشرف" : "Supervision Consultant",
+    letterhead: ar ? "الدوحة، قطر · هاتف ٤٤٠٠٠٠٠٠ · س.ت ١٢٣٤٥" : "Doha, Qatar · Tel 4400 0000 · CR 12345",
+    completionDate: isoOf(addDays(base, 400)),
+    form: "ashghal", noticeDays: 28, detailDays: 0,
+    clauseVariation: "10", clauseClaim: "19.1", clauseEot: "9.3",
+  };
+  applyFormDefaults(p);
+  S.projects.push(p);
   const mk = (o) => Object.assign({ id:uid(), projectId:pid, evidence:[], amountApproved:null, dateNotice:null }, o);
   S.vos.push(
-    mk({ ref:"VO-001", title: S.lang === "ar" ? "نقل ٦ وحدات مناولة هواء — الدور الثالث" : "Relocate 6 fan coil units — level 3",
-         description: S.lang === "ar" ? "نقل وحدات المناولة حسب المخطط M-304 مراجعة C بناءً على جولة الموقع." : "Relocate FCUs per drawing M-304 rev C following the site walk.",
-         dateInstructed:d(34), instructedBy: S.lang === "ar" ? "م. خالد — الاستشاري" : "K. Salem — Engineer",
-         source:"si", clause:"13.3", costImpact:184000, timeImpact:6, status:"draft" }),
-    mk({ ref:"VO-002", title: S.lang === "ar" ? "تغيير تشطيب أرضيات البهو إلى رخام" : "Change lobby flooring to marble",
-         description: S.lang === "ar" ? "استبدال البورسلين المحدد بالرخام حسب طلب المالك." : "Replace specified porcelain with marble at the Employer's request.",
-         dateInstructed:d(23), instructedBy: S.lang === "ar" ? "المالك" : "Employer",
-         source:"minutes", clause:"13.1", costImpact:412500, timeImpact:14, status:"draft" }),
-    mk({ ref:"VO-003", title: S.lang === "ar" ? "أعمال حفر إضافية — تربة صخرية" : "Additional excavation — rock encountered",
-         description: S.lang === "ar" ? "ظروف موقع غير متوقعة في المحور ٤." : "Unforeseen ground conditions at grid 4.",
-         dateInstructed:d(12), instructedBy: S.lang === "ar" ? "م. خالد — الاستشاري" : "K. Salem — Engineer",
-         source:"rfi", clause:"4.12", costImpact:96000, timeImpact:9, status:"notice", dateNotice:d(6),
+    mk({ ref:"VO-001", title: ar ? "تحويل خط مياه قائم — تقاطع ٤" : "Diversion of existing water main — junction 4",
+         description: ar ? "تحويل خط قائم قطر ٦٠٠ مم لم يظهر في المخططات، حسب تعليمات الموقع SI-118."
+                         : "Divert an existing 600mm main not shown on the drawings, per site instruction SI-118.",
+         dateInstructed:d(34), instructedBy: ar ? "م. عبدالله — الاستشاري" : "A. Rahman — Consultant",
+         source:"si", clause:"10", costImpact:1240000, timeImpact:21, status:"draft",
+         evidence:[{id:uid(), date:d(34), type:"si", note: ar ? "تعليمات الموقع SI-118" : "Site instruction SI-118"}] }),
+    mk({ ref:"VO-002", title: ar ? "تعميق الحفر — طبقة صخرية" : "Additional excavation — rock stratum",
+         description: ar ? "ظروف موقع غير متوقعة بين المحطتين ٧ و٩." : "Unforeseen ground conditions between chainage 7 and 9.",
+         dateInstructed:d(23), instructedBy: ar ? "المالك" : "Employer",
+         source:"minutes", clause:"10", costImpact:2150000, timeImpact:30, status:"draft",
+         evidence:[{id:uid(), date:d(23), type:"minutes", note: ar ? "محضر اجتماع الموقع رقم ٢٢" : "Site meeting minutes no. 22"}] }),
+    // The one that matters: verbal, nothing written, Art. 709 exposure.
+    mk({ ref:"VO-003", title: ar ? "نقل أعمدة إنارة — الجهة الشمالية" : "Relocate lighting columns — north side",
+         description: ar ? "طُلب شفهيًا في جولة الموقع، بدون أي تأكيد خطي حتى الآن."
+                         : "Requested verbally on the site walk; nothing confirmed in writing yet.",
+         dateInstructed:d(9), instructedBy: ar ? "م. عبدالله — الاستشاري" : "A. Rahman — Consultant",
+         source:"verbal", clause:"", costImpact:340000, timeImpact:0, status:"draft" }),
+    mk({ ref:"VO-004", title: ar ? "غرف تفتيش إضافية (٦ عدد)" : "Additional manholes (6 no.)",
+         dateInstructed:d(70), instructedBy: ar ? "م. عبدالله — الاستشاري" : "A. Rahman — Consultant",
+         source:"rfi", clause:"10", costImpact:880000, timeImpact:0, status:"approved",
+         amountApproved:845000, dateNotice:d(62),
          evidence:[
-           {id:uid(), date:d(12), type:"rfi",     note: S.lang === "ar" ? "رد الاستشاري على الاستفسار RFI-088" : "Engineer's response to RFI-088"},
-           {id:uid(), date:d(11), type:"other",   note: S.lang === "ar" ? "تقرير فحص التربة + صور المحور ٤" : "Soil inspection report + photos at grid 4"},
-           {id:uid(), date:d(6),  type:"email",   note: S.lang === "ar" ? "إشعارنا رقم L-2210 مُرسل للاستشاري" : "Our notice L-2210 issued to the Engineer"},
+           {id:uid(), date:d(70), type:"rfi",   note: ar ? "رد الاستشاري على الاستفسار RFI-204" : "Consultant response to RFI-204"},
+           {id:uid(), date:d(62), type:"email", note: ar ? "إشعارنا L-0442 مُرسل" : "Our notice L-0442 issued"},
          ]}),
-    mk({ ref:"VO-004", title: S.lang === "ar" ? "إضافة نقاط كهرباء بغرفة الخوادم" : "Additional power outlets — server room",
-         dateInstructed:d(58), instructedBy: S.lang === "ar" ? "م. خالد — الاستشاري" : "K. Salem — Engineer",
-         source:"email", clause:"13.3", costImpact:38000, timeImpact:0, status:"approved",
-         amountApproved:35500, dateNotice:d(50) }),
+    mk({ ref:"VO-005", title: ar ? "إعادة رصف — امتداد إضافي ٤٠٠ م" : "Reinstatement — additional 400m",
+         dateInstructed:d(48), instructedBy: ar ? "المالك" : "Employer",
+         source:"si", clause:"10", costImpact:4900000, timeImpact:25, status:"submitted", dateNotice:d(30),
+         evidence:[{id:uid(), date:d(48), type:"si", note: ar ? "تعليمات الموقع SI-131" : "Site instruction SI-131"}] }),
   );
   S.active = pid;
   save(); renderAll(); showTab("dash");
@@ -1113,21 +1342,59 @@ function showTab(name){
 }
 function closeModal(id){ $(id).classList.remove("open"); }
 
+function showHijri(){
+  const d = parseISO($("f-date").value);
+  $("f-date-hijri").textContent = (d && S.lang === "ar") ? hijri(d) : "";
+}
+function srcWarn(){
+  $("f-src-warn").textContent = $("f-src").value === "verbal" ? t().verbalWarn : "";
+  $("f-src-warn").style.color = $("f-src").value === "verbal" ? "var(--red)" : "";
+}
+
+function onFormChange(){
+  const f = CONTRACT_FORMS[$("p-form").value] || CONTRACT_FORMS.bespoke;
+  $("p-notice").value = f.noticeDays;
+  $("p-detail").value = f.detailDays;
+  $("p-clv").value = f.clauses.variation;
+  $("p-clc").value = f.clauses.claim;
+  $("p-cle").value = f.clauses.eot;
+  $("p-employer").value = f.employerDefault;
+  $("formSrc").textContent = S.lang === "ar" ? f.srcAr : f.srcEn;
+}
+
 function openProjModal(edit){
   const L = t();
   $("pmTitle").textContent = edit ? L.pmEdit : L.pmNew;
   const p = edit ? activeProject() : null;
+  const f = CONTRACT_FORMS[(p && p.form) || "ashghal"];
   $("p-name").value = p ? p.name : "";
   $("p-client").value = p ? (p.client || "") : "";
+  $("p-employer").value = p ? (p.employerType || "government") : f.employerDefault;
   $("p-contract").value = p ? (p.contractRef || "") : "";
+  $("p-sum").value = p && p.contractSum != null ? p.contractSum : "";
+  $("p-cur").value = p ? (p.currency || "QAR") : "QAR";
   $("p-contractor").value = p ? (p.contractor || "") : "";
   $("p-engineer").value = p ? (p.engineer || "") : "";
-  $("p-form").value = p ? (p.form || "FIDIC Red Book") : "FIDIC Red Book";
-  $("p-notice").value = p ? p.noticeDays : 28;
-  $("p-cur").value = p ? p.currency : "SAR";
+  $("p-letterhead").value = p ? (p.letterhead || "") : "";
+  $("p-completion").value = p ? (p.completionDate || "") : "";
+  $("p-form").value = p ? (p.form || "ashghal") : "ashghal";
+  if(p){
+    $("p-notice").value = p.noticeDays; $("p-detail").value = p.detailDays || 0;
+    $("p-clv").value = p.clauseVariation || ""; $("p-clc").value = p.clauseClaim || "";
+    $("p-cle").value = p.clauseEot || "";
+    $("formSrc").textContent = S.lang === "ar" ? f.srcAr : f.srcEn;
+  } else onFormChange();
   $("delProjBtn").hidden = !edit;
   $("projModal").dataset.edit = edit ? "1" : "";
   $("projModal").classList.add("open");
+}
+
+async function storageInfo(){
+  try{
+    const est = await navigator.storage.estimate();
+    const mb = (n) => (n/1048576).toFixed(1);
+    $("storageInfo").textContent = `${mb(est.usage||0)} MB / ${mb(est.quota||0)} MB`;
+  }catch(e){ $("storageInfo").textContent = ""; }
 }
 
 function init(){
@@ -1135,11 +1402,13 @@ function init(){
   if(S.theme) document.documentElement.setAttribute("data-theme", S.theme);
   applyLang();
   if(!S.active && S.projects.length) S.active = S.projects[0].id;
-  $("f-date").value = isoDate(today());
-  renderAll();
+  $("f-date").value = isoOf(startOfToday());
+  showHijri(); srcWarn();
+  renderAll(); storageInfo();
 
   $("langBtn").addEventListener("click", () => {
     S.lang = S.lang === "ar" ? "en" : "ar"; save(); applyLang(); renderAll();
+    showHijri(); srcWarn();
     if(openVoId && $("voModal").classList.contains("open")) openVo(openVoId);
   });
   $("themeBtn").addEventListener("click", () => {
@@ -1158,28 +1427,41 @@ function init(){
   $("projSel").addEventListener("change", (e) => { S.active = e.target.value; save(); renderAll(); });
   $("newProjBtn").addEventListener("click", () => openProjModal(false));
   $("editProjBtn").addEventListener("click", () => openProjModal(true));
+  $("p-form").addEventListener("change", onFormChange);
 
   $("projForm").addEventListener("submit", (e) => {
     e.preventDefault();
     const edit = $("projModal").dataset.edit === "1";
     const data = {
       name: $("p-name").value.trim(), client: $("p-client").value.trim(),
-      contractRef: $("p-contract").value.trim(), contractor: $("p-contractor").value.trim(),
-      engineer: $("p-engineer").value.trim(), form: $("p-form").value,
+      employerType: $("p-employer").value,
+      contractRef: $("p-contract").value.trim(),
+      contractSum: $("p-sum").value === "" ? null : Number($("p-sum").value),
+      currency: $("p-cur").value.trim() || "QAR",
+      contractor: $("p-contractor").value.trim(), engineer: $("p-engineer").value.trim(),
+      letterhead: $("p-letterhead").value.trim(), completionDate: $("p-completion").value || "",
+      form: $("p-form").value,
       noticeDays: Math.max(1, Number($("p-notice").value) || 28),
-      currency: $("p-cur").value.trim() || "SAR",
+      detailDays: Math.max(0, Number($("p-detail").value) || 0),
+      clauseVariation: $("p-clv").value.trim(), clauseClaim: $("p-clc").value.trim(),
+      clauseEot: $("p-cle").value.trim(),
     };
-    if(edit){ Object.assign(activeProject(), data); }
-    else { const p = Object.assign({id:uid()}, data); S.projects.push(p); S.active = p.id; }
+    if(edit){ Object.assign(activeProject(), data); applyFormDefaults(activeProject()); }
+    else { const np = Object.assign({id:uid()}, data); applyFormDefaults(np); S.projects.push(np); S.active = np.id; }
     save(); closeModal("projModal"); renderAll();
   });
-  $("delProjBtn").addEventListener("click", () => {
+  $("delProjBtn").addEventListener("click", async () => {
     if(!confirm(t().delProjConfirm)) return;
+    for(const v of S.vos.filter(v => v.projectId === S.active))
+      for(const e of (v.evidence || [])) if(e.fileId) await delFile(e.fileId);
     S.vos = S.vos.filter(v => v.projectId !== S.active);
     S.projects = S.projects.filter(p => p.id !== S.active);
     S.active = S.projects.length ? S.projects[0].id : null;
     save(); closeModal("projModal"); renderAll();
   });
+
+  $("f-date").addEventListener("change", showHijri);
+  $("f-src").addEventListener("change", srcWarn);
 
   $("voForm").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -1196,12 +1478,13 @@ function init(){
     });
     save();
     e.target.reset();
-    $("f-date").value = isoDate(today());
+    $("f-date").value = isoOf(startOfToday()); showHijri(); srcWarn();
     $("aiText").value = ""; $("aiStatus").textContent = t().savedVo;
     renderAll(); showTab("dash");
   });
   $("resetVoBtn").addEventListener("click", () => {
-    $("voForm").reset(); $("f-date").value = isoDate(today()); $("aiStatus").textContent = "";
+    $("voForm").reset(); $("f-date").value = isoOf(startOfToday());
+    showHijri(); srcWarn(); $("aiStatus").textContent = "";
   });
 
   $("search").addEventListener("input", renderRegister);
@@ -1224,12 +1507,16 @@ function init(){
       `line-height:1.65}table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}`+
       `th,td{border:1px solid #bbb;padding:6px 8px;text-align:start;vertical-align:top}th{background:#eee}`+
       `h1{font-size:17px;text-align:center;text-transform:uppercase;letter-spacing:1px}h2{font-size:15px;margin:20px 0 6px}`+
-      `.lh{text-align:center;color:#555;font-size:12px;border-bottom:1px solid #ccc;padding-bottom:12px;margin-bottom:20px}</style>`+
+      `.lh{text-align:center;border-bottom:1px solid #ccc;padding-bottom:12px;margin-bottom:20px}`+
+      `.lh .co{font-size:16px;font-weight:bold}.lh .ad{color:#555;font-size:12px;white-space:pre-wrap}`+
+      `.legal{margin-top:22px;font-size:11px;color:#666;border-top:1px solid #ddd;padding-top:8px}</style>`+
       $("docPreview").innerHTML, "text/html;charset=utf-8");
   });
 
-  $("expJson").addEventListener("click", () =>
-    download(`sanad-backup-${isoDate(today())}.json`, JSON.stringify(S, null, 2), "application/json"));
+  $("expJson").addEventListener("click", () => {
+    alert(t().impNoFiles);
+    download(`sanad-backup-${isoOf(startOfToday())}.json`, JSON.stringify(S, null, 2), "application/json");
+  });
   $("expCsv").addEventListener("click", exportCsv);
   $("impBtn").addEventListener("click", () => $("impFile").click());
   $("impFile").addEventListener("change", (e) => {
@@ -1241,6 +1528,7 @@ function init(){
         const p = JSON.parse(r.result);
         if(!p || !Array.isArray(p.projects) || !Array.isArray(p.vos)) throw new Error("shape");
         S = Object.assign(S, p);
+        S.projects.forEach(applyFormDefaults);
         if(!S.active && S.projects.length) S.active = S.projects[0].id;
         save(); applyLang(); renderAll();
         alert(t().impOk);
@@ -1251,10 +1539,11 @@ function init(){
   });
 
   $("demoBtn").addEventListener("click", loadDemo);
-  $("wipeBtn").addEventListener("click", () => {
+  $("wipeBtn").addEventListener("click", async () => {
     if(!confirm(t().wipeConfirm)) return;
+    for(const v of S.vos) for(const e of (v.evidence || [])) if(e.fileId) await delFile(e.fileId);
     S.projects = []; S.vos = []; S.active = null;
-    save(); renderAll();
+    save(); renderAll(); storageInfo();
   });
 }
 

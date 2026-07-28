@@ -25,7 +25,7 @@ const ALLOWED_ORIGINS = [
 ];
 
 // Kept in step with the <select> in the app. If you add a source there, add it here too.
-const SOURCES = ["si", "email", "verbal", "rfi", "drawing", "minutes", "other"];
+const SOURCES = ["si", "email", "verbal", "rfi", "drawing", "minutes", "photo", "daywork", "other"];
 
 function corsHeaders(origin) {
   const ok = ALLOWED_ORIGINS.some((o) => origin && origin.startsWith(o));
@@ -88,31 +88,37 @@ const VO_SCHEMA = {
   additionalProperties: false,
 };
 
-const SYSTEM = `You read a single document from a construction project — a site instruction, an
-email, a meeting minute, an RFI response — and pull out the facts needed to log a variation
-order in a register.
+const SYSTEM = `You read a single document from a construction project in Qatar — a site
+instruction, an email, a meeting minute, an RFI response — and pull out the facts needed to
+log a variation order in a register.
 
 The one rule that matters: extract, never infer. This record may end up supporting a
-contractual claim, so a fact you invented is worse than a blank field.
+contractual claim before a Qatari court or tribunal, so a fact you invented is worse than a
+blank field.
 
 - A contract clause goes in "clause" ONLY if the text actually cites one. Never pick a clause
-  because the work "sounds like" a variation. If none is cited, return "".
+  because the work "sounds like" a variation, and never map between contract forms. If none
+  is cited, return "".
 - An amount goes in "costImpact" ONLY if the text states one. "Cost to be agreed", "TBA", or a
-  rate without a quantity all mean "".
+  rate without a quantity all mean "". Amounts are usually Qatari riyals (QAR / ر.ق); strip
+  the currency and return digits only.
 - A date goes in "dateInstructed" ONLY if the document states or is dated one. Convert to
-  YYYY-MM-DD. If the day is ambiguous between formats, prefer day-first (the Gulf convention).
-  If no date appears, return "".
+  YYYY-MM-DD. Dates in Qatar are written day-first, so 03/04/2026 is 3 April. If a Hijri date
+  is given alone, return "" rather than converting it yourself.
 - "instructedBy" is the person or body that issued the instruction, not the recipient and not
   the sender of a forwarding email.
-- "source" describes how the instruction arrived. Use "verbal" when the document records a
-  verbal instruction given on site, even if the record itself is an email.
+- "source" describes how the instruction arrived. Use "verbal" whenever the document records
+  an instruction given verbally on site, even when the record itself is an email — that
+  distinction decides whether the contractor has the written authorisation Article 709 of the
+  Qatari Civil Code requires, so never round a verbal instruction up to a written one.
 - "description" quotes or closely paraphrases the scope in the writer's own terms. Do not
-  summarise away technical detail — drawing numbers, revisions, levels and quantities are the
-  evidence.
+  summarise away technical detail — drawing numbers, revisions, chainages and quantities are
+  the evidence.
 - "confidence" is "low" when the text may not describe a variation at all (a progress update,
   a general enquiry). Say so rather than forcing a reading.
 
-Write "title" and "description" in the same language as the source document.`;
+Arabic and English are both normal on Qatari projects, and a single document often mixes
+them. Write "title" and "description" in the dominant language of the source document.`;
 
 async function extractVo(text, lang, apiKey) {
   const user =

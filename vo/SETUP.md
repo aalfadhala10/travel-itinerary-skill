@@ -14,7 +14,9 @@ it in front of a contractor without a procurement conversation first.
 
 ## Part A — Run it (1 min)
 
-**Locally:** open `vo/index.html` in a browser. That's the whole install.
+**Locally:** open `vo/index.html` in a browser. That's the whole install. Keep
+`qatar.js` next to it — that file holds the contract forms, the Civil Code checks, the
+20% ceiling and the Qatar calendar, and the app will not run without it.
 
 **On the web (GitHub Pages, same as Bosla):** the file is already in the repo. Once this
 branch is merged to `main`, it's live at:
@@ -28,10 +30,20 @@ example project**. That fills the app with a worked project — four variations,
 already 6 days past its notice deadline — so you can see what it does without typing
 anything. Use this when you show it to someone.
 
-To start your own: **+ مشروع / + Project**, then set the **notice period** to whatever your
-contract actually says. Every deadline in the app is counted from that number, so it is the
-one field worth getting right. FIDIC-based contracts commonly use 28 days; it defaults there
-but yours may differ.
+To start your own: **+ مشروع / + Project**, then get three fields right — the rest is
+cosmetic:
+
+1. **نموذج العقد / Form of contract.** Picking Ashghal, Qatar Rail, QatarEnergy, Qatar
+   Foundation, FIDIC 1999 or FIDIC 2017 fills in that form's notice periods and clause
+   numbers and shows you where they came from. **Then check them against your Particular
+   Conditions** — on a real Qatari contract they have usually been moved, and every deadline
+   in the app is counted from these numbers.
+2. **صفة المالك / Employer type.** Government or semi-government turns on the 20% procurement
+   ceiling meter (Law 24/2015 Art. 81) and the Arabic-correspondence warning (Law 7/2019).
+3. **قيمة العقد / Contract value.** Without it the ceiling meter cannot work.
+
+Optional but worth filling in: the **letterhead** (address, phone, CR number) appears on every
+generated document, and the **completion date** drives the decennial-liability window.
 
 ---
 
@@ -119,6 +131,12 @@ to a prompt:
 - **It is told not to guess.** No clause unless the document cites one; no amount unless the
   document states one; no date unless the document carries one. Blank beats invented — a
   fabricated fact in a claim file is a liability, not a convenience.
+- **It must never round a verbal instruction up to a written one.** If the document records
+  something said on site, the source stays "verbal" even when the record itself is an email.
+  That single distinction decides whether Article 709 leaves you recoverable or not, so it is
+  the one thing the prompt is most explicit about.
+- **Dates are read day-first** (03/04/2026 is 3 April), and a Hijri-only date is returned
+  blank rather than converted.
 - **It rates its own confidence**, and says "low" when the text may not describe a variation
   at all.
 
@@ -131,5 +149,27 @@ Leave that label alone.
 
 There is no server, so **the backup is your responsibility**. Data tab → **تحميل نسخة
 احتياطية / Download backup (JSON)**. Do it before changing phone, clearing the browser, or
-demoing to someone. **Export register (CSV)** gives you the register in a form Excel opens,
-which is also what a commercial manager will ask you for first.
+demoing to someone.
+
+**The backup holds the register, not the attachments.** Attached PDFs and photos live in the
+browser's IndexedDB on that device — that's what keeps a few site photos from blowing the
+storage quota and taking the whole register with them, but it also means they don't travel in
+the JSON. Keep the original files where you normally keep them.
+
+**Export register (CSV)** gives you the register in a form Excel opens — reference, dates,
+both deadlines, status, evidence and attachment counts, and the open risks per line. That is
+usually the first thing a commercial manager asks for.
+
+---
+
+## Keeping it current
+
+Two things in `qatar.js` go stale on a schedule:
+
+- **`QA_ANNOUNCED_HOLIDAYS`** — Eid dates are set each year by the Amiri Diwan. The file only
+  lists the years it actually knows; an unknown year simply produces no feast warnings rather
+  than a wrong one. Add next year's windows when they're announced.
+- **The contract-form defaults** — if Ashghal reissues its General Conditions, or you work
+  under a form that isn't listed, add it to `CONTRACT_FORMS` with its own periods, clause
+  numbers and a `srcEn`/`srcAr` line saying where those came from. Every entry carries its
+  source for exactly this reason.
