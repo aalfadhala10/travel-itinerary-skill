@@ -3,7 +3,11 @@
 Living to-do list / playbook. (Mirror into the Google Drive "Bosla App"
 Playbook when the Drive connector is enabled for the chat.)
 
-Last updated: 2026-07-27.
+Real-user feedback lives in **`FEEDBACK.md`** (Friend 1, 2, 3 … — what they
+said, what changed, what's still open). Anything left open there is also listed
+below.
+
+Last updated: 2026-07-28.
 
 ## How the app is wired (quick reference)
 
