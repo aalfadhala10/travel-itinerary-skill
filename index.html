@@ -378,6 +378,9 @@
   .nbtn:hover{border-color:var(--teal)}
   .nbtn:active{transform:translateY(1px)}
   .nnote{font-size:12.5px;color:var(--muted);margin-top:8px;font-style:italic}
+  .picpop{position:fixed;z-index:30;max-width:240px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .15s}
+  .picpop.show{opacity:1}
+  .picpop img{display:block;width:100%;max-height:180px;object-fit:cover;border-radius:8px}
   .ndel{width:30px;height:30px;margin-inline-start:4px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;line-height:1;padding:0}
   .ndel:hover{border-color:#e5484d;color:#e5484d}
   .ndel:active{transform:translateY(1px)}
@@ -612,7 +615,7 @@
     #out,#out *{visibility:visible}
     .out{margin:0}
     /* drop the interactive controls that don't belong on paper */
-    #out .tuner,#out .daynav,#out .realtag,#out .actions,#out .cvbar,#out .flycard,#out .staybar,#out .bookrow,#out .provrow,#out .tuneanother,#out .dayshuffle,#out .swapbtn,#out .swappick,#out .dchev,#out button{display:none!important}
+    .picpop,#out .tuner,#out .daynav,#out .realtag,#out .actions,#out .cvbar,#out .flycard,#out .staybar,#out .bookrow,#out .provrow,#out .tuneanother,#out .dayshuffle,#out .swapbtn,#out .swappick,#out .dchev,#out button{display:none!important}
     #out .day.dcol .dbody{display:block!important} #out .dsum{display:none!important} /* PDF shows every day in full */
     .ticket{background:#173a5c!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .ticket,.day,.bud,.bookbar,.mapcard{break-inside:avoid}
@@ -2634,7 +2637,7 @@
     if(CONFIG.toursLink) return CONFIG.toursLink+(CONFIG.toursLink.indexOf('?')>=0?'&':'?')+"sub_id="+encodeURIComponent(sub);
     return "https://www.getyourguide.com/s/?q="+encodeURIComponent(city);
   }
-  function link(name,q){return '<a href="'+mapUrl(q)+'" target="_blank" rel="noopener">'+esc(name)+'</a>';}
+  function link(name,q,pic){return '<a href="'+mapUrl(q)+'" target="_blank" rel="noopener"'+(pic?' data-pic="'+esc(pic)+'"':'')+'>'+esc(name)+'</a>';}
 
   function wireChips(id,multi){
     var box=$(id);
@@ -3367,7 +3370,7 @@
   function areaLabel(a){ a=(a||'').trim(); if(!a)return ''; if(/[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(a))return ''; if(a.split(/\s+/).length>4||a.length>28)return ''; return ' <span class="area">· '+esc(a)+'</span>'; } // drop stray Arabic captions (they're just translations of the English name)
   function eslot(tm,poi,city,sk,o){
     return '<div class="slot" data-sk="'+sk+'"><div class="t">'+tm+'</div>'
-      +'<div class="d">'+link(poi.n,poi.n+' '+city)+areaLabel(poi.a)+'</div>'
+      +'<div class="d">'+link(poi.n,poi.n+' '+city,poi.n+' '+city)+areaLabel(poi.a)+'</div>'
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
   }
   // Generated destination banner — a climate-tinted scene (no external images, works offline).
@@ -4465,6 +4468,60 @@
     DAYROT[key]=(DAYROT[key]||0)+1;
     rerenderKeep();
   }
+  // --- Place photos: hover a place name to preview it -----------------------------
+  // Images come from Wikipedia (free, no key, CORS-friendly). Nothing is fetched when the plan
+  // renders — only when someone actually hovers a name — and each answer is cached for 30 days,
+  // so a plan costs zero extra requests. No photo found → nothing happens.
+  var PICMEM={}, PICEL=null, PICTIMER=null;
+  function picKey(q){ return String(q).toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,60); }
+  function picCached(k){
+    if(PICMEM[k]!==undefined)return PICMEM[k];
+    try{ var raw=localStorage.getItem('bosla_pic_'+k); if(raw){ var o=JSON.parse(raw);
+      if(o&&(Date.now()-o.t)<30*24*3600*1000){ PICMEM[k]=o.u; return o.u; } } }catch(e){}
+    return undefined;
+  }
+  function picStore(k,u){ PICMEM[k]=u; try{ localStorage.setItem('bosla_pic_'+k,JSON.stringify({u:u,t:Date.now()})); }catch(e){} }
+  function picFetch(q){
+    return new Promise(function(res){
+      var k=picKey(q), hit=picCached(k);
+      if(hit!==undefined){ res(hit); return; }
+      if(!window.fetch){ res(''); return; }
+      var url='https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*'+
+        '&generator=search&gsrsearch='+encodeURIComponent(q)+'&gsrlimit=1'+
+        '&prop=pageimages&piprop=thumbnail&pithumbsize=360';
+      fetch(url).then(function(r){return r.json();}).then(function(d){
+        var pages=d&&d.query&&d.query.pages, u='';
+        if(pages)for(var id in pages){ var th=pages[id]&&pages[id].thumbnail; if(th&&th.source){ u=th.source; break; } }
+        picStore(k,u); res(u);
+      }).catch(function(){ picStore(k,''); res(''); });
+    });
+  }
+  function picHide(){ if(PICTIMER){ clearTimeout(PICTIMER); PICTIMER=null; } if(PICEL)PICEL.classList.remove('show'); }
+  function picShow(a){
+    var q=a.getAttribute('data-pic'); if(!q)return;
+    picFetch(q).then(function(u){
+      if(!u||!a.isConnected)return;
+      if(!PICEL){ PICEL=document.createElement('div'); PICEL.className='picpop'; document.body.appendChild(PICEL); }
+      PICEL.innerHTML='<img alt="" src="'+esc(u)+'">';
+      PICEL.classList.add('show');
+      var r=a.getBoundingClientRect(), w=PICEL.offsetWidth||220, h=PICEL.offsetHeight||150;
+      PICEL.style.left=Math.min(window.innerWidth-w-10,Math.max(10,r.left))+'px';
+      PICEL.style.top=((r.top>h+16)?(r.top-h-10):(r.bottom+10))+'px';
+    });
+  }
+  (function(){ // hover previews are a mouse interaction — skip on touch, where the name opens Maps
+    var fine=window.matchMedia&&window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+    var out=$('out'); if(!fine||!out)return;
+    out.addEventListener('mouseover',function(e){
+      var a=e.target.closest&&e.target.closest('a[data-pic]'); if(!a)return;
+      if(PICTIMER)clearTimeout(PICTIMER);
+      PICTIMER=setTimeout(function(){ picShow(a); },350); // don't fetch on a passing mouse
+    });
+    out.addEventListener('mouseout',function(e){
+      var a=e.target.closest&&e.target.closest('a[data-pic]'); if(a)picHide();
+    });
+    window.addEventListener('scroll',picHide,{passive:true});
+  })();
   function openSwap(btn){
     var slot=btn.closest('.slot'); if(!slot)return;
     var nx=slot.nextElementSibling;
