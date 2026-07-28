@@ -237,12 +237,14 @@ const PARSE_SCHEMA = {
 const CHAT_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["reply", "ready", "cities", "days", "vibes", "budget", "roadtrip", "area", "chips"],
+  required: ["reply", "ready", "cities", "days", "vibes", "budget", "roadtrip", "area", "adults", "kids", "chips"],
   properties: {
     reply: { type: "string" },      // the message to show the user
     ready: { type: "boolean" },     // true once there's enough to build a trip
     cities: { type: "array", items: { type: "string" } }, // best base city per stop, in order (when ready)
     area: { type: "string" },       // where they want to stay in the first city (e.g. "Patong", "city center"); "" if they don't mind
+    adults: { type: "integer" },    // how many adults are travelling (0 = not asked yet / unknown)
+    kids: { type: "integer" },      // how many children (0 = none)
     days: { type: "integer" },
     vibes: { type: "array", items: { type: "string", enum: TAGS } },
     budget: { type: "string", enum: ["Budget", "Mid-range", "Luxury"] },
@@ -268,6 +270,11 @@ function chatTurn(messages, apiKey) {
     "there)? Which city/airport will they fly home from? Then reflect the answer in `cities`: for a loop, make the " +
     "LAST stop the same city they started from (the return-to-airport leg); for one-way, make the last stop the " +
     "city they fly out of. Set roadtrip=true for these. " +
+    "WHO'S TRAVELLING: also ask, in ONE short question, how many people are going and whether any children are " +
+    "coming (e.g. 'How many of you are travelling — and any kids?'). Put the answer in `adults` and `kids` " +
+    "(kids=0 when none). Ask it only ONCE, and if they already said (e.g. 'me and my wife', 'family of 4 with 2 " +
+    "kids') just fill the numbers without asking. If they never say, leave adults=0 and kids=0 and don't block the " +
+    "trip on it. Offer chips like 'Just me', '2 adults', 'Family with kids'. " +
     "WHERE THEY'LL STAY: after the destination is settled, ask ONE short question about which area they want to " +
     "stay in — e.g. 'Where do you want to be based? Near the beach, city center, near the airport, or somewhere " +
     "specific in mind?' — and offer chips for the areas that actually make sense in THAT city (for Phuket: 'Patong', " +
@@ -277,9 +284,9 @@ function chatTurn(messages, apiKey) {
     "on. Never block the trip on this question. " +
     "Once you have at least one concrete destination (named or agreed) AND a rough number of days — and, for a road " +
     "trip, the car return/airport plan — set ready=true, and fill cities (the best single MAIN city per stop, in " +
-    "visit order, common English names), days, vibes (0-3), budget (default Mid-range), roadtrip, and area. When " +
-    "ready, make your reply a short confirmation like 'Perfect — building your Alps loop from Munich now.' Until " +
-    "ready, set ready=false and cities=[]. Set area='' whenever you don't know it yet. " +
+    "visit order, common English names), days, vibes (0-3), budget (default Mid-range), roadtrip, area, adults and " +
+    "kids. When ready, make your reply a short confirmation like 'Perfect — building your Alps loop from Munich " +
+    "now.' Until ready, set ready=false and cities=[]. Set area='' and adults/kids=0 whenever you don't know yet. " +
     "ALWAYS fill `chips` with 2-4 SHORT tappable quick-replies (under ~20 chars each, in the user's language) that " +
     "answer your current question effortlessly — e.g. day counts ('5 days','7 days','10 days'), the destinations you " +
     "just suggested, budgets, or for the car question ('Loop, same airport','One-way','Renting a car'). Leave chips " +
