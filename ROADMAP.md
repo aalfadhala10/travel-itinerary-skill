@@ -82,6 +82,16 @@ Last updated: 2026-07-28.
 
 ## Done (recent)
 
+- [x] **The chat can't dead-end any more.** Real case: destination, days and the car
+  plan were all settled, the bot answered "تمام" and stopped — `ready=false` with an
+  empty `chips` array left the reply sitting there with nothing to tap and no trip.
+  Three holes closed: (a) not-ready with no chips now falls back to the starters;
+  (b) ready with an empty `cities` list now says it didn't catch the destination
+  instead of silently swapping chips; (c) resolving cities we don't have runs Sonnet
+  live and can take 10–30s, so the chat now shows "Building X → Y… one moment" and
+  clears it when the plan lands (or explains if it can't). Worker prompt also forbids
+  acknowledgement-only turns: every reply either asks with chips or builds.
+
 - [x] **Opening the app starts fresh again.** Every visit re-ran the last saved trip
   (`applyState` called `plan()`/`planRoute()` straight from `rihla_v1`), so the app
   never looked like it started over. Now a visit restores the FORM only and lands on
