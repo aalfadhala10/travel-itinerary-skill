@@ -82,6 +82,13 @@ Last updated: 2026-07-28.
 
 ## Done (recent)
 
+- [x] **Opening the app starts fresh again.** Every visit re-ran the last saved trip
+  (`applyState` called `plan()`/`planRoute()` straight from `rihla_v1`), so the app
+  never looked like it started over. Now a visit restores the FORM only and lands on
+  the planner; the last trip is offered in one dismissable line ("Your last trip:
+  Phuket → Krabi · 6 days — Open it"). A shared `#trip=` link still opens straight
+  into the itinerary, which is the whole point of sharing.
+
 - [x] **Richer / non-local food (Friend 3's open complaint — closed).** A city shipped
   with ~5 local restaurants; naming breakfast, lunch and dinner drained that fast, and
   someone who didn't want the local cuisine had no way out. New Worker action `food`
