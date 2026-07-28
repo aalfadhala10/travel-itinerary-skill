@@ -377,6 +377,7 @@
   .nbtn{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:16px;font-weight:700;cursor:pointer;line-height:1;padding:0}
   .nbtn:hover{border-color:var(--teal)}
   .nbtn:active{transform:translateY(1px)}
+  .nnote{font-size:12.5px;color:var(--muted);margin-top:8px;font-style:italic}
   .mapcard{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px;margin-top:16px}
   .maphdr{font-family:var(--ff-data);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
   #app[dir="rtl"] .maphdr{letter-spacing:normal;font-family:var(--ff-body)}
@@ -415,9 +416,11 @@
   .bookbtn{flex:1;min-width:100px;text-align:center;padding:12px 10px;border-radius:11px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);font-size:13px;font-weight:600;text-decoration:none;transition:all .15s}
   .bookbtn:hover{border-color:var(--teal);background:var(--teal-soft)}
   .staychips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
-  .stychip,.samchip{padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);font-size:13px;font-weight:600;font-family:var(--ff-body);cursor:pointer;transition:all .15s}
-  .stychip:hover,.samchip:hover{border-color:var(--teal)}
-  .stychip.active{background:var(--teal);border-color:var(--teal);color:#fff}
+  .stychip,.samchip,.areachip{padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);font-size:13px;font-weight:600;font-family:var(--ff-body);cursor:pointer;transition:all .15s}
+  .stychip:hover,.samchip:hover,.areachip:hover{border-color:var(--teal)}
+  .stychip.active,.areachip.active{background:var(--teal);border-color:var(--teal);color:#fff}
+  .stayarea{width:100%;margin-top:10px;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:14px;font-family:var(--ff-body);outline:none}
+  .stayarea:focus{border-color:var(--teal)}
   .samchip.active{background:var(--amber);border-color:var(--amber);color:#231a0a}
   @media (prefers-color-scheme:dark){.stychip.active{color:#0a1310}}
   :root[data-theme="dark"] .stychip.active{color:#0a1310}
@@ -3194,23 +3197,28 @@
   function nightsEditor(ms,dc){
     if(!ms||ms.length<2)return '';
     var ar=LANG==='ar', es=LANG==='es', title=ar?'الليالي بكل مدينة':(es?'Noches por ciudad':'Nights per city');
+    var total=dc.reduce(function(a,b){return a+b;},0), mx=Math.max.apply(null,dc), dayW=ar?'يوم':(es?'días':'days');
     var rows=ms.map(function(m,i){ return '<div class="nrow"><span class="ncity">'+esc(m.city)+'</span>'+
       '<span class="nctl"><button type="button" class="nbtn" data-nb="'+i+'|-1" aria-label="-">−</button>'+
       '<span class="nnum">'+dc[i]+'</span>'+
       '<button type="button" class="nbtn" data-nb="'+i+'|1" aria-label="+">+</button></span></div>'; }).join('');
-    return '<div class="nightsbar"><div class="nightslbl">'+title+'</div>'+rows+'</div>';
+    var note='';
+    if(mx>=8) note=ar?('ملاحظة: '+mx+' ليالٍ بمدينة وحدة كثير — يفضّل رحلات يومية عشان ما تمل.'):(es?('Nota: '+mx+' noches en una ciudad es bastante — planifica excursiones.'):('Note: '+mx+' nights in one city is a lot — plan a few day trips.'));
+    else if(total>25) note=ar?('ملاحظة: رحلة طويلة ('+total+' يوم) — تأكد من التأشيرة والطيران.'):(es?('Nota: viaje largo ('+total+' días) — revisa visados y vuelos.'):('Note: long trip ('+total+' days) — double-check visas & flights.'));
+    var noteHtml=note?('<div class="nnote">'+esc(note)+'</div>'):'';
+    return '<div class="nightsbar"><div class="nightslbl">'+title+' · '+total+' '+dayW+'</div>'+rows+noteHtml+'</div>';
   }
-  function bumpNights(i,delta){ // move one night between cities, keeping the total fixed
-    if(!ROUTEDC||!ROUTEDC.length)return; var n=ROUTEDC.length; if(i<0||i>=n)return; var k;
-    if(delta>0){ var j=-1,mx=1; for(k=0;k<n;k++){ if(k!==i&&ROUTEDC[k]>mx){mx=ROUTEDC[k];j=k;} } if(j<0)return; ROUTEDC[j]--; ROUTEDC[i]++; }
-    else { if(ROUTEDC[i]<=1)return; var j2=-1,mn=1e9; for(k=0;k<n;k++){ if(k!==i&&ROUTEDC[k]<mn){mn=ROUTEDC[k];j2=k;} } if(j2<0)return; ROUTEDC[i]--; ROUTEDC[j2]++; }
+  function bumpNights(i,delta){ // set THIS city's nights freely (min 1); total days = the sum
+    if(!ROUTEDC||!ROUTEDC.length)return; var n=ROUTEDC.length; if(i<0||i>=n)return;
+    var v=Math.max(1,Math.min(30,ROUTEDC[i]+delta)); if(v===ROUTEDC[i])return; ROUTEDC[i]=v;
+    try{ $('days').value=ROUTEDC.reduce(function(a,b){return a+b;},0); if(window.syncDayChips)syncDayChips(); }catch(e){}
     rerenderKeep();
   }
   function anotherVersion(){ newSeed(); DAYEDITS={}; DAYROT={}; if(LASTPLAN)LASTPLAN(); var out=$('out'); if(out)out.scrollIntoView({block:'start'}); }
   function retuneDays(delta){
     var cur=Math.max(1,Math.min(30,parseInt($('days').value,10)||5)), nn=Math.max(1,Math.min(30,cur+delta));
     if(nn===cur)return;
-    $('days').value=nn; if(window.syncDayChips)syncDayChips(); DAYEDITS={}; DAYROT={}; // day structure changes
+    $('days').value=nn; if(window.syncDayChips)syncDayChips(); DAYEDITS={}; DAYROT={}; ROUTEDC=null; // total tuner re-spreads evenly; per-city editor sets each city
     if(ROUTE&&ROUTE.length>=2){ var vibes=picked('vibeChips'); if(!vibes.length)vibes=['Culture']; planRoute(ROUTE,nn,vibes,picked('budgetChips')[0]||'Mid-range',$('pace').value,ROUTEDRIVE); }
     else plan();
     var out=$('out'); if(out)out.scrollIntoView({block:'start'});
@@ -3663,9 +3671,19 @@
   var STAY_TYPES=[['hotel',204],['apartment',201],['resort',206],['villa',213],['hostel',203]];
   // [labelKey, Booking nflt filter code] — applied as real filters, NOT stuffed into the location search
   var STAY_AMEN=[['pool','hotelfacility=433'],['beach','ht_beach=1'],['family','hotelfacility=28'],['breakfast','mealplan=1'],['parking','hotelfacility=2'],['pets','stay_type=1'],['spa','hotelfacility=54']];
+  // where you want to stay — quick-fill hints (data value is an English search term Booking/maps resolve well)
+  var STAY_AREAS=[
+    [{en:'Beach',ar:'الشاطئ',es:'Playa'},'beach'],
+    [{en:'City center',ar:'وسط المدينة',es:'Centro'},'city center'],
+    [{en:'Near the airport',ar:'قريب المطار',es:'Cerca del aeropuerto'},'near the airport'],
+    [{en:'Near a mall',ar:'قريب مول',es:'Cerca de un centro comercial'},'shopping mall']
+  ];
   function staysBar(city,country,t){
     var o=t.out;
     var types=STAY_TYPES.map(function(x){ return '<button type="button" class="stychip" data-ht="'+x[1]+'">'+o.stayTypes[x[0]]+'</button>'; }).join('');
+    var areaLbl=LANG==='ar'?'أي منطقة تبي تسكن فيها؟ (اختياري)':(LANG==='es'?'¿En qué zona quieres alojarte? (opcional)':'Which area do you want to stay in? (optional)');
+    var areaPh=LANG==='ar'?'مثلاً: باتونغ، وسط المدينة':(LANG==='es'?'ej. Patong, centro':'e.g. Patong, city center');
+    var areaChips=STAY_AREAS.map(function(x){ return '<button type="button" class="areachip" data-area="'+esc(x[1])+'">'+esc(x[0][LANG]||x[0].en)+'</button>'; }).join('');
     var hsel=siteGet('hotel','booking');
     var hprov='<div class="provrow" data-provkind="hotel"><span class="provlbl">'+provLabel('hotel')+'</span>'+
       HOTEL_SITES.map(function(x){ return '<button type="button" class="provchip'+(x[0]===hsel?' on':'')+'" data-site="'+x[0]+'">'+x[1]+'</button>'; }).join('')+'</div>';
@@ -3676,6 +3694,9 @@
       '<div class="stayamenlbl">'+o.stayTitle+'</div>'+
       hprov+
       '<div class="staychips">'+types+'</div>'+
+      '<div class="stayamenlbl">'+areaLbl+'</div>'+
+      '<div class="staychips">'+areaChips+'</div>'+
+      '<input type="text" class="stayarea" autocomplete="off" placeholder="'+esc(areaPh)+'">'+
       '<button type="button" class="staysearch">'+o.stayFind+'</button>'+
       '<div class="bookrow" style="margin-top:14px">'+
         '<a class="bookbtn" href="'+flights+'" target="_blank" rel="noopener">'+o.bookFlights+'</a>'+
@@ -3909,15 +3930,16 @@
     // a sane distance. Otherwise it's a multi-city flight trip (don't call it a road trip / drive).
     ROUTEDRIVE=(function(){ if(!drive)return false; for(var j=0;j<n-1;j++){ var kk=kmDist(CO[keys[j]]||[0,0],CO[keys[j+1]]||[0,0]); if(ms[j].region!==ms[j+1].region || kk>1400) return false; } return true; })();
     var days=Math.max(n,Math.min(30,parseInt(daysArg,10)||n*3));
+    // Nights per city: the user sets each city freely — total days = the SUM of what they chose (not forced even, not force-balanced).
+    var dcsig=keys.join('|'), dc;
+    if(ROUTEDC && ROUTEDCSIG===dcsig && ROUTEDC.length===n){ dc=ROUTEDC.slice(); days=Math.max(n,dc.reduce(function(a,b){return a+b;},0)); }
+    else { var per=Math.floor(days/n), rem=days-per*n; dc=ms.map(function(_,i){return per+(i<rem?1:0);}); ROUTEDC=dc.slice(); ROUTEDCSIG=dcsig; }
     var spd=pace==='relaxed'?2:pace==='packed'?4:3; LASTSPD=spd;
     if(!vibes||!vibes.length)vibes=['Culture'];
     var adults=Math.max(1,Math.min(20,parseInt($('adults').value,10)||1));
     var kids=Math.max(0,Math.min(20,parseInt($('kids').value,10)||0));
     HOME=$('homeCur').value||'USD';
     var di=formatDates($('startDate').value,days,t);
-    var dcsig=keys.join('|')+'@'+days, dc;
-    if(ROUTEDC && ROUTEDCSIG===dcsig && ROUTEDC.length===n){ dc=ROUTEDC.slice(); } // user set a custom nights-per-city split
-    else { var per=Math.floor(days/n), rem=days-per*n; dc=ms.map(function(_,i){return per+(i<rem?1:0);}); ROUTEDC=dc.slice(); ROUTEDCSIG=dcsig; }
     MAPQ=[]; PRAYERQ=[];
     var access=tripAccess(keys[0]);
     if(access&&CONFIG.paywallOn&&!getFreeDest())setFreeDest(keys[0]);
@@ -4466,6 +4488,8 @@
     // "Where to stay" filters: single-select property type, multi-select amenities, then search
     var ty=e.target.closest('.stychip');
     if(ty){ var was=ty.classList.contains('active'); ty.parentNode.querySelectorAll('.stychip').forEach(function(c){c.classList.remove('active');}); if(!was)ty.classList.add('active'); return; }
+    var ac=e.target.closest('.areachip');
+    if(ac){ var abar=ac.closest('.staybar'), ainp=abar&&abar.querySelector('.stayarea'); if(ainp)ainp.value=ac.getAttribute('data-area'); if(abar)abar.querySelectorAll('.areachip').forEach(function(c){c.classList.remove('active');}); ac.classList.add('active'); return; }
     var am=e.target.closest('.samchip');
     if(am){ am.classList.toggle('active'); return; }
     var srch=e.target.closest('.staysearch');
@@ -4473,7 +4497,8 @@
       // Booking's "ss" is a LOCATION field — put ONLY the destination here (city + country) so it
       // resolves to the right place. Property type & amenities go into the "nflt" filter, never ss.
       var city=bar.getAttribute('data-staycity'), country=bar.getAttribute('data-staycountry');
-      var ss=country?(city+', '+country):city;
+      var area=((bar.querySelector('.stayarea')||{}).value||'').trim(); // e.g. Patong, or "near the airport"
+      var ss=(area?area+', ':'')+(country?(city+', '+country):city); // area first so Booking resolves to that neighbourhood
       var tsel=bar.querySelector('.stychip.active'), ht=tsel?tsel.getAttribute('data-ht'):'';
       var flt=[].slice.call(bar.querySelectorAll('.samchip.active')).map(function(c){return c.getAttribute('data-code');});
       if(ht)flt.unshift('ht_id='+ht);
