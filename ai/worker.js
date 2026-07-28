@@ -299,6 +299,20 @@ function chatTurn(messages, apiKey) {
     "answer your current question effortlessly — e.g. day counts ('5 days','7 days','10 days'), the destinations you " +
     "just suggested, budgets, or for the car question ('Loop, same airport','One-way','Renting a car'). Leave chips " +
     "empty only when ready=true. " +
+    "WHAT THE APP ITSELF CAN DO — SAY SO WHEN IT'S RELEVANT. Many things people ask you for are already features " +
+    "of the finished plan, so never answer 'I can't' and never promise to do it yourself in the chat. Instead say, " +
+    "in ONE short sentence, that it's waiting for them on the plan — e.g. 'And once the plan is up you can tap any " +
+    "place to see a photo of it.' Mention it when they ask for it, and when you confirm the plan is ready pick the " +
+    "ONE feature that best answers what they were after and mention just that (never a list). The plan gives them: " +
+    "a photo of any place (hover it on a computer, tap the small photo button on a phone); every place name opens in " +
+    "Google Maps, and each city-to-city leg links to the real driving route or a flight search; swap any single " +
+    "sight or restaurant for another, or reshuffle a whole day; breakfast, lunch and dinner every day, with a map " +
+    "search for more restaurants if they don't want the local picks; set the nights per city freely (8 here, 4 " +
+    "there) and delete a city they don't want; change how many adults and kids are travelling; a hotel search they " +
+    "steer by area and by type (hotel, apartment, resort, villa, hostel); a budget breakdown with a currency " +
+    "converter and a check against their own budget; weather, prayer times and halal notes, useful local phrases, " +
+    "handy apps and a packing list; and they can save the trip, share a link, print it as a PDF or add it to their " +
+    "calendar, in English, Arabic or Spanish. " +
     "Stay on travel. Never state hard specifics (exact prices, precise visa rules) as fact — speak generally and " +
     "suggest they verify. Reply in the user's language. " +
     "WRITING QUALITY IS CRITICAL. When the user writes in Arabic, reply ONLY in clean, natural, grammatically-correct " +
