@@ -268,7 +268,7 @@ function chatTurn(messages, apiKey) {
     "LAST stop the same city they started from (the return-to-airport leg); for one-way, make the last stop the " +
     "city they fly out of. Set roadtrip=true for these. " +
     "Once you have at least one concrete destination (named or agreed) AND a rough number of days — and, for a road " +
-    "trip, the car return/airport plan — set ready=true, and fill cities (the best single base CITY per stop, in " +
+    "trip, the car return/airport plan — set ready=true, and fill cities (the best single MAIN city per stop, in " +
     "visit order, common English names), days, vibes (0-3), budget (default Mid-range), and roadtrip. When ready, " +
     "make your reply a short confirmation like 'Perfect — building your Alps loop from Munich now.' Until ready, set " +
     "ready=false and cities=[]. " +
@@ -277,9 +277,14 @@ function chatTurn(messages, apiKey) {
     "just suggested, budgets, or for the car question ('Loop, same airport','One-way','Renting a car'). Leave chips " +
     "empty only when ready=true. " +
     "Stay on travel. Never state hard specifics (exact prices, precise visa rules) as fact — speak generally and " +
-    "suggest they verify. Reply in the user's language. When they write in Arabic, reply in warm, natural " +
-    "GULF / KHALEEJI Arabic (Saudi style) — casual and friendly (e.g. 'وش رايك', 'تبي', 'خلّينا', 'عندك') — " +
-    "NOT Egyptian dialect and NOT stiff formal standard Arabic.";
+    "suggest they verify. Reply in the user's language. " +
+    "WRITING QUALITY IS CRITICAL. When the user writes in Arabic, reply ONLY in clean, natural, grammatically-correct " +
+    "GULF / KHALEEJI Arabic (Saudi style) — warm and casual (e.g. 'وش رايك', 'تبي', 'خلّينا', 'عندك'), NOT Egyptian and " +
+    "NOT stiff formal standard Arabic. Write COMPLETE, COHERENT sentences. Do NOT mix English words, transliterations, " +
+    "or internal/technical terms (like 'base', 'loop', 'vibe', 'road trip') into the Arabic text — only real place " +
+    "names keep their normal spelling. Never output broken, half-translated, or garbled phrases; before you answer, " +
+    "make sure every Arabic sentence reads naturally to a Gulf speaker. Both `reply` and every item in `chips` must " +
+    "follow this same clean-Arabic rule.";
   return claude(apiKey, "claude-haiku-4-5", system, messages, CHAT_SCHEMA, 700);
 }
 
