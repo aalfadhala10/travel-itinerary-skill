@@ -34,6 +34,14 @@ Last updated: 2026-07-27.
   the user exports them. After the JSON refactor, each is just a new file.
 
 ## Backlog
+- [ ] **Arrival/departure airport in the MANUAL planner too.** The bot now works out
+  which airport you fly into (e.g. Garmisch → land in Munich, ~1.5h drive) and asks
+  whether you want a night there. The form-based planner still can't, because we
+  have no airport/gateway data per city. Plan: derive a `gateway` per destination —
+  nearest big city in our own data by coordinates, or AI-generated once and cached —
+  then show an arrival line on day 1 and a "get back to the airport" note on the
+  last day.
+
 
 - [ ] **Photos of suggested places (hover/tap to preview).** Friend feedback: it'd
   be nice to see an image of a POI when hovering its name. Needs an image source —
