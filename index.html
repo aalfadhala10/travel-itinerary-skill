@@ -378,6 +378,9 @@
   .nbtn:hover{border-color:var(--teal)}
   .nbtn:active{transform:translateY(1px)}
   .nnote{font-size:12.5px;color:var(--muted);margin-top:8px;font-style:italic}
+  .ndel{width:30px;height:30px;margin-inline-start:4px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;line-height:1;padding:0}
+  .ndel:hover{border-color:#e5484d;color:#e5484d}
+  .ndel:active{transform:translateY(1px)}
   .mapcard{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px;margin-top:16px}
   .maphdr{font-family:var(--ff-data);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
   #app[dir="rtl"] .maphdr{letter-spacing:normal;font-family:var(--ff-body)}
@@ -3199,15 +3202,28 @@
     if(!ms||ms.length<2)return '';
     var ar=LANG==='ar', es=LANG==='es', title=ar?'الليالي بكل مدينة':(es?'Noches por ciudad':'Nights per city');
     var total=dc.reduce(function(a,b){return a+b;},0), mx=Math.max.apply(null,dc), dayW=ar?'يوم':(es?'días':'days');
+    var delT=ar?'احذف هذه المدينة':(es?'Quitar esta ciudad':'Remove this city');
     var rows=ms.map(function(m,i){ return '<div class="nrow"><span class="ncity">'+esc(m.city)+'</span>'+
       '<span class="nctl"><button type="button" class="nbtn" data-nb="'+i+'|-1" aria-label="-">−</button>'+
       '<span class="nnum">'+dc[i]+'</span>'+
-      '<button type="button" class="nbtn" data-nb="'+i+'|1" aria-label="+">+</button></span></div>'; }).join('');
+      '<button type="button" class="nbtn" data-nb="'+i+'|1" aria-label="+">+</button>'+
+      '<button type="button" class="ndel" data-nd="'+i+'" title="'+esc(delT)+'" aria-label="'+esc(delT)+'">✕</button></span></div>'; }).join('');
     var note='';
     if(mx>=8) note=ar?('ملاحظة: '+mx+' ليالٍ بمدينة وحدة كثير — يفضّل رحلات يومية عشان ما تمل.'):(es?('Nota: '+mx+' noches en una ciudad es bastante — planifica excursiones.'):('Note: '+mx+' nights in one city is a lot — plan a few day trips.'));
     else if(total>25) note=ar?('ملاحظة: رحلة طويلة ('+total+' يوم) — تأكد من التأشيرة والطيران.'):(es?('Nota: viaje largo ('+total+' días) — revisa visados y vuelos.'):('Note: long trip ('+total+' days) — double-check visas & flights.'));
     var noteHtml=note?('<div class="nnote">'+esc(note)+'</div>'):'';
     return '<div class="nightsbar"><div class="nightslbl">'+title+' · '+total+' '+dayW+'</div>'+rows+noteHtml+'</div>';
+  }
+  function dropCity(i){ // remove a city from the route entirely (they didn't want the one we suggested)
+    if(!ROUTE||ROUTE.length<2)return; if(i<0||i>=ROUTE.length)return; // never drop the last remaining city
+    ROUTE.splice(i,1);
+    if(ROUTEDC&&ROUTEDC.length>i)ROUTEDC.splice(i,1);
+    ROUTEDCSIG=ROUTE.join('|');
+    var tot=(ROUTEDC&&ROUTEDC.length)?ROUTEDC.reduce(function(a,b){return a+b;},0):0;
+    if(tot>0){ try{ $('days').value=Math.max(1,Math.min(30,tot)); if(window.syncDayChips)syncDayChips(); }catch(e){} }
+    DAYEDITS={}; DAYROT={}; // day numbers shift, so per-day edits no longer line up
+    if(ROUTE.length<2){ try{ $('dest').value=DEST[ROUTE[0]].city; $('dest2').value=''; $('city2wrap').classList.add('is-hidden'); $('addCity').classList.remove('is-hidden'); }catch(e){} }
+    rerenderKeep();
   }
   function bumpNights(i,delta){ // set THIS city's nights freely (min 1); total days = the sum
     if(!ROUTEDC||!ROUTEDC.length)return; var n=ROUTEDC.length; if(i<0||i>=n)return;
@@ -4433,6 +4449,8 @@
     var pk=e.target.closest('.swappick button');
     if(pk){ var sk=pk.getAttribute('data-sk'), i=+pk.getAttribute('data-i'), pr2=sk.split('|'), ck=pr2[0], isFood=(pr2[2]==='d');
       var arr=isFood?DEST[ck].food:DEST[ck].poi, pl=arr&&arr[i]; if(pl){ DAYEDITS[sk]=pl.n; rerenderKeep(); } return; }
+    var nd=e.target.closest('.ndel');
+    if(nd){ dropCity(+nd.getAttribute('data-nd')); return; }
     var nb=e.target.closest('.nbtn');
     if(nb){ var pn=nb.getAttribute('data-nb').split('|'); bumpNights(+pn[0], +pn[1]); return; }
     var sw=e.target.closest('.swapbtn');
