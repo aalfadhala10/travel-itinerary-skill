@@ -549,6 +549,9 @@
   .chatfoot input{flex:1;min-width:0;padding:12px 15px;border:1px solid var(--line);border-radius:999px;background:var(--paper2);color:var(--ink);font-size:15px;font-family:var(--ff-body);outline:none}
   .chatfoot input:focus{border-color:var(--teal)}
   .chatfoot #chatSend{flex:0 0 auto;width:44px;height:44px;border:none;border-radius:50%;background:var(--teal);color:#fff;font-size:19px;font-weight:700;cursor:pointer}
+  .chatchips{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px;align-self:flex-start;max-width:100%}
+  .chatchip{padding:8px 13px;border:1px solid var(--teal);border-radius:999px;background:var(--teal-soft);color:var(--ink);font-size:13.5px;font-weight:600;font-family:var(--ff-body);cursor:pointer}
+  .chatchip:active{transform:translateY(1px)}
   .ticket .tip{margin-top:11px;font-size:12.5px;background:rgba(255,255,255,.1);border-left:3px solid #e9d6a8;padding:8px 11px;border-radius:6px;line-height:1.45}
   #app[dir="rtl"] .ticket .tip{border-left:none;border-right:3px solid #e9d6a8}
 
@@ -2865,15 +2868,18 @@
   }
 
   // ---- AI chat assistant (optional extra) — chats a couple of turns, then builds the trip --------
-  var CHATMSGS=[], CHATBUSY=false;
+  var CHATMSGS=[], CHATBUSY=false, CHATCHIPS=[];
   function chatGreeting(){ return LANG==='ar'?'هلا! أنا بوصلة. خبّرني عن الرحلة اللي في بالك — مكان، أو أجواء تحبها — وأساعدك تخطّطها.':(LANG==='es'?'¡Hola! Soy Bosla. Cuéntame qué viaje tienes en mente — un lugar o un ambiente — y te ayudo a planearlo.':'Hi! I’m Bosla. Tell me about the trip you have in mind — a place, or just a vibe — and I’ll help you plan it.'); }
+  function starterChips(){ return LANG==='ar'?['🏖️ شاطئ واسترخاء','🏛️ مدينة','⛰️ مغامرة','🍜 رحلة أكل']:(LANG==='es'?['🏖️ Playa','🏛️ Ciudad','⛰️ Aventura','🍜 Viaje gastronómico']:['🏖️ Beach & relax','🏛️ City break','⛰️ Adventure','🍜 Food trip']); }
   function chatRender(){
     var body=$('chatBody'); if(!body)return;
-    body.innerHTML=CHATMSGS.map(function(m){ return '<div class="chatmsg '+(m.role==='user'?'user':'bot')+'">'+esc(m.content)+'</div>'; }).join('')+(CHATBUSY?'<div class="chatmsg bot typing">…</div>':'');
+    var msgs=CHATMSGS.map(function(m){ return '<div class="chatmsg '+(m.role==='user'?'user':'bot')+'">'+esc(m.content)+'</div>'; }).join('');
+    var chips=(!CHATBUSY&&CHATCHIPS.length)?('<div class="chatchips">'+CHATCHIPS.slice(0,4).map(function(c){ return '<button type="button" class="chatchip">'+esc(c)+'</button>'; }).join('')+'</div>'):'';
+    body.innerHTML=msgs+(CHATBUSY?'<div class="chatmsg bot typing">…</div>':'')+chips;
     body.scrollTop=body.scrollHeight;
   }
   function chatOpen(){ var pn=$('chatPanel'); if(!pn)return;
-    if(!CHATMSGS.length)CHATMSGS.push({role:'assistant',content:chatGreeting()});
+    if(!CHATMSGS.length){ CHATMSGS.push({role:'assistant',content:chatGreeting()}); CHATCHIPS=starterChips(); }
     chatRender(); pn.classList.add('show'); pn.setAttribute('aria-hidden','false');
     setTimeout(function(){ try{$('chatInput').focus();}catch(e){} },250); }
   function chatClose(){ var pn=$('chatPanel'); if(pn){ pn.classList.remove('show'); pn.setAttribute('aria-hidden','true'); } }
@@ -2881,16 +2887,16 @@
     if(!CONFIG.aiEndpoint){ resolve(null); return; }
     fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'chat',messages:messages})})
       .then(function(r){return r.json();}).then(function(d){ resolve((d&&d.chat)||null); }).catch(function(){ resolve(null); }); }); }
-  function chatSend(){
-    if(CHATBUSY)return; var inp=$('chatInput'), text=(inp.value||'').trim(); if(!text)return;
+  function chatSend(forced){
+    if(CHATBUSY)return; var inp=$('chatInput'), text=(forced||inp.value||'').trim(); if(!text)return;
     var userTurns=CHATMSGS.filter(function(m){return m.role==='user';}).length;
-    if(userTurns>=14){ CHATMSGS.push({role:'assistant',content:(LANG==='ar'?'خلّينا نكمّل بالنموذج فوق — أو حدّث الصفحة لبداية جديدة.':(LANG==='es'?'Sigamos con el formulario de arriba — o recarga para empezar de nuevo.':'Let’s continue with the form above — or refresh to start fresh.'))}); chatRender(); return; }
-    CHATMSGS.push({role:'user',content:text}); inp.value=''; CHATBUSY=true; chatRender();
+    if(userTurns>=14){ CHATCHIPS=[]; CHATMSGS.push({role:'assistant',content:(LANG==='ar'?'خلّينا نكمّل بالنموذج فوق — أو حدّث الصفحة لبداية جديدة.':(LANG==='es'?'Sigamos con el formulario de arriba — o recarga para empezar de nuevo.':'Let’s continue with the form above — or refresh to start fresh.'))}); chatRender(); return; }
+    CHATMSGS.push({role:'user',content:text}); inp.value=''; CHATCHIPS=[]; CHATBUSY=true; chatRender();
     try{ track('chat_msg',{msg:text.slice(0,200)}); }catch(e){} // what people ask the assistant
     aiChat(CHATMSGS.slice()).then(function(res){ CHATBUSY=false;
-      if(!res){ CHATMSGS.push({role:'assistant',content:(LANG==='ar'?'ما قدرت أوصل للمخطّط الحين — جرّب النموذج فوق.':(LANG==='es'?'No pude conectar ahora — prueba el formulario de arriba.':'I couldn’t reach the planner just now — try the form above.'))}); chatRender(); return; }
-      CHATMSGS.push({role:'assistant',content:res.reply||'…'}); chatRender();
-      if(res.ready && Array.isArray(res.cities) && res.cities.length) buildFromChat(res);
+      if(!res){ CHATCHIPS=[]; CHATMSGS.push({role:'assistant',content:(LANG==='ar'?'ما قدرت أوصل للمخطّط الحين — جرّب النموذج فوق.':(LANG==='es'?'No pude conectar ahora — prueba el formulario de arriba.':'I couldn’t reach the planner just now — try the form above.'))}); chatRender(); return; }
+      CHATMSGS.push({role:'assistant',content:res.reply||'…'}); CHATCHIPS=Array.isArray(res.chips)?res.chips.slice(0,4):[]; chatRender();
+      if(res.ready && Array.isArray(res.cities) && res.cities.length){ CHATCHIPS=[]; buildFromChat(res); }
     });
   }
   function buildFromChat(p){
@@ -2917,8 +2923,9 @@
     if(CONFIG.aiEndpoint && CHAT_ON)fab.classList.remove('is-hidden');
     fab.addEventListener('click',chatOpen);
     var x=$('chatX'); if(x)x.addEventListener('click',chatClose);
-    var s=$('chatSend'); if(s)s.addEventListener('click',chatSend);
+    var s=$('chatSend'); if(s)s.addEventListener('click',function(){ chatSend(); });
     var i=$('chatInput'); if(i)i.addEventListener('keydown',function(e){ if(e.key==='Enter')chatSend(); });
+    var cb=$('chatBody'); if(cb)cb.addEventListener('click',function(e){ var c=e.target.closest('.chatchip'); if(c)chatSend(c.textContent); }); // tap a quick-reply chip
     var pn=$('chatPanel'); if(pn)pn.addEventListener('click',function(e){ if(e.target===pn)chatClose(); });
   })();
 
