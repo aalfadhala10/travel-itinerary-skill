@@ -371,6 +371,8 @@
   .transfer{background:var(--paper2);border:1px dashed var(--clay);border-radius:12px;padding:12px 14px;margin:14px 0 4px}
   .transfer .tlabel{font-family:var(--ff-data);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--clay);font-weight:600}
   .transfer .tbody{font-size:14px;margin-top:3px}
+  .transfer .troute{display:block;margin-top:7px;font-size:12.5px;font-weight:600;color:var(--teal);text-decoration:none}
+  .transfer .troute:hover{text-decoration:underline}
   .transfer .pit{font-size:12.5px;color:var(--muted);margin-top:5px;font-style:italic}
   .nightsbar{background:var(--paper2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:14px 0}
   .nightslbl{font-family:var(--ff-data);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--clay);font-weight:600;margin-bottom:6px}
@@ -2594,6 +2596,18 @@
   function pick(a,s){return a[s%a.length];}
   function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function legUrl(a,b,flying){ // per-leg link; distinct from routeUrl() further down, which maps one day's stops
+    if(flying) return 'https://www.google.com/travel/flights?q='+encodeURIComponent('Flights from '+a+' to '+b);
+    return 'https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(a)+'&destination='+encodeURIComponent(b)+'&travelmode=driving';
+  }
+  function routeLinkLbl(flying){
+    if(LANG==='ar') return flying?'ابحث عن رحلات':'شوف الطريق على الخريطة';
+    if(LANG==='es') return flying?'Buscar vuelos':'Ver la ruta en Maps';
+    return flying?'Find flights':'See route on Maps';
+  }
+  function routeLink(a,b,flying){
+    return '<a class="troute" href="'+legUrl(a,b,flying)+'" target="_blank" rel="noopener">'+esc(routeLinkLbl(flying))+' →</a>';
+  }
   function mapUrl(q){return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(q);}
   // Booking needs check-in/out dates + occupancy to show *availability* — without them a filtered
   // search drops into a "no properties available" state. Reuse the trip's own dates & travellers.
@@ -4052,7 +4066,7 @@
     for(i=0;i<upto;i++){
       var stops=[], cnt=access?dc[i]:1;
       routeHtml+=emitDays(ms[i],startDay,cnt,days,vibes,spd,o,t,txt,stops);
-      if(access&&i<n-1){ var tr=transferInfo(t,ms[i],ms[i+1],kmDist(CO[keys[i]]||[0,0],CO[keys[i+1]]||[0,0])); var mode=ROUTEDRIVE?o.modeDrive:tr.mode; var pit=ROUTEDRIVE?('<div class="pit">'+pitStopLine(i)+'</div>'):''; routeHtml+='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+mode+' · '+esc(ms[i].city)+' → '+esc(ms[i+1].city)+' · '+tr.dur+' · '+tr.km+kmUnit()+' · '+money(t,tr.usd)+pit+'</div></div>'; txt.push(''); txt.push('» '+o.cats.transfer+': '+mode+' '+ms[i].city+' → '+ms[i+1].city+' ('+tr.dur+')'); if(ROUTEDRIVE)txt.push('  '+pitStopLine(i)); }
+      if(access&&i<n-1){ var tr=transferInfo(t,ms[i],ms[i+1],kmDist(CO[keys[i]]||[0,0],CO[keys[i+1]]||[0,0])); var mode=ROUTEDRIVE?o.modeDrive:tr.mode; var pit=ROUTEDRIVE?('<div class="pit">'+pitStopLine(i)+'</div>'):''; routeHtml+='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+mode+' · '+esc(ms[i].city)+' → '+esc(ms[i+1].city)+' · '+tr.dur+' · '+tr.km+kmUnit()+' · '+money(t,tr.usd)+pit+routeLink(ms[i].city,ms[i+1].city,!ROUTEDRIVE&&tr.mode===o.modeFly)+'</div></div>'; txt.push(''); txt.push('» '+o.cats.transfer+': '+mode+' '+ms[i].city+' → '+ms[i+1].city+' ('+tr.dur+')'); if(ROUTEDRIVE)txt.push('  '+pitStopLine(i)); }
       startDay+=dc[i];
     }
     mapHtml=routeStrip(ms.slice(0,upto).map(function(m){return m.city;}),t);
@@ -4373,7 +4387,7 @@
       var route2='', transHtml='';
       if(access&&multi){
         var pit2=(tr.mode===o.modeGround)?('<div class="pit">'+pitStopLine(0)+'</div>'):'';
-        transHtml='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+tr.mode+' · '+esc(m1.city)+' → '+esc(m2.city)+' · '+tr.dur+' · '+tr.km+kmUnit()+' · '+money(t,tr.usd)+pit2+'</div></div>';
+        transHtml='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+tr.mode+' · '+esc(m1.city)+' → '+esc(m2.city)+' · '+tr.dur+' · '+tr.km+kmUnit()+' · '+money(t,tr.usd)+pit2+routeLink(m1.city,m2.city,tr.mode===o.modeFly)+'</div></div>';
         txt.push(''); txt.push('» '+o.cats.transfer+': '+m1.city+' → '+m2.city+' ('+tr.dur+', ~$'+tr.usd+')'); if(pit2)txt.push('  '+pitStopLine(0));
         var stops2=[]; route2=emitDays(m2,d1+1,d2,days,vibes,spd,o,t,txt,stops2);
       }
