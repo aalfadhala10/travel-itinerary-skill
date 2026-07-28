@@ -307,8 +307,23 @@ function chatTurn(messages, apiKey) {
     "or internal/technical terms (like 'base', 'loop', 'vibe', 'road trip') into the Arabic text — only real place " +
     "names keep their normal spelling. Never output broken, half-translated, or garbled phrases; before you answer, " +
     "make sure every Arabic sentence reads naturally to a Gulf speaker. Both `reply` and every item in `chips` must " +
-    "follow this same clean-Arabic rule.";
-  return claude(apiKey, "claude-haiku-4-5", system, messages, CHAT_SCHEMA, 700);
+    "follow this same clean-Arabic rule. Re-read your Arabic before sending it: correct spelling, correct " +
+    "grammar, correct word order, no missing or duplicated words, no dropped letters, and never a sentence " +
+    "that stops halfway. A single Arabic mistake is worse than a slower answer.";
+  // Arabic is the one language a small model keeps getting wrong (broken grammar, half-translated
+  // words). Real users noticed, so Arabic conversations go to the bigger model; EN/ES stay on Haiku.
+  return claude(apiKey, writesArabic(messages) ? "claude-sonnet-5" : "claude-haiku-4-5", system, messages, CHAT_SCHEMA, 700);
+}
+
+// True when the traveller is actually writing Arabic (not just one stray word).
+function writesArabic(messages) {
+  const said = (Array.isArray(messages) ? messages : [])
+    .filter((m) => m && m.role === "user")
+    .map((m) => String(m.content || ""))
+    .join(" ");
+  const arabic = (said.match(/[\u0600-\u06FF]/g) || []).length;
+  const letters = (said.match(/[\u0600-\u06FFA-Za-z]/g) || []).length;
+  return letters > 0 && arabic / letters > 0.3;
 }
 
 // --- Suggest destinations from a vibe/need when the user names no place (Haiku) ------------------
