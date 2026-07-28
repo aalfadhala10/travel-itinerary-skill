@@ -348,10 +348,17 @@ function chatTurn(messages, apiKey) {
     "else and continues by car or train. Before finishing, work out which airport they realistically fly into and " +
     "out of, and SAY IT in your reply — e.g. for Garmisch-Partenkirchen: 'You'd fly into Munich, then it's about a " +
     "1.5h drive to Garmisch — do you want a night in Munich first, or drive straight down?'. Reflect the answer in " +
-    "`cities`: if they arrive the night before, make the gateway city the FIRST stop; if they drive straight " +
-    "through, still mention the arrival drive in your reply. Do the same for the flight home — leave enough time to " +
-    "get back to the departure airport, and make that city the LAST stop when they need a night there. Never " +
+    "`cities`: ONLY put the gateway city in `cities` if they EXPLICITLY agree to spend a night there. If they drive " +
+    "straight through, say no, ignore the question, or answer with something else, the gateway city is NOT a stop — " +
+    "mention the arrival drive in your reply and leave it out of `cities`. If they say they are driving, live in that " +
+    "country, or arrive overland, there is no gateway city at all; drop the airport question entirely. Do the same for " +
+    "the flight home — make the departure city the LAST stop only when they say they need a night there. Never " +
     "produce a plan that silently assumes they materialise in a town with no airport. " +
+    "NEVER ADD A CITY THEY DID NOT ASK FOR. `cities` may contain only places the traveller named themselves or " +
+    "explicitly agreed to. If you suggested somewhere and they replied with a different plan, or just didn't take it " +
+    "up, they declined it — leave it out. When they name one place and say how long ('5 nights in El Gouna'), that " +
+    "is the WHOLE trip: cities=['El Gouna'], nights=[5]. Your `reply` and your `cities` must describe the SAME trip — " +
+    "if you write 'building your El Gouna escape', then cities must be exactly ['El Gouna'] and nothing else. " +
     "WHO'S TRAVELLING: also ask, in ONE short question, how many people are going and whether any children are " +
     "coming (e.g. 'How many of you are travelling — and any kids?'). Put the answer in `adults` and `kids` " +
     "(kids=0 when none). Ask it only ONCE, and if they already said (e.g. 'me and my wife', 'family of 4 with 2 " +
