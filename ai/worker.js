@@ -240,11 +240,21 @@ const PARSE_SCHEMA = {
 const CHAT_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["reply", "ready", "cities", "days", "vibes", "budget", "roadtrip", "area", "adults", "kids", "chips"],
+  required: ["reply", "ready", "cities", "nights", "extras", "days", "vibes", "budget", "roadtrip", "area", "adults", "kids", "chips"],
   properties: {
     reply: { type: "string" },      // the message to show the user
     ready: { type: "boolean" },     // true once there's enough to build a trip
     cities: { type: "array", items: { type: "string" } }, // best base city per stop, in order (when ready)
+    nights: { type: "array", items: { type: "integer" } }, // nights per city, same order/length as cities ([] when unknown)
+    extras: {                                             // small stops to add to a day (a cafe, an ice cream place)
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["day", "name"],
+        properties: { day: { type: "integer" }, name: { type: "string" } },
+      },
+    },
     area: { type: "string" },       // where they want to stay in the first city (e.g. "Patong", "city center"); "" if they don't mind
     adults: { type: "integer" },    // how many adults are travelling (0 = not asked yet / unknown)
     kids: { type: "integer" },      // how many children (0 = none)
@@ -297,7 +307,8 @@ function chatTurn(messages, apiKey) {
     "trip, the car return/airport plan — set ready=true, and fill cities (the best single MAIN city per stop, in " +
     "visit order, common English names), days, vibes (0-3), budget (default Mid-range), roadtrip, area, adults and " +
     "kids. When ready, make your reply a short confirmation like 'Perfect — building your Alps loop from Munich " +
-    "now.' Until ready, set ready=false and cities=[]. Set area='' and adults/kids=0 whenever you don't know yet. " +
+    "now.' Until ready, set ready=false and cities=[]. Set area='' and adults/kids=0 whenever you don't know yet, and " +
+    "nights=[] and extras=[] whenever you have nothing to put in them. " +
     "ALWAYS fill `chips` with 2-4 SHORT tappable quick-replies (under ~20 chars each, in the user's language) that " +
     "answer your current question effortlessly — e.g. day counts ('5 days','7 days','10 days'), the destinations you " +
     "just suggested, budgets, or for the car question ('Loop, same airport','One-way','Renting a car'). Leave chips " +
@@ -316,6 +327,17 @@ function chatTurn(messages, apiKey) {
     "converter and a check against their own budget; weather, prayer times and halal notes, useful local phrases, " +
     "handy apps and a packing list; and they can save the trip, share a link, print it as a PDF or add it to their " +
     "calendar, in English, Arabic or Spanish. " +
+    "EDITING A TRIP THAT ALREADY EXISTS. The traveller's message may end with a bracketed line like " +
+    "'[Current plan - cities: Munich 2n > Garmisch 3n; total days: 5; travellers: 2 adults, 1 kid; staying near: Marina]'. " +
+    "They did not type that — it is the trip already on their screen. Whenever it is there you are EDITING, never starting " +
+    "over: apply ONLY the change they asked for and carry everything else through untouched. Set ready=true and return the " +
+    "COMPLETE updated trip — every city in order, days, nights, area, adults, kids — because anything you leave out is lost. " +
+    "Use `nights` to give the exact nights per city (same order and length as `cities`) whenever a split is known or asked " +
+    "for, e.g. 8 nights in Phuket and 4 in Bangkok; leave it empty when you don't know. If they ask to ADD a small stop — a " +
+    "coffee shop, an ice cream place, a viewpoint, a market — put it in `extras` as {day, name} using the day number from " +
+    "their plan, name a real place in the right city, and leave cities/days/nights exactly as they were. If they want to " +
+    "change one specific sight or restaurant, do NOT rebuild the trip: tell them to tap the small swap arrows next to that " +
+    "place on the plan. If they say the trip is good as it is, reply warmly and briefly and set ready=false. " +
     "Stay on travel. Never state hard specifics (exact prices, precise visa rules) as fact — speak generally and " +
     "suggest they verify. Reply in the user's language. " +
     "WRITING QUALITY IS CRITICAL. When the user writes in Arabic, reply ONLY in clean, natural, grammatically-correct " +
