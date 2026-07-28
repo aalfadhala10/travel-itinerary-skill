@@ -211,7 +211,7 @@ const PARSE_SCHEMA = {
 const CHAT_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["reply", "ready", "cities", "days", "vibes", "budget", "roadtrip"],
+  required: ["reply", "ready", "cities", "days", "vibes", "budget", "roadtrip", "chips"],
   properties: {
     reply: { type: "string" },      // the message to show the user
     ready: { type: "boolean" },     // true once there's enough to build a trip
@@ -220,6 +220,7 @@ const CHAT_SCHEMA = {
     vibes: { type: "array", items: { type: "string", enum: TAGS } },
     budget: { type: "string", enum: ["Budget", "Mid-range", "Luxury"] },
     roadtrip: { type: "boolean" },
+    chips: { type: "array", items: { type: "string" } }, // 0-4 short tappable quick replies for the user
   },
 };
 
@@ -234,6 +235,9 @@ function chatTurn(messages, apiKey) {
     "and fill cities (the best single base CITY per stop, in visit order, common English names), days, vibes (0-3), " +
     "budget (default Mid-range), and roadtrip (true only if the stops are drivable). When ready, make your reply a " +
     "short confirmation like 'Perfect — building your Kyoto trip now.' Until ready, set ready=false and cities=[]. " +
+    "ALWAYS fill `chips` with 2-4 SHORT tappable quick-replies (under ~20 chars each, in the user's language) that " +
+    "answer your current question effortlessly — e.g. day counts ('5 days','7 days','10 days'), the destinations you " +
+    "just suggested, or budgets. Leave chips empty only when ready=true. " +
     "Stay on travel. Never state hard specifics (exact prices, precise visa rules) as fact — speak generally and " +
     "suggest they verify. Reply in the user's language. When they write in Arabic, reply in warm, natural " +
     "GULF / KHALEEJI Arabic (Saudi style) — casual and friendly (e.g. 'وش رايك', 'تبي', 'خلّينا', 'عندك') — " +
