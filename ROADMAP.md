@@ -43,11 +43,6 @@ Last updated: 2026-07-27.
   last day.
 
 
-- [ ] **Photos of suggested places (hover/tap to preview).** Friend feedback: it'd
-  be nice to see an image of a POI when hovering its name. Needs an image source —
-  plan: lazy-fetch a thumbnail from the Wikipedia/Wikimedia REST summary API by POI
-  name (free, no key), cache per name, show in a small popover on hover (desktop) /
-  tap (mobile); fall back to nothing when no match. Not built yet.
 - [ ] **Richer / non-local food.** Friend feedback: only ~5 (local-cuisine) food
   spots per city, so over a long stay they repeat and there's no option for someone
   who doesn't want the local cuisine. Interim: the food swap now links to a Google
@@ -88,6 +83,12 @@ Last updated: 2026-07-27.
 - [ ] Keep an eye on first real analytics/feedback rows and the country breakdown.
 
 ## Done (recent)
+
+- [x] **Place photos on hover** — hovering a place name shows a Wikipedia thumbnail
+  in a small popover. Free (no key), fetched only on hover (never on render), cached
+  30 days in localStorage, silent when there's no match. Desktop/mouse only; touch
+  still opens Maps on tap. Mobile preview is still open — a per-day thumbnail strip
+  is the likely approach if we want it.
 
 - [x] **Country tracking by timezone** — anonymous, no permission, no precise
   location. Sends `tz` with each event; dashboard shows "Where visitors are"
