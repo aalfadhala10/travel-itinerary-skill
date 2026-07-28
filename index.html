@@ -2918,7 +2918,7 @@
       setTimeout(function(){ chatClose(); if(ks.length>=2){ planRoute(ks,days,vibes,budget,'balanced',!!p.roadtrip); } else { ROUTE=null; plan(); } }, 800);
     });
   }
-  var CHAT_ON=true; // Worker `chat` action is deployed — chat assistant enabled
+  var CHAT_ON=false; // chat hidden to avoid per-message API cost — flip to true to re-enable
   (function(){ var fab=$('chatFab'); if(!fab)return;
     if(CONFIG.aiEndpoint && CHAT_ON)fab.classList.remove('is-hidden');
     fab.addEventListener('click',chatOpen);
