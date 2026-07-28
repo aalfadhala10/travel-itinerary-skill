@@ -544,7 +544,8 @@
   .fbnstar{background:none;border:none;font-size:28px;line-height:1;cursor:pointer;color:var(--line);transition:color .12s,transform .12s;padding:0}
   .fbnstar:hover,.fbnstar:active{transform:scale(1.15);color:var(--amber)}
   .fbnno{display:block;margin:2px auto 0;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:4px 8px}
-  .chatfab{position:fixed;right:16px;bottom:20px;z-index:7;display:flex;align-items:center;gap:7px;padding:12px 17px;border:none;border-radius:999px;background:var(--teal);color:#fff;font-size:14.5px;font-weight:700;font-family:var(--ff-body);box-shadow:var(--shadow);cursor:pointer}
+  .chatfab{position:fixed;right:16px;bottom:20px;z-index:7;display:flex;align-items:center;gap:7px;padding:12px 17px;border:none;border-radius:999px;background:var(--teal);color:#fff;font-size:14.5px;font-weight:700;font-family:var(--ff-body);box-shadow:var(--shadow);cursor:pointer;transition:bottom .25s}
+  .chatfab.nudged{bottom:132px}
   #app[dir="rtl"] .chatfab{right:auto;left:16px}
   .chatfab .chatfabic{font-size:16px}
   .chatpanel{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .2s;display:flex;align-items:flex-end;justify-content:center;overscroll-behavior:contain;touch-action:none}
@@ -4175,8 +4176,9 @@
     var no=LANG==='ar'?'ليس الآن':(LANG==='es'?'Ahora no':'Not now');
     $('fbnQ').textContent=q; $('fbnNo').textContent=no;
     var n=$('fbNudge'); n.classList.add('show'); n.setAttribute('aria-hidden','false');
+    try{ var f=$('chatFab'); if(f)f.classList.add('nudged'); }catch(e){} // lift the FAB above the rating so it doesn't cover the stars
   }
-  function hideFbNudge(){ var n=$('fbNudge'); n.classList.remove('show'); n.setAttribute('aria-hidden','true'); }
+  function hideFbNudge(){ var n=$('fbNudge'); n.classList.remove('show'); n.setAttribute('aria-hidden','true'); try{ var f=$('chatFab'); if(f)f.classList.remove('nudged'); }catch(e){} }
   $('fbnStars').addEventListener('click',function(e){ var b=e.target.closest('.fbnstar'); if(!b)return; hideFbNudge(); openFeedback(parseInt(b.getAttribute('data-r'),10)); });
   $('fbnNo').addEventListener('click',hideFbNudge);
 
