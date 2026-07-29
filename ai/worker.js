@@ -90,6 +90,14 @@ export default {
         const out = await getOrBuildFood(name, String(body.country || "").slice(0, 60).trim(), env);
         return reply({ food: out.food, cached: out.cached }, 200, origin);
       }
+      if (body.action === "places") {
+        const city = String(body.city || "").slice(0, 60).trim();
+        const names = Array.isArray(body.names)
+          ? body.names.map((n) => String(n || "").slice(0, 80).trim()).filter(Boolean).slice(0, 40)
+          : [];
+        if (!names.length) return reply({ closed: [] }, 200, origin);
+        return reply({ closed: await closedPlaces(names, city, env) }, 200, origin);
+      }
       if (body.action === "list")  return reply({ cities: await listNames(env) }, 200, origin);
       if (body.action === "dump")  return reply({ cities: await dumpAll(env) }, 200, origin);
       return reply({ error: "unknown action" }, 400, origin);
@@ -130,6 +138,64 @@ async function getOrBuildFood(name, country, env) {
   if (kv && food.length >= 4) await kv.put(k, JSON.stringify(food));
   return { food, cached: false };
 }
+// --- is this place still open? (Google Places) -----------------------------------
+// A curated list goes stale the moment somewhere shuts, and an itinerary that sends someone to a
+// permanently-closed restaurant is worse than no itinerary. Google is the only source that knows.
+//
+// Each place is looked up ONCE and the verdict cached in KV — a city's ~20 places cost ~20 lookups
+// ever, then nothing. OPERATIONAL and unknown are cached for 90 days (things close later); a
+// permanent closure is cached for a year, because that doesn't un-happen.
+// Needs env.GOOGLE_PLACES_KEY. Without it this quietly returns nothing and the app is unchanged.
+const PLACE_TTL_OPEN   = 60 * 60 * 24 * 90;
+const PLACE_TTL_CLOSED = 60 * 60 * 24 * 365;
+
+async function closedPlaces(names, city, env) {
+  if (!env.GOOGLE_PLACES_KEY) return [];
+  const kv = env.CITIES;
+  const out = [];
+  // Sequential on purpose: a plan is ~20 names, almost all cached after the first traveller, and
+  // firing 20 parallel calls at Google from one worker earns a rate limit, not a faster answer.
+  for (const name of names) {
+    const k = "biz:" + cityKey(city) + ":" + cityKey(name);
+    if (kv) {
+      const hit = await kv.get(k);
+      if (hit) { if (hit === "CLOSED_PERMANENTLY") out.push(name); continue; }
+    }
+    const status = await placeStatus(name, city, env.GOOGLE_PLACES_KEY);
+    if (!status) continue;                       // lookup failed — say nothing rather than guess
+    if (kv) await kv.put(k, status, { expirationTtl: status === "CLOSED_PERMANENTLY" ? PLACE_TTL_CLOSED : PLACE_TTL_OPEN });
+    if (status === "CLOSED_PERMANENTLY") out.push(name);
+  }
+  return out;
+}
+
+async function placeStatus(name, city, key) {
+  try {
+    const r = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": key,
+        // Ask for the two cheapest fields only — the field mask is what Google bills on.
+        "X-Goog-FieldMask": "places.displayName,places.businessStatus",
+      },
+      body: JSON.stringify({ textQuery: name + (city ? ", " + city : ""), maxResultCount: 1 }),
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    const p = d && Array.isArray(d.places) && d.places[0];
+    if (!p) return null;
+    // Google found nothing resembling the name — don't call that a closure, we'd delete good places
+    // on a spelling difference. Only an explicit verdict counts.
+    const found = String((p.displayName && p.displayName.text) || "").toLowerCase();
+    const asked = name.toLowerCase();
+    if (found && !found.includes(asked.slice(0, 6)) && !asked.includes(found.slice(0, 6))) return null;
+    return p.businessStatus || "OPERATIONAL";
+  } catch (e) {
+    return null;
+  }
+}
+
 async function listNames(env) {
   if (!env.CITIES) return [];
   const names = []; let cursor, done = false;

@@ -3794,6 +3794,50 @@
       fetchFood(k).then(function(added){ if(added&&planLive())rerenderKeep(); });
     });
   }
+  // --- places that have shut down -------------------------------------------------------------
+  // Curated lists go stale the moment somewhere closes, and sending someone to a permanently-closed
+  // restaurant is the one mistake a paid itinerary can't make. After a plan renders we ask the
+  // worker (which asks Google) about the places actually on it, drop anything shut, and re-render
+  // quietly. Verdicts are remembered on the device, so a closed place never comes back.
+  var CLOSED=null, CLOSEDGOT={};
+  function closedLoad(){ if(CLOSED)return CLOSED; try{ CLOSED=JSON.parse(localStorage.getItem('bosla_closed')||'{}')||{}; }catch(e){ CLOSED={}; } return CLOSED; }
+  function closedSave(){ try{ localStorage.setItem('bosla_closed',JSON.stringify(closedLoad())); }catch(e){} }
+  function isClosed(n){ return !!closedLoad()[String(n).toLowerCase()]; }
+  // Drop them from the city's own lists so nothing can pick them again this session. Never empty a
+  // list doing it — a plan with no restaurants is worse than one with a doubtful restaurant.
+  function dropClosed(k){
+    var d=DEST[k]; if(!d)return false; var gone=false;
+    ['poi','food'].forEach(function(f){
+      var keep=d[f].filter(function(x){ return !isClosed(x.n); });
+      if(keep.length&&keep.length<d[f].length){ d[f]=keep; gone=true; }
+    });
+    return gone;
+  }
+  function checkOpen(keys){
+    if(!CONFIG.aiEndpoint||!Array.isArray(keys))return;
+    keys.forEach(function(k){
+      if(!k||CLOSEDGOT[k]||!DEST[k])return;
+      CLOSEDGOT[k]=1;
+      var d=DEST[k];
+      // only the named places — "Breakfast near your stay" isn't somewhere to look up
+      var names=d.poi.concat(d.food).map(function(x){return x.n;})
+        .filter(function(n,i,a){ return n&&a.indexOf(n)===i&&!isClosed(n); }).slice(0,40);
+      if(!names.length)return;
+      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'places',city:d.city,names:names})})
+        .then(function(r){return r.json();})
+        .then(function(res){
+          var shut=(res&&Array.isArray(res.closed))?res.closed:[];
+          if(!shut.length)return;
+          var c=closedLoad();
+          shut.forEach(function(n){ c[String(n).toLowerCase()]=1;
+            try{ track('closed',{dest:d.city,country:d.country||'',msg:String(n).slice(0,60)}); }catch(e){} });
+          closedSave();
+          if(dropClosed(k)&&planLive())rerenderKeep();
+        })
+        .catch(function(){});
+    });
+  }
   function moreFoodLbl(){ return LANG==='ar'?'جيب لي خيارات أكثر':(LANG==='es'?'Dame más opciones':'Show me more options'); }
   function editAsk(){ return LANG==='ar'?'الرحلة عاجبتك، ولا تبي نعدّل شي؟'
     :(LANG==='es'?'¿Te gusta este viaje o quieres cambiar algo?':'Happy with this trip, or want to change something?'); }
@@ -4310,6 +4354,7 @@
     var t=I18N[LANG],o=t.out;
     keys=(keys||[]).filter(function(k){return DEST[k];});
     if(keys.length<2){ if(keys[0])$('dest').value=DEST[keys[0]].city; ROUTE=null; plan(); return; }
+    keys.forEach(dropClosed); // already known shut — never build them into a plan again
     ROUTE=keys; ROUTEDRIVE=!!drive;
     LASTPLAN=function(){ planRoute(keys,daysArg,vibes,budget,pace,drive); };
     var n=keys.length, ms=keys.map(function(k){return DEST[k];});
@@ -4381,7 +4426,7 @@
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
     var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden'); try{armFbNudge();syncFab();}catch(e){}
     redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
-    ensureFood(keys,dc);
+    ensureFood(keys,dc); checkOpen(keys);
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   function stateObj(){
@@ -4645,7 +4690,7 @@
     HOME=$('homeCur').value||'USD';
     var di=formatDates($('startDate').value,days,t);
     var subVibes=vibes.map(function(v){return t.ui.vibes[v];}).join(' · ')+(di?' · '+di.range:'');
-    var m1=matchDest(raw);
+    var m1=matchDest(raw); if(m1)dropClosed(keyOf(m1)); // already known shut — leave them out
     var raw2=($('dest2').value||'').trim();
     var m2=raw2?matchDest(raw2):null;
     if(m2&&m2===m1)m2=null;
@@ -4752,7 +4797,8 @@
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
     var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden'); try{armFbNudge();syncFab();}catch(e){}
     redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
-    if(m1)ensureFood(multi?[keyOf(m1),keyOf(m2)]:[keyOf(m1)], multi?[d1,d2]:[days]);
+    if(m1){ var fk=multi?[keyOf(m1),keyOf(m2)]:[keyOf(m1)];
+      ensureFood(fk, multi?[d1,d2]:[days]); checkOpen(fk); }
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYADD={}; ROUTEDC=null; STAYAREA='';
