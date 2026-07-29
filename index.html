@@ -87,7 +87,8 @@
 
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px;margin-top:22px;position:relative}
   .card::before{content:"";position:absolute;top:-1px;left:50%;transform:translateX(-50%);width:44px;height:6px;border-radius:0 0 8px 8px;background:var(--paper);border:1px solid var(--line);border-top:none}
-  label{display:block;font-family:var(--ff-data);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:16px 0 7px;font-weight:600}
+  /* 11px uppercase reads as decoration, not as a question you're meant to answer */
+  label{display:block;font-family:var(--ff-data);font-size:13px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin:16px 0 8px;font-weight:600}
   label:first-of-type{margin-top:0}
   .hint{text-transform:none;letter-spacing:0;font-weight:400}
   input,select{width:100%;padding:14px;border-radius:11px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);font-size:16px;font-family:var(--ff-body);outline:none;transition:border-color .15s}
@@ -129,7 +130,7 @@
   :root[data-theme="dark"] .editfab{color:#0a1310}
   :root[data-theme="light"] .editfab{color:#fff}
   #app[dir="rtl"] .editfab{right:auto;left:18px}
-  .surprise{display:inline-block;margin-top:9px;background:none;border:none;color:var(--amber);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--ff-body);text-decoration:underline;text-decoration-color:var(--amber);text-underline-offset:3px;padding:2px 0}
+  .surprise{display:inline-block;margin-top:9px;background:none;border:none;color:var(--amber);font-size:14.5px;font-weight:600;cursor:pointer;font-family:var(--ff-body);text-decoration:underline;text-decoration-color:var(--amber);text-underline-offset:3px;padding:2px 0}
   .surprise:hover{filter:brightness(1.1)}
   .ideasbtn{display:block;width:100%;margin-top:12px;padding:13px;border:1px dashed var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:14.5px;font-weight:600;font-family:var(--ff-body);cursor:pointer}
   .ideasbtn:hover{border-color:var(--teal)}
@@ -524,6 +525,13 @@
   .pgnav{display:flex;align-items:center;gap:10px;margin-top:18px;margin-bottom:16px}
   /* save / share / print, under every page — and far enough up to clear the floating buttons */
   .actions.pgfoot{margin-top:0;padding-top:16px;border-top:1px solid var(--line);margin-bottom:74px}
+  /* the bottom line, on every page: tap it for the full breakdown */
+  .pgcost{flex:1 0 100%;display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+    margin-bottom:10px;padding:11px 14px;border:1px solid var(--line);border-radius:12px;
+    background:var(--paper2);color:var(--ink);font-family:var(--ff-body);cursor:pointer;text-align:start}
+  .pgcost:hover{border-color:var(--teal)}
+  .pgcostk{font-size:13px;color:var(--muted)}
+  .pgcostv{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
   .pgbtn{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;
     background:var(--paper2);color:var(--ink);font-family:var(--ff-body);font-size:14px;
     cursor:pointer;text-align:start}
@@ -689,6 +697,9 @@
   #app[dir="rtl"]{text-align:right}
   #app[dir="rtl"] .hero,#app[dir="rtl"] .langbar,#app[dir="rtl"] .note,#app[dir="rtl"] .foot,#app[dir="rtl"] .realtag{text-align:center}
   #app[dir="rtl"] .eyebrow,#app[dir="rtl"] label,#app[dir="rtl"] .dlabel,#app[dir="rtl"] .slot .t,#app[dir="rtl"] .stat .k{letter-spacing:normal;text-transform:none;font-family:var(--ff-body)}
+  /* Arabic has no capitals to give a short label weight, and its letterforms need the extra size */
+  #app[dir="rtl"] label{font-size:15px}
+  #app[dir="rtl"] .slot .t,#app[dir="rtl"] .stat .k{font-size:13.5px}
   #app[dir="rtl"] .day{border-left:none;border-right:2px solid var(--line);margin-left:0;margin-right:8px;padding-left:0;padding-right:26px}
   #app[dir="rtl"] .day:last-child{border-right-color:transparent}
   #app[dir="rtl"] .day::before{left:auto;right:-7px}
@@ -3523,13 +3534,17 @@
     var dayCount=buckets.length-1-(tail.length?1:0);
     // Save / share / print isn't something to go hunting for — it comes out of the pages entirely
     // and sits under every one of them. "Change something?" belongs where you land.
-    var foot=null;
+    var foot=null, bud=null;
     buckets.forEach(function(items,bi){
       for(var j=items.length-1;j>=0;j--){
         if(items[j].classList.contains('actions')){ foot=items.splice(j,1)[0]; continue; }
+        // What it costs is the first thing anyone wants after tapping Plan — it belongs on the
+        // trip page with the rest of the summary, not behind every day of the itinerary.
+        if(items[j].classList.contains('bud')){ bud=items.splice(j,1)[0]; continue; }
         if(bi&&items[j].classList.contains('editbar'))buckets[0].push(items.splice(j,1)[0]);
       }
     });
+    if(bud)buckets[0].push(bud);
 
     var L=pgLabels(), tabs=document.createElement('div'); tabs.className='pgtabs';
     var pages=buckets.map(function(items,i){
@@ -3564,7 +3579,22 @@
     });
     out.innerHTML=''; out.appendChild(tabs);
     pages.forEach(function(pg){ out.appendChild(pg); });
-    if(foot){ foot.classList.add('pgfoot'); out.appendChild(foot); } // outside the pages, so it's on all of them
+    if(foot){
+      // ...and the bottom line rides along on every page, tappable to the full breakdown
+      if(bud){
+        var tot=bud.querySelectorAll('.budrow.total');
+        var last=tot[tot.length-1];
+        if(last){
+          var lbl=last.children[0], amt=last.querySelector('.amt');
+          var bar=document.createElement('button');
+          bar.type='button'; bar.className='pgcost'; bar.setAttribute('data-pgt','0');
+          bar.innerHTML='<span class="pgcostk">'+esc((lbl&&lbl.textContent||'').trim())+'</span>'+
+                        '<span class="pgcostv">'+esc((amt&&amt.textContent||'').trim())+'</span>';
+          foot.insertBefore(bar,foot.firstChild);
+        }
+      }
+      foot.classList.add('pgfoot'); out.appendChild(foot); // outside the pages, so it's on all of them
+    }
     out.setAttribute('data-days',dayCount);
     // Land on day one. The overview is a tab away for anyone who wants it, but the first thing a
     // traveller wants is the first day — and having to work out that you tap "1" to see any of
@@ -5303,7 +5333,7 @@
     var av=e.target.closest('.tuneanother'); if(av){ anotherVersion(); return; }
     var sp=e.target.closest('.sugpick'); if(sp){ pickSuggestion(sp.getAttribute('data-place')); return; }
     // page controls come first — they sit above everything else on the plan
-    var pt=e.target.closest('.pgtab'); if(pt){ pgGo(+pt.getAttribute('data-pgt')); return; }
+    var pt=e.target.closest('.pgtab,.pgcost'); if(pt){ pgGo(+pt.getAttribute('data-pgt')); return; } // the cost bar opens the breakdown
     var pb=e.target.closest('.pgbtn'); if(pb){ if(!pb.disabled)pgGo(PAGE+(+pb.getAttribute('data-pgd'))); return; }
     // "Jump to day" turns a page rather than scrolling to one
     var dn=e.target.closest('.dnav'); if(dn){ var dd=+dn.getAttribute('data-day');
