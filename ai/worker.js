@@ -90,6 +90,16 @@ export default {
         const out = await getOrBuildFood(name, String(body.country || "").slice(0, 60).trim(), env);
         return reply({ food: out.food, cached: out.cached }, 200, origin);
       }
+      if (body.action === "names") {
+        if (!env.ANTHROPIC_API_KEY) return reply({ error: "server not configured" }, 500, origin);
+        const lang = body.lang === "ar" ? "ar" : (body.lang === "es" ? "es" : "");
+        const name = String(body.name || "").slice(0, 60).trim();
+        const items = Array.isArray(body.items)
+          ? body.items.map((n) => String(n || "").slice(0, 80).trim()).filter(Boolean).slice(0, 60)
+          : [];
+        if (!lang || !items.length) return reply({ names: [] }, 200, origin);
+        return reply({ names: await getOrBuildNames(name, String(body.country || "").slice(0, 60).trim(), lang, items, env) }, 200, origin);
+      }
       if (body.action === "places") {
         const city = String(body.city || "").slice(0, 60).trim();
         const names = Array.isArray(body.names)
@@ -138,6 +148,71 @@ async function getOrBuildFood(name, country, env) {
   if (kv && food.length >= 4) await kv.put(k, JSON.stringify(food));
   return { food, cached: false };
 }
+// --- what a place is called in the reader's language -----------------------------
+// An Arabic itinerary listing "Khan el-Khalili Bazaar" in Latin script reads like a half-finished
+// translation. These are real names with real local forms (خان الخليلي), not strings to transliterate.
+// Built once per city per language and cached in KV, like everything else here.
+const NAMES_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["items"],
+  properties: {
+    items: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["en", "tr"],
+        properties: {
+          en: { type: "string", description: "the English name exactly as it was given" },
+          tr: { type: "string", description: "what the place is actually called in the target language" },
+        },
+      },
+    },
+  },
+};
+
+async function getOrBuildNames(city, country, lang, items, env) {
+  const kv = env.CITIES;
+  const k = "names:" + lang + ":" + cityKey(city);
+  let have = {};
+  if (kv && cityKey(city)) {
+    const hit = await kv.get(k, "json");
+    if (hit) {
+      have = hit;
+      // everything already known — no call at all
+      if (items.every((n) => have[n])) return items.map((n) => ({ en: n, tr: have[n] }));
+    }
+  }
+  const missing = items.filter((n) => !have[n]);
+  const res = await generateNames(city, country, lang, missing, env.ANTHROPIC_API_KEY);
+  const got = (res && Array.isArray(res.items)) ? res.items : [];
+  got.forEach((x) => { if (x && x.en && x.tr) have[x.en] = x.tr; });
+  if (kv && Object.keys(have).length) await kv.put(k, JSON.stringify(have));
+  return items.filter((n) => have[n]).map((n) => ({ en: n, tr: have[n] }));
+}
+
+function generateNames(city, country, lang, items, apiKey) {
+  const target = lang === "ar" ? "Arabic" : "Spanish";
+  const system =
+    "You give the name a real place is ACTUALLY known by in " + target + " — the name a local would " +
+    "say and a taxi driver would recognise, not a transliteration of the English.\n" +
+    "Return one entry per input, with `en` copied back EXACTLY as given so it can be matched up.\n" +
+    "Use the established local name where one exists (Khan el-Khalili Bazaar -> خان الخليلي; " +
+    "Egyptian Museum -> المتحف المصري; Prado Museum -> Museo del Prado). Where a place genuinely has " +
+    "no name in that language — a restaurant with a foreign brand name, say — keep the original name " +
+    "unchanged rather than inventing or transliterating one. " +
+    (lang === "ar"
+      ? "Arabic must be correct and natural: proper spelling, the definite article where it belongs, " +
+        "no half-translated or garbled forms, no Latin letters mixed in. A wrong Arabic name is worse " +
+        "than leaving the English. "
+      : "") +
+    "Keep every name short — it sits on one line of a phone screen.";
+  return claude(apiKey, "claude-sonnet-5", system,
+    "Places in " + city + (country ? ", " + country : "") + ":\n" + items.join("\n"),
+    NAMES_SCHEMA, 1600);
+}
+
 // --- is this place still open? (Google Places) -----------------------------------
 // A curated list goes stale the moment somewhere shuts, and an itinerary that sends someone to a
 // permanently-closed restaurant is worse than no itinerary. Google is the only source that knows.
