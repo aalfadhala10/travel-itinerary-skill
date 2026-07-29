@@ -532,10 +532,21 @@
   .pg.on{display:block}
   .pg.dayp{margin-top:6px;padding-left:4px}
   #app[dir="rtl"] .pg.dayp{padding-left:0;padding-right:4px}
-  .pgtabs{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:6px;overflow-x:auto;
-    padding:9px 0;margin-bottom:12px;background:var(--paper);-webkit-overflow-scrolling:touch;
+  /* The whole strip stays on screen. Back/Next at the FOOT of a day is a screen and a half below
+     where you're reading, so most people never found it — the arrows here are always in reach. */
+  .pgbar{position:sticky;top:0;z-index:6;padding:9px 0 7px;margin-bottom:12px;background:var(--paper);
     box-shadow:0 1px 0 var(--line)}
+  .pgrow{display:flex;align-items:center;gap:8px}
+  .pgtabs{flex:1;min-width:0;display:flex;align-items:center;gap:6px;overflow-x:auto;
+    -webkit-overflow-scrolling:touch}
   .pgtabs::-webkit-scrollbar{display:none}
+  .pgarrow{flex:0 0 auto;width:36px;height:36px;border:1px solid var(--line);border-radius:10px;
+    background:var(--paper2);color:var(--ink);font-size:22px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center}
+  .pgarrow:hover{border-color:var(--teal);color:var(--teal)}
+  .pgarrow:disabled{opacity:.3;cursor:default}
+  /* which day of how many — the highlighted chip scrolls out of sight on a long trip */
+  .pgcount{margin-top:6px;text-align:center;font-size:14px;font-weight:600;color:var(--muted)}
   .pgtab{flex:0 0 auto;min-width:34px;height:34px;padding:0 11px;border:1px solid var(--line);
     border-radius:9px;background:var(--paper2);color:var(--muted);font-size:14.5px;font-weight:600;
     font-family:var(--ff-data);cursor:pointer;white-space:nowrap}
@@ -570,7 +581,15 @@
   .pgbtn .pgwhat{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .pgbtn.next{text-align:end}
   /* Printing and PDF must never lose a page — show the lot, hide the controls. */
-  @media print{ .pg{display:block !important} .pgtabs,.pgnav{display:none !important} }
+  @media print{ .pg{display:block !important} .pgbar,.pgtabs,.pgnav{display:none !important} }
+  /* A short slide so the pages read as pages sitting next to each other, not a screen swap. */
+  @keyframes pgfwd{from{transform:translateX(16px);opacity:.5}to{transform:none;opacity:1}}
+  @keyframes pgback{from{transform:translateX(-16px);opacity:.5}to{transform:none;opacity:1}}
+  .pg.slidefwd{animation:pgfwd .16s ease-out}
+  .pg.slideback{animation:pgback .16s ease-out}
+  #app[dir="rtl"] .pg.slidefwd{animation-name:pgback}
+  #app[dir="rtl"] .pg.slideback{animation-name:pgfwd}
+  @media (prefers-reduced-motion:reduce){ .pg.slidefwd,.pg.slideback{animation:none} }
   .wxbox{display:none;margin-top:10px}
   .wxbox.show{display:block}
   .wxlabel{font-family:var(--ff-data);font-size:15px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
@@ -3549,9 +3568,19 @@
              prev: ar?'السابق':(es?'Anterior':'Back'),
              next: ar?'التالي':(es?'Siguiente':'Next') };
   }
+  // "Day 3 of 7" under the strip. On a two-week trip the chips scroll and the highlighted one is
+  // the only thing telling you where you are — which is no use once it has scrolled off.
+  function pgCountText(i,dayCount,total){
+    var L=pgLabels();
+    if(i<=0)return L.over;
+    if(!dayCount||i>dayCount)return L.info;
+    if(LANG==='ar')return 'اليوم '+i+' من '+dayCount;
+    if(LANG==='es')return 'Día '+i+' de '+dayCount;
+    return 'Day '+i+' of '+dayCount;
+  }
   function paginate(){
     var out=$('out'); if(!out||!out.classList.contains('show'))return;
-    if(out.querySelector(':scope > .pgtabs'))return;         // already paged
+    if(out.querySelector(':scope > .pgbar'))return;          // already paged
     // Days sit inside a .route wrapper (which only adds a little padding), so descend into it —
     // otherwise there's nothing at this level that looks like a day and there's nothing to split.
     var kids=[], hosts=[];
@@ -3588,7 +3617,24 @@
     });
     if(bud)buckets[0].push(bud);
 
-    var L=pgLabels(), tabs=document.createElement('div'); tabs.className='pgtabs';
+    var L=pgLabels(), rtl=(LANG==='ar');
+    var bar=document.createElement('div'); bar.className='pgbar';
+    var row=document.createElement('div'); row.className='pgrow';
+    var tabs=document.createElement('div'); tabs.className='pgtabs';
+    function arrow(dir){
+      var b=document.createElement('button');
+      b.type='button'; b.className='pgarrow '+(dir<0?'prev':'next');
+      b.setAttribute('data-pgd',dir);
+      b.setAttribute('aria-label',dir<0?L.prev:L.next);
+      b.title=(dir<0?L.prev:L.next);
+      // the glyph follows the reading direction, not the DOM order
+      b.textContent=((dir<0)===rtl)?'›':'‹';
+      return b;
+    }
+    row.appendChild(arrow(-1)); row.appendChild(tabs); row.appendChild(arrow(1));
+    bar.appendChild(row);
+    var count=document.createElement('div'); count.className='pgcount';
+    bar.appendChild(count);
     var pages=buckets.map(function(items,i){
       var pg=document.createElement('div'); pg.setAttribute('data-pg',i);
       // keep the little inset the .route wrapper used to give a day
@@ -3619,7 +3665,7 @@
           '<span class="pgdir">'+esc(L.next)+'</span><span class="pgwhat">'+esc(i<pages.length-1?pgTitle(i+1):'')+'</span></button>';
       pg.appendChild(nav);
     });
-    out.innerHTML=''; out.appendChild(tabs);
+    out.innerHTML=''; out.appendChild(bar);
     pages.forEach(function(pg){ out.appendChild(pg); });
     if(foot){
       // ...and the bottom line rides along on every page, tappable to the full breakdown
@@ -3645,7 +3691,7 @@
     // your trip is not obvious.
     var start=(PAGE!=null?PAGE:1);
     if(PGFRESH){ start=(pages.length>1?1:0); PGFRESH=false; }
-    pgGo(Math.min(start,pages.length-1),true);
+    pgGo(Math.min(start,pages.length-1),true,true); // a fresh render lands, it doesn't slide
   }
   var PGOBS=null;
   function pgWatchNav(){
@@ -3665,12 +3711,21 @@
       targets.forEach(function(t,i){ t.setAttribute('data-pgw','w'+i); PGOBS.observe(t); });
     }catch(e){}
   }
-  function pgGo(i,quiet){
+  function pgGo(i,quiet,noslide){
     var out=$('out'); if(!out)return;
     var pages=out.querySelectorAll(':scope > .pg'); if(!pages.length)return;
-    i=Math.max(0,Math.min(i|0,pages.length-1)); PAGE=i;
-    pages.forEach(function(p,n){ p.classList.toggle('on',n===i); });
+    i=Math.max(0,Math.min(i|0,pages.length-1));
+    var dir=(noslide||PAGE==null||i===PAGE)?0:(i>PAGE?1:-1); PAGE=i;
+    pages.forEach(function(p,n){ p.classList.remove('slidefwd','slideback'); p.classList.toggle('on',n===i); });
+    if(dir&&pages[i]){ void pages[i].offsetWidth; pages[i].classList.add(dir>0?'slidefwd':'slideback'); }
     out.querySelectorAll('.pgtab').forEach(function(t,n){ t.classList.toggle('on',n===i); });
+    // the arrows in the strip are the ones people actually see, so they carry the ends
+    out.querySelectorAll('.pgarrow').forEach(function(a){
+      var d=+a.getAttribute('data-pgd');
+      a.disabled=(d<0?i<=0:i>=pages.length-1);
+    });
+    var cnt=out.querySelector('.pgcount');
+    if(cnt)cnt.textContent=pgCountText(i,+(out.getAttribute('data-days')||0),pages.length);
     var tab=out.querySelectorAll('.pgtab')[i];
     if(tab&&tab.scrollIntoView)try{ tab.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'}); }catch(e){}
     pgWatchNav();
@@ -5478,10 +5533,11 @@
       bud.classList.remove('flash'); void bud.offsetWidth; bud.classList.add('flash');
       return;
     }
+    var pa=e.target.closest('.pgarrow'); if(pa){ if(!pa.disabled)pgGo(PAGE+(+pa.getAttribute('data-pgd'))); return; }
     var pb=e.target.closest('.pgbtn'); if(pb){ if(!pb.disabled)pgGo(PAGE+(+pb.getAttribute('data-pgd'))); return; }
     // "Jump to day" turns a page rather than scrolling to one
     var dn=e.target.closest('.dnav'); if(dn){ var dd=+dn.getAttribute('data-day');
-      if($('out').querySelector(':scope > .pgtabs')){ pgGo(dd); return; }
+      if($('out').querySelector(':scope > .pgbar')){ pgGo(dd); return; }
       var el=document.getElementById('day-'+dd); if(el){ el.classList.remove('dcol'); el.scrollIntoView({behavior:'smooth',block:'start'}); } return; }
     // pick which hotel site to book on (remembered); highlight it, no navigation
     var pv=e.target.closest('button.provchip');
