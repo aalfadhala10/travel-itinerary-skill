@@ -75,7 +75,7 @@ function doGet(e) {
   var sessions = {}, dests = {}, countries = {}, hosts = {}, langs = {}, byDay = {}, misses = {}, missTotal = 0;
   var sessCountry = {}; // one visitor-country per session (from their timezone)
   var chatMsgTotal = 0, chatPlanTotal = 0, chatDests = {}, chatMsgList = [];
-  var chatErrTotal = 0, chatErrs = {}, closedList = {}; // replies that never arrived; places found shut
+  var chatErrTotal = 0, chatErrs = {}, closedList = {}, foodErrs = {}; // replies that never arrived; places found shut
 
   for (var i = 0; i < eRows.length; i++) {
     var r = eRows[i];
@@ -92,6 +92,7 @@ function doGet(e) {
     else if (ev === 'outbound') { outbound++; if (host) hosts[host] = (hosts[host] || 0) + 1; }
     else if (ev === 'miss') { missTotal++; if (dest) misses[dest] = (misses[dest] || 0) + 1; }
     else if (ev === 'chat_err') { chatErrTotal++; if (msg) chatErrs[msg] = (chatErrs[msg] || 0) + 1; }
+    else if (ev === 'food_err') { foodErrs[(dest || '?') + ' — ' + (msg || '')] = (foodErrs[(dest || '?') + ' — ' + (msg || '')] || 0) + 1; }
     else if (ev === 'closed') { if (msg) closedList[msg + (dest ? ' — ' + dest : '')] = (closedList[msg + (dest ? ' — ' + dest : '')] || 0) + 1; }
     if (received instanceof Date) {
       var key = Utilities.formatDate(received, 'GMT', 'yyyy-MM-dd');
@@ -198,6 +199,9 @@ function doGet(e) {
     ]) +
     '<h3>Replies that never reached anyone (the chat failing on a real person)</h3>' +
     '<table><tr><th>What went wrong</th><th class="n">Times</th></tr>' + rowsHtml(topList(chatErrs, 20)) + '</table>' +
+    '<div style="height:24px"></div>' +
+    '<h3>Cities left with too few restaurants (the widening failed)</h3>' +
+    '<table><tr><th>City</th><th class="n">Times</th></tr>' + rowsHtml(topList(foodErrs, 20)) + '</table>' +
     '<div style="height:24px"></div>' +
     '<h3>Places found permanently closed (fix these in the data)</h3>' +
     '<table><tr><th>Place</th><th class="n">Times</th></tr>' + rowsHtml(topList(closedList, 30)) + '</table>' +
