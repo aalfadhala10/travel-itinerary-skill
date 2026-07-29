@@ -350,6 +350,65 @@ s += AR(["أكد الاستشاري أن إنارة الطوارئ في مسار
          "متطلبات المالك، وطلب مراجعة جدول الكميات."])
 build("06_Minutes_of_Meeting_AR.pdf", "MOM-014", "-", s)
 
+# ─────────────────────────────────────────────────────────────
+# RENDER VERIFICATION
+# ─────────────────────────────────────────────────────────────
+# A PDF can extract text perfectly and still render as garbage — a corrupted
+# font subset draws blobs while the text layer stays intact. Checking the
+# extracted text alone does NOT prove the document is readable, so every page
+# is rendered and its ink coverage compared against a recorded baseline.
+#
+# This exists because font subsetting silently destroyed the Arabic page once:
+# ink fell from 0.0249 to 0.0079 while the text layer still looked fine.
+
+INK_BASELINE = {                       # page ink ratio @ 72 dpi, greyscale
+    ("01_Employer_Requirements.pdf", 1): 0.0416,
+    ("02_Scope_of_Works.pdf", 1): 0.0243,
+    ("03_Specification_Div07_08.pdf", 1): 0.0191,
+    ("03_Specification_Div07_08.pdf", 2): 0.0160,
+    ("03_Specification_Div07_08.pdf", 3): 0.0208,
+    ("04_Door_Schedule.pdf", 1): 0.0298,
+    ("04_Door_Schedule.pdf", 2): 0.0049,   # sparse continuation page — legitimately low
+    ("06_Minutes_of_Meeting_AR.pdf", 1): 0.0249,
+}
+TOLERANCE = 0.30
+
+
+def verify():
+    try:
+        import fitz
+    except ImportError:
+        print("\n! pymupdf not installed — render verification SKIPPED")
+        print("  pip install pymupdf   (text extraction alone cannot catch broken glyphs)")
+        return True
+
+    print("\nRender verification (ink coverage vs baseline):")
+    ok = True
+    for f in sorted(OUT.glob("*.pdf")):
+        doc = fitz.open(f)
+        for n, page in enumerate(doc, 1):
+            px = page.get_pixmap(dpi=72, colorspace=fitz.csGRAY)
+            ink = sum(1 for v in px.samples if v < 200) / len(px.samples)
+            base = INK_BASELINE.get((f.name, n))
+            if base is None:
+                print(f"  ?  {f.name:34s} p{n}  ink={ink:.4f}  (no baseline)")
+                continue
+            drift = abs(ink - base) / base
+            good = drift <= TOLERANCE
+            ok &= good
+            print(f"  {'OK' if good else 'FAIL':4s} {f.name:34s} p{n}  "
+                  f"ink={ink:.4f}  base={base:.4f}  drift={drift:+.0%}")
+        doc.close()
+    return ok
+
+
 print(f"\nDone → {OUT}")
 for f in sorted(OUT.iterdir()):
     print(f"  {f.name:38s} {f.stat().st_size/1024:7.1f} KB")
+
+if not verify():
+    raise SystemExit(
+        "\nFAILED: a page no longer renders as expected.\n"
+        "Glyphs are likely broken even if the text layer still extracts.\n"
+        "Open the page and look at it before changing the baseline.")
+print("\nAll pages render as expected.")
