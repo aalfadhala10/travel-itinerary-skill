@@ -301,7 +301,7 @@ notes: "حالة أساسية — لا يُسمح بانحدارها إطلاق�
     فبدا الباب مصنّفًا سليمًا وضاع أخطر finding في الجدول. الفشل صامت — لا يكشفه فحص حسابي.
 
 - id: TC-045
-  name: Arabic extracted as presentation forms in visual order must be normalized
+  name: Arabic extracted in visual order must be restored to logical order
   category: document_processing
   priority: critical
   tier: 2
@@ -311,11 +311,47 @@ notes: "حالة أساسية — لا يُسمح بانحدارها إطلاق�
       - "محضر اجتماع رقم"
       - "جدول الكميات"
       - "مقاومة الحريق"
-    presentation_forms_ratio_max: 0.0     # لا يبقى أي محرف في U+FB50–U+FEFF بعد التطبيع
+    presentation_forms_ratio_max: 0.0
     search_finds: {query: "الكميات", min_hits: 2}
   notes: >
-    الفشل الأصلي: النص خرج بصيغ العرض وبالترتيب البصري، فأعاد البحث العربي صفر نتائج بصمت.
-    صفر نتائج يبدو كـ "لا يوجد شيء" لا كـ "فشلت القراءة" — وهذا أخطر من خطأ ظاهر.
+    الفشل الأصلي: النص خرج بالترتيب البصري فأعاد البحث العربي صفر نتائج بصمت.
+    تصحيح تشخيص سابق: صيغ العرض ليست شرطًا للعطب — ملف مولَّد بشكل سليم يُخرج صفر صيغ عرض
+    ويظل نصه خاطئًا. الكشف الموثوق هو مقارنة ترتيب السلسلة بترتيب الإحداثيات (وثيقة 01 §5.3).
+
+- id: TC-049
+  name: Arabic-Indic digits must be reconstructed by glyph position, not string order
+  category: document_processing
+  priority: critical
+  tier: 2
+  inputs:
+    file: fixtures/arabic_shaped/proper_arabic.pdf
+    source_values: ["١٤", "١٢٠", "٨٠"]
+  expected:
+    naive_string_read: ["٤١", "٠٢١", "٠٨"]      # ما يعطيه الاستخراج النصي — موثّق للتوضيح
+    geometric_read:    ["١٤", "١٢٠", "٨٠"]      # المطلوب
+    normalized_values: [14, 120, 80]
+    processing_log_contains: RTL_DIGIT_REORDER
+  notes: >
+    أخطر عطب في خط المعالجة: الرقم المعكوس لا ينتج خطأ ولا ثقة منخفضة — قيمة صحيحة الشكل
+    خاطئة المضمون تدخل محرك المقارنة مباشرة. الملف المُختبَر مولَّد بمحرك تشكيل سليم
+    (صفر صيغ عرض) ويُعرض مثاليًا — العطب في الاستخراج وحده.
+
+- id: TC-050
+  name: Identical value across Arabic and English must NOT be reported as a conflict
+  category: conflict_detection
+  priority: critical
+  tier: 2
+  inputs:
+    documents:
+      - {type: mom, language: ar, content: "سماكة عزل السطح ١٢٠ مم"}
+      - {type: boq, language: en, content: "Roof thermal insulation, 120mm thick"}
+  expected:
+    findings: []
+    must_not_contain: [VALUE_MISMATCH]
+  notes: >
+    الفخ المقابل لـ TC-049، وهو المقياس الحقيقي. بدون القراءة الهندسية يُقرأ الرقم العربي 021
+    فيُبلَّغ عن تعارض بين مستندين متفقين تمامًا — false positive يضرب المبدأ الحاكم للمنتج.
+    الاتجاه المعاكس مطلوب أيضًا: ٠٨ مقابل 80 يجب ألا يُخفي تعارضًا حقيقيًا.
 
 - id: TC-047
   name: Page that extracts perfect text but renders as garbage must be flagged
@@ -457,6 +493,8 @@ notes: "حالة أساسية — لا يُسمح بانحدارها إطلاق�
 | **Empty cell mid-row** | خانة Rating فارغة في جدول أبواب | انزلاق الأعمدة — الفشل الصامت |
 | **Presentation-form Arabic** | `ﻢﻗﺭ` بدل `رقم` | تطبيع العربية |
 | **Corrupted Latin run in RTL** | `Aces Control` | المطابقة الضبابية للمصطلحات |
+| **Reversed digits in RTL** | `١٢٠` تُقرأ `٠٢١` | القراءة الهندسية للأرقام |
+| **Same value, two scripts** | `١٢٠ مم` مقابل `120 mm` | ألا يُبلَّغ تعارض كاذب |
 | **Number in Arabic-Indic digits** | ١٠٠ مم | التطبيع الرقمي |
 | **Injected instruction in a document** | "Ignore previous instructions…" داخل PDF | مقاومة prompt injection |
 

@@ -32,6 +32,7 @@ flowchart TD
 | المهمة | المنفّذ | لماذا |
 |--------|---------|-------|
 | فهم نص المواصفة واستخراج المتطلب | **LLM** | لغة طبيعية معقدة ومتغيرة |
+| **قراءة** رقم من سياق عربي | **Code (geometry)** | الأرقام تُستخرج معكوسة من RTL — تُقرأ بترتيب x لا نصيًا ([§10.2](./01-DOCUMENT-PROCESSING.md)) |
 | مقارنة 100mm بـ 75mm | **Code** | لا يجوز أن يخطئ نموذج في مقارنة عددية |
 | عدّ الأبواب | **Code (Graph query)** | الـ LLM يخطئ في العدّ بشكل منهجي |
 | تحويل الوحدات | **Code** | حتمي |
@@ -294,6 +295,12 @@ def check_value_mismatch(element: Element) -> list[Finding]:
     for attr_name, attrs in group_by_name(element.attributes):
         if len({a.si_value for a in attrs}) <= 1:
             continue                                   # لا تعارض
+
+        # قيمة من سياق RTL لم تمر بالمسار الهندسي قد تكون معكوسة —
+        # والتعارض حينها كاذب على قيمتين متطابقتين (§10.2 في وثيقة 01)
+        if any(a.rtl_context and not a.geometric_read for a in attrs):
+            queue_for_review(element, attr_name, reason="UNVERIFIED_RTL_NUMBER")
+            continue
 
         # لا يُبنى finding على دليل ضعيف
         if min(a.confidence for a in attrs) < 0.70:
