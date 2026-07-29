@@ -317,6 +317,41 @@ notes: "حالة أساسية — لا يُسمح بانحدارها إطلاق�
     الفشل الأصلي: النص خرج بصيغ العرض وبالترتيب البصري، فأعاد البحث العربي صفر نتائج بصمت.
     صفر نتائج يبدو كـ "لا يوجد شيء" لا كـ "فشلت القراءة" — وهذا أخطر من خطأ ظاهر.
 
+- id: TC-047
+  name: Page that extracts perfect text but renders as garbage must be flagged
+  category: document_processing
+  priority: critical
+  tier: 2
+  inputs:
+    file: fixtures/testpack/06_Minutes_of_Meeting_AR.pdf
+    mutation: corrupt_font_subset      # يُطبَّق أثناء الاختبار لإنتاج العطب
+  expected:
+    text_extraction_succeeds: true     # النص سليم — هذا بيت القصيد
+    page_flagged: RENDER_SUSPECT
+    integrity_check_failed: GLYPHS_MISSING
+    page_confidence_max: 0.60
+    health_report_contains: integrity_warning
+    must_not_report_as: pages_read_ok
+  notes: >
+    فئة الأعطال المعاكسة: الاستخراج ينجح والصفحة غير مقروءة بشريًا.
+    عدّها ضمن "قُرئت بنجاح" صدق تقني وكذب عملي. الحالة مأخوذة من عطب حقيقي:
+    subset_fonts أسقط تغطية الحبر من 0.0249 إلى 0.0079 والنص بقي سليمًا تمامًا.
+
+- id: TC-048
+  name: Sparse but valid page must not be flagged as render-suspect
+  category: document_processing
+  priority: high
+  tier: 2
+  inputs:
+    file: fixtures/testpack/04_Door_Schedule.pdf
+    page: 2                            # ٣ ملاحظات فقط — حبر منخفض مشروع
+  expected:
+    page_flagged: null
+    must_not_contain: [RENDER_SUSPECT]
+  notes: >
+    الفخ المقابل لـ TC-047. حدّ حبر ثابت يرفض هذه الصفحة ظلمًا — لذلك المقياس
+    "حبر لكل محرف" لا "حبر مطلق".
+
 - id: TC-046
   name: Corrupted Latin run inside Arabic paragraph must still match its term
   category: entity_resolution

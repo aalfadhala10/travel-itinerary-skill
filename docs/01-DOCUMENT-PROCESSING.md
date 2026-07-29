@@ -22,7 +22,8 @@ flowchart TD
     D --> E{PDF?}
     E -->|Yes| F[Detect Text Layer]
     E -->|No| G[Native Extractor<br/>docx / xlsx]
-    F -->|Has text| H[Native PDF Extraction]
+    F -->|Has text| V[Visual Integrity Check<br/>fonts · glyphs · ink]
+    V --> H[Native PDF Extraction]
     F -->|Scanned| I[Image Preprocessing]
     I --> J[OCR ar+en]
     H --> K[Layout Analysis]
@@ -94,6 +95,70 @@ def classify_pdf_page(page) -> Literal["digital", "scanned", "hybrid"]:
 - **hybrid** → استخراج النص الرقمي **و** OCR للمناطق الصورية، ثم دمج مع إزالة التكرار.
 
 القرار يُتخذ **لكل صفحة** لا لكل ملف — كثير من المستندات تخلط صفحات رقمية مع مرفقات ممسوحة.
+
+---
+
+## 3.1 Visual Integrity Check
+
+> **نجاح استخراج النص ليس دليلًا على أن المستند مقروء.**
+
+الفرضية الضمنية في كل ما سبق أن الفشل يعني **غياب النص**. لكن توجد فئة أعطال معاكسة وأخطر:
+صفحة تُخرج نصًا **سليمًا تمامًا** بينما هي بصريًا غير مقروءة للبشر — خط مضمّن تالف، أو خط مفقود
+استبدله العارض، أو ملف عربي عولج بأداة لا تعرف RTL.
+
+```
+ما يستخرجه النظام:  محضر اجتماع رقم ١٤ — اجتماع التنسيق الفني   ✔ سليم
+ما يراه المهندس:     بقع سوداء متناثرة                          ✖ غير مقروء
+```
+
+هذا يحدث فعلًا: PDF مولّد من CAD بخط غير مضمّن، ملف ضُغط بأداة أفسدت تفريع الخطوط
+(font subsetting)، أو مستند مرّ على محوّل صيغ رديء. والنظام سيقول **«٥٢٠ صفحة قُرئت بنجاح»**
+وهو صادق تقنيًا — وهذا أسوأ أنواع الصدق.
+
+### الفحوصات — بترتيب التكلفة
+
+تُطبَّق على الصفحات `digital` و `hybrid` فقط. الصفحات `scanned` صور أصلًا، فما يراه المستخدم
+هو نفسه ما رآه الـ OCR.
+
+| # | الفحص | التكلفة | ما يكشفه |
+|---|-------|---------|----------|
+| 1 | **Font embedding** — كل خط يستخدمه نص الصفحة مضمَّن، أو من الـ base-14 القياسية | مجانية (بنية PDF) | خط مفقود سيستبدله العارض بخط آخر |
+| 2 | **Glyph presence** — معرّفات الرموز المُشار إليها موجودة فعلًا داخل برنامج الخط المضمَّن | مجانية (بنية PDF) | تفريع خط تالف — السبب الدقيق للعطب أعلاه |
+| 3 | **Ink per character** — نسبة الحبر إلى عدد المحارف المستخرجة ضمن النطاق المتوقع لحجم الخط السائد | تصيير 72 dpi رمادي | كل ما فات الفحصين، بما فيه انهيار التخطيط |
+
+```python
+def visual_integrity(page) -> IntegrityResult:
+    if page.kind == "scanned":
+        return IntegrityResult(ok=True, reason="image page")
+
+    for font in page.fonts_used_by_text():
+        if not font.embedded and not font.is_base14:
+            return IntegrityResult(False, "FONT_NOT_EMBEDDED", font.name)
+        if font.embedded and font.missing_glyphs(page.referenced_gids()):
+            return IntegrityResult(False, "GLYPHS_MISSING", font.name)
+
+    chars = len(page.extract_text())
+    if chars > 100:
+        ink = render_ink_ratio(page, dpi=72)          # نسبة البكسل غير الأبيض
+        if ink / chars < INK_PER_CHAR_FLOOR:          # مُعايَر حسب حجم الخط السائد
+            return IntegrityResult(False, "RENDER_SUSPECT",
+                                   f"ink/char={ink/chars:.2e}")
+    return IntegrityResult(ok=True)
+```
+
+> **لماذا «حبر لكل محرف» ولا خط أساس ثابت:** لا يوجد baseline لمستند عميل لم نره من قبل.
+> النسبة بين الحبر وعدد المحارف **ذاتية المرجع** — الصفحة تُقاس بنفسها. أما خطوط الأساس المسجّلة
+> فتصلح فقط لملفات الاختبار الثابتة (انظر `tests/fixtures/`)، حيث الملف معروف ولا يتغير.
+
+### السلوك عند الفشل
+
+- الصفحة تُعلَّم `render_suspect = true`، وتُخزَّن صورتها المصيَّرة.
+- تظهر في **Document Health Check** بتصنيف منفصل — ليست «مقروءة» وليست «فاشلة القراءة».
+- الواجهة تعرض **الصورة بجانب النص المستخرج** ليقرر المستخدم بنفسه في ثانيتين.
+- ثقة الصفحة تُسقَّف عند 0.60 ⇒ لا يُبنى عليها finding عالي الشدة (§14).
+
+> **قاعدة:** النظام لا يحكم بأن المستند تالف — لأنه قد يكون فحصًا زائفًا. بل يقول:
+> **«هذه الصفحة قد لا تبدو لك كما قرأتها. تحقق.»** والقرار للمستخدم.
 
 ---
 
@@ -444,13 +509,14 @@ Finding
     "files_processed": 27,
     "files_failed": 0,
     "pages_total": 520,
-    "pages_read_ok": 499,
+    "pages_read_ok": 497,
     "pages_low_quality": 18,
     "pages_unreadable": 3,
+    "pages_render_suspect": 2,
     "tables_detected": 47,
     "tables_low_confidence": 4,
     "languages": ["ar", "en"],
-    "pages_needing_review": 12
+    "pages_needing_review": 14
   },
   "by_document": [
     {
@@ -473,11 +539,15 @@ Finding
       "avg_confidence": 0.71,
       "issues": [
         {"page": 44, "code": "LOW_SCAN_QUALITY", "detail": "scan_quality 0.31"},
-        {"page": 57, "code": "NO_TEXT_EXTRACTED", "detail": "0 characters"}
+        {"page": 57, "code": "NO_TEXT_EXTRACTED", "detail": "0 characters"},
+        {"page": 61, "code": "GLYPHS_MISSING",
+         "detail": "DejaVuSans subset: 214 referenced glyphs absent",
+         "note": "النص يُستخرج سليمًا لكن الصفحة قد تبدو غير مقروءة"}
       ]
     }
   ],
-  "coverage_warning": "3 صفحات لم تُقرأ — نتائج المراجعة قد لا تشملها"
+  "coverage_warning": "3 صفحات لم تُقرأ — نتائج المراجعة قد لا تشملها",
+  "integrity_warning": "صفحتان استُخرج نصهما بنجاح لكنهما قد لا تُعرضان بشكل صحيح — يُنصح بفتحهما"
 }
 ```
 
@@ -486,6 +556,10 @@ Finding
 - الصفحات غير المقروءة تُعرض **بأسمائها وأرقامها**، لا كرقم مجمّع.
 - زر مباشر: "عرض الصفحة" و "رفع نسخة أوضح".
 - **تحذير دائم في التقرير النهائي** إذا تجاوزت الصفحات غير المقروءة 2% — ولا يُخفى.
+- الصفحات `render_suspect` تُعرض في **فئة ثالثة مستقلة** — لا مع «مقروءة» ولا مع «فاشلة».
+  دمجها مع أي منهما يضلّل: هي مقروءة آليًا وغير مقروءة بشريًا في آن.
+- عرضها يكون **صورة الصفحة بجانب النص المستخرج** — المقارنة البصرية تحسم في ثانيتين
+  ما لا يحسمه أي وصف نصي.
 
 ---
 
@@ -493,10 +567,15 @@ Finding
 
 ```
 page_confidence   = weighted_avg(word_confidences) × scan_quality_factor
+                    capped at 0.60 if render_suspect            ← §3.1
 block_confidence  = page_confidence × structure_certainty
 table_confidence  = block_confidence × sanity_check_pass_rate
 value_confidence  = table_confidence × normalization_certainty
 ```
+
+> **لماذا السقف وليس الصفر:** الصفحة المشبوهة بصريًا نصُّها غالبًا صحيح — المشكلة في العرض لا في
+> المحتوى. إسقاطها كليًا يفقدنا معلومات حقيقية؛ وقبولها بثقة كاملة يبني نتائج حرجة على دليل
+> لا يستطيع المستخدم التحقق منه بعينه. السقف 0.60 يبقيها مفيدة ويمنعها من إنتاج finding حرج.
 
 | Range | التصنيف | السلوك |
 |-------|---------|--------|
@@ -549,8 +628,12 @@ value_confidence  = table_confidence × normalization_certainty
 | OCR يفشل كليًا على صفحة | تسجيل `NO_TEXT_EXTRACTED` + fallback إلى Vision LLM (ضمن حد مسموح) |
 | ملف بلغة غير مدعومة | إبلاغ ومعالجة أفضل-جهد مع تعليم واضح |
 | نفاد مهلة المعالجة | حفظ ما اكتمل + استئناف من آخر مرحلة ناجحة (idempotent jobs) |
+| **نص يُستخرج بنجاح من صفحة معطوبة بصريًا** | `render_suspect` + صورة الصفحة + سقف ثقة 0.60 — **لا يُعدّ نجاحًا** (§3.1) |
 
 **المبدأ الحاكم للأعطال:** الفشل الصامت ممنوع. أي محتوى لم يُقرأ يجب أن يظهر في Health Check وفي تحذير التقرير النهائي.
+
+**وتوسعته:** أي محتوى **قُرئ بنجاح ولا يمكن للمستخدم التحقق منه بعينه** يجب أن يظهر أيضًا.
+«قرأناه» و«تستطيع أن تراه» ادعاءان مختلفان، ولا يُخلط بينهما.
 
 ---
 
