@@ -409,6 +409,15 @@
 
   .picpop{position:fixed;z-index:30;max-width:240px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .15s}
   .picpop.show{opacity:1}
+  .dhint{margin:2px 0 8px;color:var(--muted);font-size:14px;line-height:1.5}
+  /* same flex shape as a .slot, so each caption sits exactly over its column of buttons */
+  .dcap{display:flex;gap:11px;align-items:flex-end;padding:0 0 4px}
+  .dcap .t{width:96px;flex-shrink:0}
+  .dcap .d{flex:1;min-width:0}
+  .dcapw{flex:0 0 auto;width:30px;text-align:center;color:var(--muted);font-size:14px;
+    font-weight:600;white-space:nowrap;overflow:visible}
+  .dcappic{display:none}                  /* the photo button only exists on touch, so its caption does too */
+  @media (hover:none){.dcappic{display:block}}
   .picbtn{display:none;flex:0 0 auto;width:30px;height:30px;padding:0;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;align-items:center;justify-content:center;opacity:.75}
   .picbtn svg{width:16px;height:16px}
   .picbtn.on{border-color:var(--teal);color:var(--teal);opacity:1}
@@ -533,6 +542,13 @@
   .pgcost:hover{border-color:var(--teal)}
   .pgcostk{font-size:14.5px;color:var(--muted)}
   .pgcostv{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+  .pgcostmore{flex:1 0 100%;margin-top:4px;font-size:14px;color:var(--teal);font-weight:600}
+  .pgcostmore::after{content:' \203A'}
+  #app[dir="rtl"] .pgcostmore::after{content:' \2039'}
+  /* mark where you landed, so the jump reads as an answer rather than a glitch */
+  @keyframes budflash{0%{box-shadow:0 0 0 0 var(--teal)}100%{box-shadow:0 0 0 12px rgba(0,0,0,0)}}
+  .bud.flash{animation:budflash 1.2s ease-out}
+  @media (prefers-reduced-motion:reduce){.bud.flash{animation:none}}
   .pgbtn{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;
     background:var(--paper2);color:var(--ink);font-family:var(--ff-body);font-size:14px;
     cursor:pointer;text-align:start}
@@ -3603,9 +3619,11 @@
         if(last){
           var lbl=last.children[0], amt=last.querySelector('.amt');
           var bar=document.createElement('button');
-          bar.type='button'; bar.className='pgcost'; bar.setAttribute('data-pgt','0');
+          bar.type='button'; bar.className='pgcost';
+          var more=LANG==='ar'?'شوف التفاصيل':(LANG==='es'?'Ver el desglose':'See the breakdown');
           bar.innerHTML='<span class="pgcostk">'+esc((lbl&&lbl.textContent||'').trim())+'</span>'+
-                        '<span class="pgcostv">'+esc((amt&&amt.textContent||'').trim())+'</span>';
+                        '<span class="pgcostv">'+esc((amt&&amt.textContent||'').trim())+'</span>'+
+                        '<span class="pgcostmore">'+esc(more)+'</span>';
           foot.insertBefore(bar,foot.firstChild);
         }
       }
@@ -3843,6 +3861,20 @@
   // No Arabic filter here any more: stray Arabic captions from the city-builder are already
   // stripped where that data is ingested, and this was then eating the deliberate translations.
   function areaLabel(a){ a=(a||'').trim(); if(!a)return ''; if(a.split(/\s+/).length>4||a.length>28)return ''; return ' <span class="area">· '+esc(a)+'</span>'; }
+  // Each day is its own page now, and the icons beside a place mean nothing until somebody tells
+  // you. This shows the actual buttons next to what they do, at the top of every day.
+  function dayHint(o){
+    var ar=LANG==='ar', es=LANG==='es';
+    var tapName=ar?'اضغط الاسم يفتح في خرائط قوقل':(es?'Toca un nombre para abrirlo en Google Maps':'Tap a name to open it in Google Maps');
+    var swapTxt=ar?'تبديل':(es?'Cambiar':'Swap');
+    var picTxt=ar?'صورة':(es?'Foto':'Photo');
+    // The captions sit in the same flex row as a slot, so each word lands directly over its own
+    // column of buttons — a legend off to the side is a puzzle you have to solve first.
+    return '<div class="dhint">'+esc(tapName)+'</div>'+
+      '<div class="dcap"><span class="t"></span><span class="d"></span>'+
+        '<span class="dcapw dcappic">'+esc(picTxt)+'</span>'+
+        '<span class="dcapw">'+esc(swapTxt)+'</span></div>';
+  }
   function eslot(tm,poi,city,sk,o,ck){
     // print the local name, but search Maps for the English one — it resolves far more reliably
     return '<div class="slot" data-sk="'+sk+'"><div class="t">'+tm+'</div>'
@@ -4016,7 +4048,7 @@
         +'<button type="button" class="dayshuffle" data-shuf="'+ck+'|'+d+'" title="'+o.shuffleDay+'">'+SHUFSVG+'<span>'+o.shuffleDay+'</span></button>'
         +'<span class="dchev" aria-hidden="true"></span></div>'
         +'<div class="dsum">'+sum+'</div>'
-        +'<div class="dbody">'+body+'</div></div>';
+        +'<div class="dbody">'+dayHint(o)+body+'</div></div>';
     }
     return html;
   }
@@ -5349,7 +5381,17 @@
     var av=e.target.closest('.tuneanother'); if(av){ anotherVersion(); return; }
     var sp=e.target.closest('.sugpick'); if(sp){ pickSuggestion(sp.getAttribute('data-place')); return; }
     // page controls come first — they sit above everything else on the plan
-    var pt=e.target.closest('.pgtab,.pgcost'); if(pt){ pgGo(+pt.getAttribute('data-pgt')); return; } // the cost bar opens the breakdown
+    var pt=e.target.closest('.pgtab'); if(pt){ pgGo(+pt.getAttribute('data-pgt')); return; }
+    // The cost bar goes to the breakdown ITSELF and flashes it. Sending people to the top of some
+    // page instead just looks like the app jumped for no reason.
+    var pc=e.target.closest('.pgcost');
+    if(pc){
+      var bud=$('out').querySelector('.bud'); if(!bud)return;
+      var bpg=bud.closest('.pg'); if(bpg)pgGo(+bpg.getAttribute('data-pg'),true);
+      try{ bud.scrollIntoView({behavior:'smooth',block:'center'}); }catch(err){ try{bud.scrollIntoView();}catch(e2){} }
+      bud.classList.remove('flash'); void bud.offsetWidth; bud.classList.add('flash');
+      return;
+    }
     var pb=e.target.closest('.pgbtn'); if(pb){ if(!pb.disabled)pgGo(PAGE+(+pb.getAttribute('data-pgd'))); return; }
     // "Jump to day" turns a page rather than scrolling to one
     var dn=e.target.closest('.dnav'); if(dn){ var dd=+dn.getAttribute('data-day');
