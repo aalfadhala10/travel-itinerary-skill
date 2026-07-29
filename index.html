@@ -500,6 +500,35 @@
   #app[dir="rtl"] .dnavlbl{letter-spacing:normal;font-family:var(--ff-body)}
   .dnav{flex:0 0 auto;width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:var(--paper2);color:var(--ink);font-size:13px;font-weight:600;font-family:var(--ff-data);cursor:pointer}
   .dnav:hover{border-color:var(--teal);color:var(--teal)}
+  /* --- paged plan: one day at a time instead of one endless scroll --- */
+  .pg{display:none}
+  .pg.on{display:block}
+  .pg.dayp{margin-top:6px;padding-left:4px}
+  #app[dir="rtl"] .pg.dayp{padding-left:0;padding-right:4px}
+  .pgtabs{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:6px;overflow-x:auto;
+    padding:9px 0;margin-bottom:12px;background:var(--paper);-webkit-overflow-scrolling:touch;
+    box-shadow:0 1px 0 var(--line)}
+  .pgtabs::-webkit-scrollbar{display:none}
+  .pgtab{flex:0 0 auto;min-width:34px;height:34px;padding:0 11px;border:1px solid var(--line);
+    border-radius:9px;background:var(--paper2);color:var(--muted);font-size:13px;font-weight:600;
+    font-family:var(--ff-data);cursor:pointer;white-space:nowrap}
+  #app[dir="rtl"] .pgtab{font-family:var(--ff-body)}
+  .pgtab:hover{border-color:var(--teal);color:var(--teal)}
+  .pgtab.on{background:var(--teal);border-color:var(--teal);color:var(--paper)}
+  /* bottom margin clears the floating "Edit this trip" button, which sat right on top of Next */
+  .pgnav{display:flex;align-items:center;gap:10px;margin-top:18px;margin-bottom:74px}
+  .pgbtn{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;
+    background:var(--paper2);color:var(--ink);font-family:var(--ff-body);font-size:14px;
+    cursor:pointer;text-align:start}
+  .pgbtn:hover{border-color:var(--teal)}
+  .pgbtn:disabled{opacity:.35;cursor:default}
+  .pgbtn .pgdir{display:block;font-family:var(--ff-data);font-size:10px;letter-spacing:1px;
+    text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+  #app[dir="rtl"] .pgbtn .pgdir{letter-spacing:normal;font-family:var(--ff-body)}
+  .pgbtn .pgwhat{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pgbtn.next{text-align:end}
+  /* Printing and PDF must never lose a page — show the lot, hide the controls. */
+  @media print{ .pg{display:block !important} .pgtabs,.pgnav{display:none !important} }
   .wxbox{display:none;margin-top:10px}
   .wxbox.show{display:block}
   .wxlabel{font-family:var(--ff-data);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
@@ -2951,7 +2980,7 @@
         '<span class="sugtext"><b>'+esc(s.place)+(s.country?'<span class="sugco">'+esc(s.country)+'</span>':'')+'</b><span class="sugwhy">'+esc(s.why||'')+'</span></span><span class="suggo">→</span></button>';
     }).join('');
     var html='<div class="sugcard"><div class="sughead">'+esc(intro)+'</div>'+cards+'<div class="sugfoot">'+esc(hint)+'</div></div>';
-    var out=$('out'); out.innerHTML=html; out.classList.add('show'); out.scrollIntoView({behavior:'smooth',block:'start'});
+    var out=$('out'); out.innerHTML=html; out.classList.add('show'); paginate(); out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   function pickSuggestion(place){
     var ar=LANG==='ar',es=LANG==='es';
@@ -3425,7 +3454,105 @@
     var chips=''; for(var d=1;d<=total;d++)chips+='<button type="button" class="dnav" data-day="'+d+'">'+d+'</button>';
     return '<div class="daynav"><span class="dnavlbl">'+o.jumpTo+'</span>'+chips+'</div>';
   }
-  function rerenderKeep(){ var y=window.pageYOffset||document.documentElement.scrollTop||0; KEEPSCROLL=true; if(LASTPLAN)LASTPLAN(); window.scrollTo(0,y); } // re-render without jumping to top
+  // --- the plan as pages, not one endless scroll ------------------------------------------------
+  // The plan is still built as one block of HTML; this splits the finished thing into pages
+  // afterwards, so nothing about how a day is generated had to change. Overview first, then one
+  // page per day, then everything you read once (packing, weather, phrases, booking) at the end.
+  var PAGE=0;
+  function pgLabels(){
+    var ar=LANG==='ar', es=LANG==='es';
+    return { over: ar?'الرحلة':(es?'Viaje':'Trip'),
+             info: ar?'معلومات':(es?'Info':'Info'),
+             prev: ar?'السابق':(es?'Anterior':'Back'),
+             next: ar?'التالي':(es?'Siguiente':'Next') };
+  }
+  function paginate(){
+    var out=$('out'); if(!out||!out.classList.contains('show'))return;
+    if(out.querySelector(':scope > .pgtabs'))return;         // already paged
+    // Days sit inside a .route wrapper (which only adds a little padding), so descend into it —
+    // otherwise there's nothing at this level that looks like a day and there's nothing to split.
+    var kids=[], hosts=[];
+    [].slice.call(out.children).forEach(function(k){
+      if(k.classList.contains('route')){ hosts.push(k); kids=kids.concat([].slice.call(k.children)); }
+      else kids.push(k);
+    });
+    if(!kids.some(function(k){ return k.classList.contains('day'); }))return; // nothing to page
+    hosts.forEach(function(h){ if(h.parentNode)h.parentNode.removeChild(h); });
+    // Bucket: everything before day 1 is the overview; each day opens a page and keeps whatever
+    // follows it (a transfer card belongs to the day you travel), until the next day starts.
+    var buckets=[[]], cur=0;
+    kids.forEach(function(k){
+      if(k.classList.contains('day')){ buckets.push([]); cur++; }
+      buckets[cur].push(k);
+    });
+    // ...except on the LAST day, where what follows isn't a transfer — it's the packing list and
+    // the rest of the trip-wide cards. Those get a page of their own.
+    var last=buckets[buckets.length-1], tail=[];
+    if(last&&last.length>1&&last[0].classList.contains('day')){ tail=last.splice(1); }
+    if(tail.length)buckets.push(tail);
+    var dayCount=buckets.length-1-(tail.length?1:0);
+    // "Change something?" and Save/Share/Print are trip-level — they belong where you land, not
+    // buried behind the last day. Everything else stays where the plan put it.
+    buckets.forEach(function(items,bi){
+      if(!bi)return;
+      for(var j=items.length-1;j>=0;j--){
+        if(items[j].classList.contains('editbar')||items[j].classList.contains('actions'))
+          buckets[0].push(items.splice(j,1)[0]);
+      }
+    });
+
+    var L=pgLabels(), tabs=document.createElement('div'); tabs.className='pgtabs';
+    var pages=buckets.map(function(items,i){
+      var pg=document.createElement('div'); pg.setAttribute('data-pg',i);
+      // keep the little inset the .route wrapper used to give a day
+      pg.className='pg'+((items[0]&&items[0].classList.contains('day'))?' dayp':'');
+      items.forEach(function(el){ pg.appendChild(el); });
+      // a day IS the page now, so it's never collapsed
+      pg.querySelectorAll('.day.dcol').forEach(function(d){ d.classList.remove('dcol'); });
+      var t=document.createElement('button');
+      t.type='button'; t.className='pgtab'; t.setAttribute('data-pgt',i);
+      t.textContent=(i===0?L.over:(tail.length&&i===buckets.length-1?L.info:String(i)));
+      tabs.appendChild(t);
+      return pg;
+    });
+    // what's on the next page, so you can see where the trip is going before you tap
+    function pgTitle(i){
+      var pg=pages[i]; if(!pg)return '';
+      if(i===0)return L.over;
+      if(tail.length&&i===pages.length-1)return L.info;
+      var lbl=pg.querySelector('.dlabel');
+      return lbl?lbl.textContent.trim():(L.next+' '+i);
+    }
+    pages.forEach(function(pg,i){
+      var nav=document.createElement('div'); nav.className='pgnav';
+      nav.innerHTML=
+        '<button type="button" class="pgbtn prev" data-pgd="-1"'+(i===0?' disabled':'')+'>'+
+          '<span class="pgdir">'+esc(L.prev)+'</span><span class="pgwhat">'+esc(i?pgTitle(i-1):'')+'</span></button>'+
+        '<button type="button" class="pgbtn next" data-pgd="1"'+(i===pages.length-1?' disabled':'')+'>'+
+          '<span class="pgdir">'+esc(L.next)+'</span><span class="pgwhat">'+esc(i<pages.length-1?pgTitle(i+1):'')+'</span></button>';
+      pg.appendChild(nav);
+    });
+    out.innerHTML=''; out.appendChild(tabs);
+    pages.forEach(function(pg){ out.appendChild(pg); });
+    out.setAttribute('data-days',dayCount);
+    pgGo(Math.min(PAGE,pages.length-1),true);
+  }
+  function pgGo(i,quiet){
+    var out=$('out'); if(!out)return;
+    var pages=out.querySelectorAll(':scope > .pg'); if(!pages.length)return;
+    i=Math.max(0,Math.min(i|0,pages.length-1)); PAGE=i;
+    pages.forEach(function(p,n){ p.classList.toggle('on',n===i); });
+    out.querySelectorAll('.pgtab').forEach(function(t,n){ t.classList.toggle('on',n===i); });
+    var tab=out.querySelectorAll('.pgtab')[i];
+    if(tab&&tab.scrollIntoView)try{ tab.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'}); }catch(e){}
+    if(!quiet){ // a new page starts at the top of that page, not wherever you were on the last one
+      var top=out.getBoundingClientRect().top+(window.pageYOffset||0)-8;
+      window.scrollTo({top:Math.max(0,top),behavior:'smooth'});
+    }
+  }
+  // Re-render without jumping to the top — and without throwing you back to page 1 while the
+  // background updates (restaurants, closures, Arabic names) land under you.
+  function rerenderKeep(){ var y=window.pageYOffset||document.documentElement.scrollTop||0; KEEPSCROLL=true; if(LASTPLAN)LASTPLAN(); window.scrollTo(0,y); }
   // Nights-per-city editor — the user decides how the total days split across cities (e.g. 8 Phuket / 4 Bangkok, not forced even).
   function nightsEditor(ms,dc){
     if(!ms||ms.length<2)return '';
@@ -4534,7 +4661,7 @@
     if(access){ acts+='<button class="act" type="button" data-act="copy">'+o.copy+'</button><button class="act" type="button" data-act="print">'+o.print+'</button>'; }
     html+=acts+'</div>';
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
-    var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden'); try{armFbNudge();syncFab();}catch(e){}
+    var out=$('out'); out.innerHTML=html; out.classList.add('show'); paginate(); $('editFab').classList.remove('is-hidden'); try{armFbNudge();syncFab();}catch(e){}
     redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
     ensureFood(keys,dc); checkOpen(keys); ensureNames(keys);
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
@@ -4905,13 +5032,13 @@
     if(access){ acts+='<button class="act" type="button" data-act="copy">'+o.copy+'</button><button class="act" type="button" data-act="print">'+o.print+'</button>'; }
     html+=acts+'</div>';
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
-    var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden'); try{armFbNudge();syncFab();}catch(e){}
+    var out=$('out'); out.innerHTML=html; out.classList.add('show'); paginate(); $('editFab').classList.remove('is-hidden'); try{armFbNudge();syncFab();}catch(e){}
     redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
     if(m1){ var fk=multi?[keyOf(m1),keyOf(m2)]:[keyOf(m1)];
       ensureFood(fk, multi?[d1,d2]:[days]); checkOpen(fk); ensureNames(fk); }
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
-  $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYADD={}; ROUTEDC=null; STAYAREA='';
+  $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYADD={}; ROUTEDC=null; STAYAREA=''; PAGE=0;
     try{ $('lastTrip').classList.add('is-hidden'); }catch(e){} plan(); });
 
   function toast(msg){var el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove('show');},1800);}
@@ -5098,7 +5225,13 @@
     var tb=e.target.closest('.tunebtn'); if(tb){ retuneDays(+tb.getAttribute('data-tune')); return; }
     var av=e.target.closest('.tuneanother'); if(av){ anotherVersion(); return; }
     var sp=e.target.closest('.sugpick'); if(sp){ pickSuggestion(sp.getAttribute('data-place')); return; }
-    var dn=e.target.closest('.dnav'); if(dn){ var el=document.getElementById('day-'+dn.getAttribute('data-day')); if(el){ el.classList.remove('dcol'); el.scrollIntoView({behavior:'smooth',block:'start'}); } return; }
+    // page controls come first — they sit above everything else on the plan
+    var pt=e.target.closest('.pgtab'); if(pt){ pgGo(+pt.getAttribute('data-pgt')); return; }
+    var pb=e.target.closest('.pgbtn'); if(pb){ if(!pb.disabled)pgGo(PAGE+(+pb.getAttribute('data-pgd'))); return; }
+    // "Jump to day" turns a page rather than scrolling to one
+    var dn=e.target.closest('.dnav'); if(dn){ var dd=+dn.getAttribute('data-day');
+      if($('out').querySelector(':scope > .pgtabs')){ pgGo(dd); return; }
+      var el=document.getElementById('day-'+dd); if(el){ el.classList.remove('dcol'); el.scrollIntoView({behavior:'smooth',block:'start'}); } return; }
     // pick which hotel site to book on (remembered); highlight it, no navigation
     var pv=e.target.closest('button.provchip');
     if(pv){ var kind=(pv.parentNode.getAttribute('data-provkind')||'hotel'); try{ localStorage.setItem('bosla_'+kind+'site',pv.getAttribute('data-site')); }catch(err){} pv.parentNode.querySelectorAll('.provchip').forEach(function(c){c.classList.remove('on');}); pv.classList.add('on'); return; }
