@@ -19,6 +19,9 @@
 | 06 | [System Architecture](./06-SYSTEM-ARCHITECTURE.md) | المكونات، الـ Stack، Deployment، Security، On-Premises | Architects / DevOps |
 | 07 | [Test Case Library](./07-TEST-CASE-LIBRARY.md) | قاعدة بيانات حالات الاختبار وصيغتها وطريقة تنميتها | QA + كل الفريق |
 
+**بالإضافة:** [`tests/fixtures/`](../tests/fixtures/) — حزمة اختبار مصطنعة قابلة لإعادة التوليد
+(TP-001) بأخطاء مزروعة وفخاخ معروفة، ونتيجة أول تشغيل عليها.
+
 ---
 
 ## كيف تُقرأ هذه الوثائق

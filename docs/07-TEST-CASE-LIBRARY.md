@@ -278,6 +278,59 @@ notes: "حالة أساسية — لا يُسمح بانحدارها إطلاق�
     findings: []
     must_not_contain: [VALUE_MISMATCH]
   notes: "Rev A ملغى — لا يُقارَن به."
+
+# ── الحالات التالية جاءت من فشل حقيقي في أول تشغيل على حزمة TP-001 ──
+
+- id: TC-044
+  name: Empty table cell must not collapse and shift the row
+  category: document_processing
+  priority: critical
+  tier: 2
+  inputs: {file: fixtures/testpack/04_Door_Schedule.pdf}
+  expected:
+    table_rows_all_match_header_count: true
+    row_FD-07:
+      fire_rated: "Yes"
+      rating: null            # الخانة فارغة فعلاً — يجب أن تبقى فارغة
+      self_closer: "Yes"
+    findings:
+      - {check_type: MISSING_ATTRIBUTE, element: FD-07, attribute: fire_rating}
+    must_not_contain_values: {rating: "Yes"}
+  notes: >
+    الفشل الأصلي: صف FD-07 خرج بـ 7 حقول بدل 8، فقُرئت قيمة Self Closer على أنها Rating،
+    فبدا الباب مصنّفًا سليمًا وضاع أخطر finding في الجدول. الفشل صامت — لا يكشفه فحص حسابي.
+
+- id: TC-045
+  name: Arabic extracted as presentation forms in visual order must be normalized
+  category: document_processing
+  priority: critical
+  tier: 2
+  inputs: {file: fixtures/testpack/06_Minutes_of_Meeting_AR.pdf}
+  expected:
+    normalized_text_contains:
+      - "محضر اجتماع رقم"
+      - "جدول الكميات"
+      - "مقاومة الحريق"
+    presentation_forms_ratio_max: 0.0     # لا يبقى أي محرف في U+FB50–U+FEFF بعد التطبيع
+    search_finds: {query: "الكميات", min_hits: 2}
+  notes: >
+    الفشل الأصلي: النص خرج بصيغ العرض وبالترتيب البصري، فأعاد البحث العربي صفر نتائج بصمت.
+    صفر نتائج يبدو كـ "لا يوجد شيء" لا كـ "فشلت القراءة" — وهذا أخطر من خطأ ظاهر.
+
+- id: TC-046
+  name: Corrupted Latin run inside Arabic paragraph must still match its term
+  category: entity_resolution
+  priority: high
+  tier: 2
+  inputs:
+    extracted_text: "طلب الاستشاري توضيح موقف نظام التحكم في الدخول (Aces Control)"
+    requirement_source: "An electronic access control system shall be provided"
+  expected:
+    linked_term: access_control
+    evidence_links_min: 1
+  notes: >
+    الفشل الأصلي: "Access Control" خرجت "Aces Control" (حرفان مفقودان) من فقرة RTL.
+    المطابقة الحرفية تُسقط الدليل المؤيد للـ finding بصمت. تُطلب مطابقة ضبابية ≤ 2.
 ```
 
 ### 4.6 Q&A
@@ -366,6 +419,9 @@ notes: "حالة أساسية — لا يُسمح بانحدارها إطلاق�
 | **Value in a footnote** | "* thickness may be reduced to 75mm where…" | السياق الكامل |
 | **Negation** | "Fire rating is NOT required for…" | فهم النفي |
 | **Table with merged cells** | BOQ بخلايا مدمجة | استخراج الجداول |
+| **Empty cell mid-row** | خانة Rating فارغة في جدول أبواب | انزلاق الأعمدة — الفشل الصامت |
+| **Presentation-form Arabic** | `ﻢﻗﺭ` بدل `رقم` | تطبيع العربية |
+| **Corrupted Latin run in RTL** | `Aces Control` | المطابقة الضبابية للمصطلحات |
 | **Number in Arabic-Indic digits** | ١٠٠ مم | التطبيع الرقمي |
 | **Injected instruction in a document** | "Ignore previous instructions…" داخل PDF | مقاومة prompt injection |
 
