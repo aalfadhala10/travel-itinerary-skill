@@ -410,6 +410,8 @@
   .picpop{position:fixed;z-index:30;max-width:240px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .15s}
   .picpop.show{opacity:1}
   .dhint{margin:2px 0 8px;color:var(--muted);font-size:14px;line-height:1.5}
+  .dhhover{display:none}
+  @media (hover:hover) and (pointer:fine){.dhtouch{display:none}.dhhover{display:inline}}
   /* same flex shape as a .slot, so each caption sits exactly over its column of buttons */
   .dcap{display:flex;gap:11px;align-items:flex-end;padding:0 0 4px}
   .dcap .t{width:96px;flex-shrink:0}
@@ -3866,11 +3868,17 @@
   function dayHint(o){
     var ar=LANG==='ar', es=LANG==='es';
     var tapName=ar?'اضغط الاسم يفتح في خرائط قوقل':(es?'Toca un nombre para abrirlo en Google Maps':'Tap a name to open it in Google Maps');
+    // On a mouse there's no photo button — the picture comes from hovering, which nobody discovers
+    // by accident. Two versions of the line, and the device picks.
+    var hovName=ar?'اضغط الاسم يفتح في خرائط قوقل، أو مرّر عليه تشوف صورة'
+      :(es?'Haz clic en un nombre para abrirlo en Google Maps, o pasa el cursor para ver una foto'
+      :'Click a name to open it in Google Maps, or hover it to see a photo');
     var swapTxt=ar?'تبديل':(es?'Cambiar':'Swap');
     var picTxt=ar?'صورة':(es?'Foto':'Photo');
     // The captions sit in the same flex row as a slot, so each word lands directly over its own
     // column of buttons — a legend off to the side is a puzzle you have to solve first.
-    return '<div class="dhint">'+esc(tapName)+'</div>'+
+    return '<div class="dhint"><span class="dhtouch">'+esc(tapName)+'</span>'+
+      '<span class="dhhover">'+esc(hovName)+'</span></div>'+
       '<div class="dcap"><span class="t"></span><span class="d"></span>'+
         '<span class="dcapw dcappic">'+esc(picTxt)+'</span>'+
         '<span class="dcapw">'+esc(swapTxt)+'</span></div>';
