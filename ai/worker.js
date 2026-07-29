@@ -105,8 +105,8 @@ export default {
         const names = Array.isArray(body.names)
           ? body.names.map((n) => String(n || "").slice(0, 80).trim()).filter(Boolean).slice(0, 40)
           : [];
-        if (!names.length) return reply({ closed: [] }, 200, origin);
-        return reply({ closed: await closedPlaces(names, city, env) }, 200, origin);
+        if (!names.length) return reply({ closed: [], rated: {} }, 200, origin);
+        return reply(await placeFacts(names, city, env), 200, origin);
       }
       if (body.action === "list")  return reply({ cities: await listNames(env) }, 200, origin);
       if (body.action === "dump")  return reply({ cities: await dumpAll(env) }, 200, origin);
@@ -224,35 +224,39 @@ function generateNames(city, country, lang, items, apiKey) {
 const PLACE_TTL_OPEN   = 60 * 60 * 24 * 90;
 const PLACE_TTL_CLOSED = 60 * 60 * 24 * 365;
 
-async function closedPlaces(names, city, env) {
-  if (!env.GOOGLE_PLACES_KEY) return [];
+// Returns what Google knows about each place: whether it has shut, and how it's rated. Both come
+// from the same lookup, so asking for the rating costs nothing extra beyond the field mask.
+async function placeFacts(names, city, env) {
+  const out = { closed: [], rated: {} };
+  if (!env.GOOGLE_PLACES_KEY) return out;
   const kv = env.CITIES;
-  const out = [];
   // Sequential on purpose: a plan is ~20 names, almost all cached after the first traveller, and
   // firing 20 parallel calls at Google from one worker earns a rate limit, not a faster answer.
   for (const name of names) {
     const k = "biz:" + cityKey(city) + ":" + cityKey(name);
-    if (kv) {
-      const hit = await kv.get(k);
-      if (hit) { if (hit === "CLOSED_PERMANENTLY") out.push(name); continue; }
+    let fact = null;
+    if (kv) { try { fact = await kv.get(k, "json"); } catch (e) { fact = null; } }
+    if (!fact) {
+      fact = await placeLookup(name, city, env.GOOGLE_PLACES_KEY);
+      if (!fact) continue;                       // lookup failed — say nothing rather than guess
+      if (kv) await kv.put(k, JSON.stringify(fact),
+        { expirationTtl: fact.s === "CLOSED_PERMANENTLY" ? PLACE_TTL_CLOSED : PLACE_TTL_OPEN });
     }
-    const status = await placeStatus(name, city, env.GOOGLE_PLACES_KEY);
-    if (!status) continue;                       // lookup failed — say nothing rather than guess
-    if (kv) await kv.put(k, status, { expirationTtl: status === "CLOSED_PERMANENTLY" ? PLACE_TTL_CLOSED : PLACE_TTL_OPEN });
-    if (status === "CLOSED_PERMANENTLY") out.push(name);
+    if (fact.s === "CLOSED_PERMANENTLY") out.closed.push(name);
+    // A 5.0 from four people says less than a 4.3 from nine hundred — carry the count too.
+    if (fact.r > 0) out.rated[name] = { r: fact.r, n: fact.n || 0 };
   }
   return out;
 }
 
-async function placeStatus(name, city, key) {
+async function placeLookup(name, city, key) {
   try {
     const r = await fetch("https://places.googleapis.com/v1/places:searchText", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": key,
-        // Ask for the two cheapest fields only — the field mask is what Google bills on.
-        "X-Goog-FieldMask": "places.displayName,places.businessStatus",
+        "X-Goog-FieldMask": "places.displayName,places.businessStatus,places.rating,places.userRatingCount",
       },
       body: JSON.stringify({ textQuery: name + (city ? ", " + city : ""), maxResultCount: 1 }),
     });
@@ -265,7 +269,7 @@ async function placeStatus(name, city, key) {
     const found = String((p.displayName && p.displayName.text) || "").toLowerCase();
     const asked = name.toLowerCase();
     if (found && !found.includes(asked.slice(0, 6)) && !asked.includes(found.slice(0, 6))) return null;
-    return p.businessStatus || "OPERATIONAL";
+    return { s: p.businessStatus || "OPERATIONAL", r: p.rating || 0, n: p.userRatingCount || 0 };
   } catch (e) {
     return null;
   }
@@ -422,17 +426,20 @@ function generateFood(name, country, apiKey) {
   const system =
     "You list real, currently-open, well-known restaurants in a specific city for a travel app. " +
     "If the place is not a real city, return valid=false and an empty list.\n" +
-    "Give 10 places and make them GENUINELY VARIED — a traveller on a long stay should never see the " +
+    "Give 18 places and make them GENUINELY VARIED — a traveller on a long stay should never see the " +
     "same cuisine twice in a row, and someone who does not want the local cuisine should still find " +
     "several options. Cover, as far as the city honestly allows: 2 well-loved local places, one " +
     "Italian/pizza, one grill or steakhouse, one seafood, one clearly vegetarian or vegan-friendly, " +
     "one cafe or breakfast spot, one family-friendly casual place, one budget/street-food favourite, " +
     "and one more international kitchen that genuinely exists there (Indian, Lebanese, Japanese, " +
     "Turkish, whatever fits). Favour halal-friendly places where they genuinely exist. " +
+    "Every one must be a place that is genuinely well regarded — the kind that holds a solid rating " +
+    "on Google, roughly 4 out of 5 or better, with enough reviews to mean something. A quiet, " +
+    "well-loved local place beats a famous one people complain about. " +
     "Never invent a restaurant, and never list a chain that isn't actually in that city. " +
     "`n` is the real name and `a` is 'Cuisine · Neighbourhood' — BOTH in English, never Arabic, " +
     "and keep `a` under 30 characters.";
-  return claude(apiKey, "claude-sonnet-5", system, "Restaurants in: " + name + (country ? ", " + country : ""), FOOD_SCHEMA, 1200);
+  return claude(apiKey, "claude-sonnet-5", system, "Restaurants in: " + name + (country ? ", " + country : ""), FOOD_SCHEMA, 2200);
 }
 
 // --- Parse a free-text / voice trip description (Haiku — cheap, runs per plan) ---
