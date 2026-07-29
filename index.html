@@ -410,6 +410,13 @@
   .picpop{position:fixed;z-index:30;max-width:240px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .15s}
   .picpop.show{opacity:1}
   .dhint{margin:2px 0 8px;color:var(--muted);font-size:14px;line-height:1.5}
+  .rate{display:inline-block;margin-inline-start:6px;padding:1px 7px;border-radius:999px;
+    border:1px solid var(--line);color:var(--muted);font-size:14px;font-weight:600;
+    font-family:var(--ff-data);vertical-align:2px}
+  #app[dir="rtl"] .rate{font-family:var(--ff-body)}
+  .rate.good{color:var(--amber);border-color:var(--amber)}
+  .thinfood{margin:10px 0 2px;padding:10px 12px;border:1px solid var(--clay);border-radius:11px;
+    color:var(--clay);font-size:14.5px;line-height:1.5}
   .dhhover{display:none}
   @media (hover:hover) and (pointer:fine){.dhtouch{display:none}.dhhover{display:inline}}
   /* same flex shape as a .slot, so each caption sits exactly over its column of buttons */
@@ -3864,6 +3871,10 @@
   // The city-builder sometimes emits an Arabic caption where a neighbourhood should be, and cities
   // cached before that was sanitised still carry them — so an English plan was showing
   // "King's Wharf · رصيف الملك". Arabic in an area is only ever right on an Arabic page.
+  function ratingTag(n){
+    var r=ratingOf(n); if(!r)return '';
+    return ' <span class="rate'+(r.r>=GOODMIN?' good':'')+'">'+r.r.toFixed(1)+'</span>';
+  }
   function areaLabel(a){ a=(a||'').trim(); if(!a)return '';
     if(LANG!=='ar'&&/[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(a))return '';
     if(a.split(/\s+/).length>4||a.length>28)return '';
@@ -3893,7 +3904,7 @@
   function eslot(tm,poi,city,sk,o,ck){
     // print the local name, but search Maps for the English one — it resolves far more reliably
     return '<div class="slot" data-sk="'+sk+'"><div class="t">'+tm+'</div>'
-      +'<div class="d">'+link(locName(ck,poi.n),poi.n+' '+city,poi.n+' '+city)+areaLabel(locName(ck,poi.a))+'</div>'
+      +'<div class="d">'+link(locName(ck,poi.n),poi.n+' '+city,poi.n+' '+city)+ratingTag(poi.n)+areaLabel(locName(ck,poi.a))+'</div>'
       +'<button type="button" class="picbtn" data-pic="'+esc(poi.n+' '+city)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>'
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
   }
@@ -3999,7 +4010,12 @@
       list.forEach(function(x){ var u=usedN[x.n]; var c=u?u.c:0; if(c<min)min=c; });
       var elig=list.filter(function(x){ var u=usedN[x.n]; return (u?u.c:0)===min; });
       var rested=elig.filter(function(x){ var u=usedN[x.n]; return !u||u.d<day-1; }); // not yesterday's
-      return rested.length?rested:elig;
+      var pick=rested.length?rested:elig;
+      // Well-reviewed first, but only WITHIN the least-used tier. Preferring them before that
+      // would serve the same eight good places twice rather than reach for an unused one — and
+      // going somewhere new that's rated 3.9 beats eating at the same place a second time.
+      var good=pick.filter(function(x){ return wellRated(x.n); });
+      return good.length?good:pick;
     }
     function take(arr,rot,noFar,day,today){
       var avail=eligible(arr,day,today);
@@ -4221,6 +4237,15 @@
   // restaurant is the one mistake a paid itinerary can't make. After a plan renders we ask the
   // worker (which asks Google) about the places actually on it, drop anything shut, and re-render
   // quietly. Verdicts are remembered on the device, so a closed place never comes back.
+  // What Google says a place is rated. Kept on the device beside the closure verdicts, and used to
+  // put the well-reviewed places first — not to hide the rest, because a city with eight decent
+  // restaurants shouldn't produce a plan with four empty meals.
+  var RATED=null, GOODMIN=4.0, MINVOTES=25;
+  function ratedLoad(){ if(RATED)return RATED; try{ RATED=JSON.parse(localStorage.getItem('bosla_rated')||'{}')||{}; }catch(e){ RATED={}; } return RATED; }
+  function ratedSave(){ try{ localStorage.setItem('bosla_rated',JSON.stringify(ratedLoad())); }catch(e){} }
+  function ratingOf(n){ var r=ratedLoad()[String(n).toLowerCase()]; return r&&r.r>0?r:null; }
+  // Unknown counts as fine: with no Google key nothing is rated, and everything would be "poor".
+  function wellRated(n){ var r=ratingOf(n); return !r || r.r>=GOODMIN || (r.n||0)<MINVOTES; }
   var CLOSED=null, CLOSEDGOT={};
   function closedLoad(){ if(CLOSED)return CLOSED; try{ CLOSED=JSON.parse(localStorage.getItem('bosla_closed')||'{}')||{}; }catch(e){ CLOSED={}; } return CLOSED; }
   function closedSave(){ try{ localStorage.setItem('bosla_closed',JSON.stringify(closedLoad())); }catch(e){} }
@@ -4250,15 +4275,45 @@
         .then(function(r){return r.json();})
         .then(function(res){
           var shut=(res&&Array.isArray(res.closed))?res.closed:[];
-          if(!shut.length)return;
-          var c=closedLoad();
-          shut.forEach(function(n){ c[String(n).toLowerCase()]=1;
-            try{ track('closed',{dest:d.city,country:d.country||'',msg:String(n).slice(0,60)}); }catch(e){} });
-          closedSave();
-          if(dropClosed(k)&&planLive())rerenderKeep();
+          var rat=(res&&res.rated&&typeof res.rated==='object')?res.rated:{};
+          var changed=false;
+          if(Object.keys(rat).length){
+            var rr=ratedLoad();
+            Object.keys(rat).forEach(function(n){ rr[String(n).toLowerCase()]={r:+rat[n].r||0,n:+rat[n].n||0}; });
+            ratedSave(); changed=true;
+          }
+          if(shut.length){
+            var c=closedLoad();
+            shut.forEach(function(n){ c[String(n).toLowerCase()]=1;
+              try{ track('closed',{dest:d.city,country:d.country||'',msg:String(n).slice(0,60)}); }catch(e){} });
+            closedSave();
+            if(dropClosed(k))changed=true;
+          }
+          if(changed&&planLive())rerenderKeep();
         })
         .catch(function(){});
     });
+  }
+  // Say it out loud when a city couldn't supply enough well-reviewed places for the trip, instead
+  // of quietly serving the weaker ones as though they were the pick of the city.
+  function thinFoodNote(keys,nights){
+    if(!Array.isArray(keys))return '';
+    var msgs=[];
+    keys.forEach(function(k,i){
+      var d=DEST[k]; if(!d)return;
+      var need=Math.max(2,((nights&&nights[i])||1)*2);
+      var good=d.food.filter(function(f){ return wellRated(f.n); }).length;
+      var known=d.food.filter(function(f){ return !!ratingOf(f.n); }).length;
+      if(!known||good>=need)return;              // nothing rated yet, or plenty of good ones
+      var city=cityName(k,d.city);
+      msgs.push(LANG==='ar'
+        ? ('ما لقينا في '+city+' غير '+good+' مطاعم بتقييم ٤ فأكثر، والرحلة تحتاج '+need+'. الباقي أقل تقييمًا — بدّلها إذا ما عجبتك.')
+        :(LANG==='es'
+        ? ('En '+city+' solo encontramos '+good+' restaurantes con 4 o más, y el viaje necesita '+need+'. El resto tiene notas más bajas — cámbialos si quieres.')
+        : ('We could only find '+good+' restaurants rated 4+ in '+city+', and the trip needs '+need+'. The rest are rated lower — swap any you don\u2019t like.')));
+    });
+    if(!msgs.length)return '';
+    return '<div class="thinfood">'+msgs.map(esc).join('<br>')+'</div>';
   }
   function moreFoodLbl(){ return LANG==='ar'?'جيب لي خيارات أكثر':(LANG==='es'?'Dame más opciones':'Show me more options'); }
   function editAsk(){ return LANG==='ar'?'الرحلة عاجبتك، ولا تبي نعدّل شي؟'
@@ -4833,7 +4888,7 @@
     if(access)html+=editBar();
     if(!access)html+=paywallCard(t);
     if(access){
-      html+=budgetCard(o,t,catRows(baseTotal),transferUSD,totalUSD,null,adults,kids);
+      html+=thinFoodNote(keys,dc)+budgetCard(o,t,catRows(baseTotal),transferUSD,totalUSD,null,adults,kids);
       var __seenC={}; ms.forEach(function(m){ if(!__seenC[m.country]){__seenC[m.country]=1; html+=appsCard(m.country,t)+salmanCard(m.country,t);} });
     }
     html+=staysBar(ms[0].city,ms[0].country,t);
@@ -5168,7 +5223,7 @@
       if(access)html+=editBar();
       if(!access){ html+=paywallCard(t); paywallShown=true; }
       if(access){
-        html+=budgetCard(o,t,catRows(base1+base2),trUSD,totalUSD,multi?null:keyOf(m1),adults,kids);
+        html+=thinFoodNote(multi?[keyOf(m1),keyOf(m2)]:[keyOf(m1)],multi?[d1,d2]:[days])+budgetCard(o,t,catRows(base1+base2),trUSD,totalUSD,multi?null:keyOf(m1),adults,kids);
         html+=appsCard(m1.country,t)+salmanCard(m1.country,t);
         if(multi&&m2&&m2.country!==m1.country)html+=appsCard(m2.country,t)+salmanCard(m2.country,t);
       }
