@@ -119,6 +119,12 @@
   :root[data-theme="light"] .daychip.active{color:#fff}
   .editfab{position:fixed;bottom:22px;right:18px;z-index:6;padding:12px 18px;border-radius:999px;border:none;background:var(--teal);color:#fff;font-size:14px;font-weight:700;font-family:var(--ff-body);box-shadow:var(--shadow);cursor:pointer;transition:filter .15s}
   .editfab:hover{filter:brightness(1.06)}
+  /* Both floating buttons land exactly on top of the Back/Next controls. While the pager is on
+     screen they step aside — the controls under them are the navigation at that moment. */
+  .editfab,.chatfab{transition:opacity .18s,transform .18s,bottom .25s}
+  body.pgnav-vis .editfab,body.pgnav-vis .chatfab{opacity:0;transform:translateY(10px);pointer-events:none}
+  /* the "how was your plan?" card lands there too — it can wait until they're not mid-navigation */
+  body.pgnav-vis .fbnudge.show{opacity:0;transform:translateX(-50%) translateY(30px);pointer-events:none}
   @media (prefers-color-scheme:dark){.editfab{color:#0a1310}}
   :root[data-theme="dark"] .editfab{color:#0a1310}
   :root[data-theme="light"] .editfab{color:#fff}
@@ -3078,10 +3084,16 @@
   function retryLabel(){ return LANG==='ar'?'↻ أعد المحاولة':(LANG==='es'?'↻ Reintentar':'↻ Try again'); }
   // At the very start the starters are a real offer. Once someone has told us where and how long,
   // dumping that menu back at them looks like the bot forgot the whole conversation.
-  function fallbackChips(){
+  // Two different failures, two different offers. A reply that arrived but had nothing to tap on
+  // the very first turn means the starters are the right prompt. A reply that never arrived means
+  // RETRY — always, first turn included. Somebody who just typed out their whole trip and got the
+  // starter menu back reads it as "I didn't understand, begin again", and retypes the lot.
+  function fallbackChips(dropped){
     var turns=0; CHATMSGS.forEach(function(m){ if(m.role==='user')turns++; });
-    if(turns<=1)return catChips();
-    var c=[{t:retryLabel(),a:'retry',v:''}]; c.push({t:backLabel(),a:'back',v:''}); return c;
+    if(!dropped&&turns<=1)return catChips();
+    var c=[{t:retryLabel(),a:'retry',v:''}];
+    if(turns>1)c.push({t:backLabel(),a:'back',v:''});
+    return c;
   }
   function chatReset(){ CHATMSGS=[]; CHATCHIPS=[]; CHATCAT=null; CHATKEY=null; CHATROUTE=null; CHATPICK=[]; botSay(chatGreeting()); CHATCHIPS=catChips(); }
   function pickedLine(){ return CHATPICK.map(function(k){return DEST[k].city;}).join(' → '); }
@@ -3201,12 +3213,18 @@
           .then(function(d){
             if(d&&d.chat&&(d.chat.reply||d.chat.ready))return d.chat;
             if(d&&d.error)try{console.warn('bosla chat:',d.error);}catch(e){} // shows up in the console if it keeps happening
-            if(tries>0)return ask(tries-1);                                   // a cut-off reply is usually a one-off
+            if(tries>0)return wait(tries);                                   // a cut-off reply is usually a one-off
             return null;
           })
-          .catch(function(){ return tries>0?ask(tries-1):null; });
+          .catch(function(){ return tries>0?wait(tries):null; });
       }
-      ask(1).then(resolve);
+      // A long first message (destination, days, who's going, how they get there, all at once) is
+      // exactly when the model is slowest and most likely to time out — and exactly when being
+      // asked to type it all again is most insulting. Try harder before giving up.
+      // Three attempts, briefly spaced. More than that and the wait gets long enough that a
+      // follow-up they type meanwhile is swallowed while the chat is still busy.
+      function wait(tries){ return new Promise(function(r){ setTimeout(function(){ r(ask(tries-1)); },450); }); }
+      ask(2).then(resolve);
     });
   }
   function buildingLine(cities){
@@ -3235,6 +3253,7 @@
       if(!ks.length){ botSay(LANG==='ar'?'ما قدرت أجهّز هالمسار — جرّب أماكن ثانية:':(LANG==='es'?'No pude armar esa ruta — prueba otros lugares:':'I couldn’t build that route — try other places:')); CHATCHIPS=catChips(); chatRender(); return; }
       if((loop || !!res.roadtrip) && ks.length>=2){ ks.push(ks[0]); } // road trip → return to the start (drop the car / fly home from the same airport)
       var days=Math.max(1,Math.min(30,(res.days|0)||(res.roadtrip?12:5)));
+      PGFRESH=true; // a trip the bot just built opens on day one, same as one from the form
       var editing=planLive(); // a trip is already on screen, so this is a change, not a fresh build
       var vibes=(Array.isArray(res.vibes)&&res.vibes.length)?res.vibes:['Culture'];
       var budget=(res.budget==='Budget'||res.budget==='Luxury')?res.budget:'Mid-range';
@@ -3296,8 +3315,10 @@
     // No reply at all counts as a failure, not a turn — otherwise the chat shows chips under
     // silence, which reads as the bot ignoring you.
     if(!res||(!res.reply&&!res.ready)){
-      botSay(LANG==='ar'?'ما وصلني ردي عدل. جرّب مرة ثانية:':(LANG==='es'?'No me llegó bien la respuesta. Inténtalo otra vez:':'That reply didn’t come through. Let’s try that again:'));
-      CHATCHIPS=fallbackChips(); chatRender(); return;
+      botSay(LANG==='ar'?'ما وصلني الرد. اضغط «حاول مرة ثانية» تحت — كل اللي كتبته محفوظ، ما تحتاج تعيده:'
+        :(LANG==='es'?'No me llegó la respuesta. Pulsa «Reintentar» abajo — no hace falta que lo escribas otra vez:'
+        :'That reply didn’t come through. Tap “Try again” below — everything you told me is still here, no need to retype it:'));
+      CHATCHIPS=fallbackChips(true); chatRender(); return;
     }
     if(res.reply)botSay(res.reply);
     CHATCHIPS=(Array.isArray(res.chips)?res.chips:[]).slice(0,4).map(function(t){ return {t:String(t),a:'say',v:String(t)}; });
@@ -3458,7 +3479,7 @@
   // The plan is still built as one block of HTML; this splits the finished thing into pages
   // afterwards, so nothing about how a day is generated had to change. Overview first, then one
   // page per day, then everything you read once (packing, weather, phrases, booking) at the end.
-  var PAGE=0;
+  var PAGE=0, PGFRESH=true; // PGFRESH: a brand-new plan opens on day one, a re-render stays put
   function pgLabels(){
     var ar=LANG==='ar', es=LANG==='es';
     return { over: ar?'الرحلة':(es?'Viaje':'Trip'),
@@ -3535,7 +3556,25 @@
     out.innerHTML=''; out.appendChild(tabs);
     pages.forEach(function(pg){ out.appendChild(pg); });
     out.setAttribute('data-days',dayCount);
-    pgGo(Math.min(PAGE,pages.length-1),true);
+    // Land on day one. The overview is a tab away for anyone who wants it, but the first thing a
+    // traveller wants is the first day — and having to work out that you tap "1" to see any of
+    // your trip is not obvious.
+    var start=(PAGE!=null?PAGE:1);
+    if(PGFRESH){ start=(pages.length>1?1:0); PGFRESH=false; }
+    pgGo(Math.min(start,pages.length-1),true);
+  }
+  var PGOBS=null;
+  function pgWatchNav(){
+    try{
+      if(PGOBS){ PGOBS.disconnect(); PGOBS=null; }
+      document.body.classList.remove('pgnav-vis');
+      if(!window.IntersectionObserver)return;                 // old browser: leave the buttons alone
+      var nav=$('out').querySelector('.pg.on > .pgnav'); if(!nav)return;
+      PGOBS=new IntersectionObserver(function(es){
+        document.body.classList.toggle('pgnav-vis',es.some(function(e){ return e.isIntersecting; }));
+      },{threshold:0.3});
+      PGOBS.observe(nav);
+    }catch(e){}
   }
   function pgGo(i,quiet){
     var out=$('out'); if(!out)return;
@@ -3545,6 +3584,7 @@
     out.querySelectorAll('.pgtab').forEach(function(t,n){ t.classList.toggle('on',n===i); });
     var tab=out.querySelectorAll('.pgtab')[i];
     if(tab&&tab.scrollIntoView)try{ tab.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'}); }catch(e){}
+    pgWatchNav();
     if(!quiet){ // a new page starts at the top of that page, not wherever you were on the last one
       var top=out.getBoundingClientRect().top+(window.pageYOffset||0)-8;
       window.scrollTo({top:Math.max(0,top),behavior:'smooth'});
@@ -5038,7 +5078,7 @@
       ensureFood(fk, multi?[d1,d2]:[days]); checkOpen(fk); ensureNames(fk); }
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
-  $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYADD={}; ROUTEDC=null; STAYAREA=''; PAGE=0;
+  $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYADD={}; ROUTEDC=null; STAYAREA=''; PGFRESH=true;
     try{ $('lastTrip').classList.add('is-hidden'); }catch(e){} plan(); });
 
   function toast(msg){var el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove('show');},1800);}
