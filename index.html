@@ -415,6 +415,7 @@
     font-family:var(--ff-data);vertical-align:2px}
   #app[dir="rtl"] .rate{font-family:var(--ff-body)}
   .rate.good{color:var(--amber);border-color:var(--amber)}
+  .rstar{margin-inline-end:3px}
   .thinfood{margin:10px 0 2px;padding:10px 12px;border:1px solid var(--clay);border-radius:11px;
     color:var(--clay);font-size:14.5px;line-height:1.5}
   .dhhover{display:none}
@@ -3926,9 +3927,14 @@
   // The city-builder sometimes emits an Arabic caption where a neighbourhood should be, and cities
   // cached before that was sanitised still carry them — so an English plan was showing
   // "King's Wharf · رصيف الملك". Arabic in an area is only ever right on an Arabic page.
+  // A bare "4.8" beside a name could be anything — a price, a distance. The star says what it is
+  // without a word of explanation, in any language. dir="ltr" keeps the star ahead of the number
+  // on an Arabic page, where a neutral glyph would otherwise flip to the far side.
   function ratingTag(n){
     var r=ratingOf(n); if(!r)return '';
-    return ' <span class="rate'+(r.r>=GOODMIN?' good':'')+'">'+r.r.toFixed(1)+'</span>';
+    var t=LANG==='ar'?'تقييم قوقل':(LANG==='es'?'Valoración de Google':'Google rating');
+    return ' <span class="rate'+(r.r>=GOODMIN?' good':'')+'" dir="ltr" title="'+esc(t)+'">'+
+      '<span class="rstar">★</span>'+r.r.toFixed(1)+'</span>';
   }
   function areaLabel(a){ a=(a||'').trim(); if(!a)return '';
     if(LANG!=='ar'&&/[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(a))return '';
@@ -3956,10 +3962,13 @@
         '<span class="dcapw dcappic">'+esc(picTxt)+'</span>'+
         '<span class="dcapw">'+esc(swapTxt)+'</span></div>';
   }
-  function eslot(tm,poi,city,sk,o,ck){
+  // `food` marks a meal. The rating is shown on restaurants only: choosing where to eat is where a
+  // score actually changes your mind, and a number beside every mosque and museum was just noise.
+  // Attractions are still checked and still ordered by it — the check just stops being visible.
+  function eslot(tm,poi,city,sk,o,ck,food){
     // print the local name, but search Maps for the English one — it resolves far more reliably
     return '<div class="slot" data-sk="'+sk+'"><div class="t">'+tm+'</div>'
-      +'<div class="d">'+link(locName(ck,poi.n),poi.n+' '+city,poi.n+' '+city)+ratingTag(poi.n)+areaLabel(locName(ck,poi.a))+'</div>'
+      +'<div class="d">'+link(locName(ck,poi.n),poi.n+' '+city,poi.n+' '+city)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a))+'</div>'
       +'<button type="button" class="picbtn" data-pic="'+esc(poi.n+' '+city)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>'
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
   }
@@ -4125,7 +4134,7 @@
           var lsk=ck+'|'+d+'|l', lu=DAYEDITS[lsk]?poiByName(ck,DAYEDITS[lsk]):null;
           if(!lu)lu=nearestFood(ck,match.food,dayPois,rot,d,todayN);
           useMark(lu.n,d); todayN[lu.n]=1; lunchN=lu.n;
-          body+=eslot(o.times.lunch,lu,match.city,lsk,o,ck);
+          body+=eslot(o.times.lunch,lu,match.city,lsk,o,ck,true);
           txt.push('  '+o.times.lunch+': '+lu.n+' ('+lu.a+')');
         }
       }
@@ -4134,7 +4143,7 @@
       if(!fo)fo=nearestFood(ck,match.food,dayPois,rot,d,todayN,lunchN);
       useMark(fo.n,d); todayN[fo.n]=1;
       if(lunchN)pairs[lunchN+'|'+fo.n]=1;
-      body+=eslot(o.times.dinner,fo,match.city,dsk,o,ck);
+      body+=eslot(o.times.dinner,fo,match.city,dsk,o,ck,true);
       txt.push('  '+o.times.dinner+': '+fo.n+' ('+fo.a+')');
       // Each day is collapsible — the first is open, the rest show a one-line summary until tapped.
       var sum=esc(names.slice(0,3).map(function(n){return locName(ck,n);}).join(' · '))+(names.length>3?' <span class="dsmore">+'+(names.length-3)+'</span>':'');
