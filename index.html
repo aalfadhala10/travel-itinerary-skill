@@ -3652,32 +3652,38 @@
     var geoPool=geoOrderPool(ck,pool,spd), geoOn=(geoPool!==pool);
     if(geoOn)pool=geoPool;
     var off=geoOn?0:SEED%1000; // geo order is meaningful in-sequence, so don't rotate the start
-    var usedN={}; // one record for sights AND meals — a food market is in both lists, and picking it
-                  // twice in a day (afternoon + lunch) is exactly what that used to produce
+    // name -> {c: how many times used, d: the last day it was used}. One record for sights AND
+    // meals, because a food market is in both lists.
+    var usedN={};
     var outSet=pool._out||{};
-    // `today` is a hard constraint the wrap-around must respect too: a two-week stay in a city with
-    // twelve real places has to repeat eventually, but never twice in the same day.
-    function take(arr,used,rot,s,noFar,today){
-      function fresh(list){ return today?list.filter(function(x){return !today[x.n];}):list; }
-      var avail=fresh(arr.filter(function(x){return !used[x.n];}));
+    function useMark(n,d){ var u=usedN[n]; if(u){ u.c++; u.d=d; } else usedN[n]={c:1,d:d}; }
+    // Anything untouched comes first. Once a city runs out — five days in Cairo needs more
+    // restaurants than Cairo has — the ones used least often, and longest ago, come back round.
+    // Never the same place twice in one day, and never two days running while anything else is free.
+    function eligible(arr,day,today){
+      var list=today?arr.filter(function(x){return !today[x.n];}):arr;
+      if(!list.length)list=arr;                        // all of it is already on today — nothing left to protect
+      var min=Infinity;
+      list.forEach(function(x){ var u=usedN[x.n]; var c=u?u.c:0; if(c<min)min=c; });
+      var elig=list.filter(function(x){ var u=usedN[x.n]; return (u?u.c:0)===min; });
+      var rested=elig.filter(function(x){ var u=usedN[x.n]; return !u||u.d<day-1; }); // not yesterday's
+      return rested.length?rested:elig;
+    }
+    function take(arr,rot,s,noFar,day,today){
+      var avail=eligible(arr,day,today);
       // The day you arrive in a city you've just landed or just driven in — an 80km day trip is the
       // one thing that doesn't belong on it. Keep the far ones for a day you're actually settled.
       if(noFar){ var near=avail.filter(function(x){return !outSet[x.n];}); if(near.length)avail=near; }
-      if(!avail.length){ // pool exhausted (very long stay) — only then allow a repeat
-        avail=fresh(arr.filter(function(x){return !outSet[x.n];})); // ...but never repeat a far day-trip
-        if(!avail.length)avail=fresh(arr);
-        if(!avail.length)avail=arr; // everything there is is already on today — nothing left to protect
-      }
+      if(!avail.length)return arr[0];
       var idx=((off+rot*spd+s)%avail.length+avail.length)%avail.length;
       return avail[idx];
     }
     // dinner near where the day actually ends: prefer a restaurant closest to the last activity
     // (by coordinates, else by matching neighbourhood), so you're not driving across town to eat.
-    function nearestFood(ck,food,used,dayPois,rot,today){
-      function fresh(list){ return today?list.filter(function(x){return !today[x.n];}):list; }
-      var avail=fresh(food.filter(function(x){return !used[x.n];}));
-      if(!avail.length)avail=fresh(food);
-      if(!avail.length)avail=food;
+    // It picks the nearest of what's ELIGIBLE — the nearest overall is the same place every night.
+    function nearestFood(ck,food,dayPois,rot,day,today){
+      var avail=eligible(food,day,today);
+      if(!avail.length)return food[0];
       var co=POI_CO[ck], anchor=dayPois[dayPois.length-1];
       if(co&&anchor&&co[anchor.n]){
         var ac=co[anchor.n];
@@ -3687,7 +3693,7 @@
       }
       var areas={}; dayPois.forEach(function(p){areas[p.a]=1;}); // fallback: same neighbourhood
       var same=avail.filter(function(f){return areas[f.a];}); if(same.length)return same[0];
-      return take(food,used,rot,0,false,today);
+      return take(food,rot,0,false,day,today);
     }
     for(var i=0;i<count;i++){
       var d=fromDay+i, title=d===1?o.arrival:d===total?o.last:o.explore, rot=DAYROT[ck+'|'+d]||0;
@@ -3700,23 +3706,23 @@
       txt.push('  '+o.times.breakfast+': '+o.bfastTxt);
       for(var s=0;s<spd;s++){
         var sk=ck+'|'+d+'|'+s, poi=DAYEDITS[sk]?poiByName(ck,DAYEDITS[sk]):null;
-        if(!poi)poi=take(pool,usedN,rot,s,i===0,todayN); // i===0 is the first day in THIS city
-        usedN[poi.n]=1; todayN[poi.n]=1; dayPois.push(poi); names.push(poi.n);
+        if(!poi)poi=take(pool,rot,s,i===0,d,todayN); // i===0 is the first day in THIS city
+        useMark(poi.n,d); todayN[poi.n]=1; dayPois.push(poi); names.push(poi.n);
         if(stops)stops.push({n:poi.n,a:poi.a});
         body+=eslot(tl[s],poi,match.city,sk,o);
         txt.push('  '+tl[s]+': '+poi.n+' ('+poi.a+')');
         if(s===lunchAt-1){
           var lsk=ck+'|'+d+'|l', lu=DAYEDITS[lsk]?poiByName(ck,DAYEDITS[lsk]):null;
-          if(!lu)lu=nearestFood(ck,match.food,usedN,dayPois,rot,todayN);
-          usedN[lu.n]=1; todayN[lu.n]=1;
+          if(!lu)lu=nearestFood(ck,match.food,dayPois,rot,d,todayN);
+          useMark(lu.n,d); todayN[lu.n]=1;
           body+=eslot(o.times.lunch,lu,match.city,lsk,o);
           txt.push('  '+o.times.lunch+': '+lu.n+' ('+lu.a+')');
         }
       }
       (DAYADD[d]||[]).forEach(function(x,xi){ body+=xslot(x.n,match.city,d,xi,o); txt.push('  '+o.extraLbl+': '+x.n); });
       var dsk=ck+'|'+d+'|d', fo=DAYEDITS[dsk]?poiByName(ck,DAYEDITS[dsk]):null;
-      if(!fo)fo=nearestFood(ck,match.food,usedN,dayPois,rot,todayN);
-      usedN[fo.n]=1; todayN[fo.n]=1;
+      if(!fo)fo=nearestFood(ck,match.food,dayPois,rot,d,todayN);
+      useMark(fo.n,d); todayN[fo.n]=1;
       body+=eslot(o.times.dinner,fo,match.city,dsk,o);
       txt.push('  '+o.times.dinner+': '+fo.n+' ('+fo.a+')');
       // Each day is collapsible — the first is open, the rest show a one-line summary until tapped.
