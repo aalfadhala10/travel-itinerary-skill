@@ -3532,6 +3532,44 @@
     return '<div class="bookbar phrasecard"><div class="maphdr">'+o.phrasesTitle+'</div><div class="phrows">'+rows+'</div></div>';
   }
   // --- Quick currency converter (home ↔ destination local currency) ---
+  // --- live exchange rates --------------------------------------------------------------------
+  // Baked rates go stale fast: the Egyptian pound moved from 13 to the riyal to 15 inside a month,
+  // and a budget built on last year's number is simply wrong. Refresh once a day from a free public
+  // feed. If it can't be reached the baked rate stands — it's labelled approximate either way.
+  var FXSYM={'₺':'TRY','AED ':'AED','£':'GBP','€':'EUR','CHF ':'CHF','KM ':'BAM','₾':'GEL','₼':'AZN',
+    '¥':'JPY','RM ':'MYR','฿':'THB','Rp ':'IDR','E£':'EGP','MAD ':'MAD','$':'USD','SAR ':'SAR',
+    'OMR ':'OMR','QAR ':'QAR','JOD ':'JOD','S$':'SGD','₫':'VND','₩':'KRW','CZK ':'CZK','LKR ':'LKR',
+    'KWD ':'KWD','BHD ':'BHD','₹':'INR','UZS ':'UZS','Ft ':'HUF','TZS ':'TZS','MUR ':'MUR','zł ':'PLN',
+    'CN¥':'CNY','A$':'AUD','R ':'ZAR','R$':'BRL','MX$':'MXN','₱':'PHP','KSh ':'KES','TND ':'TND',
+    'NZ$ ':'NZD','NPR ':'NPR'};
+  var FXDATE='';
+  function fxApply(rates,date){
+    if(!rates||!(rates.EUR>0))return false; // a feed with no EUR isn't a feed, it's an error page
+    var hit=false;
+    Object.keys(CURRENCIES).forEach(function(c){ if(rates[c]>0){ CURRENCIES[c].r=rates[c]; hit=true; } });
+    Object.keys(CUR).forEach(function(k){ var c=FXSYM[CUR[k].s]; if(c&&rates[c]>0){ CUR[k].r=rates[c]; hit=true; } });
+    if(hit)FXDATE=date||'';
+    return hit;
+  }
+  function fxToday(){ return new Date().toLocaleDateString('en-CA'); }
+  function fxLoad(){
+    var day=fxToday();
+    try{ var c=JSON.parse(localStorage.getItem('bosla_fx')||'null');
+      if(c&&c.d===day&&c.r&&fxApply(c.r,c.d))return; }catch(e){}
+    fetch('https://open.er-api.com/v6/latest/USD').then(function(r){return r.json();})
+      .then(function(d){
+        var rates=d&&d.rates;
+        if(!fxApply(rates,day))return;
+        try{ localStorage.setItem('bosla_fx',JSON.stringify({d:day,r:rates})); }catch(e){}
+        if(planLive())rerenderKeep(); // the budget on screen was built on the old number
+      }).catch(function(){});
+  }
+  function cvNoteTxt(o){
+    if(!FXDATE)return o.cvNote;
+    return (LANG==='ar'?('سعر اليوم '+FXDATE+' — تحقّق من بنكك.')
+      :(LANG==='es'?("Tasa de hoy "+FXDATE+" — consulta tu banco.")
+      :("Today's rate, "+FXDATE+" — check your bank.")));
+  }
   function converterCard(dest,t){
     var o=t.out, ck=keyOf(dest), local=CUR[ck]||{s:'$',r:1}, home=CURRENCIES[HOME]||CURRENCIES.USD;
     var ls=(local.s||'').trim()||'$';
@@ -3539,7 +3577,7 @@
     return '<div class="bookbar cvbar" data-hr="'+home.r+'" data-lr="'+local.r+'"><div class="maphdr">'+o.cvTitle+'</div>'+
       '<div class="cvrow"><input type="number" class="cvin cvhome" inputmode="decimal" value="100"><select class="cvsel" aria-label="'+o.cvTitle+'">'+opts+'</select>'+
       '<span class="cveq">=</span><input type="number" class="cvin cvlocal" inputmode="decimal"><span class="cvcur">'+esc(ls)+'</span></div>'+
-      '<div class="cvnote">'+o.cvNote+'</div></div>';
+      '<div class="cvnote">'+esc(cvNoteTxt(o))+'</div></div>';
   }
   function runConverter(){ Array.prototype.forEach.call(document.querySelectorAll('.cvbar'),function(bar){
     var hr=+bar.getAttribute('data-hr'),lr=+bar.getAttribute('data-lr'),hEl=bar.querySelector('.cvhome'),lEl=bar.querySelector('.cvlocal');
@@ -3574,10 +3612,13 @@
   }
   // show the neighbourhood only when it's a real short label — hide it when a data source put a
   // whole description sentence in the area field, so the itinerary stays clean.
-  function areaLabel(a){ a=(a||'').trim(); if(!a)return ''; if(/[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(a))return ''; if(a.split(/\s+/).length>4||a.length>28)return ''; return ' <span class="area">· '+esc(a)+'</span>'; } // drop stray Arabic captions (they're just translations of the English name)
-  function eslot(tm,poi,city,sk,o){
+  // No Arabic filter here any more: stray Arabic captions from the city-builder are already
+  // stripped where that data is ingested, and this was then eating the deliberate translations.
+  function areaLabel(a){ a=(a||'').trim(); if(!a)return ''; if(a.split(/\s+/).length>4||a.length>28)return ''; return ' <span class="area">· '+esc(a)+'</span>'; }
+  function eslot(tm,poi,city,sk,o,ck){
+    // print the local name, but search Maps for the English one — it resolves far more reliably
     return '<div class="slot" data-sk="'+sk+'"><div class="t">'+tm+'</div>'
-      +'<div class="d">'+link(poi.n,poi.n+' '+city,poi.n+' '+city)+areaLabel(poi.a)+'</div>'
+      +'<div class="d">'+link(locName(ck,poi.n),poi.n+' '+city,poi.n+' '+city)+areaLabel(locName(ck,poi.a))+'</div>'
       +'<button type="button" class="picbtn" data-pic="'+esc(poi.n+' '+city)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>'
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
   }
@@ -3625,14 +3666,26 @@
     var med=sorted[Math.floor(sorted.length/2)]||0;
     var outliers=covered.filter(function(p){return dc(p)>Math.max(med*4,0.02);}).sort(function(a,b){return dc(b)-dc(a);});
     var central=covered.filter(function(p){return outliers.indexOf(p)<0;});
-    // nearest-neighbour route through the central cluster, starting nearest the centroid
-    var route=[],rem=central.slice();
-    if(rem.length){
-      var si=0,sb=Infinity; rem.forEach(function(p,i){var v=dc(p); if(v<sb){sb=v;si=i;}});
-      var cur=rem.splice(si,1)[0]; route.push(cur);
-      while(rem.length){ var bi=0,bb=Infinity; rem.forEach(function(p,i){var v=d2(co[p.n],co[cur.n]); if(v<bb){bb=v;bi=i;}}); cur=rem.splice(bi,1)[0]; route.push(cur); }
+    // Keep a neighbourhood together. Routing by raw coordinates and slicing every `spd` stops is
+    // what put Khan el-Khalili's bazaar a day apart from the cafe that sits inside it — and the
+    // neighbourhood LABEL is what the traveller reads, so that is what has to hold. Group by label
+    // first; coordinates only decide which neighbourhood comes next.
+    var byArea={},areas=[];
+    central.forEach(function(p){ var a=p.a||'·'; if(!byArea[a]){ byArea[a]=[]; areas.push(a); } byArea[a].push(p); });
+    function acen(a){ var g=byArea[a],x=0,y=0; g.forEach(function(p){ x+=co[p.n][0]; y+=co[p.n][1]; }); return [x/g.length,y/g.length]; }
+    // start with the neighbourhood nearest the middle of town — the day you arrive shouldn't be a
+    // trek — then hop to whichever is nearest the one you just did
+    var remA=areas.slice(),seq=[];
+    if(remA.length){
+      var si=0,sb=Infinity; remA.forEach(function(a,i){ var v=d2(acen(a),cen); if(v<sb){ sb=v; si=i; } });
+      var curA=remA.splice(si,1)[0]; seq.push(curA);
+      while(remA.length){
+        var bi=0,bb=Infinity; remA.forEach(function(a,i){ var v=d2(acen(a),acen(curA)); if(v<bb){ bb=v; bi=i; } });
+        curA=remA.splice(bi,1)[0]; seq.push(curA);
+      }
     }
-    // weave: one outlier at the head of each day, then fill the day from the central route
+    var route=[]; seq.forEach(function(a){ route=route.concat(byArea[a]); });
+    // weave: one outlier at the head of each day, then that day's stretch of the neighbourhood walk
     var result=[],oi=0,rc=0,dayCount=Math.max(1,Math.ceil(pool.length/spd));
     for(var day=0;day<dayCount;day++){
       // never on the first day in a city: you've just arrived (or just driven in from the last stop)
@@ -3669,13 +3722,16 @@
       var rested=elig.filter(function(x){ var u=usedN[x.n]; return !u||u.d<day-1; }); // not yesterday's
       return rested.length?rested:elig;
     }
-    function take(arr,rot,s,noFar,day,today){
+    function take(arr,rot,noFar,day,today){
       var avail=eligible(arr,day,today);
       // The day you arrive in a city you've just landed or just driven in — an 80km day trip is the
       // one thing that doesn't belong on it. Keep the far ones for a day you're actually settled.
       if(noFar){ var near=avail.filter(function(x){return !outSet[x.n];}); if(near.length)avail=near; }
       if(!avail.length)return arr[0];
-      var idx=((off+rot*spd+s)%avail.length+avail.length)%avail.length;
+      // No per-slot offset: `avail` already drops what's been used, so it shrinks by one after
+      // every pick and a slot index would skip every other place — which scrambled the careful
+      // neighbourhood order back into a tour of the whole city each day.
+      var idx=((off+rot*spd)%avail.length+avail.length)%avail.length;
       return avail[idx];
     }
     // dinner near where the day actually ends: prefer a restaurant closest to the last activity
@@ -3693,7 +3749,7 @@
       }
       var areas={}; dayPois.forEach(function(p){areas[p.a]=1;}); // fallback: same neighbourhood
       var same=avail.filter(function(f){return areas[f.a];}); if(same.length)return same[0];
-      return take(food,rot,0,false,day,today);
+      return take(food,rot,false,day,today);
     }
     for(var i=0;i<count;i++){
       var d=fromDay+i, title=d===1?o.arrival:d===total?o.last:o.explore, rot=DAYROT[ck+'|'+d]||0;
@@ -3706,16 +3762,16 @@
       txt.push('  '+o.times.breakfast+': '+o.bfastTxt);
       for(var s=0;s<spd;s++){
         var sk=ck+'|'+d+'|'+s, poi=DAYEDITS[sk]?poiByName(ck,DAYEDITS[sk]):null;
-        if(!poi)poi=take(pool,rot,s,i===0,d,todayN); // i===0 is the first day in THIS city
+        if(!poi)poi=take(pool,rot,i===0,d,todayN); // i===0 is the first day in THIS city
         useMark(poi.n,d); todayN[poi.n]=1; dayPois.push(poi); names.push(poi.n);
         if(stops)stops.push({n:poi.n,a:poi.a});
-        body+=eslot(tl[s],poi,match.city,sk,o);
+        body+=eslot(tl[s],poi,match.city,sk,o,ck);
         txt.push('  '+tl[s]+': '+poi.n+' ('+poi.a+')');
         if(s===lunchAt-1){
           var lsk=ck+'|'+d+'|l', lu=DAYEDITS[lsk]?poiByName(ck,DAYEDITS[lsk]):null;
           if(!lu)lu=nearestFood(ck,match.food,dayPois,rot,d,todayN);
           useMark(lu.n,d); todayN[lu.n]=1;
-          body+=eslot(o.times.lunch,lu,match.city,lsk,o);
+          body+=eslot(o.times.lunch,lu,match.city,lsk,o,ck);
           txt.push('  '+o.times.lunch+': '+lu.n+' ('+lu.a+')');
         }
       }
@@ -3723,10 +3779,10 @@
       var dsk=ck+'|'+d+'|d', fo=DAYEDITS[dsk]?poiByName(ck,DAYEDITS[dsk]):null;
       if(!fo)fo=nearestFood(ck,match.food,dayPois,rot,d,todayN);
       useMark(fo.n,d); todayN[fo.n]=1;
-      body+=eslot(o.times.dinner,fo,match.city,dsk,o);
+      body+=eslot(o.times.dinner,fo,match.city,dsk,o,ck);
       txt.push('  '+o.times.dinner+': '+fo.n+' ('+fo.a+')');
       // Each day is collapsible — the first is open, the rest show a one-line summary until tapped.
-      var sum=esc(names.slice(0,3).join(' · '))+(names.length>3?' <span class="dsmore">+'+(names.length-3)+'</span>':'');
+      var sum=esc(names.slice(0,3).map(function(n){return locName(ck,n);}).join(' · '))+(names.length>3?' <span class="dsmore">+'+(names.length-3)+'</span>':'');
       html+='<div class="day'+(d>1?' dcol':'')+'" id="day-'+d+'">'
         +'<div class="dhead"><div class="dhtext"><div class="dlabel">'+o.dayWord+' '+d+' · '+esc(match.city)+'</div><h3>'+title+'</h3></div>'
         +'<button type="button" class="dayshuffle" data-shuf="'+ck+'|'+d+'" title="'+o.shuffleDay+'">'+SHUFSVG+'<span>'+o.shuffleDay+'</span></button>'
@@ -3792,6 +3848,60 @@
       if(!k||FOODGOT[k]||!foodThin(k,(nights&&nights[i])||1))return;
       FOODGOT[k]=1;
       fetchFood(k).then(function(added){ if(added&&planLive())rerenderKeep(); });
+    });
+  }
+  // --- place names in the reader's language -----------------------------------------------------
+  // An Arabic plan listing "Khan el-Khalili Bazaar" in Latin script reads like a half-done
+  // translation. The worker gives the real local name once per city per language; it's cached on
+  // the device and in KV, and the Google Maps link keeps using the English name, which resolves
+  // most reliably. If the translation isn't there yet, the English name shows — never a blank.
+  var LOCNAME={}, LOCGOT={};
+  function locStoreKey(ck,lang){ return 'bosla_nm_'+lang+'_'+ck; }
+  function locLoad(ck,lang){
+    var m=LOCNAME[ck+'|'+lang]; if(m)return m;
+    try{ var c=JSON.parse(localStorage.getItem(locStoreKey(ck,lang))||'null');
+      if(c&&c.t&&(Date.now()-c.t)<1000*60*60*24*180&&c.m){ LOCNAME[ck+'|'+lang]=c.m; return c.m; } }catch(e){}
+    return null;
+  }
+  function locSave(ck,lang,m){
+    LOCNAME[ck+'|'+lang]=m;
+    try{ localStorage.setItem(locStoreKey(ck,lang),JSON.stringify({t:Date.now(),m:m})); }catch(e){}
+  }
+  // What to print for a place. English pages, and anything with no translation yet, keep the
+  // original — a name is more use in the wrong language than missing.
+  function locName(ck,n){
+    if(LANG==='en'||!n)return n;
+    var m=locLoad(ck,LANG); return (m&&m[n])?m[n]:n;
+  }
+  function needNames(ck,lang){
+    var d=DEST[ck]; if(!d)return [];
+    var m=locLoad(ck,lang)||{};
+    var all=[]; d.poi.forEach(function(x){ all.push(x.n); if(x.a)all.push(x.a); });
+    d.food.forEach(function(x){ all.push(x.n); if(x.a)all.push(x.a); });
+    return all.filter(function(n,i,a){ return n&&!m[n]&&a.indexOf(n)===i; }).slice(0,60);
+  }
+  function ensureNames(keys){
+    if(!CONFIG.aiEndpoint||LANG==='en'||!Array.isArray(keys))return;
+    var lang=LANG;
+    keys.forEach(function(k){
+      var tag=k+'|'+lang; if(!k||LOCGOT[tag]||!DEST[k])return;
+      var want=needNames(k,lang); if(!want.length)return;
+      LOCGOT[tag]=1;
+      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'names',name:DEST[k].city,country:DEST[k].country||'',lang:lang,items:want})})
+        .then(function(r){return r.json();})
+        .then(function(res){
+          var list=(res&&Array.isArray(res.names))?res.names:[];
+          if(!list.length)return;
+          var m=locLoad(k,lang)||{};
+          list.forEach(function(x){ if(x&&x.en&&x.tr)m[x.en]=x.tr; });
+          // Anything it had no name for maps to itself, so we don't ask again every single visit
+          // for a restaurant that simply has no Arabic name.
+          want.forEach(function(n){ if(!m[n])m[n]=n; });
+          locSave(k,lang,m);
+          if(LANG===lang&&planLive())rerenderKeep();
+        })
+        .catch(function(){});
     });
   }
   // --- places that have shut down -------------------------------------------------------------
@@ -4426,7 +4536,7 @@
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
     var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden'); try{armFbNudge();syncFab();}catch(e){}
     redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
-    ensureFood(keys,dc); checkOpen(keys);
+    ensureFood(keys,dc); checkOpen(keys); ensureNames(keys);
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   function stateObj(){
@@ -4798,7 +4908,7 @@
     var out=$('out'); out.innerHTML=html; out.classList.add('show'); $('editFab').classList.remove('is-hidden'); try{armFbNudge();syncFab();}catch(e){}
     redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
     if(m1){ var fk=multi?[keyOf(m1),keyOf(m2)]:[keyOf(m1)];
-      ensureFood(fk, multi?[d1,d2]:[days]); checkOpen(fk); }
+      ensureFood(fk, multi?[d1,d2]:[days]); checkOpen(fk); ensureNames(fk); }
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYADD={}; ROUTEDC=null; STAYAREA='';
@@ -5099,6 +5209,7 @@
   // restore saved theme preference before first render
   (function(){ try{ var th=localStorage.getItem('rihla_theme'); if(th==='dark'||th==='light')document.documentElement.setAttribute('data-theme',th); }catch(e){} })();
 
+  fxLoad(); // refresh the exchange rates in the background; baked ones stand until it lands
   applyLang(startLang());
 
   // guess a first-time visitor's home currency from their device region (so Gulf users see QAR/SAR/AED, not USD)
