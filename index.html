@@ -416,6 +416,9 @@
   #app[dir="rtl"] .rate{font-family:var(--ff-body)}
   .rate.good{color:var(--amber);border-color:var(--amber)}
   .rstar{margin-inline-end:3px}
+  .hop{font-family:var(--ff-data);font-size:14px;color:var(--muted);opacity:.85;white-space:nowrap}
+  #app[dir="rtl"] .hop{font-family:var(--ff-body)}
+  .hop::before{content:'· '}
   .thinfood{margin:10px 0 2px;padding:10px 12px;border:1px solid var(--clay);border-radius:11px;
     color:var(--clay);font-size:14.5px;line-height:1.5}
   .dhhover{display:none}
@@ -3896,6 +3899,18 @@
     var v=parseFloat(hEl.value); if(isFinite(v))lEl.value=Math.round(v/hr*lr*100)/100;
   }); }
   // --- "Getting there": rough flight time + price band + a flight-search link ---
+  // Squared planar distance — good enough for ordering stops inside one city, and no square roots.
+  function d2co(a,b){ var dx=a[0]-b[0],dy=(a[1]-b[1])*Math.cos((a[0]+b[0])/2*Math.PI/180); return dx*dx+dy*dy; }
+  // How far the next stop is from the one before it. The whole point of ordering the day by
+  // distance is that the traveller can SEE the order is sensible, and a number does that.
+  function hopLabel(km){
+    if(km==null||!(km>=0))return '';
+    var ar=LANG==='ar', es=LANG==='es', t;
+    if(km<1) t=String(Math.max(50,Math.round(km*1000/50)*50))+(ar?' م':' m');
+    else t=(km<10?km.toFixed(1):String(Math.round(km)))+kmUnit();
+    var ttl=ar?'المسافة من المكان السابق':(es?'Distancia desde la parada anterior':'Distance from the previous stop');
+    return ' <span class="hop" title="'+esc(ttl)+'">'+esc(t)+'</span>';
+  }
   function kmDist(a,b){ var R=6371,r=Math.PI/180,dlat=(b[0]-a[0])*r,dlng=(b[1]-a[1])*r;
     var x=Math.sin(dlat/2)*Math.sin(dlat/2)+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dlng/2)*Math.sin(dlng/2);
     return 2*R*Math.asin(Math.min(1,Math.sqrt(x))); }
@@ -3950,6 +3965,9 @@
     var hovName=ar?'اضغط الاسم يفتح في خرائط قوقل، أو مرّر عليه تشوف صورة'
       :(es?'Haz clic en un nombre para abrirlo en Google Maps, o pasa el cursor para ver una foto'
       :'Click a name to open it in Google Maps, or hover it to see a photo');
+    var hopTxt=ar?'الرقم الرمادي هو المسافة من المكان السابق — اليوم مرتّب بالأقرب فالأقرب'
+      :(es?'El número gris es la distancia desde la parada anterior — el día va de lo más cercano a lo más lejano'
+      :'The grey number is how far it is from the stop before — each day runs nearest-first');
     var swapTxt=ar?'تبديل':(es?'Cambiar':'Swap');
     var picTxt=ar?'صورة':(es?'Foto':'Photo');
     var whenTxt=ar?'الوقت':(es?'Hora':'When');
@@ -3958,6 +3976,7 @@
     // column of buttons — a legend off to the side is a puzzle you have to solve first.
     return '<div class="dhint"><span class="dhtouch">'+esc(tapName)+'</span>'+
       '<span class="dhhover">'+esc(hovName)+'</span></div>'+
+      '<div class="dhint">'+esc(hopTxt)+'</div>'+
       '<div class="dcap"><span class="t">'+esc(whenTxt)+'</span><span class="d">'+esc(whereTxt)+'</span>'+
         '<span class="dcapw dcappic">'+esc(picTxt)+'</span>'+
         '<span class="dcapw">'+esc(swapTxt)+'</span></div>';
@@ -3965,10 +3984,10 @@
   // `food` marks a meal. The rating is shown on restaurants only: choosing where to eat is where a
   // score actually changes your mind, and a number beside every mosque and museum was just noise.
   // Attractions are still checked and still ordered by it — the check just stops being visible.
-  function eslot(tm,poi,city,sk,o,ck,food){
+  function eslot(tm,poi,city,sk,o,ck,food,hop){
     // print the local name, but search Maps for the English one — it resolves far more reliably
     return '<div class="slot" data-sk="'+sk+'"><div class="t">'+tm+'</div>'
-      +'<div class="d">'+link(locName(ck,poi.n),poi.n+' '+city,poi.n+' '+city)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a))+'</div>'
+      +'<div class="d">'+link(locName(ck,poi.n),poi.n+' '+city,poi.n+' '+city)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a))+hopLabel(hop)+'</div>'
       +'<button type="button" class="picbtn" data-pic="'+esc(poi.n+' '+city)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>'
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
   }
@@ -4004,7 +4023,25 @@
   // separate days. Central places are walked as a nearest-neighbour route (so a day's slots are
   // adjacent), and outliers (e.g. an inland-sea or a fort 80km away) are seeded one-per-day instead
   // of being crammed together. Returns the original pool unchanged when we have no coordinates.
-  function geoOrderPool(ck,pool,spd){
+  // Where the traveller said they're sleeping, as coordinates — the middle of every place filed
+  // under that neighbourhood. Returns null when they didn't say, or said something that isn't a
+  // neighbourhood ("city center", "near the airport"); a guessed hotel is worse than no hotel,
+  // because the whole day then gets built around a point nobody chose.
+  function stayArea(ck){
+    var co=POI_CO[ck], d=DEST[ck];
+    var q=String(STAYAREA||'').toLowerCase().trim();
+    if(!co||!d||q.length<3)return null;
+    var all=d.poi.concat(d.food), x=0, y=0, n=0;
+    all.forEach(function(p){
+      var a=String(p.a||'').toLowerCase();
+      if(!co[p.n]||a.length<4)return;
+      // "Dubai Marina" has to find the area called "Marina", and "Marina" has to find
+      // "Dubai Marina" — but a four-letter floor keeps it from matching on a stray word.
+      if(a.indexOf(q)>=0||q.indexOf(a)>=0){ x+=co[p.n][0]; y+=co[p.n][1]; n++; }
+    });
+    return n?[x/n,y/n]:null;
+  }
+  function geoOrderPool(ck,pool,spd,anchor){
     var co=POI_CO[ck]; if(!co)return pool;
     var covered=pool.filter(function(p){return co[p.n];});
     if(covered.length<Math.max(3,Math.ceil(pool.length*0.6)))return pool; // not enough data to trust
@@ -4027,7 +4064,12 @@
     // trek — then hop to whichever is nearest the one you just did
     var remA=areas.slice(),seq=[];
     if(remA.length){
-      var si=0,sb=Infinity; remA.forEach(function(a,i){ var v=d2(acen(a),cen); if(v<sb){ sb=v; si=i; } });
+      // Whoever said "I'm staying in the Marina" should get the Marina on day one — the first
+      // neighbourhood is the one nearest where they sleep, and only the middle of town when we
+      // genuinely have no idea. Outliers are still judged against the city centre: a day trip is
+      // far from the CITY, which has nothing to do with which hotel they picked.
+      var startFrom=anchor||cen;
+      var si=0,sb=Infinity; remA.forEach(function(a,i){ var v=d2(acen(a),startFrom); if(v<sb){ sb=v; si=i; } });
       var curA=remA.splice(si,1)[0]; seq.push(curA);
       while(remA.length){
         var bi=0,bb=Infinity; remA.forEach(function(a,i){ var v=d2(acen(a),acen(curA)); if(v<bb){ bb=v; bi=i; } });
@@ -4052,7 +4094,8 @@
   }
   function emitDays(match,fromDay,count,total,vibes,spd,o,t,txt,stops){
     var pool=poolFor(match,vibes),tl=timeLabels(o,spd),html='',ck=keyOf(match);
-    var geoPool=geoOrderPool(ck,pool,spd), geoOn=(geoPool!==pool);
+    var stayAt=stayArea(ck);
+    var geoPool=geoOrderPool(ck,pool,spd,stayAt), geoOn=(geoPool!==pool);
     if(geoOn)pool=geoPool;
     var off=geoOn?0:SEED%1000; // geo order is meaningful in-sequence, so don't rotate the start
     // name -> {c: how many times used, d: the last day it was used}. One record for sights AND
@@ -4093,10 +4136,69 @@
       var idx=((off+rot*spd)%avail.length+avail.length)%avail.length;
       return avail[idx];
     }
+    // WHICH places belong to this day is settled above, by neighbourhood. This settles the ORDER
+    // they come in — the thing that decides whether the day reads as a route or as a scribble.
+    // Nearest-first, then undo whatever crossing the greedy pass left behind. A place the traveller
+    // pinned to a slot themselves never moves: their own choice outranks any optimisation.
+    function routeDay(list,pin,from){
+      var co=POI_CO[ck], n=list.length;
+      if(!co||n<3)return list;
+      function walked(out,anchor){
+        var tot=0,p=anchor,x,c;
+        for(x=0;x<n;x++){ c=co[out[x].n]; if(p&&c)tot+=Math.sqrt(d2co(p,c)); if(c)p=c; }
+        return tot;
+      }
+      function build(start,anchor){
+        var out=new Array(n), rest=[], i, j, k;
+        for(i=0;i<n;i++){ if(pin[i])out[i]=list[i]; else rest.push(list[i]); }
+        var cur=start;
+        for(i=0;i<n;i++){
+          if(out[i]){ if(co[out[i].n])cur=co[out[i].n]; continue; }
+          var bi=0,bb=Infinity;
+          for(j=0;j<rest.length;j++){
+            var c=co[rest[j].n];
+            var v=(cur&&c)?d2co(c,cur):(c?0:1e9);    // no coordinates: keep it, never let it steer
+            if(v<bb){ bb=v; bi=j; }
+          }
+          out[i]=rest.splice(bi,1)[0];
+          if(co[out[i].n])cur=co[out[i].n];
+        }
+        // Nearest-first still crosses itself. Reversing a stretch is what uncrosses it; a plain swap
+        // catches the rest. Both are cheap on five stops and it settles in a pass or two.
+        function free(a,b){ for(var x=a;x<=b;x++)if(pin[x])return false; return true; }
+        var moved=true, guard=0;
+        while(moved&&guard++<16){
+          moved=false;
+          for(i=0;i<n-1;i++)for(k=i+1;k<n;k++){
+            if(!free(i,k))continue;
+            var was=walked(out,anchor), old=out.slice(i,k+1), seg=old.slice().reverse(), x2;
+            for(x2=0;x2<seg.length;x2++)out[i+x2]=seg[x2];
+            if(walked(out,anchor)<was-1e-12){ moved=true; continue; }
+            for(x2=0;x2<old.length;x2++)out[i+x2]=old[x2];
+            var t=out[i]; out[i]=out[k]; out[k]=t;
+            if(walked(out,anchor)<was-1e-12){ moved=true; continue; }
+            t=out[i]; out[i]=out[k]; out[k]=t;
+          }
+        }
+        return out;
+      }
+      // They told us where they're staying, so the day genuinely starts there and the walk home
+      // counts. Otherwise there is no fixed start — the honest answer is the shortest walk through
+      // the day's stops, whichever end it begins at, so try each of them and keep the best.
+      if(from)return build(from,from);
+      var best=null,bl=Infinity,q,cc,cand,L;
+      for(q=0;q<n;q++){
+        if(pin[q])continue;
+        cc=co[list[q].n]; if(!cc)continue;
+        cand=build(cc,null); L=walked(cand,null);
+        if(L<bl){ bl=L; best=cand; }
+      }
+      return best||build(null,null);
+    }
     // dinner near where the day actually ends: prefer a restaurant closest to the last activity
     // (by coordinates, else by matching neighbourhood), so you're not driving across town to eat.
     // It picks the nearest of what's ELIGIBLE — the nearest overall is the same place every night.
-    function nearestFood(ck,food,dayPois,rot,day,today,partner){
+    function nearestFood(ck,food,dayPois,rot,day,today,partner,next){
       var avail=eligible(food,day,today);
       if(partner){
         var unpaired=avail.filter(function(f){ return !pairs[partner+'|'+f.n]; });
@@ -4105,10 +4207,19 @@
       if(!avail.length)return food[0];
       var co=POI_CO[ck], anchor=dayPois[dayPois.length-1];
       if(co&&anchor&&co[anchor.n]){
-        var ac=co[anchor.n];
-        function d2(a,b){var dx=a[0]-b[0],dy=(a[1]-b[1])*Math.cos((a[0]+b[0])/2*Math.PI/180);return dx*dx+dy*dy;}
+        var ac=co[anchor.n], nc=(next&&co[next.n])?co[next.n]:null;
+        // Lunch has somewhere to be afterwards, so the closest restaurant to where you stand is the
+        // wrong question — the right one is which costs the least DETOUR on the way to the next
+        // stop. Dinner has nothing after it, so for dinner this is simply the nearest.
         var withCo=avail.filter(function(f){return co[f.n];});
-        if(withCo.length){ var best=withCo[0],bb=Infinity; withCo.forEach(function(f){var v=d2(co[f.n],ac); if(v<bb){bb=v;best=f;}}); return best; }
+        if(withCo.length){
+          var best=withCo[0],bb=Infinity;
+          withCo.forEach(function(f){
+            var fc=co[f.n], v=Math.sqrt(d2co(fc,ac))+(nc?Math.sqrt(d2co(fc,nc)):0);
+            if(v<bb){ bb=v; best=f; }
+          });
+          return best;
+        }
       }
       var areas={}; dayPois.forEach(function(p){areas[p.a]=1;}); // fallback: same neighbourhood
       var same=avail.filter(function(f){return areas[f.a];}); if(same.length)return same[0];
@@ -4118,24 +4229,48 @@
       var d=fromDay+i, title=d===1?o.arrival:d===total?o.last:o.explore, rot=DAYROT[ck+'|'+d]||0;
       txt.push(''); txt.push(o.dayWord+' '+d+' — '+title+' ('+match.city+')');
       var dayPois=[], body='', names=[], todayN={}, lunchN=''; // todayN: nothing appears twice in one day, ever
+      // where you are as the day runs: the hotel to begin with, then the last place you stood
+      var here=stayAt, hopped=false, cco=POI_CO[ck];
+      // The distance shown is between two REAL stops. The first stop of the day has nothing before
+      // it — measuring from a guessed hotel and printing it would be inventing a number.
+      function hopTo(poi){
+        var k=(cco&&here&&cco[poi.n])?kmDist(here,cco[poi.n]):null;
+        var out=hopped?k:null;
+        if(cco&&cco[poi.n]){ here=cco[poi.n]; hopped=true; }
+        return out;
+      }
+      function hopTxt(k){ return (k==null)?'':(' — '+(k<1?(Math.max(50,Math.round(k*1000/50)*50))+' m':(k<10?k.toFixed(1):Math.round(k))+' km')); }
       // Three meals, in the right places: breakfast opens the day, lunch lands after the
       // morning block, dinner closes it — each near where you actually are at that hour.
       var lunchAt=(spd>=4?2:1);
       body+=bslot(o.times.breakfast,match.city,STAYAREA,o);
       txt.push('  '+o.times.breakfast+': '+o.bfastTxt);
+      // Choose the day's stops first — that is where the neighbourhood grouping does its work —
+      // and only then decide what order to walk them in. Choosing and ordering at the same time is
+      // what produced hotel -> far side of town -> back past somewhere you'd already walked by.
+      var picks=[], pinned=[], sk;
       for(var s=0;s<spd;s++){
-        var sk=ck+'|'+d+'|'+s, poi=DAYEDITS[sk]?poiByName(ck,DAYEDITS[sk]):null;
+        sk=ck+'|'+d+'|'+s;
+        var poi=DAYEDITS[sk]?poiByName(ck,DAYEDITS[sk]):null;
+        pinned.push(!!poi);
         if(!poi)poi=take(pool,rot,i===0,d,todayN); // i===0 is the first day in THIS city
-        useMark(poi.n,d); todayN[poi.n]=1; dayPois.push(poi); names.push(poi.n);
-        if(stops)stops.push({n:poi.n,a:poi.a});
-        body+=eslot(tl[s],poi,match.city,sk,o,ck);
-        txt.push('  '+tl[s]+': '+poi.n+' ('+poi.a+')');
+        useMark(poi.n,d); todayN[poi.n]=1; picks.push(poi);
+      }
+      picks=routeDay(picks,pinned,here);
+      for(s=0;s<spd;s++){
+        sk=ck+'|'+d+'|'+s;
+        var pk=picks[s]; dayPois.push(pk); names.push(pk.n);
+        if(stops)stops.push({n:pk.n,a:pk.a});
+        var phop=hopTo(pk);
+        body+=eslot(tl[s],pk,match.city,sk,o,ck,false,phop);
+        txt.push('  '+tl[s]+': '+pk.n+' ('+pk.a+')'+hopTxt(phop));
         if(s===lunchAt-1){
           var lsk=ck+'|'+d+'|l', lu=DAYEDITS[lsk]?poiByName(ck,DAYEDITS[lsk]):null;
-          if(!lu)lu=nearestFood(ck,match.food,dayPois,rot,d,todayN);
+          if(!lu)lu=nearestFood(ck,match.food,dayPois,rot,d,todayN,'',picks[s+1]);
           useMark(lu.n,d); todayN[lu.n]=1; lunchN=lu.n;
-          body+=eslot(o.times.lunch,lu,match.city,lsk,o,ck,true);
-          txt.push('  '+o.times.lunch+': '+lu.n+' ('+lu.a+')');
+          var lhop=hopTo(lu);
+          body+=eslot(o.times.lunch,lu,match.city,lsk,o,ck,true,lhop);
+          txt.push('  '+o.times.lunch+': '+lu.n+' ('+lu.a+')'+hopTxt(lhop));
         }
       }
       (DAYADD[d]||[]).forEach(function(x,xi){ body+=xslot(x.n,match.city,d,xi,o); txt.push('  '+o.extraLbl+': '+x.n); });
@@ -4143,8 +4278,9 @@
       if(!fo)fo=nearestFood(ck,match.food,dayPois,rot,d,todayN,lunchN);
       useMark(fo.n,d); todayN[fo.n]=1;
       if(lunchN)pairs[lunchN+'|'+fo.n]=1;
-      body+=eslot(o.times.dinner,fo,match.city,dsk,o,ck,true);
-      txt.push('  '+o.times.dinner+': '+fo.n+' ('+fo.a+')');
+      var dhop=hopTo(fo);
+      body+=eslot(o.times.dinner,fo,match.city,dsk,o,ck,true,dhop);
+      txt.push('  '+o.times.dinner+': '+fo.n+' ('+fo.a+')'+hopTxt(dhop));
       // Each day is collapsible — the first is open, the rest show a one-line summary until tapped.
       var sum=esc(names.slice(0,3).map(function(n){return locName(ck,n);}).join(' · '))+(names.length>3?' <span class="dsmore">+'+(names.length-3)+'</span>':'');
       html+='<div class="day'+(d>1?' dcol':'')+'" id="day-'+d+'">'
