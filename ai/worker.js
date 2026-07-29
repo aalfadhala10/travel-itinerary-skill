@@ -291,7 +291,8 @@ async function dumpAll(env) {
 // --- Claude call with guaranteed-JSON output (structured outputs) ---------------
 // Retries transient upstream errors (429/500/502/503/529 — the API occasionally
 // answers "error code: 502" as plain text), and surfaces a clear error otherwise.
-async function claude(apiKey, model, system, user, schema, maxTokens) {
+// `grown` marks the one retry with a bigger token budget, so it can't loop.
+async function claude(apiKey, model, system, user, schema, maxTokens, grown) {
   const body = JSON.stringify({
     model,
     max_tokens: maxTokens,
@@ -331,8 +332,18 @@ async function claude(apiKey, model, system, user, schema, maxTokens) {
     catch { throw new Error("non-JSON reply from Claude: " + raw.slice(0, 200)); }
     if (data.type === "error") throw new Error(data.error && data.error.message || "api error");
     const txt = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
+    // Ran out of room mid-object, so the JSON is cut off and will never parse. Retrying the SAME
+    // request just truncates in the same place — the only thing that helps is more room. This is
+    // what a long first message in Arabic used to hit: Arabic costs far more tokens per character,
+    // and the traveller was told to try again on something that could not succeed.
+    if (data.stop_reason === "max_tokens" && !grown) {
+      return claude(apiKey, model, system, user, schema, Math.min(maxTokens * 2, 8000), true);
+    }
     try { return JSON.parse(txt); }
-    catch { throw new Error("Claude did not return valid JSON"); }
+    catch {
+      if (!grown) return claude(apiKey, model, system, user, schema, Math.min(maxTokens * 2, 8000), true);
+      throw new Error("Claude did not return valid JSON");
+    }
   }
   throw lastErr || new Error("api unavailable");
 }
@@ -565,7 +576,9 @@ function chatTurn(messages, apiKey) {
     "that stops halfway. A single Arabic mistake is worse than a slower answer.";
   // Arabic is the one language a small model keeps getting wrong (broken grammar, half-translated
   // words). Real users noticed, so Arabic conversations go to the bigger model; EN/ES stay on Haiku.
-  return claude(apiKey, writesArabic(messages) ? "claude-sonnet-5" : "claude-haiku-4-5", system, messages, CHAT_SCHEMA, 1200);
+  // 2400, not 1200: the schema carries the reply, the chips, the cities, the nights and the extras,
+  // and Arabic spends roughly twice the tokens per character that English does.
+  return claude(apiKey, writesArabic(messages) ? "claude-sonnet-5" : "claude-haiku-4-5", system, messages, CHAT_SCHEMA, 2400);
 }
 
 // True when the traveller is actually writing Arabic (not just one stray word).
