@@ -414,6 +414,7 @@
   @media (hover:hover) and (pointer:fine){.dhtouch{display:none}.dhhover{display:inline}}
   /* same flex shape as a .slot, so each caption sits exactly over its column of buttons */
   .dcap{display:flex;gap:11px;align-items:flex-end;padding:0 0 4px}
+  .dcap .t,.dcap .d{color:var(--muted);font-size:14px;font-weight:600}
   .dcap .t{width:96px;flex-shrink:0}
   .dcap .d{flex:1;min-width:0}
   .dcapw{flex:0 0 auto;width:30px;text-align:center;color:var(--muted);font-size:14px;
@@ -3860,9 +3861,13 @@
   }
   // show the neighbourhood only when it's a real short label — hide it when a data source put a
   // whole description sentence in the area field, so the itinerary stays clean.
-  // No Arabic filter here any more: stray Arabic captions from the city-builder are already
-  // stripped where that data is ingested, and this was then eating the deliberate translations.
-  function areaLabel(a){ a=(a||'').trim(); if(!a)return ''; if(a.split(/\s+/).length>4||a.length>28)return ''; return ' <span class="area">· '+esc(a)+'</span>'; }
+  // The city-builder sometimes emits an Arabic caption where a neighbourhood should be, and cities
+  // cached before that was sanitised still carry them — so an English plan was showing
+  // "King's Wharf · رصيف الملك". Arabic in an area is only ever right on an Arabic page.
+  function areaLabel(a){ a=(a||'').trim(); if(!a)return '';
+    if(LANG!=='ar'&&/[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(a))return '';
+    if(a.split(/\s+/).length>4||a.length>28)return '';
+    return ' <span class="area">· '+esc(a)+'</span>'; }
   // Each day is its own page now, and the icons beside a place mean nothing until somebody tells
   // you. This shows the actual buttons next to what they do, at the top of every day.
   function dayHint(o){
@@ -3875,11 +3880,13 @@
       :'Click a name to open it in Google Maps, or hover it to see a photo');
     var swapTxt=ar?'تبديل':(es?'Cambiar':'Swap');
     var picTxt=ar?'صورة':(es?'Foto':'Photo');
+    var whenTxt=ar?'الوقت':(es?'Hora':'When');
+    var whereTxt=ar?'المكان':(es?'Lugar':'Place');
     // The captions sit in the same flex row as a slot, so each word lands directly over its own
     // column of buttons — a legend off to the side is a puzzle you have to solve first.
     return '<div class="dhint"><span class="dhtouch">'+esc(tapName)+'</span>'+
       '<span class="dhhover">'+esc(hovName)+'</span></div>'+
-      '<div class="dcap"><span class="t"></span><span class="d"></span>'+
+      '<div class="dcap"><span class="t">'+esc(whenTxt)+'</span><span class="d">'+esc(whereTxt)+'</span>'+
         '<span class="dcapw dcappic">'+esc(picTxt)+'</span>'+
         '<span class="dcapw">'+esc(swapTxt)+'</span></div>';
   }
