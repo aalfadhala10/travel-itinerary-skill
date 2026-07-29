@@ -521,8 +521,9 @@
   #app[dir="rtl"] .pgtab{font-family:var(--ff-body)}
   .pgtab:hover{border-color:var(--teal);color:var(--teal)}
   .pgtab.on{background:var(--teal);border-color:var(--teal);color:var(--paper)}
-  /* bottom margin clears the floating "Edit this trip" button, which sat right on top of Next */
-  .pgnav{display:flex;align-items:center;gap:10px;margin-top:18px;margin-bottom:74px}
+  .pgnav{display:flex;align-items:center;gap:10px;margin-top:18px;margin-bottom:16px}
+  /* save / share / print, under every page — and far enough up to clear the floating buttons */
+  .actions.pgfoot{margin-top:0;padding-top:16px;border-top:1px solid var(--line);margin-bottom:74px}
   .pgbtn{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;
     background:var(--paper2);color:var(--ink);font-family:var(--ff-body);font-size:14px;
     cursor:pointer;text-align:start}
@@ -2680,12 +2681,15 @@
           p+='&checkin='+f(ci)+'&checkout='+f(co);
         }
       }
-      // children are left off the search URL on purpose: Booking rejects group_children>0
-      // without an age for each child, which breaks the search. Adults + rooms drive availability.
-      p+='&group_adults='+ad+'&group_children=0&no_rooms=1';
+      // Booking rejects group_children>0 unless every child has an age, so send the ages rather
+      // than dropping the kids — a family of four was being priced as two adults.
+      var kd=Math.max(0,Math.min(20,parseInt(($('kids')||{}).value,10)||0));
+      p+='&group_adults='+ad+'&group_children='+kd+'&no_rooms=1';
+      for(var ki=0;ki<kd;ki++)p+='&age='+KID_AGE; // the field asks for 2-11; mid-range keeps child rates
     }catch(e){}
     return p;
   }
+  var KID_AGE=8;
   function bookUrl(q){
     var u="https://www.booking.com/searchresults.html?ss="+encodeURIComponent(q)+bookDates();
     if(CONFIG.bookingAID){u+="&aid="+encodeURIComponent(CONFIG.bookingAID);if(CONFIG.bookingLabel)u+="&label="+encodeURIComponent(CONFIG.bookingLabel);}
@@ -3212,11 +3216,16 @@
           .then(function(r){return r.json();})
           .then(function(d){
             if(d&&d.chat&&(d.chat.reply||d.chat.ready))return d.chat;
-            if(d&&d.error)try{console.warn('bosla chat:',d.error);}catch(e){} // shows up in the console if it keeps happening
+            // Report it, so a dropped reply shows up in the stats instead of only in somebody's
+            // console — you can't fix what you can't see happening.
+            if(d&&d.error){ try{console.warn('bosla chat:',d.error);}catch(e){}
+              if(!tries)try{ track('chat_err',{msg:String(d.error).slice(0,120)}); }catch(e){} }
             if(tries>0)return wait(tries);                                   // a cut-off reply is usually a one-off
             return null;
           })
-          .catch(function(){ return tries>0?wait(tries):null; });
+          .catch(function(e){
+            if(!tries)try{ track('chat_err',{msg:'network: '+String(e&&e.message||e).slice(0,100)}); }catch(x){}
+            return tries>0?wait(tries):null; });
       }
       // A long first message (destination, days, who's going, how they get there, all at once) is
       // exactly when the model is slowest and most likely to time out — and exactly when being
@@ -3512,13 +3521,13 @@
     if(last&&last.length>1&&last[0].classList.contains('day')){ tail=last.splice(1); }
     if(tail.length)buckets.push(tail);
     var dayCount=buckets.length-1-(tail.length?1:0);
-    // "Change something?" and Save/Share/Print are trip-level — they belong where you land, not
-    // buried behind the last day. Everything else stays where the plan put it.
+    // Save / share / print isn't something to go hunting for — it comes out of the pages entirely
+    // and sits under every one of them. "Change something?" belongs where you land.
+    var foot=null;
     buckets.forEach(function(items,bi){
-      if(!bi)return;
       for(var j=items.length-1;j>=0;j--){
-        if(items[j].classList.contains('editbar')||items[j].classList.contains('actions'))
-          buckets[0].push(items.splice(j,1)[0]);
+        if(items[j].classList.contains('actions')){ foot=items.splice(j,1)[0]; continue; }
+        if(bi&&items[j].classList.contains('editbar'))buckets[0].push(items.splice(j,1)[0]);
       }
     });
 
@@ -3555,6 +3564,7 @@
     });
     out.innerHTML=''; out.appendChild(tabs);
     pages.forEach(function(pg){ out.appendChild(pg); });
+    if(foot){ foot.classList.add('pgfoot'); out.appendChild(foot); } // outside the pages, so it's on all of them
     out.setAttribute('data-days',dayCount);
     // Land on day one. The overview is a tab away for anyone who wants it, but the first thing a
     // traveller wants is the first day — and having to work out that you tap "1" to see any of
@@ -3569,11 +3579,16 @@
       if(PGOBS){ PGOBS.disconnect(); PGOBS=null; }
       document.body.classList.remove('pgnav-vis');
       if(!window.IntersectionObserver)return;                 // old browser: leave the buttons alone
-      var nav=$('out').querySelector('.pg.on > .pgnav'); if(!nav)return;
+      var out=$('out'), seen={};
+      var targets=[out.querySelector('.pg.on > .pgnav'),out.querySelector('.actions.pgfoot')]
+        .filter(function(x){ return !!x; });
+      if(!targets.length)return;
       PGOBS=new IntersectionObserver(function(es){
-        document.body.classList.toggle('pgnav-vis',es.some(function(e){ return e.isIntersecting; }));
+        es.forEach(function(e){ seen[e.target.getAttribute('data-pgw')]=e.isIntersecting; });
+        var any=false; for(var k in seen)if(seen[k])any=true;
+        document.body.classList.toggle('pgnav-vis',any);
       },{threshold:0.3});
-      PGOBS.observe(nav);
+      targets.forEach(function(t,i){ t.setAttribute('data-pgw','w'+i); PGOBS.observe(t); });
     }catch(e){}
   }
   function pgGo(i,quiet){
@@ -3599,7 +3614,7 @@
     var ar=LANG==='ar', es=LANG==='es', title=ar?'الليالي بكل مدينة':(es?'Noches por ciudad':'Nights per city');
     var total=dc.reduce(function(a,b){return a+b;},0), mx=Math.max.apply(null,dc), dayW=ar?'يوم':(es?'días':'days');
     var delT=ar?'احذف هذه المدينة':(es?'Quitar esta ciudad':'Remove this city');
-    var rows=ms.map(function(m,i){ return '<div class="nrow"><span class="ncity">'+esc(m.city)+'</span>'+
+    var rows=ms.map(function(m,i){ return '<div class="nrow"><span class="ncity">'+esc(cityName(keyOf(m),m.city))+'</span>'+
       '<span class="nctl"><button type="button" class="nbtn" data-nb="'+i+'|-1" aria-label="-">−</button>'+
       '<span class="nnum">'+dc[i]+'</span>'+
       '<button type="button" class="nbtn" data-nb="'+i+'|1" aria-label="+">+</button>'+
@@ -3951,7 +3966,7 @@
       // Each day is collapsible — the first is open, the rest show a one-line summary until tapped.
       var sum=esc(names.slice(0,3).map(function(n){return locName(ck,n);}).join(' · '))+(names.length>3?' <span class="dsmore">+'+(names.length-3)+'</span>':'');
       html+='<div class="day'+(d>1?' dcol':'')+'" id="day-'+d+'">'
-        +'<div class="dhead"><div class="dhtext"><div class="dlabel">'+o.dayWord+' '+d+' · '+esc(match.city)+'</div><h3>'+title+'</h3></div>'
+        +'<div class="dhead"><div class="dhtext"><div class="dlabel">'+o.dayWord+' '+d+' · '+esc(cityName(ck,match.city))+'</div><h3>'+title+'</h3></div>'
         +'<button type="button" class="dayshuffle" data-shuf="'+ck+'|'+d+'" title="'+o.shuffleDay+'">'+SHUFSVG+'<span>'+o.shuffleDay+'</span></button>'
         +'<span class="dchev" aria-hidden="true"></span></div>'
         +'<div class="dsum">'+sum+'</div>'
@@ -4036,6 +4051,27 @@
   }
   // What to print for a place. English pages, and anything with no translation yet, keep the
   // original — a name is more use in the wrong language than missing.
+  // Every city already carries its Arabic name in the alias list — mixed in with its country's.
+  // The country name is shared by every city in that country, the city's own name by hardly any,
+  // so the least-shared Arabic alias IS the city. All 738 resolve; no translation call needed.
+  var CITYAR=null;
+  function cityAr(k){
+    if(!CITYAR){
+      CITYAR={}; var n={}, AR=/[؀-ۿ]/, a, b;
+      for(a in DEST)DEST[a].alias.forEach(function(x){ if(AR.test(x))n[x]=(n[x]||0)+1; });
+      for(b in DEST){
+        var best='',bn=1e9;
+        DEST[b].alias.forEach(function(x){ if(AR.test(x)&&n[x]<bn){ bn=n[x]; best=x; } });
+        if(best)CITYAR[b]=best;
+      }
+    }
+    return CITYAR[k]||'';
+  }
+  // What to call a city on screen. Arabic pages get the Arabic name; everything else is unchanged.
+  function cityName(k,fallback){
+    if(LANG==='ar'){ var a=cityAr(k); if(a)return a; }
+    return fallback||((DEST[k]&&DEST[k].city)||'');
+  }
   function locName(ck,n){
     if(LANG==='en'||!n)return n;
     var m=locLoad(ck,LANG); return (m&&m[n])?m[n]:n;
@@ -4657,13 +4693,13 @@
     for(i=1;i<n;i++)transferUSD+=transferInfo(t,ms[i-1],ms[i],kmDist(CO[keys[i-1]]||[0,0],CO[keys[i]]||[0,0]),ROUTEDRIVE).usd;
     var totalUSD=baseTotal+transferUSD;
     var subVibes=vibes.map(function(x){return t.ui.vibes[x];}).join(' · ')+(di?' · '+di.range:'');
-    var title=ms.map(function(m){return esc(m.city);}).join(' → ')+' · '+days+' '+o.daysUnit;
+    var title=ms.map(function(m){return esc(cityName(keyOf(m),m.city));}).join(' → ')+' · '+days+' '+o.daysUnit;
     LASTPLANNAME=(function(){var cs=[];ms.forEach(function(m){if(m.country&&cs.indexOf(m.country)<0)cs.push(m.country);});return cs.length===1?cs[0]:ms.map(function(m){return m.city;}).join(' - ');})();
     var ml=di?di.monthLabel:null;
     var cd=di?(di.du>0?'<div class="season">'+o.countdown(di.du)+'</div> ':(di.du===0?'<div class="season">'+o.today+'</div> ':'')):'';
     var seasons=cd+'<div class="season">'+seasonLine(ms[0],t,ml)+'</div>'+timeThereLine(ms[0],t)+weatherBox(ms[0],$('startDate').value,t);
     var stip=(o.seasonTip&&o.seasonTip[ms[0].summer.cond])?('<div class="tip">'+o.seasonTip[ms[0].summer.cond]+'</div>'):'';
-    var legs=ms.map(function(m,idx){return esc(m.city)+' ('+dc[idx]+' '+o.daysUnit+')';}).join(' → ');
+    var legs=ms.map(function(m,idx){return esc(cityName(keyOf(m),m.city))+' ('+dc[idx]+' '+o.daysUnit+')';}).join(' → ');
     var stay=ms.map(function(m){var hn=hotelPick(m,budget);return link(hn,hn+' '+m.city);}).join(' / ');
     var txt=[]; txt.push(ms.map(function(m){return m.city;}).join(' → ')+' · '+days+' '+o.daysUnit); txt.push(t.ui.budgets[budget]+' · '+t.ui.paces[pace]+' · '+subVibes);
     var eyebrow=ROUTEDRIVE?o.routeEyebrow:(LANG==='ar'?'رحلتك':(LANG==='es'?'Tu viaje':'Your trip'));
@@ -4986,7 +5022,8 @@
       var base1=m1.cost[budget]*d1, base2=multi?m2.cost[budget]*d2:0;
       var tr=multi?transferInfo(t,m1,m2,kmDist(CO[keyOf(m1)]||[0,0],CO[keyOf(m2)]||[0,0])):null, trUSD=tr?tr.usd:0;
       var totalUSD=base1+base2+trUSD;
-      var title=multi?(esc(m1.city)+' → '+esc(m2.city)+' · '+days+' '+o.daysUnit):(esc(m1.city)+', '+esc(m1.country)+' · '+days+' '+o.daysUnit);
+      var c1=esc(cityName(keyOf(m1),m1.city)), c2=multi?esc(cityName(keyOf(m2),m2.city)):'';
+      var title=multi?(c1+' → '+c2+' · '+days+' '+o.daysUnit):(c1+', '+esc(m1.country)+' · '+days+' '+o.daysUnit);
       LASTPLANNAME=(multi&&m2)?(m1.city+' - '+m2.city):(m1.country||m1.city);
       var h1=hotelPick(m1,budget), h2=multi?hotelPick(m2,budget):'';
       var stay=multi?(link(h1,h1+' '+m1.city)+' / '+link(h2,h2+' '+m2.city)):(link(h1,h1+' '+m1.city)+' · <a href="'+bookUrl(h1+' '+m1.city)+'" target="_blank" rel="noopener">'+o.book+'</a>');
@@ -5327,14 +5364,17 @@
       var w=cv.clientWidth,h=cv.clientHeight,dpr=Math.min(2,window.devicePixelRatio||1);
       cv.width=w*dpr; cv.height=h*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
       ctx.clearRect(0,0,w,h);
-      ctx.strokeStyle=inkColor(); ctx.globalAlpha=0.06; ctx.lineWidth=1;
-      var centers=[[w*0.2,h*0.18],[w*0.85,h*0.42],[w*0.5,h*0.82]];
+      // Three families of rings 26px apart used to overlap, and where contour lines cross at that
+      // spacing they set up a moiré that genuinely strains the eyes — several people said so. Two
+      // widely-spaced families at a third of the contrast read as paper texture instead of a net.
+      ctx.strokeStyle=inkColor(); ctx.globalAlpha=0.022; ctx.lineWidth=1;
+      var centers=[[w*0.18,h*0.16],[w*0.82,h*0.74]];
       for(var c=0;c<centers.length;c++){
         var cx=centers[c][0],cy=centers[c][1];
-        for(var r=26;r<Math.max(w,h)*0.9;r+=26){
+        for(var r=70;r<Math.max(w,h)*0.9;r+=70){
           ctx.beginPath();
           for(var a=0;a<=Math.PI*2+0.1;a+=0.18){
-            var wob=Math.sin(a*3+c*1.7+r*0.02)*8+Math.cos(a*5+r*0.01)*5, rr=r+wob;
+            var wob=Math.sin(a*3+c*1.7+r*0.02)*5+Math.cos(a*5+r*0.01)*3, rr=r+wob;
             var x=cx+Math.cos(a)*rr, y=cy+Math.sin(a)*rr*0.82;
             if(a===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
           }
