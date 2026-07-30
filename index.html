@@ -198,8 +198,11 @@
   .day{position:relative;padding:18px 0 4px 26px;margin-left:8px;border-left:2px solid var(--line)}
   .day:last-child{border-left-color:transparent}
   .day::before{content:"";position:absolute;left:-7px;top:22px;width:12px;height:12px;border-radius:50%;background:var(--amber);border:2px solid var(--card);box-shadow:0 0 0 3px var(--amber-soft)}
-  .day .dlabel{font-family:var(--ff-data);font-size:15.5px;letter-spacing:.3px;color:var(--amber);font-weight:700}
-  .day h3{font-family:var(--ff-display);margin:2px 0 10px;font-size:21px;font-weight:600}
+  /* "Day 2 · Dubai" is what a traveller looks for on a page; "Arrival & first impressions" is a
+     nice line, not information. The sizes had it the other way round, so the eye landed on the
+     decoration and had to hunt for the day. Swapped. */
+  .day .dlabel{font-family:var(--ff-data);font-size:22px;letter-spacing:.2px;color:var(--amber);font-weight:700;line-height:1.25}
+  .day h3{font-family:var(--ff-display);margin:3px 0 10px;font-size:16px;font-weight:600;color:var(--muted)}
   .slot{display:flex;gap:11px;padding:10px 0;border-top:1px dashed var(--line)}
   .slot:first-of-type{border-top:none}
   .slot .ico{font-size:18px;width:24px;text-align:center;flex-shrink:0}

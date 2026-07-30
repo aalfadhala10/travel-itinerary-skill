@@ -1,4 +1,4 @@
-const CACHE = 'bosla-v3';
+const CACHE = 'bosla-v4';
 const ASSETS = ['./', './index.html', './favicon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './manifest.webmanifest'];
 self.addEventListener('install', function(e){
   e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll(ASSETS); }).then(function(){ return self.skipWaiting(); }));
@@ -12,9 +12,13 @@ self.addEventListener('fetch', function(e){
   if (url.origin !== location.origin) return; // let Klook/Booking/Travelpayouts/Airalo hit the network
   var isDoc = e.request.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('index.html');
   if (isDoc) {
-    // Network-first for the app itself, so updates always arrive when online
+    // Network-first for the app itself, so updates always arrive when online.
+    // `cache:'no-cache'` matters: a plain fetch() here still goes through the browser's own HTTP
+    // cache, and GitHub Pages tells browsers to hold index.html for several minutes. Without this
+    // the service worker faithfully re-serves a stale app and every update looks like it never
+    // shipped. no-cache still allows a 304, so an unchanged app costs nothing to check.
     e.respondWith(
-      fetch(e.request).then(function(resp){
+      fetch(new Request(url.href, { cache: 'no-cache', credentials: 'same-origin' })).then(function(resp){
         var copy = resp.clone();
         caches.open(CACHE).then(function(c){ c.put('./index.html', copy); });
         return resp;
