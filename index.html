@@ -426,6 +426,9 @@
   .arrops{margin:8px 0 0;padding-inline-start:18px}
   .arrops li{font-size:15px;line-height:1.7}
   .arrvia{color:var(--muted)}
+  .slot.hotelrow{border-top:none;padding-bottom:12px}
+  .slot.hotelrow .t{color:var(--amber)}
+  .hotelwarn{margin:0 0 8px;font-size:14px;color:var(--clay)}
   .menulink{margin-inline-start:8px;font-size:14px;font-weight:600;color:var(--teal);text-decoration:none;white-space:nowrap}
   .menulink:hover{text-decoration:underline}
   .menulink::before{content:'· ';color:var(--muted);font-weight:400}
@@ -2379,11 +2382,55 @@
     "zermatt":{"Budget":["Hotel Bahnhof","Matterhorn Hostel Zermatt","Hotel Tannenhof","Hotel Weisshorn"],"Mid-range":["Hotel Alpenblick","Hotel Alex","Hotel Bristol Zermatt","Sunstar Hotel Zermatt","Hotel Ambassador Zermatt"],"Luxury":["Grand Hotel Zermatterhof","Mont Cervin Palace","The Omnia","Riffelalp Resort 2222m","CERVO Mountain Resort"]},
     "zurich":{"Budget":["Ibis Zurich City West","Youth Hostel Zurich","Hotel Otter","25hours Hotel Zurich West","Hotel Bristol Zurich"],"Mid-range":["Sorell Hotel Zurichberg","Hotel Adler Zurich","Sheraton Zurich Hotel","Hotel Schweizerhof Zurich","Renaissance Zurich Tower Hotel"],"Luxury":["Baur au Lac","The Dolder Grand","Widder Hotel","Park Hyatt Zurich","Mandarin Oriental Savoy Zurich"]}
   };
-  // pick a hotel for a city+tier, varied by the trip seed so "another version" changes it
+  // Pick a hotel for a city+tier. A hotel is the one booking a traveller cannot undo halfway
+  // through, so the best-reviewed in their own price bracket wins — rotated among the top few by
+  // the trip seed, so "another version" still changes it. Nobody is pushed above their budget: the
+  // bar is applied WITHIN the tier they chose, and if nothing in it clears 4.0 we take the best
+  // there is and say so rather than quietly upgrading them.
+  function hotelPool(dest,tier){
+    var ck=keyOf(dest), pool=(HOTELS_X[ck]&&HOTELS_X[ck][tier])||[];
+    if(pool.length)return pool.slice();
+    var one=dest.hotels&&dest.hotels[tier];
+    return one?[one]:[];
+  }
   function hotelPick(dest,tier){
-    try{ var ck=keyOf(dest), pool=HOTELS_X[ck]&&HOTELS_X[ck][tier];
-      if(pool&&pool.length)return pool[((SEED%pool.length)+pool.length)%pool.length]; }catch(e){}
-    return dest.hotels[tier];
+    var pool=hotelPool(dest,tier);
+    if(!pool.length)return (dest.hotels&&dest.hotels[tier])||'';
+    var rated=pool.filter(function(h){ return ratingOf(h); });
+    if(rated.length){
+      var good=rated.filter(function(h){ return wellRated(h); });
+      var list=(good.length?good:rated).slice().sort(function(a,b){ return ratingOf(b).r-ratingOf(a).r; });
+      // The best one, full stop. You book one hotel and you live in it — varying it for the sake of
+      // variety would hand somebody the second-best bed to make the page look different. The seed
+      // only breaks a tie between hotels that are rated the same.
+      var best=ratingOf(list[0]).r;
+      var top=list.filter(function(h){ return ratingOf(h).r===best; });
+      return top[((SEED%top.length)+top.length)%top.length];
+    }
+    return pool[((SEED%pool.length)+pool.length)%pool.length];
+  }
+  // True when the tier they chose simply has nothing well reviewed in it, so the plan can say so.
+  function hotelThin(dest,tier){
+    var pool=hotelPool(dest,tier), rated=pool.filter(function(h){ return ratingOf(h); });
+    return rated.length>0 && !rated.some(function(h){ return wellRated(h); });
+  }
+  function curTier(){ try{ return picked('budgetChips')[0]||'Mid-range'; }catch(e){ return 'Mid-range'; } }
+  // The hotel opens every day: it is where the day starts, and where the route is measured from.
+  function hotelSlot(ck,o){
+    var d=DEST[ck]; if(!d)return '';
+    var tier=curTier(), h=hotelPick(d,tier); if(!h)return '';
+    var ar=LANG==='ar', es=LANG==='es';
+    var lbl=ar?'الفندق':(es?'Hotel':'Hotel');
+    var q=h+' '+d.city;
+    var warn='';
+    if(hotelThin(d,tier)){
+      warn='<div class="hotelwarn">'+esc(ar?'ما لقينا فندق بتقييم ٤ فوق بهذي الفئة — هذا أفضل الموجود.'
+        :(es?'No hay ninguno con 4+ en esta categoría — este es el mejor disponible.'
+        :"Nothing in this price bracket rates 4+ — this is the best there is."))+'</div>';
+    }
+    return '<div class="slot hotelrow" data-q="'+esc(q)+'"><div class="t">'+esc(lbl)+'</div>'+
+      '<div class="d">'+link(h,q,'',h)+ratingTag(h)+
+      ' <a class="menulink booklink" href="'+bookUrl(q)+'" target="_blank" rel="noopener">'+esc(o.book)+'</a></div></div>'+warn;
   }
   var COUNTRY_TZ={};  // country → IANA timezone (for local-time display)
   var COUNTRY_LANG={};// country → phrasebook language code
@@ -4232,6 +4279,10 @@
   // because the whole day then gets built around a point nobody chose.
   function stayArea(ck){
     var co=POI_CO[ck], d=DEST[ck];
+    // The hotel beats the neighbourhood: it is an exact point they will actually walk out of,
+    // where an area is the middle of a guess.
+    if(d){ var h=hotelPick(d,curTier()), hp=h?pinOf(h):null;
+      if(hp&&hp.lat&&hp.lng)return [hp.lat,hp.lng]; }
     var q=String(STAYAREA||'').toLowerCase().trim();
     if(!co||!d||q.length<3)return null;
     var all=d.poi.concat(d.food), x=0, y=0, n=0;
@@ -4451,6 +4502,9 @@
       // Choose the day's stops first — that is where the neighbourhood grouping does its work —
       // and only then decide what order to walk them in. Choosing and ordering at the same time is
       // what produced hotel -> far side of town -> back past somewhere you'd already walked by.
+      // The hotel is where the day starts, so the route handed to Google starts there too.
+      var hn=(function(){ var hh=hotelPick(match,curTier()); return hh||''; })();
+      if(hn)walk.push(hn);
       var picks=[], pinned=[], sk;
       for(var s=0;s<spd;s++){
         sk=ck+'|'+d+'|'+s;
@@ -4491,7 +4545,7 @@
         +'<button type="button" class="dayshuffle" data-shuf="'+ck+'|'+d+'" title="'+o.shuffleDay+'">'+SHUFSVG+'<span>'+o.shuffleDay+'</span></button>'
         +'<span class="dchev" aria-hidden="true"></span></div>'
         +'<div class="dsum">'+sum+'</div>'
-        +'<div class="dbody">'+(d===1?arrivalCard(ck):'')+dayHint(o)+body+dayRouteLink(walk,match.city)+'</div></div>';
+        +'<div class="dbody">'+(d===1?arrivalCard(ck):'')+dayHint(o)+hotelSlot(ck,o)+body+dayRouteLink(walk,match.city)+'</div></div>';
     }
     return html;
   }
@@ -4774,7 +4828,7 @@
       CLOSEDGOT[k]=1;
       var d=DEST[k];
       // only the named places — "Breakfast near your stay" isn't somewhere to look up
-      var names=d.poi.concat(d.food).map(function(x){return x.n;})
+      var names=d.poi.concat(d.food).map(function(x){return x.n;}).concat(hotelPool(d,curTier()))
         .filter(function(n,i,a){ return n&&a.indexOf(n)===i&&!isClosed(n); }).slice(0,40);
       if(!names.length)return;
       fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
