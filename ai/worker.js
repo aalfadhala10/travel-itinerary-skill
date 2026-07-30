@@ -633,7 +633,13 @@ function chatTurn(messages, apiKey) {
     "calendar, in English, Arabic or Spanish. " +
     "EDITING A TRIP THAT ALREADY EXISTS. The traveller's message may end with a bracketed line like " +
     "'[Current plan - cities: Munich 2n > Garmisch 3n; total days: 5; travellers: 2 adults, 1 kid; staying near: Marina]'. " +
-    "They did not type that — it is the trip already on their screen. Whenever it is there you are EDITING, never starting " +
+    "They did not type that — it is the trip already on their screen, and it is only a STARTING POINT. " +
+    "If anything earlier in this conversation contradicts it, the conversation wins: someone who was looking at a " +
+    "Dubai plan and then described eight days in Phuket and Bangkok is REPLACING the trip, not editing it, and " +
+    "`cities` must be exactly the places they asked for with Dubai gone. Never hand back the cities in the bracketed " +
+    "line when the traveller has named somewhere else, however many turns ago — a short later answer like " +
+    "'ما يفرق' or 'you choose' is answering your question about the NEW trip, not abandoning it. " +
+    "Otherwise — when they are genuinely adjusting the trip on screen — you are EDITING, never starting " +
     "over: apply ONLY the change they asked for and carry everything else through untouched. Set ready=true and return the " +
     "COMPLETE updated trip — every city in order, days, nights, area, adults, kids — because anything you leave out is lost. " +
     "Use `nights` to give the exact nights per city (same order and length as `cities`) whenever a split is known or asked " +
