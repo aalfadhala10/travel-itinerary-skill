@@ -44,6 +44,13 @@ Chromium also scrambles segment order, so a number's **context** must be bound
 by bbox position, never by the sequence the extractor returned — otherwise
 "120 in the spec, 80 in the schedule" binds the wrong value to the wrong source.
 
+Scanned Arabic is a separate and harsher case. Tesseract reads Arabic *words*
+at 90-93% and Latin digits at 93-97%, but does not get a single Arabic-Indic
+numeral right — ١٢٠ comes back as ١7٠١ — across every configuration tried. The
+digital defect is recoverable because only the order is wrong; here the glyph
+itself is misread, so nothing can be reconstructed. Those values are
+quarantined, never compared, and handed to a human with the page image.
+
 ### Test fixtures are the exception
 
 `tests/fixtures/make_testpack.py` and `arabic_shaped/make_shaped_arabic.py`
@@ -79,9 +86,13 @@ Set out in `docs/README.md`. The two that get violated most easily:
 
 ```bash
 python tests/fixtures/make_testpack.py
-python tools/construction-review/test_tp001.py     # 7/7 findings, 5/5 decoys avoided
+python tests/fixtures/make_scanned.py              # TP-002, exercises the OCR path
+python tools/construction-review/test_tp001.py     # both packs: 7/7, 5/5 decoys avoided
 python tests/fixtures/arabic_shaped/make_shaped_arabic.py
 ```
+
+OCR needs the system binary: `apt-get install tesseract-ocr tesseract-ocr-ara`.
+Without it scanned pages are reported unread rather than silently skipped.
 
 Every fixture asserts against a recorded answer key and fails on drift,
 including if a producer *stops* misbehaving — the spec should not be relaxed on

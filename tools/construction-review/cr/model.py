@@ -238,19 +238,22 @@ MEASURED_SUBJECTS = [("roof_insulation", ("roof",), ("insulation",)),
 
 def measured_attributes(doc: Document) -> list[Attribute]:
     out = []
-    texts = [(b.text, b.page, b.section_path, b.bbox) for b in doc.blocks]
-    for text, page, section, bbox in texts:
-        low = search_form(text)
+    for blk in doc.blocks:
+        low = search_form(blk.text)
         for name, musts, alsos in MEASURED_SUBJECTS:
             if not (any(m in low for m in musts) and all(a in low for a in alsos)):
                 continue
-            for meas in find_measures(text):
+            for meas in find_measures(blk.text):
                 if meas["dimension"] != "length" or meas["si"] > 1000:
                     continue
                 out.append(Attribute(
                     f"{name}_thickness", meas["value"], meas["unit"], meas["si"],
-                    Source(doc.name, page, section, text, bbox),
-                    rtl_context=bool(re.search(r"[؀-ۿ]", text))))
+                    Source(doc.name, blk.page, blk.section_path, blk.text, blk.bbox),
+                    rtl_context=bool(re.search(r"[؀-ۿ]", blk.text)),
+                    # OCR cannot read Arabic-Indic numerals — measured, not
+                    # assumed (cr/ocr.py). Such a value must never reach a
+                    # comparison; it goes to a human with the page image.
+                    geometric_read=blk.numeric_reliable))
             break
     return out
 

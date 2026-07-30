@@ -53,19 +53,16 @@ DECOYS = [
 ]
 
 
-def main() -> int:
-    if not TESTPACK.exists():
-        print(f"fixtures missing — run:\n  python {FIXTURES/'make_testpack.py'}")
-        return 2
-
-    docs = [extract(p) for p in sorted(TESTPACK.iterdir())
+def score(pack: Path, label: str) -> bool:
+    docs = [extract(p) for p in sorted(pack.iterdir())
             if p.suffix.lower() in (".pdf", ".xlsx")]
     pm = model.build(docs)
     findings = checks.run(pm)
 
-    print(f"TP-001 — {len(findings)} finding(s) from {len(docs)} documents\n")
+    print(f"\n{'=' * 62}\n{label} — {len(findings)} finding(s) "
+          f"from {len(docs)} documents\n{'=' * 62}")
 
-    print("Planted problems (recall)")
+    print("\nPlanted problems (recall)")
     found = 0
     for name, pred in EXPECTED:
         ok = pred(findings)
@@ -80,20 +77,48 @@ def main() -> int:
         print(f"  {'PASS' if ok else 'FAIL'}  {name}")
 
     extra = len(findings) - len(EXPECTED)
+    unevidenced = [f for f in findings if not f.evidence]
+
+    ocr_pages = [h for d in docs for h in d.health if h.kind == "scanned"]
+    if ocr_pages:
+        got = [h for h in ocr_pages if h.ocr_confidence]
+        mean = sum(h.ocr_confidence for h in got) / len(got) if got else 0
+        quarantined = sum(h.quarantined_numerals for h in ocr_pages)
+        print(f"\nOCR        {len(ocr_pages)} scanned page(s), "
+              f"mean confidence {mean:.0%}, "
+              f"{quarantined} Arabic numeral(s) quarantined")
+
     print(f"\nrecall     {found}/{len(EXPECTED)}")
     print(f"decoys     {clean}/{len(DECOYS)} avoided")
     print(f"unexpected {max(0, extra)} finding(s) beyond the answer key")
-
-    # Every finding must be able to point at where it came from (principle #1).
-    unevidenced = [f for f in findings if not f.evidence]
+    # Every finding must point at where it came from (principle #1).
     if unevidenced:
-        print(f"\nFAIL {len(unevidenced)} finding(s) carry no evidence")
+        print(f"FAIL       {len(unevidenced)} finding(s) carry no evidence")
 
     ok = (found == len(EXPECTED) and clean == len(DECOYS)
           and extra <= 0 and not unevidenced)
-    print("\n" + ("PASS — matches the answer key exactly"
-                  if ok else "FAIL — see above"))
-    return 0 if ok else 1
+    print("\n" + (f"PASS — {label} matches the answer key exactly"
+                  if ok else f"FAIL — {label}, see above"))
+    return ok
+
+
+def main() -> int:
+    if not TESTPACK.exists():
+        print(f"fixtures missing — run:\n  python {FIXTURES/'make_testpack.py'}")
+        return 2
+
+    results = [score(TESTPACK, "TP-001 digital")]
+
+    scanned = FIXTURES / "scanned"
+    if scanned.exists():
+        # Same documents as images with no text layer. Identical findings are
+        # the bar: OCR that quietly drops the door schedule would still look
+        # like a pass on the prose alone.
+        results.append(score(scanned, "TP-002 scanned (OCR)"))
+    else:
+        print(f"\nTP-002 skipped — run: python {FIXTURES/'make_scanned.py'}")
+
+    return 0 if all(results) else 1
 
 
 if __name__ == "__main__":

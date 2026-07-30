@@ -18,6 +18,8 @@ from pathlib import Path
 import fitz
 import openpyxl
 
+from . import ocr
+
 from .normalize import ARABIC_INDIC, presentation_form_ratio
 
 BBox = tuple[float, float, float, float]
@@ -30,6 +32,8 @@ class Block:
     text: str
     section_path: str | None = None
     confidence: float = 1.0
+    source: str = "native"            # native | ocr
+    numeric_reliable: bool = True     # False -> values here must not be compared
 
 
 @dataclass
@@ -55,6 +59,9 @@ class PageHealth:
     char_count: int
     render_suspect: bool = False
     reason: str | None = None
+    ocr_confidence: float | None = None
+    scan_quality: float | None = None
+    quarantined_numerals: int = 0
 
 
 @dataclass
@@ -130,7 +137,58 @@ SECTION_RE = re.compile(r"\bSECTION\s+((?:\d{2}\s+){2}\d{2})\b", re.IGNORECASE)
 CLAUSE_RE = re.compile(r"^\s*(\d+\.\d+(?:\.\d+)?)\s")
 
 
-def extract_pdf(path: Path) -> Document:
+OCR_DPI = 300
+
+
+def _ocr_page(page: fitz.Page, pno: int, doc: Document, health: PageHealth) -> None:
+    """Read a scanned page. Failure degrades the page, never the whole run."""
+    provider = ocr.default_provider()
+    if not provider.available():
+        health.reason = "OCR_UNAVAILABLE:tesseract not installed"
+        return
+
+    grey = page.get_pixmap(dpi=OCR_DPI, colorspace=fitz.csGRAY)
+    health.scan_quality = round(ocr.scan_quality(grey), 3)
+    try:
+        result = provider.recognize(page.get_pixmap(dpi=OCR_DPI).tobytes("png"),
+                                    ["ara", "eng"])
+    except Exception as exc:
+        health.reason = f"OCR_FAILED:{type(exc).__name__}"
+        return
+
+    scale = 72.0 / OCR_DPI                       # OCR pixels back to PDF points
+    for line in result.lines:
+        doc.blocks.append(Block(
+            page=pno,
+            bbox=tuple(v * scale for v in line.bbox),
+            text=line.text,
+            confidence=round(line.confidence, 3),
+            source="ocr",
+            numeric_reliable=line.numeric_reliable))
+
+    # A scan carries no PDF table structure, so find_tables() sees nothing and
+    # a door schedule would vanish without a word. Rebuild it from word boxes.
+    if (rebuilt := ocr.reconstruct_table(result.words)):
+        headers, rows = rebuilt
+        table = Table(page=pno, headers=headers, rows=rows)
+        bad = [r for r in rows if len(r) != len(headers)]
+        if bad:
+            table.issues.append(f"ROW_WIDTH_MISMATCH:{len(bad)} rows")
+        table.issues.append("SOURCE_OCR — cells recovered from word positions")
+        doc.tables.append(table)
+
+    health.char_count = len(result.text)
+    health.ocr_confidence = round(result.mean_confidence, 3)
+    health.quarantined_numerals = result.quarantined_numerals
+    if not result.lines:
+        health.reason = "NO_TEXT_EXTRACTED:OCR returned nothing"
+    for lang in result.languages:
+        code = {"ara": "ar", "eng": "en"}.get(lang, lang)
+        if code not in doc.language:
+            doc.language.append(code)
+
+
+def extract_pdf(path: Path, ocr_enabled: bool = True) -> Document:
     doc = Document(path=path, name=path.name)
     pdf = fitz.open(path)
     section = None
@@ -167,10 +225,12 @@ def extract_pdf(path: Path) -> Document:
                 else section))
 
         kind = "digital" if chars_total > 50 else "scanned"
-        suspect, reason = (False, None)
+        health = PageHealth(pno, kind, chars_total)
         if kind == "digital":
-            suspect, reason = _check_render(page, chars_total)
-        doc.health.append(PageHealth(pno, kind, chars_total, suspect, reason))
+            health.render_suspect, health.reason = _check_render(page, chars_total)
+        elif ocr_enabled:
+            _ocr_page(page, pno, doc, health)
+        doc.health.append(health)
 
         for tbl in page.find_tables().tables:
             data = tbl.extract()
@@ -187,9 +247,9 @@ def extract_pdf(path: Path) -> Document:
             doc.tables.append(t)
 
     full = doc.text
-    if re.search(r"[؀-ۿ]", full):
+    if re.search(r"[؀-ۿ]", full) and "ar" not in doc.language:
         doc.language.append("ar")
-    if re.search(r"[A-Za-z]", full):
+    if re.search(r"[A-Za-z]", full) and "en" not in doc.language:
         doc.language.append("en")
     if presentation_form_ratio(full) > 0.02:
         doc.notes.append("ARABIC_PRESENTATION_FORMS — visual-order extractor")
@@ -218,10 +278,10 @@ def extract_xlsx(path: Path) -> Document:
     return doc
 
 
-def extract(path: Path) -> Document:
+def extract(path: Path, ocr_enabled: bool = True) -> Document:
     suffix = path.suffix.lower()
     if suffix == ".pdf":
-        return extract_pdf(path)
+        return extract_pdf(path, ocr_enabled=ocr_enabled)
     if suffix in (".xlsx", ".xlsm", ".xls"):
         return extract_xlsx(path)
     raise ValueError(f"unsupported file type: {suffix}")

@@ -12,6 +12,9 @@
 ```bash
 pip install -r requirements.txt
 
+# OCR for scanned pages (optional — the tool runs without it)
+sudo apt-get install tesseract-ocr tesseract-ocr-ara tesseract-ocr-eng
+
 python review.py /path/to/project-folder
 python review.py /path/to/project-folder -o report.md
 ```
@@ -22,8 +25,9 @@ python review.py /path/to/project-folder -o report.md
 
 ```bash
 python ../../tests/fixtures/make_testpack.py    # يولّد مستندات تجريبية
+python ../../tests/fixtures/make_scanned.py    # نسخة ممسوحة منها لاختبار الـ OCR
 python review.py ../../tests/fixtures/testpack
-python test_tp001.py                            # يقيس النتيجة مقابل الإجابة الصحيحة
+python test_tp001.py                            # يقيس النتيجتين مقابل الإجابة الصحيحة
 ```
 
 ---
@@ -41,10 +45,31 @@ python test_tp001.py                            # يقيس النتيجة مقا
 **المطابقة بالمعنى لا باللفظ:** «CCTV» في النطاق و«Video surveillance system» في الـ BOQ
 يُعتبران الشيء نفسه. بدون هذا يظهر نظام موجود ومسعّر على أنه ناقص.
 
+## الصفحات الممسوحة — OCR
+
+تُقرأ آليًا عبر Tesseract محليًا. الجداول تُعاد بناؤها من مواقع الكلمات، لأن الصفحة
+الممسوحة صورة بلا بنية جدول — ومستخرِج جداول عادي يُرجع صفرًا فيختفي جدول الأبواب بصمت.
+
+النتيجة على نفس الحزمة ممسوحة بالكامل (TP-002): **٧/٧ نتائج، ٠ إنذارات كاذبة** —
+مطابقة للنسخة الرقمية.
+
+> ### حدّ مقاس: الأرقام العربية-الهندية لا تُقرأ
+>
+> | | الثقة | النتيجة |
+> |---|:---:|---|
+> | كلمات عربية | ٩٠–٩٣٪ | صحيحة |
+> | أرقام لاتينية | ٩٣–٩٧٪ | صحيحة بالكامل |
+> | أرقام عربية-هندية | ٦٠–٨٢٪ | **ولا قيمة واحدة صحيحة** |
+>
+> `١٢٠` تُقرأ `١7٠١` · `٨٠` تُقرأ `8٠١`. أربعة إعدادات جُرِّبت، ولا واحد أصلحها.
+>
+> لذلك **تُحجَر** هذه الأرقام ولا تدخل أي مقارنة. تُعرض مع صورة الصفحة ليقرأها المستخدم.
+> بخلاف الحالة الرقمية (§10.2) لا يمكن استرجاعها — هناك الترتيب معطوب، وهنا الرمز نفسه.
+
 ## ما لا تفحصه — اقرأ هذا قبل أن تثق بالنتيجة
 
 - **كل ما هو مرسوم لا مكتوب.** الأداة تقرأ نص الرسمة وجداولها، لا هندستها.
-- الصفحات الممسوحة ضوئيًا (بلا OCR في هذه النسخة).
+- الأرقام العربية في الصفحات الممسوحة — محجورة، انظر أعلاه.
 - الإصدارات الملغاة — لا تميّز Rev A من Rev C.
 - اشتراطات الجهات القطرية (QCDD / SSD / KAHRAMAA).
 - أي غموض يحتاج فهم لغة، مثل «except in Zone C» أو «high quality finish».
@@ -87,9 +112,10 @@ python test_tp001.py                            # يقيس النتيجة مقا
 ## النتيجة على حزمة الاختبار
 
 ```
-recall     7/7
-decoys     5/5 avoided
-unexpected 0 finding(s) beyond the answer key
+TP-001 digital        recall 7/7   decoys 5/5 avoided   unexpected 0
+TP-002 scanned (OCR)  recall 7/7   decoys 5/5 avoided   unexpected 0
+                      8 scanned pages, mean confidence 95%,
+                      7 Arabic numerals quarantined
 ```
 
 **الفخاخ الخمسة أهم من السبعة.** اكتشاف مشكلة مزروعة سهل — كاتب الحزمة يعرف مكانها.
@@ -110,6 +136,7 @@ unexpected 0 finding(s) beyond the answer key
 ```
 review.py          واجهة سطر الأوامر
 cr/extract.py      ملفات → محتوى منظم + provenance (العيوب الثلاثة تُعالَج هنا)
+cr/ocr.py          Tesseract محليًا + إعادة بناء الجداول من مواقع الكلمات
 cr/normalize.py    وحدات، أرقام، وسوم، تطبيع عربي، مرادفات
 cr/model.py        تصنيف المستندات وبناء نموذج المشروع الموحّد
 cr/checks.py       الفحوصات → findings

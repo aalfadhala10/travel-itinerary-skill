@@ -8,6 +8,31 @@ ICON = {"critical": "!!", "high": " !", "medium": " ·", "low": " ·"}
 AR = {"critical": "حرج", "high": "عالٍ", "medium": "متوسط", "low": "منخفض"}
 
 
+def _ocr_summary(pm: ProjectModel) -> list[str]:
+    scanned = [(d, h) for d in pm.documents for h in d.health if h.kind == "scanned"]
+    if not scanned:
+        return []
+    read = [h for _, h in scanned if h.ocr_confidence]
+    quarantined = sum(h.quarantined_numerals for _, h in scanned)
+    lines = [f"- {len(scanned)} scanned page(s) read by OCR"]
+    if read:
+        mean = sum(h.ocr_confidence for h in read) / len(read)
+        low = [f"{d.name} p.{h.page} ({h.ocr_confidence:.0%})"
+               for d, h in scanned if h.ocr_confidence and h.ocr_confidence < 0.80]
+        lines.append(f"- Mean OCR confidence: {mean:.0%}")
+        if low:
+            lines.append(f"- Low-confidence pages: {', '.join(low)}")
+    failed = [f"{d.name} p.{h.page} — {h.reason}"
+              for d, h in scanned if h.reason]
+    lines += [f"- {f}" for f in failed]
+    if quarantined:
+        lines.append(
+            f"- **{quarantined} Arabic-Indic numeral(s) quarantined.** OCR cannot "
+            f"read them reliably, so they are excluded from every comparison "
+            f"rather than guessed at. Open the page to read those values yourself.")
+    return lines
+
+
 def _health(pm: ProjectModel) -> tuple[int, int, list[str]]:
     pages = suspect = 0
     warnings = []
@@ -46,6 +71,11 @@ def render(pm: ProjectModel, findings: list[Finding]) -> str:
     add(f"- BOQ items: **{len(pm.boq_items)}**")
     add(f"- Scope / ER items naming a system: **{len(pm.scope_items)}**")
 
+    if (ocr_lines := _ocr_summary(pm)):
+        add("\n## OCR\n")
+        for line in ocr_lines:
+            add(line)
+
     if warnings:
         add("\n## Read quality — check these before trusting the results\n")
         for w in warnings:
@@ -78,9 +108,10 @@ def render(pm: ProjectModel, findings: list[Finding]) -> str:
         "against BOQ quantities · scope and employer requirements against BOQ "
         "coverage · the same measurement stated in more than one document.\n")
     add("**Not checked:** anything drawn rather than written (geometry, "
-        "dimensions on drawings, spatial relationships), scanned pages without "
-        "OCR, drawing revisions and supersession, compliance with Qatari "
-        "authority requirements, and any document type not listed above.\n")
+        "dimensions on drawings, spatial relationships), Arabic-Indic numerals "
+        "on scanned pages, drawing revisions and supersession, compliance with "
+        "Qatari authority requirements, and any document type not listed "
+        "above.\n")
     add("Findings are advisory. Every one carries its source so a responsible "
         "engineer can verify it. The tool does not certify anything.\n")
     return "\n".join(L)

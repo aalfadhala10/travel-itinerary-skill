@@ -1,2 +1,6 @@
 pymupdf>=1.24
 openpyxl>=3.1
+
+# OCR for scanned pages is optional and uses the system tesseract binary:
+#   apt-get install tesseract-ocr tesseract-ocr-ara tesseract-ocr-eng
+# Without it, scanned pages are reported as unread rather than silently skipped.
