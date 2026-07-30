@@ -419,6 +419,11 @@
   #app[dir="rtl"] .rate{font-family:var(--ff-body)}
   .rate.good{color:var(--amber);border-color:var(--amber)}
   .rstar{margin-inline-end:3px}
+  .dayroute{display:block;margin-top:14px;padding:13px 14px;border:1px solid var(--teal);border-radius:12px;
+    color:var(--teal);font-weight:700;font-size:15px;text-align:center;text-decoration:none}
+  .dayroute:hover{background:var(--teal);color:var(--paper)}
+  .dayroute::after{content:' \2192'}
+  #app[dir="rtl"] .dayroute::after{content:' \2190'}
   .hop{font-family:var(--ff-data);font-size:14px;color:var(--muted);opacity:.85;white-space:nowrap}
   #app[dir="rtl"] .hop{font-family:var(--ff-body)}
   .hop::before{content:'· '}
@@ -4240,7 +4245,7 @@
     for(var i=0;i<count;i++){
       var d=fromDay+i, title=d===1?o.arrival:d===total?o.last:o.explore, rot=DAYROT[ck+'|'+d]||0;
       txt.push(''); txt.push(o.dayWord+' '+d+' — '+title+' ('+match.city+')');
-      var dayPois=[], body='', names=[], todayN={}, lunchN=''; // todayN: nothing appears twice in one day, ever
+      var dayPois=[], body='', names=[], todayN={}, lunchN='', walk=[]; // todayN: nothing appears twice in one day, ever
       // where you are as the day runs: the hotel to begin with, then the last place you stood
       var here=stayAt, hopped=false, cco=POI_CO[ck];
       // The distance shown is between two REAL stops. The first stop of the day has nothing before
@@ -4273,14 +4278,14 @@
         sk=ck+'|'+d+'|'+s;
         var pk=picks[s]; dayPois.push(pk); names.push(pk.n);
         if(stops)stops.push({n:pk.n,a:pk.a});
-        var phop=hopTo(pk);
+        var phop=hopTo(pk); walk.push(pk.n);
         body+=eslot(tl[s],pk,match.city,sk,o,ck,false,phop);
         txt.push('  '+tl[s]+': '+pk.n+' ('+pk.a+')'+hopTxt(phop));
         if(s===lunchAt-1){
           var lsk=ck+'|'+d+'|l', lu=DAYEDITS[lsk]?poiByName(ck,DAYEDITS[lsk]):null;
           if(!lu)lu=nearestFood(ck,match.food,dayPois,rot,d,todayN,'',picks[s+1]);
           useMark(lu.n,d); todayN[lu.n]=1; lunchN=lu.n;
-          var lhop=hopTo(lu);
+          var lhop=hopTo(lu); walk.push(lu.n);
           body+=eslot(o.times.lunch,lu,match.city,lsk,o,ck,true,lhop);
           txt.push('  '+o.times.lunch+': '+lu.n+' ('+lu.a+')'+hopTxt(lhop));
         }
@@ -4290,7 +4295,7 @@
       if(!fo)fo=nearestFood(ck,match.food,dayPois,rot,d,todayN,lunchN);
       useMark(fo.n,d); todayN[fo.n]=1;
       if(lunchN)pairs[lunchN+'|'+fo.n]=1;
-      var dhop=hopTo(fo);
+      var dhop=hopTo(fo); walk.push(fo.n);
       body+=eslot(o.times.dinner,fo,match.city,dsk,o,ck,true,dhop);
       txt.push('  '+o.times.dinner+': '+fo.n+' ('+fo.a+')'+hopTxt(dhop));
       // Each day is collapsible — the first is open, the rest show a one-line summary until tapped.
@@ -4300,7 +4305,7 @@
         +'<button type="button" class="dayshuffle" data-shuf="'+ck+'|'+d+'" title="'+o.shuffleDay+'">'+SHUFSVG+'<span>'+o.shuffleDay+'</span></button>'
         +'<span class="dchev" aria-hidden="true"></span></div>'
         +'<div class="dsum">'+sum+'</div>'
-        +'<div class="dbody">'+dayHint(o)+body+'</div></div>';
+        +'<div class="dbody">'+dayHint(o)+body+dayRouteLink(walk,match.city)+'</div></div>';
     }
     return html;
   }
@@ -4560,10 +4565,30 @@
     var way=q.slice(1,-1).join('%7C'); if(way)u+='&waypoints='+way;
     return u;
   }
+  // Now that a day is walked in a real order, that order is worth handing to Google whole: one tap
+  // and the phone has the whole day queued up, in sequence, instead of the traveller looking each
+  // place up one at a time and working out for themselves what comes next.
+  function dayMapUrl(stops,city){
+    var q=stops.filter(Boolean).map(function(n){ return encodeURIComponent(n+' '+city); });
+    if(q.length<2)return '';
+    var u='https://www.google.com/maps/dir/?api=1&origin='+q[0]+'&destination='+q[q.length-1];
+    // Google's directions link carries nine stops between the ends; a day never has that many,
+    // but a slice costs nothing and a silently-dropped stop would.
+    var way=q.slice(1,-1).slice(0,9).join('%7C');
+    if(way)u+='&waypoints='+way;
+    return u+'&travelmode=driving';
+  }
+  function dayRouteLink(stops,city){
+    var u=dayMapUrl(stops,city); if(!u)return '';
+    var txt=LANG==='ar'?'افتح مسار اليوم كامل في خرائط قوقل'
+      :(LANG==='es'?'Abre la ruta del día en Google Maps':"Open the whole day's route in Google Maps");
+    return '<a class="dayroute" href="'+u+'" target="_blank" rel="noopener">'+esc(txt)+'</a>';
+  }
   function routeStrip(names,t){
     names=names.filter(Boolean); if(!names.length)return '';
-    if(names.length===1) return '<div class="mapcard"><div class="maphdr">'+t.out.mapTitle+'</div>'+
-      '<a class="mapbtn" href="'+mapUrl(names[0])+'" target="_blank" rel="noopener">'+t.out.openMap+'</a></div>';
+    // A single city has no route to show — the card opened a map of the city they are already
+    // going to. Each day now carries its own route link, which is the one worth tapping.
+    if(names.length===1) return '';
     var pills=names.map(function(c,i){return '<a class="rtstop" href="'+mapUrl(c)+'" target="_blank" rel="noopener"><b class="rtn">'+(i+1)+'</b>'+esc(c)+'</a>';}).join('');
     return '<div class="mapcard"><div class="maphdr">'+t.out.mapTitle+'</div>'+
       '<div class="routetrail">'+pills+'</div>'+
