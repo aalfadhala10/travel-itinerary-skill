@@ -16,7 +16,7 @@
   @media (prefers-color-scheme:light){
     :root{ --paper:#f6f3ec; --paper2:#efeade; --card:#fffdf8; --line:#ded6c4;
       --ink:#22303c; --muted:#6d7d8c; --amber:#b8860b; --amber-soft:rgba(184,134,11,.18);
-      --land:#e4dcc8; --landline:#b9ab8e; }
+      --land:#efe6d2; --landline:#b9a988; }
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--paper);color:var(--ink);
@@ -93,7 +93,8 @@ WORLD.c.forEach(function(c){
 var HOME={n:'Doha',lat:25.3,lng:51.5};
 var view={lon:51.5,lat:20,zoom:1};       // where the globe is pointing
 var target=null, tween=null, flat=false, spin=true, arc=true;
-var fly=null;        // {t, dur, t0} — the plane's progress along the great circle, 0..1
+var fly=null;        // {seg,t,...} — which leg the plane is on and how far along it is
+var SEEN={}, NOW=0;  // when each stop first appeared, so it can drop in rather than blink on
 var sel=null;                            // the chosen trip
 var DPR=Math.min(2,window.devicePixelRatio||1);
 
@@ -131,15 +132,58 @@ function drawRing(r,close){
   if(close&&started)ctx.closePath();
 }
 
+// Fixed once, so they do not crawl about between frames. Only drawn where the globe is not.
+var STARS=(function(){ var a=[],i; for(i=0;i<220;i++)a.push([Math.random(),Math.random(),Math.random()]); return a; })();
+var DARK=matchMedia('(prefers-color-scheme:dark)').matches;
+function stars(w){
+  if(!DARK||flat)return;
+  var cx=w/2, cy=w/2, r=R();
+  STARS.forEach(function(p){
+    var x=p[0]*w, y=p[1]*w, d=Math.hypot(x-cx,y-cy);
+    if(d<r*1.12)return;                                   // never on the planet or in its haze
+    var a2=0.12+p[2]*0.5;
+    ctx.globalAlpha=a2; ctx.fillStyle='#cfe0f0';
+    ctx.beginPath(); ctx.arc(x,y,p[2]*1.1+0.35,0,Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha=1;
+}
+// The soft edge of the air, which is most of what makes a circle read as a planet.
+function atmosphere(w){
+  if(flat)return;
+  var r=R(), cx=w/2, cy=w/2;
+  var g=ctx.createRadialGradient(cx,cy,r*0.96,cx,cy,r*1.16);
+  g.addColorStop(0,'rgba(90,169,201,'+(DARK?0.30:0.20)+')');
+  g.addColorStop(0.45,'rgba(90,169,201,'+(DARK?0.10:0.07)+')');
+  g.addColorStop(1,'rgba(90,169,201,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,r*1.16,0,Math.PI*2); ctx.fill();
+}
+// One light, from up and to the left. Without it the continents sit on a flat disc.
+function shade(w){
+  if(flat)return;
+  var r=R(), cx=w/2, cy=w/2;
+  ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.clip();
+  var g=ctx.createRadialGradient(cx-r*0.32,cy-r*0.38,r*0.12,cx,cy,r*1.02);
+  g.addColorStop(0,'rgba(255,255,255,'+(DARK?0.07:0.16)+')');
+  g.addColorStop(0.5,'rgba(0,0,0,0)');
+  g.addColorStop(1,'rgba(0,0,0,'+(DARK?0.45:0.20)+')');
+  ctx.fillStyle=g; ctx.fillRect(cx-r,cy-r,r*2,r*2);
+  ctx.restore();
+}
 function draw(){
   var w=cv.clientWidth;
   LBOX=[];
   ctx.clearRect(0,0,w,w);
+  stars(w);
+  atmosphere(w);
 
-  if(!flat){                                              // the ocean
-    ctx.beginPath(); ctx.arc(w/2,w/2,R(),0,Math.PI*2);
-    ctx.fillStyle=col('--paper2'); ctx.fill();
-    ctx.strokeStyle=col('--line'); ctx.lineWidth=1; ctx.stroke();
+  if(!flat){                                              // the ocean, lit from the same direction
+    var r0=R(), g0=ctx.createRadialGradient(w/2-r0*0.3,w/2-r0*0.35,r0*0.1,w/2,w/2,r0);
+    // Water has to be a different colour from land, not a different shade of it — in light mode
+    // both were cream and the continents disappeared into the sea.
+    g0.addColorStop(0,DARK?'#1d2e3e':'#e3edf3');
+    g0.addColorStop(1,DARK?'#0e1a25':'#c5d7e3');
+    ctx.beginPath(); ctx.arc(w/2,w/2,r0,0,Math.PI*2);
+    ctx.fillStyle=g0; ctx.fill();
   } else {
     ctx.fillStyle=col('--paper2'); ctx.fillRect(0,0,w,w);
   }
@@ -152,17 +196,27 @@ function draw(){
     var ring2=[]; for(var lo=-180;lo<=180;lo+=4)ring2.push([lo,la2]); drawRing(ring2,false); ctx.stroke(); }
   ctx.globalAlpha=1;
 
-  // land
+  // land — everything quiet, then the chosen country on top of it with a glow so the eye lands there
   LAND.forEach(function(c){
-    var hot=sel&&c.n===sel.country;
+    if(sel&&c.n===sel.country)return;
     ctx.beginPath();
     c.r.forEach(function(r){ drawRing(r,true); });
-    ctx.fillStyle=hot?col('--amber-soft'):col('--land');
-    ctx.fill();
-    ctx.strokeStyle=hot?col('--amber'):col('--landline');
-    ctx.lineWidth=hot?1.8:.7;
-    ctx.stroke();
+    ctx.fillStyle=col('--land'); ctx.fill();
+    ctx.strokeStyle=col('--landline'); ctx.lineWidth=.7; ctx.stroke();
   });
+  if(sel){
+    LAND.forEach(function(c){
+      if(c.n!==sel.country)return;
+      ctx.save();
+      ctx.beginPath(); c.r.forEach(function(r){ drawRing(r,true); });
+      ctx.shadowColor=col('--amber'); ctx.shadowBlur=18;
+      ctx.fillStyle=col('--amber-soft'); ctx.fill();
+      ctx.shadowBlur=10;
+      ctx.strokeStyle=col('--amber'); ctx.lineWidth=1.8; ctx.stroke();
+      ctx.restore();
+    });
+  }
+  shade(w);                                               // the light goes over the land, not under it
 
   if(!sel)return;
 
@@ -172,6 +226,7 @@ function draw(){
   var route=[{lat:HOME.lat,lng:HOME.lng,n:HOME.n}].concat(sel.cities);
   var last=route.length-2;                                // index of the final leg
   var seg=fly?fly.seg:last, prog=fly?fly.t:1;
+  for(var si=0;si<sel.cities.length;si++)if(seg>=si&&!SEEN[si])SEEN[si]=NOW;
 
   for(var L=0;L<=last;L++){
     var frac=(L<seg)?1:((L===seg)?prog:0);
@@ -196,11 +251,27 @@ function draw(){
   sel.cities.forEach(function(c,i2){
     if(seg<i2)return;
     var p=proj(c.lng,c.lat); if(!p)return;
-    ctx.beginPath(); ctx.arc(p[0],p[1],7,0,Math.PI*2);
+    // Landing on a place should feel like arriving at it: the pin drops in with a little overshoot
+    // and throws one ring, then settles and stays quiet.
+    var age=SEEN[i2]?(NOW-SEEN[i2]):9e9, k=Math.min(1,age/340);
+    var e=1+2.2*Math.pow(1-k,3)-1.6*Math.pow(1-k,2);       // ease-out-back, settles at 1
+    var rr=7*(0.25+0.75*e);
+    if(age<1400){                                          // one ring, expanding and fading
+      var rk=Math.min(1,age/1400);
+      ctx.beginPath(); ctx.arc(p[0],p[1],7+rk*22,0,Math.PI*2);
+      ctx.strokeStyle=col('--amber'); ctx.globalAlpha=(1-rk)*0.55; ctx.lineWidth=2; ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=6; ctx.shadowOffsetY=1.5;
+    ctx.beginPath(); ctx.arc(p[0],p[1],rr,0,Math.PI*2);
     ctx.fillStyle=col('--amber'); ctx.fill();
-    ctx.fillStyle='#10202c'; ctx.font='700 11px ui-monospace,monospace';
-    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(i2+1),p[0],p[1]+.5);
-    label([p[0],p[1]-14],c.n,col('--ink'));
+    ctx.restore();
+    if(k>0.55){
+      ctx.fillStyle='#10202c'; ctx.font='700 11px ui-monospace,monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(i2+1),p[0],p[1]+.5);
+      label([p[0],p[1]-rr-7],c.n,col('--ink'));
+    }
   });
 }
 // One leg of the journey, drawn `frac` of the way along. The first leg is the flight in and reads
@@ -216,9 +287,16 @@ function leg(A,B,frac,intl){
       if(!st){ ctx.moveTo(q[0],q[1]); st=true; } else ctx.lineTo(q[0],q[1]); }
     ctx.strokeStyle=style; ctx.lineWidth=w; ctx.setLineDash(dash); ctx.stroke(); ctx.setLineDash([]);
   }
-  var upto=Math.round(frac*N);
+  var upto=Math.round(frac*N), main=intl?col('--teal'):col('--amber');
   if(frac<1)stroke(upto,N,col('--line'),1.4,[3,5]);         // the way still to go
-  stroke(0,upto,intl?col('--teal'):col('--amber'),intl?2:1.8,intl?[5,4]:[]);
+  // A wide soft pass under a crisp one: the line stops being a hairline on a dark ocean.
+  ctx.save();
+  ctx.globalAlpha=0.22; stroke(0,upto,main,7,[]); ctx.globalAlpha=1;
+  ctx.shadowColor=main; ctx.shadowBlur=8;
+  stroke(0,upto,main,intl?2:1.8,intl?[5,4]:[]);
+  // brightest right behind the plane, so the eye is pulled to where the movement is
+  if(frac>0.02&&frac<1)stroke(Math.max(0,upto-Math.round(N*0.12)),upto,DARK?'#ffffff':'#0d4a63',intl?2.2:2,[]);
+  ctx.restore();
 }
 // Two cities 130km apart printed their names on top of each other. A label that cannot be read is
 // worse than no label, so one of them steps aside — or gives up if there is nowhere to go.
@@ -241,8 +319,10 @@ function plane(p,ang){
   ctx.lineTo(-4.4,9.8); ctx.lineTo(-4.4,8.6); ctx.lineTo(-1.7,6.4);
   ctx.lineTo(-2.1,2.2); ctx.lineTo(-10,3.6); ctx.lineTo(-10,1.5); ctx.lineTo(-2.1,-3);
   ctx.closePath();
-  ctx.fillStyle=col('--ink'); ctx.fill();
-  ctx.strokeStyle=col('--paper'); ctx.lineWidth=1.2; ctx.stroke();
+  ctx.shadowColor='rgba(0,0,0,.55)'; ctx.shadowBlur=8; ctx.shadowOffsetY=2;
+  ctx.fillStyle=DARK?'#ffffff':'#1d3040'; ctx.fill();
+  ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+  ctx.strokeStyle=DARK?'rgba(0,0,0,.35)':'rgba(255,255,255,.75)'; ctx.lineWidth=1; ctx.stroke();
   ctx.restore();
 }
 function label(p,txt,c){
@@ -310,7 +390,7 @@ function pick(key){
   // The order matters, because the flight cannot be seen from the destination: Doha is off-screen
   // once you are zoomed in on Japan. Stand back far enough to hold both ends, fly it in, come down
   // on the country, then fly the hops between the cities.
-  fly=null;
+  fly=null; SEEN={};
   launch(t,c);
   document.getElementById('hdr').textContent=t.label.replace(/^\S+\s/,'');
   document.getElementById('cap').innerHTML=
@@ -343,7 +423,7 @@ Object.keys(TRIPS).forEach(function(k){
 document.getElementById('tSpin').onclick=function(){ spin=!spin; this.classList.toggle('on',spin); };
 document.getElementById('tFlat').onclick=function(){ flat=!flat; this.classList.toggle('on',flat); };
 document.getElementById('tAgain').onclick=function(){
-  if(sel)launch(TRIPS[sel.country],centre(sel.cities)); };
+  if(sel){ SEEN={}; launch(TRIPS[sel.country],centre(sel.cities)); } };
 document.getElementById('tReset').onclick=reset;
 
 var drag=null;
@@ -370,6 +450,7 @@ function takeoff(){
   fly={seg:0,t:0,t0:null,hold:false,durs:durs};
 }
 function frame(now){
+  NOW=now;
   if(tween)tween(now);
   else if(spin)view.lon=(view.lon+0.12)%360;
   if(fly&&!fly.hold){
