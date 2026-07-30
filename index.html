@@ -563,6 +563,12 @@
   .pg{display:none}
   .pg.on{display:block}
   .pg.dayp{margin-top:6px;padding-left:4px}
+  /* The vertical rule and the dot were a timeline: they connected the days when every day stacked
+     on one endless page. One day per page means there is no sequence to draw, so all it does now is
+     run down the side of a single day as a stray stroke with nothing at either end. */
+  #out > .pg .day,#app[dir="rtl"] #out > .pg .day{border-left:none;border-right:none;
+    margin-left:0;margin-right:0;padding-left:0;padding-right:0;padding-top:6px}
+  #out > .pg .day::before{display:none}
   #app[dir="rtl"] .pg.dayp{padding-left:0;padding-right:4px}
   /* The whole strip stays on screen. Back/Next at the FOOT of a day is a screen and a half below
      where you're reading, so most people never found it — the arrows here are always in reach. */
@@ -3242,8 +3248,10 @@
   function roadChips(sub){ var chips=sub.routes.map(function(x){ return {t:x.r.flag+' '+x.r.keys.map(function(k){return DEST[k].city;}).join(' → '),a:'route',v:String(x.i)}; });
     if(sub.more)chips.push({t:moreLabel(),a:'roadmore',v:''}); chips.push({t:backLabel(),a:'back',v:''}); return chips; }
   function backLabel(){ return LANG==='ar'?'‹ رجوع':(LANG==='es'?'‹ Atrás':'‹ Back'); }
+  // Both floating buttons said "عدّل الرحلة" — same words, two different things. The one with the
+  // arrow scrolls up to the form; this one opens a conversation, so it says so.
   function fabLabel(){ return planLive()
-    ? (LANG==='ar'?'عدّل الرحلة':(LANG==='es'?'Editar el viaje':'Edit this trip'))
+    ? (LANG==='ar'?'كلّم بوصلة':(LANG==='es'?'Habla con بوصلة':'Ask بوصلة'))
     : (LANG==='ar'?'خطّط معي':(LANG==='es'?'Planea conmigo':'Plan with me')); }
   function syncFab(){ try{ var l=fabLabel(); $('chatFabLbl').textContent=l; $('chatTitle').textContent=l; }catch(e){} }
   function finalLabel(){ return LANG==='ar'?'✓ خلاص، تمام':(LANG==='es'?'✓ Está perfecto':'✓ It\'s final'); }
