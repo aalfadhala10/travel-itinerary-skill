@@ -53,7 +53,10 @@ function cityKey(name) {
 //
 // Both count only when money is ACTUALLY spent. A city served from cache costs nothing and is not
 // counted, or a popular destination would eat the day's budget on free answers.
-const RL_PER_MIN     = 25;    // requests a minute from one address
+// 40, not 25: a family on one home wifi shares a single public address, so five people planning
+// at the same time look like one very busy visitor. An actual abuser sends thousands, not dozens —
+// the gap between a busy household and an attack is wide enough that this costs nothing to allow.
+const RL_PER_MIN     = 40;    // requests a minute from one address
 const DAY_LLM_CAP    = 600;   // Claude calls a day, everyone together
 const DAY_PLACES_CAP = 2000;  // Google place lookups a day, everyone together
 
