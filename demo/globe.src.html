@@ -143,6 +143,7 @@
 <script>
 /*__WORLD__*/
 /*__CITIES__*/
+/*__AIRPORTS__*/
 /*__TRIPS__*/
 
 var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
@@ -206,6 +207,62 @@ function legMode(a,b){
   if(a.country===b.country)return RAIL[a.country]?'rail':'road';
   if(a.region==='eu'&&b.region==='eu')return 'rail';
   return 'air';
+}
+
+// --- where a plane can actually put you down --------------------------------------
+// Garmisch-Partenkirchen has no runway, and neither does a game reserve in Kenya. Drawing a plane
+// onto them says you can fly there, which is the one thing the map must not say. So: the flight
+// stops at the nearest airport that exists and the last stretch is covered on the ground — the
+// same thing the app works out before it writes the first day of the plan.
+var FLAG={}; CITY.forEach(function(c){ if(!FLAG[c.country])FLAG[c.country]=c.flag; });
+var AIR=AIRPORTS.map(function(a){
+  return {n:a[0],code:a[1],country:a[2],lat:a[3],lng:a[4],flag:FLAG[a[2]]||'',air:true};
+});
+var OWN_KM=30;                           // this close and the airport IS the city's airport
+var GWCACHE={};
+function gatewayFor(c){
+  if(c.air)return null;                                   // an airport is already an airport
+  if(GWCACHE[c.n]!==undefined)return GWCACHE[c.n];
+  var best=null,bd=1e9,same=null,sd=1e9,i,d;
+  for(i=0;i<AIR.length;i++){
+    d=km([c.lat,c.lng],[AIR[i].lat,AIR[i].lng]);
+    if(d<bd){ bd=d; best=AIR[i]; }
+    if(AIR[i].country===c.country&&d<sd){ sd=d; same=AIR[i]; }
+  }
+  // Crossing a border on the way in is normal — Geneva is how you reach Zermatt — but where the
+  // country has its own airport at a comparable distance, that is the one people actually use.
+  if(same&&sd<=bd*1.8){ best=same; bd=sd; }
+  GWCACHE[c.n]=(bd<=OWN_KM)?null:best;
+  return GWCACHE[c.n];
+}
+// Getting from the airport to the place. Where the country has a rail network a longer transfer is
+// the train — Geneva to Zermatt is a train, not a taxi — and everything else is the road.
+function transferMode(ap,c){
+  return (RAIL[c.country]&&RAIL[ap.country]&&km([ap.lat,ap.lng],[c.lat,c.lng])>=60)?'rail':'road';
+}
+// The journey as it is actually made, which is not the list of stops: a flight into a place with
+// no airport becomes a flight to the gateway and then a transfer. `stop` is the index into STOPS
+// when this leg ends AT that stop; `to` is which stop the leg is working toward either way.
+var LEGS=[];
+function buildLegs(){
+  LEGS=[];
+  var prev=HOME,i;
+  for(i=0;i<STOPS.length;i++){
+    var b=STOPS[i], m=legMode(prev,b);
+    if(m!=='air'){ LEGS.push({a:prev,b:b,mode:m,stop:i,to:i}); prev=b; continue; }
+    var ga=gatewayFor(prev), gb=gatewayFor(b);
+    if(ga)LEGS.push({a:prev,b:ga,mode:transferMode(ga,prev),stop:-1,to:i});
+    LEGS.push({a:ga||prev,b:gb||b,mode:'air',stop:gb?-1:i,to:i});
+    if(gb)LEGS.push({a:gb,b:b,mode:transferMode(gb,b),stop:i,to:i});
+    prev=b;
+  }
+}
+// What has to fit on screen when the flight lands: the stops AND the airports they are reached
+// from. Framing Maasai Mara on its own puts Nairobi off the edge and the drive becomes invisible.
+function frameSet(){
+  var out=STOPS.slice();
+  LEGS.forEach(function(S){ if(S.b.air)out.push(S.b); });
+  return out.length?out:STOPS;
 }
 
 // Where they are flying from. The phone's clock is a decent guess and they can overrule it.
@@ -377,31 +434,52 @@ function draw(){
 
   if(!STOPS.length)return;
 
-  // The plane flies the WHOLE trip, not just the arrival: Doha to the first city, then every hop
-  // between the cities, drawing the line as it goes. Legs already flown are solid; the leg being
-  // flown is drawn as far as the plane has got; the rest is faint, so you can see where it is going.
-  var route=[HOME].concat(STOPS);
-  var last=route.length-2;                                // index of the final leg
+  // The whole journey is flown, not just the arrival: home to the first airport, the transfer to
+  // the place itself, then every hop after it, drawing the line as it goes. Legs already covered
+  // are solid; the one being covered is drawn as far as it has got; the rest is faint, so you can
+  // see where it is going.
+  if(!LEGS.length)return;
+  var last=LEGS.length-1;
   var seg=fly?fly.seg:last, prog=fly?fly.t:1;
-  for(var si=0;si<STOPS.length;si++)if(seg>=si&&!SEEN[si])SEEN[si]=NOW;
+  var L;
+  for(L=0;L<=Math.min(seg,last);L++)
+    if(LEGS[L].stop>=0&&!SEEN[LEGS[L].stop])SEEN[LEGS[L].stop]=NOW;
 
-  for(var L=0;L<=last;L++){
+  for(L=0;L<=last;L++){
     var frac=(L<seg)?1:((L===seg)?prog:0);
-    leg([route[L].lat,route[L].lng],[route[L+1].lat,route[L+1].lng],frac,modeOf(L));
+    leg([LEGS[L].a.lat,LEGS[L].a.lng],[LEGS[L].b.lat,LEGS[L].b.lng],frac,LEGS[L].mode);
   }
 
   // whatever is doing the travelling on this leg, wherever it has got to
-  if(fly&&prog>0.004&&prog<0.996){
-    var A=[route[seg].lat,route[seg].lng], B=[route[seg+1].lat,route[seg+1].lng];
+  if(fly&&prog>0.004&&prog<0.996&&LEGS[seg]){
+    var S=LEGS[seg], A=[S.a.lat,S.a.lng], B=[S.b.lat,S.b.lng];
     var h1=gc(A,B,prog), h2=gc(A,B,Math.min(1,prog+0.012));
     var q1=proj(h1[1],h1[0]), q2=proj(h2[1],h2[0]);
-    if(q1&&q2)vehicle(modeOf(seg),q1,Math.atan2(q2[1]-q1[1],q2[0]-q1[0]));
+    if(q1&&q2)vehicle(S.mode,q1,Math.atan2(q2[1]-q1[1],q2[0]-q1[0]));
   }
 
-  // Doha, where it all started
+  // Home, where it all started
   var hp=proj(HOME.lng,HOME.lat);
   if(hp){ ctx.beginPath(); ctx.arc(hp[0],hp[1],3.5,0,Math.PI*2); ctx.fillStyle=col('--teal'); ctx.fill();
     label(hp,HOME.n,col('--teal')); }
+
+  // The airport you land at when the place itself has no runway. Smaller than a stop and in the
+  // other colour on purpose: it is not a night of the trip, it is how you reach one.
+  // Drawn AFTER the stops, so when Innsbruck sits 31km from Garmisch the village gets the readable
+  // position and the airport code is the one that steps aside.
+  function gateways(){
+    var shown={},L2;
+    for(L2=0;L2<=Math.min(seg,last);L2++){
+      var G=LEGS[L2].b;
+      if(!G.air||shown[G.code])continue;
+      shown[G.code]=1;
+      var gq=proj(G.lng,G.lat); if(!gq)continue;
+      ctx.beginPath(); ctx.arc(gq[0],gq[1],4,0,Math.PI*2);
+      ctx.fillStyle=col('--teal'); ctx.fill();
+      ctx.strokeStyle=col('--paper'); ctx.lineWidth=1.5; ctx.stroke();
+      label([gq[0],gq[1]-8],G.code,col('--teal'));
+    }
+  }
 
   // A city appears once the plane is on its way to it, and not before — the trip arrives in order
   // rather than being laid out in advance.
@@ -449,14 +527,15 @@ function draw(){
       ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(i2+1),p[0],p[1]+.5);
       label([p[0],p[1]-rr-7],c.n,col('--ink'));
     }
+    // The pin itself is occupied space. Labels used to dodge other labels but happily print
+    // straight across a marker, which is how INN ended up sitting on top of stop 1.
+    LBOX.push([p[0],p[1]+rr,rr*2,rr*2]);
   });
+  gateways();
 }
-// One leg of the journey, drawn `frac` of the way along. The first leg is the flight in and reads
-// as a flight; the rest are hops inside the country and read as the route.
-// The first leg is the flight in. After that it is whatever the trip actually uses — a train
-// between Tokyo and Kyoto, a drive from Cappadocia to Antalya, a light aircraft into the Mara.
-// Drawing a plane on all of them would be the map contradicting the plan.
-function modeOf(L){ return L===0?'air':legMode(STOPS[L-1],STOPS[L]); }
+// One leg of the journey, drawn `frac` of the way along. What it reads as is whatever the journey
+// actually uses — a flight to the airport, a train between Tokyo and Kyoto, a drive up to
+// Garmisch. Drawing a plane on all of them would be the map contradicting the plan.
 function leg(A,B,frac,mode){
   var intl=(mode==='air'), N=intl?96:48, pts=[], i;
   for(i=0;i<=N;i++)pts.push(gc(A,B,i/N));
@@ -587,9 +666,11 @@ function centre(cs){
 function fitZoom(cs,c){
   var far=0;
   cs.forEach(function(x){ far=Math.max(far,km([c.lat,c.lon],[x.lat,x.lng])); });
-  far=Math.max(far,90);                                   // one city: still show the country round it
+  far=Math.max(far,60);                                   // one city: still show the country round it
   var span=far/6371*180/Math.PI;                          // degrees from the middle
-  return Math.max(1.4,Math.min(9,26/Math.max(2.2,span)));
+  // The ceiling used to be 9, from before the finer coastlines were fetched on the way in. A
+  // 200km drive from Nairobi to the Mara is the whole point of that leg and at 9 it was a smudge.
+  return Math.max(1.4,Math.min(12,26/Math.max(2.2,span)));
 }
 // The order matters, because the flight cannot be seen from the destination: your home city is
 // off-screen once you are zoomed in on Japan. Stand back far enough to hold both ends, fly it in,
@@ -599,6 +680,7 @@ function launch(){
   // The idle spin is for an empty planet. Leave it running and it carries the trip off the side of
   // the canvas a few seconds after it lands — which is exactly when you want to look at it.
   spin=false; document.getElementById('tSpin').classList.remove('on');
+  buildLegs();
   var b=STOPS[0], mid=gc([HOME.lat,HOME.lng],[b.lat,b.lng],0.5);
   var deg=km([HOME.lat,HOME.lng],[b.lat,b.lng])/6371*180/Math.PI;
   var z0=Math.max(1,Math.min(2.4,86/Math.max(38,deg*1.5)));
@@ -633,7 +715,17 @@ function legHours(a,b,mode){
   if(mode==='rail')return Math.max(0.5,Math.round((d/120)*2)/2);
   return Math.max(0.5,Math.round((d/75)*2)/2);
 }
+// One line of the journey. Naming the destination matters now that a leg can end somewhere that is
+// not a stop: "by air to Innsbruck (INN)" then "by road to Garmisch-Partenkirchen" is the whole
+// story, and "by air · 4,240 km" on its own would be a lie about where the plane puts you.
+function hopRow(S){
+  var d=km([S.a.lat,S.a.lng],[S.b.lat,S.b.lng]);
+  var to=S.b.air?(S.b.n+' ('+S.b.code+')'):S.b.n;
+  return '<div class="hop"><span class="bar"></span>'+esc(MODEW[S.mode]+' to '+to)+' · '+
+    Math.round(d).toLocaleString()+' km · ~'+legHours(S.a,S.b,S.mode)+'h</div>';
+}
 function renderTrip(){
+  buildLegs();
   var box=document.getElementById('trip');
   if(!STOPS.length){
     box.innerHTML='<div class="empty">No stops yet — type a city above, or tap one of the suggestions.</div>';
@@ -641,14 +733,10 @@ function renderTrip(){
     document.getElementById('cap').innerHTML='<span class="dim">Type a city above, or try one of these.</span>';
     return;
   }
-  var day=1, html='', i;
+  var day=1, html='', i, k;
   for(i=0;i<STOPS.length;i++){
     var c=STOPS[i], nts=NIGHTS[i];
-    if(i>0){
-      var m=legMode(STOPS[i-1],c), d=km([STOPS[i-1].lat,STOPS[i-1].lng],[c.lat,c.lng]);
-      html+='<div class="hop"><span class="bar"></span>'+esc(MODEW[m])+' · '+
-        Math.round(d).toLocaleString()+' km · ~'+legHours(STOPS[i-1],c,m)+'h</div>';
-    }
+    for(k=0;k<LEGS.length;k++)if(LEGS[k].to===i)html+=hopRow(LEGS[k]);
     html+='<div class="stop" data-go="'+i+'">'+
       '<span class="no">'+(i+1)+'</span>'+
       '<span class="nm">'+esc(c.flag+' '+c.n)+'<i>'+esc(c.country)+' · days '+day+'–'+(day+nts-1)+'</i></span>'+
@@ -662,10 +750,18 @@ function renderTrip(){
   var total=NIGHTS.reduce(function(a,b){return a+b;},0);
   var far=km([HOME.lat,HOME.lng],[STOPS[0].lat,STOPS[0].lng]);
   document.getElementById('hdr').textContent=STOPS.map(function(c){return c.n;}).join(' → ');
+  // Say it out loud rather than leaving it to be noticed in the schedule: you cannot fly here.
+  var g0=gatewayFor(STOPS[0]), via='';
+  if(g0){
+    var gd=km([g0.lat,g0.lng],[STOPS[0].lat,STOPS[0].lng]);
+    via='<br><span class="dim">No airport at '+esc(STOPS[0].n)+' — you land at '+
+      esc(g0.flag+' '+g0.n+' ('+g0.code+')')+', then '+Math.round(gd).toLocaleString()+' km '+
+      MODEW[transferMode(g0,STOPS[0])]+'</span>';
+  }
   document.getElementById('cap').innerHTML='<b>'+esc(STOPS[0].flag+' '+STOPS[0].country)+'</b> · '+
     total+' nights across '+STOPS.length+' stop'+(STOPS.length>1?'s':'')+
     '<br><span class="dim">'+Math.round(far).toLocaleString()+' km from '+esc(HOME.n)+
-    ' · tap a stop to fly to it</span>';
+    ' · tap a stop to fly to it</span>'+via;
 }
 function esc(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -759,7 +855,7 @@ document.getElementById('tFlat').onclick=function(){ flat=!flat; this.classList.
 // Stand back to the sphere WITHOUT losing the trip: the line, the pins and the country all stay,
 // which is the whole point of wanting to see it from further away.
 function wholeGlobe(){
-  var c=STOPS.length?centre(STOPS):{lon:HOME.lng,lat:HOME.lat};
+  var c=STOPS.length?centre(frameSet()):{lon:HOME.lng,lat:HOME.lat};
   goTo(c.lon,c.lat,1);
 }
 document.getElementById('tGlobe').onclick=wholeGlobe;
@@ -809,16 +905,18 @@ cv.addEventListener('wheel',function(e){ e.preventDefault();
   setZoom(view.zoom*(e.deltaY>0?0.92:1.08)); },{passive:false});
 
 function takeoff(){
-  if(!STOPS.length)return;
-  var route=[HOME].concat(STOPS), durs=[], i;
-  for(i=0;i<route.length-1;i++){
-    var d=km([route[i].lat,route[i].lng],[route[i+1].lat,route[i+1].lng]);
-    // A short hop and a long haul should not take the same time on screen, but nor should Tokyo
-    // take four times as long as Tbilisi — the square root keeps the difference felt without the
-    // wait. City hops get a floor, or a 40km leg would flash past unseen.
-    durs.push(i===0 ? (900+Math.sqrt(d)*20) : (650+Math.sqrt(d)*26));
-  }
-  fly={seg:0,t:0,t0:null,hold:false,durs:durs};
+  if(!LEGS.length)return;
+  // A short hop and a long haul should not take the same time on screen, but nor should Tokyo take
+  // four times as long as Tbilisi — the square root keeps the difference felt without the wait.
+  // Ground legs get a floor, or a 30km transfer would flash past unseen.
+  var durs=LEGS.map(function(S){
+    var d=km([S.a.lat,S.a.lng],[S.b.lat,S.b.lng]);
+    return S.mode==='air' ? (900+Math.sqrt(d)*20) : (650+Math.sqrt(d)*26);
+  });
+  // Come down on the country after the flight, not after leg zero — when home has no airport of
+  // its own, leg zero is a drive to the airport and the flight has not happened yet.
+  var land=0; for(var i=0;i<LEGS.length;i++)if(LEGS[i].mode==='air'){ land=i; break; }
+  fly={seg:0,t:0,t0:null,hold:false,durs:durs,land:land};
 }
 function frame(now){
   NOW=now;
@@ -828,17 +926,17 @@ function frame(now){
     if(fly.t0===null)fly.t0=now;
     fly.t=Math.min(1,(now-fly.t0)/fly.durs[fly.seg]);
     if(fly.t>=1){
-      if(fly.seg===0){
-        // Landed. Come down on the country before flying the hops inside it — at world scale a
-        // 200km drive between two towns is a pixel.
+      if(fly.seg===fly.land&&fly.seg<fly.durs.length-1){
+        // Landed. Come down on the country before covering the ground legs — at world scale a
+        // 200km drive from the airport is a pixel, and that drive is the point.
         fly.hold=true;
-        var c2=centre(STOPS);
-        goTo(c2.lon,c2.lat,fitZoom(STOPS,c2),function(){
+        var fs=frameSet(), c2=centre(fs);
+        goTo(c2.lon,c2.lat,fitZoom(fs,c2),function(){
           if(!fly)return;
-          if(fly.durs.length>1){ fly.hold=false; fly.seg=1; fly.t=0; fly.t0=null; } else fly=null;
+          fly.hold=false; fly.seg++; fly.t=0; fly.t0=null;
         });
       } else if(fly.seg<fly.durs.length-1){ fly.seg++; fly.t=0; fly.t0=null; }
-      else fly=null;                                       // the whole trip is drawn
+      else fly=null;                                       // the whole journey is drawn
     }
   }
   draw();

@@ -5,9 +5,11 @@ const world = fs.readFileSync('geo/world.json', 'utf8');
 // fly); these are the true answers for these seven trips rather than a plane for everything.
 const TRIPS = {};   // the trip is built by the user now, not chosen from a list
 const cities = fs.readFileSync('cities.json', 'utf8');
+const airports = fs.readFileSync('airports.json', 'utf8');
 const html = fs.readFileSync('demo-src.html', 'utf8')
   .replace('/*__WORLD__*/', 'var WORLD=' + world + ';')
   .replace('/*__CITIES__*/', 'var CITIES=' + cities + ';')
+  .replace('/*__AIRPORTS__*/', 'var AIRPORTS=' + airports + ';')
   .replace('/*__TRIPS__*/', 'var TRIPS=' + JSON.stringify(TRIPS) + ';');
 fs.mkdirSync('/home/user/travel-itinerary-skill/demo', { recursive: true });
 fs.writeFileSync('/home/user/travel-itinerary-skill/demo/globe.html', html);
