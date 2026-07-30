@@ -731,6 +731,14 @@
   .chatfoot #chatMic:hover{border-color:var(--teal)}
   .chatfoot #chatMic.is-hidden{display:none}
   .chatfoot #chatMic.rec{background:#e5484d;border-color:#e5484d;color:#fff;animation:micpulse 1.2s infinite}
+  /* The example is the instruction. It sits above the starter chips and reads as something you
+     could have typed yourself, because that is the whole point. */
+  .chateglbl{margin:14px 2px 6px;font-size:14px;font-weight:600;color:var(--muted)}
+  .chateglbl.chipslbl{margin-top:20px}
+  .chateg{display:block;width:100%;text-align:start;padding:12px 14px;border:1px dashed var(--teal);
+    border-radius:12px;background:transparent;color:var(--ink);font-family:var(--ff-body);
+    font-size:15px;line-height:1.5;cursor:pointer}
+  .chateg:hover{background:rgba(0,0,0,.03);border-style:solid}
   .chatchips{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px;align-self:flex-start;max-width:100%}
   .chatchip{padding:8px 13px;border:1px solid var(--teal);border-radius:999px;background:var(--teal-soft);color:var(--ink);font-size:15px;font-weight:600;font-family:var(--ff-body);cursor:pointer}
   .chatchip:active{transform:translateY(1px)}
@@ -3098,6 +3106,7 @@
 
   // ---- Trip assistant — smart AI chat (Worker/Haiku) that builds the trip, with button-driven quick-starts --
   var CHATMSGS=[], CHATCHIPS=[], CHATCAT=null, CHATKEY=null, CHATROUTE=null, CHATPICK=[]; // chips: [{t:label,a:action,v:value}]; CHATPICK: cities chosen so far
+  var CHATEG=false;   // show the worked example — only until they've said something themselves
   // curated multi-city drives — only shown when at least 2 of their cities exist in our data
   var ROADTRIPS=[
     {flag:'🇮🇹',cities:['Rome','Florence','Venice']},{flag:'🇨🇭',cities:['Zurich','Lucerne','Interlaken','Zermatt']},
@@ -3147,8 +3156,18 @@
   }
   function doneLabel(){ var n=CHATPICK.length; return (LANG==='ar'?('✓ تم'+(n?' ('+n+')':'')):(LANG==='es'?('✓ Listo'+(n?' ('+n+')':'')):('✓ Done'+(n?' ('+n+')':'')))); }
   function moreLabel(){ return LANG==='ar'?'🔀 غيّرها':(LANG==='es'?'🔀 Más':'🔀 More'); }
+  // Opening with a menu teaches people the app works like a menu, so they tap a vibe and get walked
+  // through five questions they could have answered in one sentence. Say plainly that the whole trip
+  // can go in one message, then SHOW it — an example is the only instruction anyone reads.
+  function chatExample(){
+    return LANG==='ar'?'أنا وزوجتي ٨ أيام — ٥ ليالي بوكيت و٣ بانكوك، ميزانية متوسطة، نحب الأكل والطبيعة'
+      :(LANG==='es'?'Mi mujer y yo, 8 días — 5 noches en Phuket y 3 en Bangkok, presupuesto medio, nos gusta la comida y la naturaleza'
+      :"My wife and I, 8 days — 5 nights in Phuket and 3 in Bangkok, mid-range, we love food and nature");
+  }
+  function egLabel(){ return LANG==='ar'?'مثال — اضغط عليه وعدّله':(LANG==='es'?'Ejemplo — tócalo y edítalo':'Example — tap it and edit'); }
+  function chipsLabel(){ return LANG==='ar'?'أو ابدأ من هني:':(LANG==='es'?'O empieza por aquí:':'Or start from one of these:'); }
   function chatGreeting(){ return CONFIG.aiEndpoint
-      ? (LANG==='ar'?'هلا! احكِ لي عن رحلتك — وجهة، جو معيّن، أو مسار كامل بالسيارة — وأنا أجهّزها لك. أو اختر من تحت:':(LANG==='es'?'¡Hola! Cuéntame de tu viaje — un destino, un ambiente, o una ruta entera en coche — y lo armo. O elige abajo:':'Hi! Tell me about your trip — a place, a vibe, or a whole road trip — and I’ll build it. Or tap a starter:'))
+      ? (LANG==='ar'?'هلا! اكتب لي رحلتك كاملة بمرة وحدة — وين، كم يوم، كم شخص، ووش تحبون — وأنا أرتّبها لك.':(LANG==='es'?'¡Hola! Cuéntame el viaje entero de una vez — dónde, cuántos días, cuántos sois y qué os gusta — y lo armo.':"Hi! Describe your whole trip in one go — where, how long, how many of you, what you're into — and I'll build it."))
       : (LANG==='ar'?'هلا! وش نوع الرحلة اللي في بالك؟ (أو اكتب اسم مدينة)':(LANG==='es'?'¡Hola! ¿Qué tipo de viaje buscas? (o escribe una ciudad)':'Hi! What kind of trip are you after? (or type a city)')); }
   function dayWordN(n){ return n+' '+(LANG==='ar'?'أيام':(LANG==='es'?'días':'days')); }
   function catChips(){ var c=ideaCats().map(function(x){ return {t:x[1],a:'cat',v:x[0]}; });
@@ -3166,10 +3185,13 @@
     var body=$('chatBody'); if(!body)return;
     var msgs=CHATMSGS.map(function(m){ return '<div class="chatmsg '+(m.role==='user'?'user':'bot')+'">'+esc(m.content)+'</div>'; }).join('');
     var chips=CHATCHIPS.length?('<div class="chatchips">'+CHATCHIPS.map(function(c){ return '<button type="button" class="chatchip" data-a="'+c.a+'" data-v="'+esc(c.v)+'">'+esc(c.t)+'</button>'; }).join('')+'</div>'):'';
-    body.innerHTML=msgs+chips; body.scrollTop=body.scrollHeight;
+    var eg=CHATEG?('<div class="chateglbl">'+esc(egLabel())+'</div>'+
+      '<button type="button" class="chateg">'+esc(chatExample())+'</button>'):'';
+    var lbl=(CHATEG&&CHATCHIPS.length)?('<div class="chateglbl chipslbl">'+esc(chipsLabel())+'</div>'):'';
+    body.innerHTML=msgs+eg+lbl+chips; body.scrollTop=0;
   }
   function botSay(t){ CHATMSGS.push({role:'assistant',content:t}); }
-  function meSay(t){ CHATMSGS.push({role:'user',content:t}); }
+  function meSay(t){ CHATMSGS.push({role:'user',content:t}); CHATEG=false; }
   function lastUserText(){ for(var i=CHATMSGS.length-1;i>=0;i--){ if(CHATMSGS[i].role==='user')return CHATMSGS[i].content; } return ''; }
   function retryLabel(){ return LANG==='ar'?'↻ أعد المحاولة':(LANG==='es'?'↻ Reintentar':'↻ Try again'); }
   // At the very start the starters are a real offer. Once someone has told us where and how long,
@@ -3185,7 +3207,7 @@
     if(turns>1)c.push({t:backLabel(),a:'back',v:''});
     return c;
   }
-  function chatReset(){ CHATMSGS=[]; CHATCHIPS=[]; CHATCAT=null; CHATKEY=null; CHATROUTE=null; CHATPICK=[]; botSay(chatGreeting()); CHATCHIPS=catChips(); }
+  function chatReset(){ CHATMSGS=[]; CHATCHIPS=[]; CHATCAT=null; CHATKEY=null; CHATROUTE=null; CHATPICK=[]; CHATEG=!!CONFIG.aiEndpoint; botSay(chatGreeting()); CHATCHIPS=catChips(); }
   function pickedLine(){ return CHATPICK.map(function(k){return DEST[k].city;}).join(' → '); }
   function pickMoreChips(){ var chips=[{t:doneLabel(),a:'done',v:''}]; // Done first, then a few more of the same vibe to add
     if(CHATCAT){ var r=nextDests(CHATCAT); r.keys.forEach(function(k){ if(CHATPICK.indexOf(k)<0)chips.push({t:DEST[k].flag+' '+DEST[k].city,a:'dest',v:k}); }); }
@@ -3431,7 +3453,12 @@
     var i=$('chatInput');
     if(i){ i.addEventListener('keydown',function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); chatSubmitText(); } }); // Shift+Enter = new line
       i.addEventListener('input',chatGrow); }
-    var cb=$('chatBody'); if(cb)cb.addEventListener('click',function(e){ var c=e.target.closest('.chatchip'); if(c)chatAct(c.getAttribute('data-a'),c.getAttribute('data-v')); });
+    var cb=$('chatBody'); if(cb)cb.addEventListener('click',function(e){
+      // Fills the box rather than sending it: it's a shape to copy, not somebody else's holiday.
+      var g=e.target.closest('.chateg');
+      if(g){ var inp=$('chatInput'); if(inp){ inp.value=chatExample(); inp.focus(); chatGrow();
+        try{ inp.setSelectionRange(inp.value.length,inp.value.length); }catch(err){} } return; }
+      var c=e.target.closest('.chatchip'); if(c)chatAct(c.getAttribute('data-a'),c.getAttribute('data-v')); });
     var pn=$('chatPanel'); if(pn)pn.addEventListener('click',function(e){ if(e.target===pn)chatClose(); });
   })();
 
