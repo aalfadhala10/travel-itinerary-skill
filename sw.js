@@ -1,4 +1,4 @@
-const CACHE = 'bosla-v4';
+const CACHE = 'bosla-v5';
 const ASSETS = ['./', './index.html', './favicon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './manifest.webmanifest'];
 self.addEventListener('install', function(e){
   e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll(ASSETS); }).then(function(){ return self.skipWaiting(); }));
@@ -10,7 +10,11 @@ self.addEventListener('fetch', function(e){
   if (e.request.method !== 'GET') return;
   var url = new URL(e.request.url);
   if (url.origin !== location.origin) return; // let Klook/Booking/Travelpayouts/Airalo hit the network
-  var isDoc = e.request.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('index.html');
+  // Only the app itself. `mode === 'navigate'` is true for ANY page on this origin, so opening
+  // /demo/globe.html was fetched, then written into the cache under './index.html' — and the next
+  // offline launch of the app would have served the demo instead. Any other page just goes to the
+  // network and is none of our business.
+  var isDoc = url.pathname.endsWith('/') || url.pathname.endsWith('index.html');
   if (isDoc) {
     // Network-first for the app itself, so updates always arrive when online.
     // `cache:'no-cache'` matters: a plain fetch() here still goes through the browser's own HTTP
