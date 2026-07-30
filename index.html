@@ -121,11 +121,11 @@
   .editfab{position:fixed;bottom:22px;right:18px;z-index:6;padding:12px 18px;border-radius:999px;border:none;background:var(--teal);color:#fff;font-size:14px;font-weight:700;font-family:var(--ff-body);box-shadow:var(--shadow);cursor:pointer;transition:filter .15s}
   .editfab:hover{filter:brightness(1.06)}
   /* Both floating buttons land exactly on top of the Back/Next controls, so while those are on
-     screen these move up out of the way. They used to fade out entirely, which meant the chat
-     button disappeared for the whole bottom of every page — exactly where somebody who has read
-     the day is most likely to want to change something. Stepping aside is enough. */
+     screen these get out of the way. Lifting them was tried and was worse: a button that hovers in
+     the middle of the itinerary covers the rows somebody is reading, which is more annoying than a
+     button that waits. Out of sight until the controls are gone. */
   .editfab,.chatfab{transition:opacity .18s,transform .18s,bottom .25s}
-  body.pgnav-vis .editfab,body.pgnav-vis .chatfab{bottom:210px}
+  body.pgnav-vis .editfab,body.pgnav-vis .chatfab{opacity:0;transform:translateY(10px);pointer-events:none}
   /* the "how was your plan?" card lands there too — it can wait until they're not mid-navigation */
   body.pgnav-vis .fbnudge.show{opacity:0;transform:translateX(-50%) translateY(30px);pointer-events:none}
   @media (prefers-color-scheme:dark){.editfab{color:#0a1310}}
@@ -3950,6 +3950,10 @@
         es.forEach(function(e){ seen[e.target.getAttribute('data-pgw')]=e.isIntersecting; });
         var any=false; for(var k in seen)if(seen[k])any=true;
         document.body.classList.toggle('pgnav-vis',any);
+        // The CSS only made the rating card INVISIBLE while the pager was in view, and it kept the
+        // class — so it came back on every single page turn. Reaching the controls is an answer of
+        // sorts: put it away properly instead of blinking it at them all trip.
+        if(any){ try{ var fn=$('fbNudge'); if(fn&&fn.classList.contains('show'))hideFbNudge(); }catch(e){} }
       },{threshold:0.3});
       targets.forEach(function(t,i){ t.setAttribute('data-pgw','w'+i); PGOBS.observe(t); });
     }catch(e){}
@@ -5763,11 +5767,21 @@
     FBNUDGE_ARMED=true;
     var fire=function(){ if(FBNUDGE_T){clearTimeout(FBNUDGE_T);FBNUDGE_T=null;} if(FBNUDGE_SCROLL){window.removeEventListener('scroll',FBNUDGE_SCROLL);FBNUDGE_SCROLL=null;} showFbNudge(); };
     FBNUDGE_T=setTimeout(fire, 45000);
-    FBNUDGE_SCROLL=function(){ var out=$('out'); if(!out)return; var r=out.getBoundingClientRect(); if(r.bottom - window.innerHeight < 400) fire(); }; // they've scrolled near the end of the itinerary
+    // Every paginated day is short, so the bottom of the plan is always "near" and this fired on
+    // day one within seconds. Ask only once they have actually spent a while with it.
+    var armed=Date.now();
+    FBNUDGE_SCROLL=function(){ var out=$('out'); if(!out)return;
+      if(Date.now()-armed < 25000)return;
+      var r=out.getBoundingClientRect(); if(r.bottom - window.innerHeight < 400) fire(); };
     window.addEventListener('scroll',FBNUDGE_SCROLL,{passive:true});
   }
+  var FBNUDGE_OFF=null;
   function showFbNudge(){
     if(fbNudgeQuiet())return;
+    // It asked once and then waited on screen for ever. Anybody who doesn't answer has answered:
+    // take it away by itself rather than leaving it sitting on the itinerary.
+    if(FBNUDGE_OFF)clearTimeout(FBNUDGE_OFF);
+    FBNUDGE_OFF=setTimeout(hideFbNudge,15000);
     try{ localStorage.setItem('bosla_fb_nudge', String(Date.now())); }catch(e){} // start the cooldown whether or not they respond
     var q=LANG==='ar'?'كيف كان برنامج رحلتك؟':(LANG==='es'?'¿Qué tal tu plan de viaje?':'How was your trip plan?');
     var no=LANG==='ar'?'ليس الآن':(LANG==='es'?'Ahora no':'Not now');
