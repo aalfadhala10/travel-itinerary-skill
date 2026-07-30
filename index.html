@@ -3298,8 +3298,29 @@
   var CHATBUSY=false;
   // What's on screen right now, in one short line appended to the user's message. Kept out of the
   // system prompt on purpose — that stays byte-identical so Anthropic can cache it.
+  // Somebody who was looking at a Dubai plan and then described a Thailand trip is not editing
+  // Dubai — they are replacing it. But the plan block was appended to EVERY message, so two turns
+  // later the model saw "[Current plan - city: Dubai]" sitting under "ما يفرق", newer and more
+  // concrete than the Thailand request, and dutifully rebuilt Dubai. The screen is only the
+  // starting point; the moment the conversation names somewhere else, the conversation wins.
+  function saidOtherCity(){
+    var cur={}, k, i;
+    if(ROUTE&&ROUTE.length)ROUTE.forEach(function(x){ cur[x]=1; });
+    var dv=matchDest($('dest').value); if(dv)cur[keyOf(dv)]=1;
+    var dv2=matchDest($('dest2').value); if(dv2)cur[keyOf(dv2)]=1;
+    var said=CHATMSGS.filter(function(m){ return m.role==='user'; })
+      .map(function(m){ return String(m.content||'').toLowerCase(); }).join(' ');
+    if(said.length<3)return false;
+    for(k in DEST){
+      if(cur[k])continue;
+      var al=DEST[k].alias;
+      for(i=0;i<al.length;i++){ if(al[i].length>=4 && said.indexOf(al[i])>=0)return true; }
+    }
+    return false;
+  }
   function tripContext(){
     if(!planLive())return '';
+    if(saidOtherCity())return '';   // they've moved on — don't keep handing back the old trip
     var bits=[];
     if(ROUTE&&ROUTE.length>=2){
       bits.push('cities: '+ROUTE.map(function(k,i){ var n=(ROUTEDC&&ROUTEDC[i])?(' '+ROUTEDC[i]+'n'):''; return (DEST[k]?DEST[k].city:k)+n; }).join(' > '));
