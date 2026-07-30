@@ -15,9 +15,19 @@ usable and the numbers are not.
 
 The confidence signal is the saving grace, and the difference from the digital
 PDF path is worth naming: there, a reversed digit arrives at full confidence
-with nothing to flag it. Here the engine tells us it is unsure. So Arabic
-numerals from OCR are quarantined rather than guessed at — they never reach a
-comparison, they go to a human with the page image.
+with nothing to flag it. Here the engine tells us it is unsure.
+
+arabic_digits re-reads those numerals from the pixels by matching against a
+closed ten-glyph alphabet, which is far more accurate than Tesseract: 10/10 per
+font in isolation, including on fonts never seen. End to end on a real page it
+recovers 7 of 17 numbers, because it can only re-read what Tesseract chose to
+box, and it still lets an occasional wrong value through — ٠ is a dot, so a
+full stop matches zero almost perfectly and no size rule separates them.
+
+So recovery improves what a person reads and is **not** trusted for comparison.
+Lines containing Arabic numerals stay quarantined whether recovery succeeded or
+not. Partly-right numbers are worse than absent ones in a tool whose whole job
+is comparing values.
 """
 from __future__ import annotations
 
@@ -28,13 +38,17 @@ import subprocess
 from dataclasses import dataclass, field
 from typing import Protocol
 
+from . import arabic_digits
+
 ARABIC_INDIC = "٠١٢٣٤٥٦٧٨٩"
 ARABIC_RANGE = (0x0600, 0x06FF)
 
 # Below this, a word is not used to build anything (docs/01 §14).
 WORD_CONFIDENCE_FLOOR = 0.55
-# Arabic numerals never clear any bar — see the module docstring.
-ARABIC_NUMERAL_POLICY = "quarantine"
+# Arabic numerals are re-read from the pixels by arabic_digits (a closed
+# ten-glyph alphabet beats a general recogniser here). Anything that re-read
+# cannot vouch for is still quarantined — recovery never becomes invention.
+ARABIC_NUMERAL_POLICY = "reread_then_quarantine"
 
 
 @dataclass
@@ -156,7 +170,12 @@ class TesseractProvider:
                 confidence=sum(w.confidence for w in ws) / len(ws),
                 numeric_reliable=not quarantined))
 
-        res.words = kept
+        # Every word is kept here, not just those above the floor. The tokens
+        # most in need of digit recovery are precisely the low-confidence ones
+        # (Tesseract scored ٢٤ at 0.04), so filtering first would discard them
+        # before the recogniser that CAN read them ever gets a look. The floor
+        # is applied when lines are rebuilt after recovery.
+        res.words = words
         res.mean_confidence = sum(w.confidence for w in kept) / len(kept)
         detected = set()
         if any(w.is_arabic for w in kept):
@@ -265,6 +284,64 @@ def reconstruct_table(words: list[OCRWord]) -> tuple[list[str], list[list[str]]]
             continue
         body.append(cells)
     return (headers, body) if body else None
+
+
+def recover_arabic_numerals(page, result: "OCRResult", dpi: int) -> int:
+    """Re-read every Arabic numeral OCR could not handle. Returns recoveries.
+
+    Runs after recognition because it needs the page pixels, not the PNG the
+    provider was handed. Words that stay unreadable keep their quarantine.
+    """
+    if not result.words or not arabic_digits.available():
+        return 0
+
+    arabic_page = any(w.is_arabic for w in result.words)
+
+    def needs_reread(w: OCRWord) -> bool:
+        if w.has_arabic_numeral:
+            return True
+        # Tesseract mangles Arabic numerals into Latin ones and into junk —
+        # ٢٤ came back as "55ع26666)" at 0.04. Anything low-confidence with a
+        # digit in it on an Arabic page is worth a second look.
+        return (arabic_page and w.confidence < 0.85
+                and any(c.isdigit() for c in w.text))
+
+    recovered, unresolved = 0, set()          # tracked by identity, not value:
+    for w in result.words:                    # the words are mutated in place
+        if not needs_reread(w):
+            continue
+        got = arabic_digits.read(page, w.bbox, dpi)
+        if got.usable:
+            w.text = got.text
+            w.confidence = max(w.confidence, got.confidence)
+            recovered += 1
+        # Recovered or not, the line stays quarantined. Measured end to end,
+        # recovery gets 7 of 17 numbers on a page and still lets the odd wrong
+        # one through, because detection depends on Tesseract having boxed the
+        # number in the first place. Good enough to show a person, nowhere near
+        # good enough to feed a comparison — see the module docstring.
+        if w.has_arabic_numeral or got.usable:
+            unresolved.add(id(w))
+
+    # Rebuild the lines so corrected values reach the text, applying the
+    # confidence floor now, and lift the quarantine only where every numeral
+    # on the line was recovered.
+    by_line: dict[tuple, list[OCRWord]] = {}
+    for w in result.words:
+        if w.confidence >= WORD_CONFIDENCE_FLOOR or id(w) in unresolved:
+            by_line.setdefault(w.line_id, []).append(w)
+
+    result.lines = []
+    for _, ws in by_line.items():
+        blocked = [w for w in ws if id(w) in unresolved]
+        result.lines.append(OCRLine(
+            text=" ".join(w.text for w in ws),
+            bbox=(min(w.bbox[0] for w in ws), min(w.bbox[1] for w in ws),
+                  max(w.bbox[2] for w in ws), max(w.bbox[3] for w in ws)),
+            confidence=sum(w.confidence for w in ws) / len(ws),
+            numeric_reliable=not blocked))
+    result.quarantined_numerals = len(unresolved)
+    return recovered
 
 
 def scan_quality(pixmap) -> float:

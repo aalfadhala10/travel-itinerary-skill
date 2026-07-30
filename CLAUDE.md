@@ -48,8 +48,15 @@ Scanned Arabic is a separate and harsher case. Tesseract reads Arabic *words*
 at 90-93% and Latin digits at 93-97%, but does not get a single Arabic-Indic
 numeral right — ١٢٠ comes back as ١7٠١ — across every configuration tried. The
 digital defect is recoverable because only the order is wrong; here the glyph
-itself is misread, so nothing can be reconstructed. Those values are
-quarantined, never compared, and handed to a human with the page image.
+itself is misread.
+
+`cr/arabic_digits.py` re-reads them by matching against the closed ten-glyph
+alphabet — 10/10 per font in isolation, including unseen fonts, but only 7 of
+17 end to end, since it can only re-read what Tesseract boxed, and ٠ is a dot
+so punctuation still slips through as a zero. Recovery therefore improves what
+a person reads and is never trusted for comparison: lines with Arabic numerals
+stay quarantined either way. A partly-right number is worse than a missing one
+when the whole job is comparing values.
 
 ### Test fixtures are the exception
 

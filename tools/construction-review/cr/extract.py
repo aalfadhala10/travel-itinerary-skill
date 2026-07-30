@@ -62,6 +62,7 @@ class PageHealth:
     ocr_confidence: float | None = None
     scan_quality: float | None = None
     quarantined_numerals: int = 0
+    recovered_numerals: int = 0
 
 
 @dataclass
@@ -156,6 +157,10 @@ def _ocr_page(page: fitz.Page, pno: int, doc: Document, health: PageHealth) -> N
         health.reason = f"OCR_FAILED:{type(exc).__name__}"
         return
 
+    # Tesseract cannot read Arabic-Indic numerals; re-read them from the pixels
+    # first — this rewrites result.lines, so it must precede block building.
+    recovered = ocr.recover_arabic_numerals(page, result, OCR_DPI)
+
     scale = 72.0 / OCR_DPI                       # OCR pixels back to PDF points
     for line in result.lines:
         doc.blocks.append(Block(
@@ -180,6 +185,7 @@ def _ocr_page(page: fitz.Page, pno: int, doc: Document, health: PageHealth) -> N
     health.char_count = len(result.text)
     health.ocr_confidence = round(result.mean_confidence, 3)
     health.quarantined_numerals = result.quarantined_numerals
+    health.recovered_numerals = recovered
     if not result.lines:
         health.reason = "NO_TEXT_EXTRACTED:OCR returned nothing"
     for lang in result.languages:
