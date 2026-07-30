@@ -49,6 +49,13 @@
   .toggle{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2);
     color:var(--muted);font-size:14px;font-family:inherit;cursor:pointer}
   .toggle.on{color:var(--amber);border-color:var(--amber)}
+  /* A button reading "Light / dark" never says which one you are in. Two positions, one of them
+     filled, and the question does not come up. */
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--paper2)}
+  .segb{padding:8px 14px;border:none;background:none;color:var(--muted);font-size:14px;
+    font-family:inherit;cursor:pointer}
+  .segb+.segb{border-inline-start:1px solid var(--line)}
+  .segb.on{background:var(--amber);color:#10202c;font-weight:700}
   .foot{font-size:13px;color:var(--muted);line-height:1.7;margin-top:6px}
 </style>
 </head>
@@ -66,7 +73,10 @@
     <div class="cap" id="cap"><span class="dim">Pick somewhere below.</span></div>
     <div class="chips" id="chips"></div>
     <div class="row">
-      <button class="toggle" id="tTheme">Light / dark</button>
+      <span class="seg" id="tTheme" role="group" aria-label="Theme">
+        <button type="button" class="segb" data-t="dark">Dark</button>
+        <button type="button" class="segb" data-t="light">Light</button>
+      </span>
       <button class="toggle on" id="tSpin">Idle spin</button>
       <button class="toggle" id="tFlat">Flat map</button>
       <button class="toggle" id="tAgain">Fly it again</button>
@@ -149,8 +159,9 @@ var DARK=true;
 function syncTheme(){
   var t=document.documentElement.getAttribute('data-theme');
   DARK = t ? (t==='dark') : matchMedia('(prefers-color-scheme:dark)').matches;
-  var b=document.getElementById('tTheme');
-  if(b)b.classList.toggle('on',!!t);
+  var box=document.getElementById('tTheme');
+  if(box)[].forEach.call(box.querySelectorAll('.segb'),function(b){
+    b.classList.toggle('on', b.getAttribute('data-t')===(DARK?'dark':'light')); });
 }
 function stars(w){
   if(!DARK||flat)return;
@@ -437,10 +448,11 @@ Object.keys(TRIPS).forEach(function(k){
   var b=document.createElement('button'); b.className='chip'; b.dataset.k=k;
   b.textContent=TRIPS[k].label; b.onclick=function(){ pick(k); }; chips.appendChild(b);
 });
-document.getElementById('tTheme').onclick=function(){
-  document.documentElement.setAttribute('data-theme',DARK?'light':'dark');
+document.getElementById('tTheme').addEventListener('click',function(e){
+  var b=e.target.closest('.segb'); if(!b)return;
+  document.documentElement.setAttribute('data-theme',b.getAttribute('data-t'));
   syncTheme();
-};
+});
 document.getElementById('tSpin').onclick=function(){ spin=!spin; this.classList.toggle('on',spin); };
 document.getElementById('tFlat').onclick=function(){ flat=!flat; this.classList.toggle('on',flat); };
 document.getElementById('tAgain').onclick=function(){
