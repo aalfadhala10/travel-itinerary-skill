@@ -426,6 +426,9 @@
   .arrops{margin:8px 0 0;padding-inline-start:18px}
   .arrops li{font-size:15px;line-height:1.7}
   .arrvia{color:var(--muted)}
+  .menulink{margin-inline-start:8px;font-size:14px;font-weight:600;color:var(--teal);text-decoration:none;white-space:nowrap}
+  .menulink:hover{text-decoration:underline}
+  .menulink::before{content:'· ';color:var(--muted);font-weight:400}
   .arrleg{margin-bottom:2px}
   .arrlast{margin-top:8px;font-size:14px;font-weight:600;color:var(--muted)}
   .dayroute{display:block;margin-top:14px;padding:13px 14px;border:1px solid var(--teal);border-radius:12px;
@@ -3312,6 +3315,19 @@
   // later the model saw "[Current plan - city: Dubai]" sitting under "ما يفرق", newer and more
   // concrete than the Thailand request, and dutifully rebuilt Dubai. The screen is only the
   // starting point; the moment the conversation names somewhere else, the conversation wins.
+  // Every city the traveller named themselves, anywhere in this conversation. A destination they
+  // accepted from a suggestion counts too, because tapping the chip sends its name as their message.
+  function saidCityKeys(){
+    var said=CHATMSGS.filter(function(m){ return m.role==='user'; })
+      .map(function(m){ return String(m.content||'').toLowerCase(); }).join(' ');
+    var out={}, k, i;
+    if(said.length<3)return out;
+    for(k in DEST){
+      var al=DEST[k].alias;
+      for(i=0;i<al.length;i++){ if(al[i].length>=4 && said.indexOf(al[i])>=0){ out[k]=1; break; } }
+    }
+    return out;
+  }
   function saidOtherCity(){
     var cur={}, k, i;
     if(ROUTE&&ROUTE.length)ROUTE.forEach(function(x){ cur[x]=1; });
@@ -3417,7 +3433,29 @@
       var core=loop?seq.slice(0,seq.length-1):seq.slice();
       var seen={}, ks=[]; core.forEach(function(k){ if(!seen[k]){ seen[k]=1; ks.push(k); } }); // distinct stops, in order
       if(!ks.length){ botSay(LANG==='ar'?'ما قدرت أجهّز هالمسار — جرّب أماكن ثانية:':(LANG==='es'?'No pude armar esa ruta — prueba otros lugares:':'I couldn’t build that route — try other places:')); CHATCHIPS=catChips(); chatRender(); return; }
-      if((loop || !!res.roadtrip) && ks.length>=2){ ks.push(ks[0]); } // road trip → return to the start (drop the car / fly home from the same airport)
+      // "I did not say I want to stay in Munich, I said I'll drive to Garmisch directly" — and Munich
+      // came back as five nights. The bot keeps promoting the airport city to a stop, and the app no
+      // longer needs it to: arrival from the nearest airport is explained on day one on its own.
+      // Narrow on purpose. It only drops the FIRST stop, only when the traveller never named it
+      // while they DID name the next one, and only when the two are close enough to be an
+      // airport-and-onward pair. A route the bot suggested wholesale — where they named nothing —
+      // is left completely alone.
+      var nightsArr=Array.isArray(res.nights)?res.nights.slice():[];
+      if(ks.length>=2){
+        var said=saidCityKeys();
+        if(!said[ks[0]] && said[ks[1]] && CO[ks[0]] && CO[ks[1]] && kmDist(CO[ks[0]],CO[ks[1]])<150){
+          ks.shift();
+          if(nightsArr.length===ks.length+1)nightsArr.shift();
+        }
+      }
+      // The traveller's own split, checked BEFORE anything is appended to the route. This used to be
+      // tested after the loop-closing stop was pushed on, so on any road trip the lengths could
+      // never match and "4 nights in Amsterdam" was thrown away in silence.
+      var explicit=nightsArr.length===ks.length&&nightsArr.every(function(x){ return (x|0)>0; });
+      // Closing the loop adds a stop the nights array knows nothing about, and inventing a night
+      // for it would quietly stretch a trip they already told us the length of. When they have said
+      // how the nights split, that wins; the return drive still shows as a transfer between stops.
+      if(!explicit && (loop || !!res.roadtrip) && ks.length>=2){ ks.push(ks[0]); } // road trip → return to the start (drop the car / fly home from the same airport)
       var days=Math.max(1,Math.min(30,(res.days|0)||(res.roadtrip?12:5)));
       PGFRESH=true; // a trip the bot just built opens on day one, same as one from the form
       var editing=planLive(); // a trip is already on screen, so this is a change, not a fresh build
@@ -3431,8 +3469,8 @@
       // every place they already liked. A brand-new trip starts clean.
       if(!editing){ newSeed(); DAYEDITS={}; DAYROT={}; DAYADD={}; }
       ROUTE=null; ROUTEDC=null; ROUTEDCSIG='';
-      if(Array.isArray(res.nights) && res.nights.length===ks.length && res.nights.every(function(x){return (x|0)>0;})){
-        ROUTEDC=res.nights.map(function(x){ return Math.max(1,Math.min(30,x|0)); }); // their own split, e.g. 8 + 4
+      if(explicit){
+        ROUTEDC=nightsArr.map(function(x){ return Math.max(1,Math.min(30,x|0)); }); // their own split, e.g. 8 + 4
         ROUTEDCSIG=ks.join('|');
         days=Math.max(1,Math.min(60,ROUTEDC.reduce(function(a,b){return a+b;},0)));
       }
@@ -4102,6 +4140,9 @@
     var hopTxt=ar?'الرقم الرمادي هو المسافة من المكان السابق — اليوم مرتّب بالأقرب فالأقرب'
       :(es?'El número gris es la distancia desde la parada anterior — el día va de lo más cercano a lo más lejano'
       :'The grey number is how far it is from the stop before — each day runs nearest-first');
+    var menuTxt=ar?'المطاعم فيها رابط المنيو بدل الصورة'
+      :(es?'Los restaurantes llevan un enlace a la carta en vez de una foto'
+      :'Restaurants carry a link to the menu instead of a photo');
     var swapTxt=ar?'تبديل':(es?'Cambiar':'Swap');
     var picTxt=ar?'صورة':(es?'Foto':'Photo');
     var whenTxt=ar?'الوقت':(es?'Hora':'When');
@@ -4111,6 +4152,7 @@
     return '<div class="dhint"><span class="dhtouch">'+esc(tapName)+'</span>'+
       '<span class="dhhover">'+esc(hovName)+'</span></div>'+
       '<div class="dhint">'+esc(hopTxt)+'</div>'+
+      '<div class="dhint">'+esc(menuTxt)+'</div>'+
       '<div class="dcap"><span class="t">'+esc(whenTxt)+'</span><span class="d">'+esc(whereTxt)+'</span>'+
         '<span class="dcapw dcappic">'+esc(picTxt)+'</span>'+
         '<span class="dcapw">'+esc(swapTxt)+'</span></div>';
@@ -4118,11 +4160,23 @@
   // `food` marks a meal. The rating is shown on restaurants only: choosing where to eat is where a
   // score actually changes your mind, and a number beside every mosque and museum was just noise.
   // Attractions are still checked and still ordered by it — the check just stops being visible.
+  // A photo of a restaurant is the one picture nobody can source reliably — hovering a Moroccan
+  // place in Munich produced a black-and-white portrait of a stranger. What somebody actually wants
+  // before choosing where to eat is the menu, so restaurants get that instead and no photo at all.
+  function menuLink(n,city){
+    var t=LANG==='ar'?'المنيو':(LANG==='es'?'La carta':'Menu');
+    return ' <a class="menulink" href="https://www.google.com/search?q='+
+      encodeURIComponent(n+' '+city+' menu')+'" target="_blank" rel="noopener">'+esc(t)+'</a>';
+  }
   function eslot(tm,poi,city,sk,o,ck,food,hop){
     // print the local name, but search Maps for the English one — it resolves far more reliably
-    return '<div class="slot" data-sk="'+sk+'"><div class="t">'+tm+'</div>'
-      +'<div class="d">'+link(locName(ck,poi.n),poi.n+' '+city,poi.n+' '+city)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a),locName(ck,poi.n))+hopLabel(hop)+'</div>'
-      +'<button type="button" class="picbtn" data-pic="'+esc(poi.n+' '+city)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>'
+    var q=poi.n+' '+city;
+    // What this row IS, kept on the row itself. It used to be read off the photo attribute, which
+    // worked right up until restaurants stopped having photos — and then the swap picker could no
+    // longer tell which place you were replacing, so it offered you the same one back.
+    return '<div class="slot" data-sk="'+sk+'" data-q="'+esc(q)+'"><div class="t">'+tm+'</div>'
+      +'<div class="d">'+link(locName(ck,poi.n),q,food?'':q)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a),locName(ck,poi.n))+hopLabel(hop)+(food?menuLink(poi.n,city):'')+'</div>'
+      +(food?'':'<button type="button" class="picbtn" data-pic="'+esc(q)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>')
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
   }
   // Small stops the bot added on request ("put a coffee shop on day 2"), keyed by day number.
@@ -5913,7 +5967,8 @@
     // in the data never matched — and the place you were trying to get rid of was offered back to
     // you as one of its own replacements. The Maps query carries the English name; use that.
     function slotName(sl){
-      var a=sl&&sl.querySelector('.d a'), q=a&&a.getAttribute('data-pic');
+      var q=sl&&sl.getAttribute&&sl.getAttribute('data-q');
+      if(!q){ var a=sl&&sl.querySelector('.d a'); q=a&&a.getAttribute('data-pic'); }
       return q?String(q).replace(new RegExp('\\s+'+dd.city+'$'),'').trim():'';
     }
     var cur=slotName(slot);
