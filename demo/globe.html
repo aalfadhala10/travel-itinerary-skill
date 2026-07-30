@@ -87,7 +87,8 @@
 
   <p class="foot">
     Geometry is Natural Earth (public domain) at 1:110m, trimmed to 0.1° and inlined —
-    <b id="wsize">…</b> in the page, no requests, works offline, no per-load cost.
+    <b id="wsize">…</b> in the page and nothing fetched on load. Zoom in and the finer 1:50m
+    coastlines are pulled in once, from this same site — <span id="detail">not needed yet</span>.
     Nothing here calls Google.
   </p>
 </div>
@@ -101,14 +102,45 @@ var CSS=getComputedStyle(document.documentElement);
 function col(n){ return CSS.getPropertyValue(n).trim(); }
 document.getElementById('wsize').textContent=Math.round(JSON.stringify(WORLD).length/1024)+' KB';
 
-// --- decode the packed rings once: [dx,dy,...] tenths of a degree -> [[lon,lat],...]
-var P=WORLD.p, LAND=[];
-WORLD.c.forEach(function(c){
-  var rings=c.r.map(function(a){ var x=0,y=0,out=[];
-    for(var i=0;i<a.length;i+=2){ x+=a[i]; y+=a[i+1]; out.push([x/P,y/P]); }
-    return out; });
-  LAND.push({n:c.n,r:rings});
-});
+// --- decode the packed rings: [dx,dy,...] in fractions of a degree -> [[lon,lat],...]
+// Each country also carries its own middle and how far its furthest point reaches, which is all
+// that is needed to throw away the half of the world facing away from you before drawing anything.
+function decode(src){
+  var P=src.p, out=[];
+  src.c.forEach(function(c){
+    var rings=c.r.map(function(a){ var x=0,y=0,o=[];
+      for(var i=0;i<a.length;i+=2){ x+=a[i]; y+=a[i+1]; o.push([x/P,y/P]); }
+      return o; });
+    var mnx=180,mxx=-180,mny=90,mxy=-90;
+    rings.forEach(function(r){ r.forEach(function(q){
+      if(q[0]<mnx)mnx=q[0]; if(q[0]>mxx)mxx=q[0];
+      if(q[1]<mny)mny=q[1]; if(q[1]>mxy)mxy=q[1]; }); });
+    var clon=(mnx+mxx)/2, clat=(mny+mxy)/2;
+    // half the diagonal, in degrees — generous on purpose, a country clipped early is a hole
+    var rad=Math.max(Math.abs(mxx-mnx),Math.abs(mxy-mny))/2+1.5;
+    out.push({n:c.n,r:rings,clon:clon,clat:clat,rad:rad});
+  });
+  return out;
+}
+var LAND=decode(WORLD);
+// How far apart two points are on the sphere, in degrees.
+function apart(lo1,la1,lo2,la2){
+  var r=Math.PI/180, a=Math.sin((la2-la1)/2*r), b=Math.sin((lo2-lo1)/2*r);
+  var h=a*a+Math.cos(la1*r)*Math.cos(la2*r)*b*b;
+  return 2*Math.asin(Math.min(1,Math.sqrt(h)))/r;
+}
+// 1:110m is right for a planet and wrong for a coastline: past a few times magnification the
+// outlines go visibly polygonal. The finer set is four times the size, so it is fetched once, only
+// if somebody actually zooms in, and never on the first load.
+var FINE=null, FINEBUSY=false;
+function wantDetail(){
+  if(FINE||FINEBUSY||view.zoom<5)return;
+  FINEBUSY=true;
+  fetch('world-50m.json').then(function(r){ return r.json(); }).then(function(j){
+    FINE=decode(j); LAND=FINE;
+    var b=document.getElementById('detail'); if(b)b.textContent='detailed coastlines loaded';
+  }).catch(function(){ FINEBUSY=false; });
+}
 
 var HOME={n:'Doha',lat:25.3,lng:51.5};
 var view={lon:51.5,lat:20,zoom:1};       // where the globe is pointing
@@ -225,9 +257,17 @@ function draw(){
     var ring2=[]; for(var lo=-180;lo<=180;lo+=4)ring2.push([lo,la2]); drawRing(ring2,false); ctx.stroke(); }
   ctx.globalAlpha=1;
 
+  // Drawing 241 countries thirty times a second when most of them are behind the planet is how a
+  // smooth globe turns into a slideshow. Anything whose furthest point cannot reach the visible
+  // hemisphere is skipped before a single line is projected.
+  function facing(c){
+    if(flat)return true;
+    return apart(c.clon,c.clat,view.lon,view.lat)-c.rad < 90;
+  }
   // land — everything quiet, then the chosen country on top of it with a glow so the eye lands there
   LAND.forEach(function(c){
     if(sel&&c.n===sel.country)return;
+    if(!facing(c))return;
     ctx.beginPath();
     c.r.forEach(function(r){ drawRing(r,true); });
     ctx.fillStyle=col('--land'); ctx.fill();
@@ -527,8 +567,10 @@ document.getElementById('tReset').onclick=reset;
 // The page said "pinch to zoom" and only ever listened for a wheel, so on a phone there was no way
 // to zoom at all — and after picking a country you were left at whatever zoom the trip fitted into,
 // with no way back out to the sphere.
-var ZMIN=0.85, ZMAX=12;                                   // ZMAX has to clear the closest fitZoom
-function setZoom(z){ view.zoom=Math.max(ZMIN,Math.min(ZMAX,z)); }
+// ZMIN pulls back past the whole sphere; ZMAX gets down to street-ish scale, which is only worth
+// allowing because the finer coastlines arrive on the way in.
+var ZMIN=0.85, ZMAX=45;
+function setZoom(z){ view.zoom=Math.max(ZMIN,Math.min(ZMAX,z)); wantDetail(); }
 var drag=null, PT={}, pinch=null;
 function ptCount(){ var n=0,k; for(k in PT)n++; return n; }
 function ptPair(){ var a=[],k; for(k in PT)a.push(PT[k]); return a; }
