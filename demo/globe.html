@@ -65,7 +65,7 @@
   <p class="note">A demo, not the app. Tap a country: the globe turns to it, the country lights up,
   and a plane flies the whole trip from Doha — the flight in, then every hop between the cities —
   drawing the line as it goes.
-  <b>Drag to spin. Scroll or pinch to zoom.</b></p>
+  <b>Drag to spin, pinch or scroll to zoom, double-tap to stand back.</b></p>
 
   <div class="card">
     <div class="hdr" id="hdr">The world</div>
@@ -79,6 +79,7 @@
       </span>
       <button class="toggle on" id="tSpin">Idle spin</button>
       <button class="toggle" id="tFlat">Flat map</button>
+      <button class="toggle" id="tGlobe">Whole globe</button>
       <button class="toggle" id="tAgain">Fly it again</button>
       <button class="toggle" id="tReset">Back to the world</button>
     </div>
@@ -276,6 +277,26 @@ function draw(){
 
   // A city appears once the plane is on its way to it, and not before — the trip arrives in order
   // rather than being laid out in advance.
+  // Stand far enough back and three cities are three pixels: the pins pile up and the names print
+  // through each other. Below that distance the trip is one marker with the country's name on it,
+  // which is all that can honestly be said at that size.
+  var pts2=sel.cities.map(function(c){ return proj(c.lng,c.lat); }).filter(Boolean);
+  var span=0, i3, j3;
+  for(i3=0;i3<pts2.length;i3++)for(j3=i3+1;j3<pts2.length;j3++)
+    span=Math.max(span,Math.hypot(pts2[i3][0]-pts2[j3][0],pts2[i3][1]-pts2[j3][1]));
+  if(pts2.length>1&&span<30){
+    var mx=0,my=0; pts2.forEach(function(q){ mx+=q[0]; my+=q[1]; });
+    mx/=pts2.length; my/=pts2.length;
+    ctx.save();
+    ctx.shadowColor=col('--amber'); ctx.shadowBlur=14;
+    ctx.beginPath(); ctx.arc(mx,my,8,0,Math.PI*2); ctx.fillStyle=col('--amber'); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle='#10202c'; ctx.font='700 11px ui-monospace,monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(String(sel.cities.length),mx,my+.5);
+    label([mx,my-15],sel.country,col('--ink'));
+    return;
+  }
   sel.cities.forEach(function(c,i2){
     if(seg<i2)return;
     var p=proj(c.lng,c.lat); if(!p)return;
@@ -492,20 +513,56 @@ document.getElementById('tTheme').addEventListener('click',function(e){
 });
 document.getElementById('tSpin').onclick=function(){ spin=!spin; this.classList.toggle('on',spin); };
 document.getElementById('tFlat').onclick=function(){ flat=!flat; this.classList.toggle('on',flat); };
+// Stand back to the sphere WITHOUT losing the trip: the line, the pins and the country all stay,
+// which is the whole point of wanting to see it from further away.
+function wholeGlobe(){
+  var c=sel?centre(sel.cities):{lon:51.5,lat:20};
+  goTo(c.lon,c.lat,1);
+}
+document.getElementById('tGlobe').onclick=wholeGlobe;
 document.getElementById('tAgain').onclick=function(){
   if(sel){ SEEN={}; launch(TRIPS[sel.country],centre(sel.cities)); } };
 document.getElementById('tReset').onclick=reset;
 
-var drag=null;
-cv.addEventListener('pointerdown',function(e){ drag={x:e.clientX,y:e.clientY,lon:view.lon,lat:view.lat};
-  spin=false; document.getElementById('tSpin').classList.remove('on'); cv.setPointerCapture(e.pointerId); });
-cv.addEventListener('pointermove',function(e){ if(!drag)return;
+// The page said "pinch to zoom" and only ever listened for a wheel, so on a phone there was no way
+// to zoom at all — and after picking a country you were left at whatever zoom the trip fitted into,
+// with no way back out to the sphere.
+var ZMIN=0.85, ZMAX=12;                                   // ZMAX has to clear the closest fitZoom
+function setZoom(z){ view.zoom=Math.max(ZMIN,Math.min(ZMAX,z)); }
+var drag=null, PT={}, pinch=null;
+function ptCount(){ var n=0,k; for(k in PT)n++; return n; }
+function ptPair(){ var a=[],k; for(k in PT)a.push(PT[k]); return a; }
+function gap(a,b){ return Math.hypot(a[0]-b[0],a[1]-b[1]); }
+
+cv.addEventListener('pointerdown',function(e){
+  PT[e.pointerId]=[e.clientX,e.clientY];
+  spin=false; document.getElementById('tSpin').classList.remove('on');
+  try{ cv.setPointerCapture(e.pointerId); }catch(err){}
+  if(ptCount()===2){ var p2=ptPair(); pinch={d:gap(p2[0],p2[1])||1,z:view.zoom}; drag=null; }
+  else drag={x:e.clientX,y:e.clientY,lon:view.lon,lat:view.lat};
+});
+cv.addEventListener('pointermove',function(e){
+  if(!(e.pointerId in PT))return;
+  PT[e.pointerId]=[e.clientX,e.clientY];
+  if(pinch&&ptCount()>=2){ var p2=ptPair(); setZoom(pinch.z*(gap(p2[0],p2[1])/pinch.d)); return; }
+  if(!drag)return;
   var k=0.35/view.zoom;
   view.lon=drag.lon-(e.clientX-drag.x)*k;
-  view.lat=Math.max(-85,Math.min(85,drag.lat+(e.clientY-drag.y)*k)); });
-cv.addEventListener('pointerup',function(){ drag=null; });
+  view.lat=Math.max(-85,Math.min(85,drag.lat+(e.clientY-drag.y)*k));
+});
+function letGo(e){
+  delete PT[e.pointerId];
+  if(ptCount()<2)pinch=null;
+  if(!ptCount())drag=null;
+  else { var p2=ptPair(); drag={x:p2[0][0],y:p2[0][1],lon:view.lon,lat:view.lat}; }
+  // Two taps is the other thing everyone tries, and it costs nothing to honour.
+  var t=Date.now(); if(t-LASTTAP<300)wholeGlobe(); LASTTAP=t;
+}
+var LASTTAP=0;
+cv.addEventListener('pointerup',letGo);
+cv.addEventListener('pointercancel',letGo);
 cv.addEventListener('wheel',function(e){ e.preventDefault();
-  view.zoom=Math.max(1,Math.min(6,view.zoom*(e.deltaY>0?0.92:1.08))); },{passive:false});
+  setZoom(view.zoom*(e.deltaY>0?0.92:1.08)); },{passive:false});
 
 function takeoff(){
   if(!sel)return;
