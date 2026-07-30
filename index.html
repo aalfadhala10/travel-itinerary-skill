@@ -426,6 +426,8 @@
   .arrops{margin:8px 0 0;padding-inline-start:18px}
   .arrops li{font-size:15px;line-height:1.7}
   .arrvia{color:var(--muted)}
+  .arrleg{margin-bottom:2px}
+  .arrlast{margin-top:8px;font-size:14px;font-weight:600;color:var(--muted)}
   .dayroute{display:block;margin-top:14px;padding:13px 14px;border:1px solid var(--teal);border-radius:12px;
     color:var(--teal);font-weight:700;font-size:15px;text-align:center;text-decoration:none}
   .dayroute:hover{background:var(--teal);color:var(--paper)}
@@ -3988,12 +3990,41 @@
     return 2*R*Math.asin(Math.min(1,Math.sqrt(x))); }
   function flightHours(d){ var h=d>7000?(d/780+1.7):(d/800+1); return Math.round(h*2)/2; }
   function priceBand(d){ return d<1500?[90,260]:d<4000?[220,560]:d<8000?[480,980]:[780,1700]; } // return economy, USD
+  // The browser already knows roughly where somebody is — their time zone. It is a guess, so it
+  // only ever PRE-FILLS a field they can change, and it never overwrites a city they typed
+  // themselves. Most zone names are the city ("Europe/London", "Asia/Tokyo"); the Gulf ones are
+  // countries, so those are named outright.
+  var TZCITY={'Asia/Qatar':'Doha','Asia/Kuwait':'Kuwait City','Asia/Bahrain':'Manama',
+    'Asia/Muscat':'Muscat','Asia/Aden':'Sanaa','Asia/Baghdad':'Baghdad','Asia/Beirut':'Beirut',
+    'Asia/Amman':'Amman','Asia/Damascus':'Damascus','Asia/Tehran':'Tehran','Asia/Karachi':'Karachi',
+    'Asia/Kolkata':'Mumbai','Asia/Calcutta':'Mumbai','Asia/Colombo':'Colombo','Asia/Dhaka':'Dhaka',
+    'Asia/Ho_Chi_Minh':'Ho Chi Minh City','Asia/Saigon':'Ho Chi Minh City','Asia/Shanghai':'Shanghai',
+    'Africa/Casablanca':'Casablanca','Africa/Algiers':'Algiers','Africa/Tunis':'Tunis',
+    'Europe/Kiev':'Kyiv','America/Sao_Paulo':'Sao Paulo','Pacific/Auckland':'Auckland'};
+  function tzOrigin(){
+    var tz=''; try{ tz=(Intl.DateTimeFormat().resolvedOptions()||{}).timeZone||''; }catch(e){}
+    if(!tz)return '';
+    var guess=TZCITY[tz]||tz.split('/').pop().replace(/_/g,' ');
+    // only offer it if it's somewhere we actually have coordinates for — otherwise the estimate
+    // below it would be blank and the pre-filled box would just look broken
+    var m=matchDest(guess); if(!m)return '';
+    var k=keyOf(m); return (k&&CO[k])?m.city:'';
+  }
+  function homeOrigin(){
+    var saved=''; try{ saved=localStorage.getItem('bosla_origin')||''; }catch(e){}
+    return saved||tzOrigin();
+  }
   function flightUrl(origin,dest){ // affiliate-ready: swap for a flights partner link when set
     return 'https://www.google.com/travel/flights?q='+encodeURIComponent('Flights from '+origin+' to '+dest); }
   function flyEstimateHtml(originText,destKey,t){
     var o=t.out; originText=(originText||'').trim(); if(!originText)return '<div class="flynote">'+o.flyHint+'</div>';
-    var om=matchDest(originText), destName=DEST[destKey].city, originName=om?om.city:originText, est='';
-    if(om){ var ok=keyOf(om); if(ok&&CO[ok]&&CO[destKey]){ var d=kmDist(CO[ok],CO[destKey]);
+    // You cannot buy a ticket to a game reserve. When we know the traveller has to land somewhere
+    // else, the search — and the estimate — are for THAT airport's city, not the destination.
+    var gw=GW[destKey], via=(gw&&!gw.direct&&gw.city)?gw.city:'';
+    var viaKey=via?(function(){ var m=matchDest(via); return m?keyOf(m):''; })():'';
+    var om=matchDest(originText), destName=via||DEST[destKey].city, originName=om?om.city:originText, est='';
+    var toKey=(viaKey&&CO[viaKey])?viaKey:destKey;
+    if(om){ var ok=keyOf(om); if(ok&&CO[ok]&&CO[toKey]){ var d=kmDist(CO[ok],CO[toKey]);
       if(d<60){ est='<div class="flyest">'+o.flySame+'</div>'; }
       else { var h=flightHours(d),b=priceBand(d),c=CURRENCIES[HOME]||CURRENCIES.USD;
         var lo=Math.round(b[0]*c.r/10)*10, hi=Math.round(b[1]*c.r/10)*10;
@@ -4003,7 +4034,7 @@
   }
   function flyCard(dest,t){
     var o=t.out, destKey=keyOf(dest); if(!destKey||!CO[destKey])return '';
-    var saved=''; try{saved=localStorage.getItem('bosla_origin')||'';}catch(e){}
+    var saved=homeOrigin();
     return '<div class="bookbar flycard" data-destk="'+destKey+'"><div class="maphdr">'+o.flyTitle+'</div>'+
       '<div class="flyrow"><label class="flylbl">'+o.flyFrom+'</label>'+
       '<input class="flyfrom" type="text" autocomplete="off" placeholder="'+o.flyFromPh+'" value="'+esc(saved)+'"></div>'+
@@ -4486,19 +4517,38 @@
     var city=cityName(ck,d.city);
     var hdr=ar?'الوصول':(es?'Cómo llegar':'Getting in');
     var lead=ar?(city+' ما فيها مطار — تنزل في '+esc(g.airport)+' ('+esc(g.code)+') بـ'+esc(g.city)+
-        (g.km?('، وتبقى '+g.km+' كم'):'')+':')
+        (g.km?('، وتبقى '+g.km+' كم'):'')+'.')
       :(es?('No se puede volar a '+city+'. Aterrizas en '+esc(g.airport)+' ('+esc(g.code)+'), '+esc(g.city)+
-        (g.km?(', y quedan '+g.km+' km'):'')+':')
+        (g.km?(', y quedan '+g.km+' km'):'')+'.')
       :("You can't fly into "+city+". You land at "+esc(g.airport)+' ('+esc(g.code)+'), '+esc(g.city)+
-        (g.km?(', with '+g.km+'km still to go'):'')+':'));
+        (g.km?(', with '+g.km+'km still to go'):'')+'.'));
+    // If we can tell roughly where they are, the journey starts at their door rather than at an
+    // airport in another country. Still a guess from a time zone, so it is written as one flight
+    // among the options, never as a fact about their booking.
+    var legs='', om=matchDest(homeOrigin()), gk=(function(){ var m=matchDest(g.city); return m?keyOf(m):''; })();
+    if(om&&gk&&CO[keyOf(om)]&&CO[gk]){
+      var fd=kmDist(CO[keyOf(om)],CO[gk]);
+      if(fd>200){
+        var fh=flightHours(fd), from=cityName(keyOf(om),om.city), to=cityName(gk,g.city);
+        legs='<li><b>'+esc(ar?'الطيران':(es?'Vuelo':'Flight'))+'</b> · '+esc(from)+' → '+esc(to)+
+          ' · ≈'+fh+(ar?' ساعات':' h')+'</li>';
+      }
+    }
     var rows=g.options.slice(0,3).map(function(x){
       var cur=CURRENCIES[HOME]||CURRENCIES.USD, cost=Math.round(x.usd*cur.r/5)*5;
       return '<li><b>'+esc(hopMode(x.mode))+'</b> · '+esc(hopDur(x.minMin,x.maxMin))+
         (x.usd?(' · ~'+cur.s+cost.toLocaleString()):'')+
         (x.via?(' <span class="arrvia">'+esc(x.via)+'</span>'):'')+'</li>';
     }).join('');
+    // The flight is a step and the options are a choice — one list would read as "pick one of
+    // these three", which would have somebody driving to Kenya.
+    var lastLbl=g.options.length>1
+      ? (ar?'آخر مسافة — اختر وحدة:':(es?'El último tramo — elige uno:':'The last leg — pick one:'))
+      : (ar?'آخر مسافة:':(es?'El último tramo:':'The last leg:'));
     return '<div class="arrival"><div class="arrhdr">'+esc(hdr)+'</div>'+
-      '<div class="arrlead">'+lead+'</div><ul class="arrops">'+rows+'</ul></div>';
+      '<div class="arrlead">'+lead+'</div>'+
+      (legs?('<ul class="arrops arrleg">'+legs+'</ul>'):'')+
+      '<div class="arrlast">'+esc(lastLbl)+'</div><ul class="arrops">'+rows+'</ul></div>';
   }
   // --- place names in the reader's language -----------------------------------------------------
   // An Arabic plan listing "Khan el-Khalili Bazaar" in Latin script reads like a half-done
@@ -5252,6 +5302,7 @@
     if(!access)html+=paywallCard(t);
     if(access){
       html+=thinFoodNote(keys,dc)+budgetCard(o,t,catRows(baseTotal),transferUSD,totalUSD,null,adults,kids);
+      html+=flyCard(ms[0],t);
       var __seenC={}; ms.forEach(function(m){ if(!__seenC[m.country]){__seenC[m.country]=1; html+=appsCard(m.country,t)+salmanCard(m.country,t);} });
     }
     html+=staysBar(ms[0].city,ms[0].country,t);
@@ -5587,7 +5638,7 @@
       if(!access){ html+=paywallCard(t); paywallShown=true; }
       if(access){
         html+=thinFoodNote(multi?[keyOf(m1),keyOf(m2)]:[keyOf(m1)],multi?[d1,d2]:[days])+budgetCard(o,t,catRows(base1+base2),trUSD,totalUSD,multi?null:keyOf(m1),adults,kids);
-        html+=appsCard(m1.country,t)+salmanCard(m1.country,t);
+        html+=flyCard(m1,t)+appsCard(m1.country,t)+salmanCard(m1.country,t);
         if(multi&&m2&&m2.country!==m1.country)html+=appsCard(m2.country,t)+salmanCard(m2.country,t);
       }
       html+=staysBar(m1.city,m1.country,t);
