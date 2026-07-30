@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>بوصلة · globe demo</title>
+<style>
+  :root{
+    --paper:#0f1720; --paper2:#182430; --card:#1b2836; --line:#2a3a49;
+    --ink:#e8eef5; --muted:#8ba0b4; --amber:#f5c451; --amber-soft:rgba(245,196,81,.22);
+    --teal:#5aa9c9; --clay:#d98a6a;
+    /* Land needs to be lighter than the ocean, not the same tone as the card it sits on — at world
+       scale the continents were technically drawn and practically invisible. */
+    --land:#263a4c; --landline:#415a6b;
+  }
+  @media (prefers-color-scheme:light){
+    :root{ --paper:#f6f3ec; --paper2:#efeade; --card:#fffdf8; --line:#ded6c4;
+      --ink:#22303c; --muted:#6d7d8c; --amber:#b8860b; --amber-soft:rgba(184,134,11,.18);
+      --land:#e4dcc8; --landline:#b9ab8e; }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:460px;margin:0 auto;padding:18px 16px 40px}
+  .note{font-size:14px;color:var(--muted);line-height:1.6;margin:0 0 14px}
+  .note b{color:var(--ink)}
+  h1{font-size:19px;margin:0 0 4px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px}
+  .hdr{font-size:14px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:10px}
+  canvas{display:block;width:100%;height:auto;border-radius:12px;touch-action:none;cursor:grab}
+  canvas:active{cursor:grabbing}
+  .cap{margin-top:10px;font-size:15px;line-height:1.6;min-height:44px}
+  .cap b{color:var(--amber)}
+  .cap .dim{color:var(--muted)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .chip{padding:9px 13px;border:1px solid var(--line);border-radius:999px;background:var(--paper2);
+    color:var(--ink);font-size:15px;font-family:inherit;cursor:pointer}
+  .chip:hover{border-color:var(--teal)}
+  .chip.on{background:var(--amber);border-color:var(--amber);color:#10202c;font-weight:700}
+  .row{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  .toggle{padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper2);
+    color:var(--muted);font-size:14px;font-family:inherit;cursor:pointer}
+  .toggle.on{color:var(--amber);border-color:var(--amber)}
+  .foot{font-size:13px;color:var(--muted);line-height:1.7;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Where on the planet</h1>
+  <p class="note">A demo, not the app. Tap a country: the globe turns to it, the country lights up,
+  the cities land in route order and the line is the flight from Doha.
+  <b>Drag to spin. Scroll or pinch to zoom.</b></p>
+
+  <div class="card">
+    <div class="hdr" id="hdr">The world</div>
+    <canvas id="cv" width="800" height="800"></canvas>
+    <div class="cap" id="cap"><span class="dim">Pick somewhere below.</span></div>
+    <div class="chips" id="chips"></div>
+    <div class="row">
+      <button class="toggle on" id="tArc">Flight line</button>
+      <button class="toggle on" id="tSpin">Idle spin</button>
+      <button class="toggle" id="tFlat">Flat map</button>
+      <button class="toggle" id="tReset">Back to the world</button>
+    </div>
+  </div>
+
+  <p class="foot">
+    Geometry is Natural Earth (public domain) at 1:110m, trimmed to 0.1° and inlined —
+    <b id="wsize">…</b> in the page, no requests, works offline, no per-load cost.
+    Nothing here calls Google.
+  </p>
+</div>
+
+<script>
+/*__WORLD__*/
+/*__TRIPS__*/
+
+var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+var CSS=getComputedStyle(document.documentElement);
+function col(n){ return CSS.getPropertyValue(n).trim(); }
+document.getElementById('wsize').textContent=Math.round(JSON.stringify(WORLD).length/1024)+' KB';
+
+// --- decode the packed rings once: [dx,dy,...] tenths of a degree -> [[lon,lat],...]
+var P=WORLD.p, LAND=[];
+WORLD.c.forEach(function(c){
+  var rings=c.r.map(function(a){ var x=0,y=0,out=[];
+    for(var i=0;i<a.length;i+=2){ x+=a[i]; y+=a[i+1]; out.push([x/P,y/P]); }
+    return out; });
+  LAND.push({n:c.n,r:rings});
+});
+
+var HOME={n:'Doha',lat:25.3,lng:51.5};
+var view={lon:51.5,lat:20,zoom:1};       // where the globe is pointing
+var target=null, tween=null, flat=false, spin=true, arc=true;
+var sel=null;                            // the chosen trip
+var DPR=Math.min(2,window.devicePixelRatio||1);
+
+function size(){
+  var w=cv.clientWidth||360;
+  cv.width=w*DPR; cv.height=w*DPR;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  draw();
+}
+window.addEventListener('resize',size);
+
+// --- projections ------------------------------------------------------------------
+function R(){ return (cv.clientWidth/2-8)*view.zoom; }
+function ortho(lon,lat){
+  var l=(lon-view.lon)*Math.PI/180, p=lat*Math.PI/180, p0=view.lat*Math.PI/180;
+  var cosc=Math.sin(p0)*Math.sin(p)+Math.cos(p0)*Math.cos(p)*Math.cos(l);
+  if(cosc<0)return null;                                  // the far side of the planet
+  var r=R(), cx=cv.clientWidth/2, cy=cv.clientWidth/2;
+  return [cx+r*Math.cos(p)*Math.sin(l), cy-r*(Math.cos(p0)*Math.sin(p)-Math.sin(p0)*Math.cos(p)*Math.cos(l))];
+}
+function plate(lon,lat){
+  var w=cv.clientWidth, h=cv.clientWidth, z=view.zoom;
+  var dx=((lon-view.lon+540)%360)-180;
+  return [w/2+dx/180*(w/2)*z, h/2-(lat-view.lat)/90*(h/2)*z];
+}
+function proj(lon,lat){ return flat?plate(lon,lat):ortho(lon,lat); }
+
+function drawRing(r,close){
+  var started=false, i, p;
+  for(i=0;i<r.length;i++){
+    p=proj(r[i][0],r[i][1]);
+    if(!p){ started=false; continue; }                    // hidden: break the stroke
+    if(!started){ ctx.moveTo(p[0],p[1]); started=true; } else ctx.lineTo(p[0],p[1]);
+  }
+  if(close&&started)ctx.closePath();
+}
+
+function draw(){
+  var w=cv.clientWidth;
+  LBOX=[];
+  ctx.clearRect(0,0,w,w);
+
+  if(!flat){                                              // the ocean
+    ctx.beginPath(); ctx.arc(w/2,w/2,R(),0,Math.PI*2);
+    ctx.fillStyle=col('--paper2'); ctx.fill();
+    ctx.strokeStyle=col('--line'); ctx.lineWidth=1; ctx.stroke();
+  } else {
+    ctx.fillStyle=col('--paper2'); ctx.fillRect(0,0,w,w);
+  }
+
+  // graticule, faint — it is what makes it read as a globe rather than a blob
+  ctx.strokeStyle=col('--line'); ctx.globalAlpha=.5; ctx.lineWidth=.6;
+  for(var g=-150;g<=180;g+=30){ ctx.beginPath();
+    var ring=[]; for(var la=-80;la<=80;la+=4)ring.push([g,la]); drawRing(ring,false); ctx.stroke(); }
+  for(var la2=-60;la2<=60;la2+=30){ ctx.beginPath();
+    var ring2=[]; for(var lo=-180;lo<=180;lo+=4)ring2.push([lo,la2]); drawRing(ring2,false); ctx.stroke(); }
+  ctx.globalAlpha=1;
+
+  // land
+  LAND.forEach(function(c){
+    var hot=sel&&c.n===sel.country;
+    ctx.beginPath();
+    c.r.forEach(function(r){ drawRing(r,true); });
+    ctx.fillStyle=hot?col('--amber-soft'):col('--land');
+    ctx.fill();
+    ctx.strokeStyle=hot?col('--amber'):col('--landline');
+    ctx.lineWidth=hot?1.8:.7;
+    ctx.stroke();
+  });
+
+  if(!sel)return;
+
+  // the flight in, as a great circle
+  if(arc){
+    var a=[HOME.lat,HOME.lng], b=[sel.cities[0].lat,sel.cities[0].lng], pts=[], t;
+    for(t=0;t<=1.0001;t+=1/64)pts.push(gc(a,b,t));
+    ctx.beginPath();
+    var started=false;
+    pts.forEach(function(p){ var q=proj(p[1],p[0]);
+      if(!q){ started=false; return; }
+      if(!started){ ctx.moveTo(q[0],q[1]); started=true; } else ctx.lineTo(q[0],q[1]); });
+    ctx.strokeStyle=col('--teal'); ctx.lineWidth=2; ctx.setLineDash([5,4]); ctx.stroke();
+    ctx.setLineDash([]);
+    var h=proj(HOME.lng,HOME.lat);
+    if(h){ ctx.beginPath(); ctx.arc(h[0],h[1],3.5,0,Math.PI*2); ctx.fillStyle=col('--teal'); ctx.fill();
+      label(h,HOME.n,col('--teal')); }
+  }
+
+  // the stops, numbered in the order the trip visits them
+  sel.cities.forEach(function(c,i){
+    var p=proj(c.lng,c.lat); if(!p)return;
+    if(i>0){ var q=proj(sel.cities[i-1].lng,sel.cities[i-1].lat);
+      if(q){ ctx.beginPath(); ctx.moveTo(q[0],q[1]); ctx.lineTo(p[0],p[1]);
+        ctx.strokeStyle=col('--amber'); ctx.lineWidth=1.6; ctx.stroke(); } }
+    ctx.beginPath(); ctx.arc(p[0],p[1],7,0,Math.PI*2);
+    ctx.fillStyle=col('--amber'); ctx.fill();
+    ctx.fillStyle='#10202c'; ctx.font='700 11px ui-monospace,monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(i+1),p[0],p[1]+.5);
+    label([p[0],p[1]-14],c.n,col('--ink'));
+  });
+}
+// Two cities 130km apart printed their names on top of each other. A label that cannot be read is
+// worse than no label, so one of them steps aside — or gives up if there is nowhere to go.
+var LBOX=[];
+function free(x,y,w,h){
+  for(var i=0;i<LBOX.length;i++){ var b=LBOX[i];
+    if(!(x+w/2<b[0]-b[2]/2||x-w/2>b[0]+b[2]/2||y<b[1]-b[3]||y-h>b[1]))return false; }
+  return true;
+}
+function label(p,txt,c){
+  ctx.font='600 12px -apple-system,system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+  var w=ctx.measureText(txt).width+6, h=15;
+  var tries=[p[1]-4,p[1]+h+8,p[1]-4-h-2,p[1]+2*h+10], y=null, i;
+  for(i=0;i<tries.length;i++){ if(free(p[0],tries[i],w,h)){ y=tries[i]; break; } }
+  if(y===null)return;                                     // nowhere legible: say nothing
+  LBOX.push([p[0],y,w,h]);
+  ctx.lineWidth=3; ctx.strokeStyle=col('--paper'); ctx.strokeText(txt,p[0],y);
+  ctx.fillStyle=c; ctx.fillText(txt,p[0],y);
+}
+// point t of the way along the great circle from a to b
+function gc(a,b,t){
+  var r=Math.PI/180, la1=a[0]*r,lo1=a[1]*r,la2=b[0]*r,lo2=b[1]*r;
+  var d=2*Math.asin(Math.sqrt(Math.pow(Math.sin((la2-la1)/2),2)+
+    Math.cos(la1)*Math.cos(la2)*Math.pow(Math.sin((lo2-lo1)/2),2)));
+  if(!d)return [a[0],a[1]];
+  var A=Math.sin((1-t)*d)/Math.sin(d), B=Math.sin(t*d)/Math.sin(d);
+  var x=A*Math.cos(la1)*Math.cos(lo1)+B*Math.cos(la2)*Math.cos(lo2);
+  var y=A*Math.cos(la1)*Math.sin(lo1)+B*Math.cos(la2)*Math.sin(lo2);
+  var z=A*Math.sin(la1)+B*Math.sin(la2);
+  return [Math.atan2(z,Math.sqrt(x*x+y*y))/r, Math.atan2(y,x)/r];
+}
+function km(a,b){
+  var r=Math.PI/180,R2=6371,dla=(b[0]-a[0])*r,dlo=(b[1]-a[1])*r;
+  var x=Math.pow(Math.sin(dla/2),2)+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.pow(Math.sin(dlo/2),2);
+  return 2*R2*Math.asin(Math.min(1,Math.sqrt(x)));
+}
+
+// --- the turn: ease to the new centre instead of jumping there --------------------
+function goTo(lon,lat,zoom,then){
+  var from={lon:view.lon,lat:view.lat,zoom:view.zoom}, t0=performance.now(), dur=900;
+  var dLon=((lon-from.lon+540)%360)-180;                  // always the short way round
+  tween=function(now){
+    var k=Math.min(1,(now-t0)/dur), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    view.lon=from.lon+dLon*e;
+    view.lat=from.lat+(lat-from.lat)*e;
+    view.zoom=from.zoom+(zoom-from.zoom)*e;
+    if(k>=1){ tween=null; if(then)then(); }
+  };
+}
+function centre(cs){
+  var x=0,y=0,z=0,r=Math.PI/180;
+  cs.forEach(function(c){ var la=c.lat*r,lo=c.lng*r;
+    x+=Math.cos(la)*Math.cos(lo); y+=Math.cos(la)*Math.sin(lo); z+=Math.sin(la); });
+  var n=cs.length||1; x/=n;y/=n;z/=n;
+  return {lat:Math.atan2(z,Math.sqrt(x*x+y*y))/r, lon:Math.atan2(y,x)/r};
+}
+// Kenya's two stops are 130km apart and Switzerland's three are 200km; a single zoom level cannot
+// serve both a country and a pair of villages. Fit the spread instead of guessing at it.
+function fitZoom(cs,c){
+  var far=0;
+  cs.forEach(function(x){ far=Math.max(far,km([c.lat,c.lon],[x.lat,x.lng])); });
+  far=Math.max(far,90);                                   // one city: still show the country round it
+  var span=far/6371*180/Math.PI;                          // degrees from the middle
+  return Math.max(1.4,Math.min(9,26/Math.max(2.2,span)));
+}
+function pick(key){
+  var t=TRIPS[key]; if(!t)return;
+  sel={country:key,label:t.label,cities:t.cities};
+  spin=false; document.getElementById('tSpin').classList.remove('on');
+  var c=centre(t.cities), d=km([HOME.lat,HOME.lng],[t.cities[0].lat,t.cities[0].lng]);
+  var hrs=Math.round((d/800+1)*2)/2;
+  goTo(c.lon,c.lat,fitZoom(t.cities,c));
+  document.getElementById('hdr').textContent=t.label.replace(/^\S+\s/,'');
+  document.getElementById('cap').innerHTML=
+    '<b>'+t.label+'</b> · '+t.cities.map(function(x,i){return (i+1)+'. '+x.n;}).join(' → ')+
+    '<br><span class="dim">'+Math.round(d).toLocaleString()+' km from Doha · about '+hrs+
+    'h in the air · tap the flags to compare</span>';
+  [].forEach.call(document.querySelectorAll('.chip'),function(b){ b.classList.toggle('on',b.dataset.k===key); });
+}
+function reset(){
+  sel=null; spin=true; document.getElementById('tSpin').classList.add('on');
+  document.getElementById('hdr').textContent='The world';
+  document.getElementById('cap').innerHTML='<span class="dim">Pick somewhere below.</span>';
+  [].forEach.call(document.querySelectorAll('.chip'),function(b){ b.classList.remove('on'); });
+  goTo(51.5,20,1);
+}
+
+// --- chips, toggles, drag, zoom ---------------------------------------------------
+var chips=document.getElementById('chips');
+Object.keys(TRIPS).forEach(function(k){
+  var b=document.createElement('button'); b.className='chip'; b.dataset.k=k;
+  b.textContent=TRIPS[k].label; b.onclick=function(){ pick(k); }; chips.appendChild(b);
+});
+document.getElementById('tArc').onclick=function(){ arc=!arc; this.classList.toggle('on',arc); };
+document.getElementById('tSpin').onclick=function(){ spin=!spin; this.classList.toggle('on',spin); };
+document.getElementById('tFlat').onclick=function(){ flat=!flat; this.classList.toggle('on',flat); };
+document.getElementById('tReset').onclick=reset;
+
+var drag=null;
+cv.addEventListener('pointerdown',function(e){ drag={x:e.clientX,y:e.clientY,lon:view.lon,lat:view.lat};
+  spin=false; document.getElementById('tSpin').classList.remove('on'); cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove',function(e){ if(!drag)return;
+  var k=0.35/view.zoom;
+  view.lon=drag.lon-(e.clientX-drag.x)*k;
+  view.lat=Math.max(-85,Math.min(85,drag.lat+(e.clientY-drag.y)*k)); });
+cv.addEventListener('pointerup',function(){ drag=null; });
+cv.addEventListener('wheel',function(e){ e.preventDefault();
+  view.zoom=Math.max(1,Math.min(6,view.zoom*(e.deltaY>0?0.92:1.08))); },{passive:false});
+
+function frame(now){
+  if(tween)tween(now);
+  else if(spin)view.lon=(view.lon+0.12)%360;
+  draw();
+  requestAnimationFrame(frame);
+}
+size(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>
