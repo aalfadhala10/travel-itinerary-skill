@@ -3167,7 +3167,7 @@
   function egLabel(){ return LANG==='ar'?'مثال — اضغط عليه وعدّله':(LANG==='es'?'Ejemplo — tócalo y edítalo':'Example — tap it and edit'); }
   function chipsLabel(){ return LANG==='ar'?'أو ابدأ من هني:':(LANG==='es'?'O empieza por aquí:':'Or start from one of these:'); }
   function chatGreeting(){ return CONFIG.aiEndpoint
-      ? (LANG==='ar'?'هلا! اكتب لي رحلتك كاملة بمرة وحدة — وين، كم يوم، كم شخص، ووش تحبون — وأنا أرتّبها لك.':(LANG==='es'?'¡Hola! Cuéntame el viaje entero de una vez — dónde, cuántos días, cuántos sois y qué os gusta — y lo armo.':"Hi! Describe your whole trip in one go — where, how long, how many of you, what you're into — and I'll build it."))
+      ? (LANG==='ar'?'هلا! اكتب لي رحلتك كاملة — وين، كم يوم، كم شخص، ووش تحبون — وأنا أرتّبها لك.':(LANG==='es'?'¡Hola! Cuéntame el viaje entero de una vez — dónde, cuántos días, cuántos sois y qué os gusta — y lo armo.':"Hi! Describe your whole trip in one go — where, how long, how many of you, what you're into — and I'll build it."))
       : (LANG==='ar'?'هلا! وش نوع الرحلة اللي في بالك؟ (أو اكتب اسم مدينة)':(LANG==='es'?'¡Hola! ¿Qué tipo de viaje buscas? (o escribe una ciudad)':'Hi! What kind of trip are you after? (or type a city)')); }
   function dayWordN(n){ return n+' '+(LANG==='ar'?'أيام':(LANG==='es'?'días':'days')); }
   function catChips(){ var c=ideaCats().map(function(x){ return {t:x[1],a:'cat',v:x[0]}; });
