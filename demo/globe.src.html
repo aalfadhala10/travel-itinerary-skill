@@ -197,9 +197,18 @@ function wantDetail(){
 }
 
 // Every city the app knows, with the coordinates it uses: [city, country, flag, lat, lng, arabic, region]
-var CITY=CITIES.cities.map(function(a){
-  return {n:a[0],country:a[1],flag:a[2],lat:a[3],lng:a[4],ar:a[5],region:a[6]};
+var CITY=CITIES.cities.map(function(a,i){
+  return {n:a[0],country:a[1],flag:a[2],lat:a[3],lng:a[4],ar:a[5],region:a[6],land:CITIES.land[i]};
 });
+// Which piece of land each place sits on, worked out at build time by rasterising every coastline
+// and flood-filling it. Same landmass, there is a road. Different, there is a boat — unless the
+// two are joined by something built, and there are few enough of those to name.
+var LINKED={};
+(CITIES.links||[]).forEach(function(p){ LINKED[p[0]+'~'+p[1]]=1; LINKED[p[1]+'~'+p[0]]=1; });
+function sameLand(a,b){
+  if(a.land===undefined||b.land===undefined)return true;   // unknown: do not invent a crossing
+  return a.land===b.land||!!LINKED[a.land+'~'+b.land];
+}
 var RAIL={}; CITIES.rail.forEach(function(c){ RAIL[c]=1; });
 var GROUND_MAX=CITIES.groundMax;
 
@@ -227,53 +236,24 @@ var CARFREE={'Zermatt':1};
 function legKey(a,b){ return a.n+'>'+b.n; }
 function canDrive(a,b){ return !CARFREE[a.n]&&!CARFREE[b.n]; }
 function canRail(a,b){ return !!(RAIL[a.country]&&RAIL[b.country]); }
-// You cannot drive to Santorini, and the city list does not say so — it is filed under Europe like
-// anywhere else. But the page is already holding every coastline on the planet in order to draw
-// them, so rather than guess from a label, ask the map: sample the line and see whether every
-// point on it is on land. Anything that is not gets no choice offered, because a road that crosses
-// the Aegean is not an option, it is a mistake.
-function pip(x,y,ring){
-  var inside=false,i,j,xi,yi,xj,yj;
-  for(i=0,j=ring.length-1;i<ring.length;j=i++){
-    xi=ring[i][0]; yi=ring[i][1]; xj=ring[j][0]; yj=ring[j][1];
-    if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))inside=!inside;
-  }
-  return inside;
-}
-function onLand(lon,lat){
-  var i,r,c;
-  for(i=0;i<LAND.length;i++){
-    c=LAND[i];
-    if(apart(c.clon,c.clat,lon,lat)>c.rad)continue;       // nowhere near: skip the rings entirely
-    for(r=0;r<c.r.length;r++)if(pip(lon,lat,c.r[r]))return true;
-  }
-  return false;
-}
-var WATER={};
-function crossesWater(a,b){
-  var k=legKey(a,b);
-  if(WATER[k]!==undefined)return WATER[k];
-  var t,q,wet=false;
-  // The ends are skipped: a coastal city sits within a coastline drawn to 0.1° and reads as sea
-  // often enough to be useless. It is the middle of the line that answers the question.
-  for(t=0.15;t<=0.86;t+=0.1){
-    q=gc([a.lat,a.lng],[b.lat,b.lng],t);
-    if(!onLand(q[1],q[0])){ wet=true; break; }
-  }
-  WATER[k]=wet;
-  return wet;
-}
-function canPick(a,b){ return canDrive(a,b)&&canRail(a,b)&&!crossesWater(a,b); }
+// A choice between train and car only exists where both are real, and neither is if the two places
+// are not on the same piece of land.
+function canPick(a,b){ return canDrive(a,b)&&canRail(a,b)&&sameLand(a,b); }
 function chooseGround(a,b,dflt){
   var p=LEGPICK[legKey(a,b)];
   if(p==='road'&&canDrive(a,b))return 'road';
   if(p==='rail'&&canRail(a,b))return 'rail';
-  if(ROADTRIP&&canDrive(a,b)&&!crossesWater(a,b))return 'road';
+  if(ROADTRIP&&canDrive(a,b))return 'road';
   return dflt;
 }
+// Athens to Santorini is not a train, and it is not a flight either — it is the boat everybody
+// actually takes. Anything short enough to be covered on the surface, between two places with no
+// land between them, is a ferry.
 function legMode(a,b){
   var m=baseMode(a,b);
-  return m==='air'?'air':chooseGround(a,b,m);
+  if(m==='air')return 'air';
+  if(!sameLand(a,b))return 'sea';
+  return chooseGround(a,b,m);
 }
 
 // --- where a plane can actually put you down --------------------------------------
@@ -283,7 +263,7 @@ function legMode(a,b){
 // same thing the app works out before it writes the first day of the plan.
 var FLAG={}; CITY.forEach(function(c){ if(!FLAG[c.country])FLAG[c.country]=c.flag; });
 var AIR=AIRPORTS.map(function(a){
-  return {n:a[0],code:a[1],country:a[2],lat:a[3],lng:a[4],flag:FLAG[a[2]]||'',air:true};
+  return {n:a[0],code:a[1],country:a[2],lat:a[3],lng:a[4],land:a[5],flag:FLAG[a[2]]||'',air:true};
 });
 var OWN_KM=30;                           // this close and the airport IS the city's airport
 var OWN_EXTRA=80;                        // how much further your own country's airport may be
@@ -320,6 +300,7 @@ function gatewayFor(c){
 // the train — Geneva to Zermatt is a train, not a taxi — and everything else is the road.
 function transferMode(ap,c){
   var d=km([ap.lat,ap.lng],[c.lat,c.lng]);
+  if(!sameLand(ap,c))return 'sea';                        // Paros is reached from Mykonos by boat
   var dflt=(RAIL[c.country]&&RAIL[ap.country]&&d>=60)?'rail':'road';
   return chooseGround(ap,c,dflt);
 }
@@ -632,7 +613,7 @@ function leg(A,B,frac,mode){
   }
   var upto=Math.round(frac*N), main=intl?col('--teal'):col('--amber');
   // Each way of travelling has its own line: flights dashed, rail solid, road in short dashes.
-  var dash=(mode==='air')?[5,4]:(mode==='road'?[2,4]:[]);
+  var dash=(mode==='air')?[5,4]:(mode==='road'?[2,4]:(mode==='sea'?[10,5]:[]));
   if(frac<1)stroke(upto,N,col('--line'),1.4,[3,5]);         // the way still to go
   // A wide soft pass under a crisp one: the line stops being a hairline on a dark ocean.
   ctx.save();
@@ -659,7 +640,15 @@ function vehicle(mode,p,ang){
   ctx.translate(p[0],p[1]); ctx.rotate(ang+Math.PI/2);
   ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=7; ctx.shadowOffsetY=2;
   ctx.fillStyle=DARK?'#ffffff':'#1d3040';
-  if(mode==='rail'){
+  if(mode==='sea'){
+    ctx.beginPath();                                       // a hull: pointed bow, square stern
+    ctx.moveTo(0,-9.5); ctx.lineTo(4.2,-2); ctx.lineTo(4.8,7.5);
+    ctx.lineTo(-4.8,7.5); ctx.lineTo(-4.2,-2);
+    ctx.closePath(); ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.fillStyle=DARK?'#1d3040':'#ffffff';                // the superstructure
+    ctx.beginPath(); ctx.rect(-2.7,-0.6,5.4,3.6); ctx.fill();
+  } else if(mode==='rail'){
     ctx.beginPath();
     if(ctx.roundRect)ctx.roundRect(-4.5,-9,9,18,[4.5,4.5,2,2]);
     else ctx.rect(-4.5,-9,9,18);
@@ -792,12 +781,15 @@ function clearTrip(){ STOPS=[]; NIGHTS=[]; HOT={}; fly=null; SEEN={};
   LEGPICK={}; ROADTRIP=false; document.getElementById('tRoad').classList.remove('on');
   renderTrip(); idle(); }
 
-var MODEW={air:'by air',rail:'by train',road:'by road'};
+var MODEW={air:'by air',rail:'by train',road:'by road',sea:'by ferry'};
 // Rough hours, so the schedule says something about the day rather than only the place.
 function legHours(a,b,mode){
   var d=km([a.lat,a.lng],[b.lat,b.lng]);
   if(mode==='air')return Math.max(1,Math.round((d/750+1.2)*2)/2);
   if(mode==='rail')return Math.max(0.5,Math.round((d/120)*2)/2);
+  // Ferries are slow and the port takes an hour of your life at each end. 35km/h with an hour on
+  // top puts Athens to Santorini near seven, which is what the fast boat actually takes.
+  if(mode==='sea')return Math.max(1,Math.round((d/35+1)*2)/2);
   return Math.max(0.5,Math.round((d/75)*2)/2);
 }
 // One line of the journey. Naming the destination matters now that a leg can end somewhere that is
