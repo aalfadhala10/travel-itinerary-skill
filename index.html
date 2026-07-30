@@ -419,6 +419,13 @@
   #app[dir="rtl"] .rate{font-family:var(--ff-body)}
   .rate.good{color:var(--amber);border-color:var(--amber)}
   .rstar{margin-inline-end:3px}
+  .arrival{margin:0 0 14px;padding:12px 14px;border:1px solid var(--clay);border-radius:12px;background:var(--paper2)}
+  .arrhdr{font-family:var(--ff-data);font-size:14px;letter-spacing:1px;text-transform:uppercase;color:var(--clay);font-weight:700;margin-bottom:6px}
+  #app[dir="rtl"] .arrhdr{letter-spacing:normal;font-family:var(--ff-body)}
+  .arrlead{font-size:15px;line-height:1.55}
+  .arrops{margin:8px 0 0;padding-inline-start:18px}
+  .arrops li{font-size:15px;line-height:1.7}
+  .arrvia{color:var(--muted)}
   .dayroute{display:block;margin-top:14px;padding:13px 14px;border:1px solid var(--teal);border-radius:12px;
     color:var(--teal);font-weight:700;font-size:15px;text-align:center;text-decoration:none}
   .dayroute:hover{background:var(--teal);color:var(--paper)}
@@ -4353,7 +4360,7 @@
         +'<button type="button" class="dayshuffle" data-shuf="'+ck+'|'+d+'" title="'+o.shuffleDay+'">'+SHUFSVG+'<span>'+o.shuffleDay+'</span></button>'
         +'<span class="dchev" aria-hidden="true"></span></div>'
         +'<div class="dsum">'+sum+'</div>'
-        +'<div class="dbody">'+dayHint(o)+body+dayRouteLink(walk,match.city)+'</div></div>';
+        +'<div class="dbody">'+(d===1?arrivalCard(ck):'')+dayHint(o)+body+dayRouteLink(walk,match.city)+'</div></div>';
     }
     return html;
   }
@@ -4421,6 +4428,77 @@
       FOODGOT[k]=1;
       fetchFood(k).then(function(added){ if(added&&planLive())rerenderKeep(); });
     });
+  }
+  // --- getting there when you can't land there --------------------------------------------------
+  // The plan used to open with breakfast in the Maasai Mara, which quietly skipped the part where
+  // the traveller lands in Nairobi and still has 230km of Kenya to cross. That is not a Kenya
+  // problem: a game reserve, a mountain town, a small island — plenty of real destinations have no
+  // airport, and the app was assuming you could land wherever you typed.
+  //
+  // The worker answers once per destination and KV keeps it forever, because it does not change.
+  // Durations arrive as minutes so one cached record serves all three languages.
+  var GW={}, GWGOT={};
+  function gwLoad(){ try{ var r=JSON.parse(localStorage.getItem('bosla_gw')||'{}');
+    if(r&&r.v===1&&r.d)GW=r.d; }catch(e){} }
+  function gwSave(){ try{ localStorage.setItem('bosla_gw',JSON.stringify({v:1,d:GW})); }catch(e){} }
+  function fetchGateway(k){
+    return new Promise(function(resolve){
+      var d=DEST[k];
+      if(!d||!CONFIG.aiEndpoint){ resolve(false); return; }
+      if(GW[k]){ resolve(false); return; }
+      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'gateway',name:d.city,country:d.country||''})})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+          var g=res&&res.gateway;
+          if(!g||!g.code){ resolve(false); return; }
+          GW[k]=g; gwSave(); resolve(true);
+        })
+        .catch(function(){ resolve(false); });
+    });
+  }
+  // Only the city they arrive in — the rest of a route is handled by the transfer cards between
+  // stops, which already say how you get from one to the next.
+  function ensureGateway(keys){
+    if(!CONFIG.aiEndpoint||!Array.isArray(keys)||!keys.length)return;
+    var k=keys[0]; if(!k||GWGOT[k]||GW[k])return;
+    GWGOT[k]=1;
+    fetchGateway(k).then(function(got){ if(got&&planLive())rerenderKeep(); });
+  }
+  function hopDur(a,b){
+    var ar=LANG==='ar', es=LANG==='es';
+    if(b<100){ return (a===b?a:a+'–'+b)+(ar?' دقيقة':(es?' min':' min')); }
+    var ha=Math.round(a/30)/2, hb=Math.round(b/30)/2;
+    return (ha===hb?ha:ha+'–'+hb)+(ar?' ساعات':(es?' h':' h'));
+  }
+  function hopMode(m){
+    var ar=LANG==='ar', es=LANG==='es';
+    if(m==='air')return ar?'طيران داخلي':(es?'Vuelo interno':'Light aircraft');
+    if(m==='rail')return ar?'بالقطار':(es?'En tren':'By train');
+    if(m==='boat')return ar?'بالقارب':(es?'En barco':'By boat');
+    return ar?'بالسيارة':(es?'En coche':'By road');
+  }
+  // The arrival block only ever appears when the traveller genuinely cannot land where they're
+  // going. Somewhere with its own airport says nothing, because there is nothing to say.
+  function arrivalCard(ck){
+    var g=GW[ck]; if(!g||g.direct||!g.options||!g.options.length)return '';
+    var ar=LANG==='ar', es=LANG==='es', d=DEST[ck]; if(!d)return '';
+    var city=cityName(ck,d.city);
+    var hdr=ar?'الوصول':(es?'Cómo llegar':'Getting in');
+    var lead=ar?(city+' ما فيها مطار — تنزل في '+esc(g.airport)+' ('+esc(g.code)+') بـ'+esc(g.city)+
+        (g.km?('، وتبقى '+g.km+' كم'):'')+':')
+      :(es?('No se puede volar a '+city+'. Aterrizas en '+esc(g.airport)+' ('+esc(g.code)+'), '+esc(g.city)+
+        (g.km?(', y quedan '+g.km+' km'):'')+':')
+      :("You can't fly into "+city+". You land at "+esc(g.airport)+' ('+esc(g.code)+'), '+esc(g.city)+
+        (g.km?(', with '+g.km+'km still to go'):'')+':'));
+    var rows=g.options.slice(0,3).map(function(x){
+      var cur=CURRENCIES[HOME]||CURRENCIES.USD, cost=Math.round(x.usd*cur.r/5)*5;
+      return '<li><b>'+esc(hopMode(x.mode))+'</b> · '+esc(hopDur(x.minMin,x.maxMin))+
+        (x.usd?(' · ~'+cur.s+cost.toLocaleString()):'')+
+        (x.via?(' <span class="arrvia">'+esc(x.via)+'</span>'):'')+'</li>';
+    }).join('');
+    return '<div class="arrival"><div class="arrhdr">'+esc(hdr)+'</div>'+
+      '<div class="arrlead">'+lead+'</div><ul class="arrops">'+rows+'</ul></div>';
   }
   // --- place names in the reader's language -----------------------------------------------------
   // An Arabic plan listing "Khan el-Khalili Bazaar" in Latin script reads like a half-done
@@ -5188,7 +5266,7 @@
     LASTTEXT='بوصلة · Bosla\n'+txt.join('\n');
     var out=$('out'); out.innerHTML=html; out.classList.add('show'); paginate(); $('editFab').classList.remove('is-hidden'); try{armFbNudge();syncFab();}catch(e){}
     redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
-    ensureFood(keys,dc); checkOpen(keys); ensureNames(keys);
+    ensureFood(keys,dc); checkOpen(keys); ensureNames(keys); ensureGateway(keys);
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   function stateObj(){
@@ -5561,7 +5639,7 @@
     var out=$('out'); out.innerHTML=html; out.classList.add('show'); paginate(); $('editFab').classList.remove('is-hidden'); try{armFbNudge();syncFab();}catch(e){}
     redrawMaps(); runPrayers(); runWeather(); runConverter(); saveState(); trackPlan();
     if(m1){ var fk=multi?[keyOf(m1),keyOf(m2)]:[keyOf(m1)];
-      ensureFood(fk, multi?[d1,d2]:[days]); checkOpen(fk); ensureNames(fk); }
+      ensureFood(fk, multi?[d1,d2]:[days]); checkOpen(fk); ensureNames(fk); ensureGateway(fk); }
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYADD={}; ROUTEDC=null; STAYAREA=''; PGFRESH=true;
@@ -5937,6 +6015,7 @@
       setTimeout(stop,7000);
     }catch(e){}
   })();
+  gwLoad(); // what we already know about reaching places with no airport of their own
   fxLoad(); // refresh the exchange rates in the background; baked ones stand until it lands
   applyLang(startLang());
 

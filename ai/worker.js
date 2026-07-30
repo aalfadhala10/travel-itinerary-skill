@@ -105,7 +105,7 @@ export default {
     // Everything below that talks to Claude shares one daily allowance, and everything that talks
     // to Google shares another. Checked BEFORE the work, so the call that would break the budget
     // never happens rather than being noticed afterwards.
-    const LLM = { city: 1, food: 1, names: 1, chat: 1, parse: 1, suggest: 1 };
+    const LLM = { city: 1, food: 1, names: 1, chat: 1, parse: 1, suggest: 1, gateway: 1 };
     if (LLM[body.action] && await overBudget(env, "llm", DAY_LLM_CAP))
       return reply({ error: "daily limit reached", retry: 3600 }, 429, origin);
     if (body.action === "places" && await overBudget(env, "places", DAY_PLACES_CAP))
@@ -162,6 +162,13 @@ export default {
           : [];
         if (!lang || !items.length) return reply({ names: [] }, 200, origin);
         return reply({ names: await getOrBuildNames(name, String(body.country || "").slice(0, 60).trim(), lang, items, env) }, 200, origin);
+      }
+      if (body.action === "gateway") {
+        if (!env.ANTHROPIC_API_KEY) return reply({ error: "server not configured" }, 500, origin);
+        const name = String(body.name || "").slice(0, 60).trim();
+        if (name.length < 2) return reply({ error: "name too short" }, 400, origin);
+        const out = await getOrBuildGateway(name, String(body.country || "").slice(0, 60).trim(), env);
+        return reply({ gateway: out.gw, cached: out.cached }, 200, origin);
       }
       if (body.action === "places") {
         const city = String(body.city || "").slice(0, 60).trim();
@@ -282,6 +289,75 @@ function generateNames(city, country, lang, items, apiKey) {
   return claude(apiKey, "claude-sonnet-5", system,
     "Places in " + city + (country ? ", " + country : "") + ":\n" + items.join("\n"),
     NAMES_SCHEMA, 1600);
+}
+
+// --- how do you actually get there? ----------------------------------------------
+// Plenty of real destinations have no airport. Maasai Mara doesn't; nor does Machu Picchu, or half
+// the islands people want. A plan that opens with breakfast in the reserve has quietly skipped the
+// part where the traveller lands 230km away and still has to cross a country. Asked once per
+// destination and cached forever, because this does not change.
+//
+// Durations are NUMBERS OF MINUTES, not sentences, so one cached answer serves all three languages
+// — the app writes "٤٠–٥٠ دقيقة" or "40–50 min" from the same record.
+const GATEWAY_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["direct", "airport", "code", "city", "km", "options"],
+  properties: {
+    direct: { type: "boolean", description: "true if travellers on international flights genuinely land at this place itself" },
+    airport: { type: "string", description: "the airport they realistically land at, full name" },
+    code: { type: "string", description: "its IATA code, e.g. NBO" },
+    city: { type: "string", description: "the city that airport serves, in English" },
+    km: { type: "integer", description: "road distance from that airport to the destination" },
+    options: {
+      type: "array",
+      description: "the real ways to cover the last leg, best first. Empty when direct is true.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["mode", "minMin", "maxMin", "usd", "via"],
+        properties: {
+          mode: { type: "string", enum: ["air", "road", "rail", "boat"] },
+          minMin: { type: "integer", description: "typical duration in MINUTES, low end" },
+          maxMin: { type: "integer", description: "typical duration in MINUTES, high end" },
+          usd: { type: "integer", description: "rough cost per person in USD, one way" },
+          via: { type: "string", description: "short English detail, e.g. 'light aircraft to Ol Kiombo airstrip'; empty if none" },
+        },
+      },
+    },
+  },
+};
+
+async function getOrBuildGateway(name, country, env) {
+  const kv = env.CITIES;
+  const k = "gw:" + cityKey(name);
+  if (kv && k !== "gw:") {
+    const hit = await kv.get(k, "json");
+    if (hit) return { gw: hit, cached: true };
+  }
+  await spend(env, "llm");
+  const gw = await generateGateway(name, country, env.ANTHROPIC_API_KEY);
+  if (kv && gw && gw.code) await kv.put(k, JSON.stringify(gw));
+  return { gw, cached: false };
+}
+
+function generateGateway(name, country, apiKey) {
+  const system =
+    "You answer one question about a real destination: how does a traveller flying in from abroad actually GET there?\n" +
+    "Set direct=true ONLY when international or significant domestic flights genuinely land at that place itself, and " +
+    "give that airport. Set direct=false whenever the traveller must land somewhere else and continue by air, road, " +
+    "rail or boat — a game reserve, a mountain town, a small island, anywhere with no usable airport of its own. " +
+    "This is the common case and getting it wrong strands people: never assume a place has an airport because it is " +
+    "famous.\n" +
+    "When direct=false, `airport`/`code`/`city` are the gateway they realistically fly into, `km` is the road distance " +
+    "from it, and `options` are the real ways to cover that last leg, best first — usually 2, never more than 3. " +
+    "Include the scheduled light-aircraft hop where one genuinely exists (many safari and island destinations are " +
+    "reached that way and it is what most visitors do), and the drive. minMin/maxMin are MINUTES. `usd` is a rough " +
+    "per-person one-way cost. `via` is a short English detail such as the airstrip name; leave it empty when there " +
+    "is nothing useful to add.\n" +
+    "When direct=true, give the airport and its code, set km to 0 and options to an empty array.";
+  return claude(apiKey, "claude-sonnet-5", system,
+    "How do travellers reach: " + name + (country ? ", " + country : ""), GATEWAY_SCHEMA, 900);
 }
 
 // --- is this place still open? (Google Places) -----------------------------------
