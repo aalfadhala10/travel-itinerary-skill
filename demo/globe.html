@@ -94,6 +94,10 @@
   .rm:hover{color:var(--clay)}
   .hop{display:flex;align-items:center;gap:8px;padding:5px 0 5px 12px;font-size:13.5px;color:var(--muted)}
   .hop .bar{width:2px;height:20px;background:var(--line);border-radius:2px;flex:0 0 auto;margin-inline-start:9px}
+  .hop .hw{flex:1;min-width:0}
+  .swap{flex:0 0 auto;padding:4px 9px;border:1px solid var(--line);border-radius:999px;
+    background:var(--card);color:var(--muted);font-size:12.5px;font-family:inherit;cursor:pointer}
+  .swap:hover{border-color:var(--teal);color:var(--teal)}
   .empty{padding:12px;border:1px dashed var(--line);border-radius:11px;color:var(--muted);font-size:14px}
 </style>
 </head>
@@ -124,6 +128,7 @@
         <button type="button" class="segb" data-t="dark">Dark</button>
         <button type="button" class="segb" data-t="light">Light</button>
       </span>
+      <button class="toggle" id="tRoad">Road trip</button>
       <button class="toggle on" id="tSpin">Idle spin</button>
       <button class="toggle" id="tFlat">Flat map</button>
       <button class="toggle" id="tGlobe">Whole globe</button>
@@ -201,12 +206,74 @@ var GROUND_MAX=CITIES.groundMax;
 // The app's own rule, not a second opinion: inside one country a short hop goes by rail where the
 // country has rail and by road where it doesn't; between two European countries a short hop is rail;
 // anything else is a flight. Two places deciding this differently is how they start disagreeing.
-function legMode(a,b){
+function baseMode(a,b){
   var d=km([a.lat,a.lng],[b.lat,b.lng]);
   if(d>=GROUND_MAX)return 'air';
   if(a.country===b.country)return RAIL[a.country]?'rail':'road';
   if(a.region==='eu'&&b.region==='eu')return 'rail';
   return 'air';
+}
+
+// --- train or car, and who decides -------------------------------------------------
+// The rule above says what is usual. It should not say what you want: plenty of people land at
+// Munich, pick up a car and drive the Alps on purpose, and that is a different holiday from the
+// same route by train. So the rule is a default, and the traveller can overrule it — for the whole
+// trip, or one leg at a time.
+var ROADTRIP=false;                      // "I'm driving this one"
+var LEGPICK={};                          // explicit per-leg choices, which beat the trip setting
+// You cannot drive into Zermatt. The road stops at Täsch and the last stretch is the shuttle train,
+// so offering the drive would be offering something that does not exist.
+var CARFREE={'Zermatt':1};
+function legKey(a,b){ return a.n+'>'+b.n; }
+function canDrive(a,b){ return !CARFREE[a.n]&&!CARFREE[b.n]; }
+function canRail(a,b){ return !!(RAIL[a.country]&&RAIL[b.country]); }
+// You cannot drive to Santorini, and the city list does not say so — it is filed under Europe like
+// anywhere else. But the page is already holding every coastline on the planet in order to draw
+// them, so rather than guess from a label, ask the map: sample the line and see whether every
+// point on it is on land. Anything that is not gets no choice offered, because a road that crosses
+// the Aegean is not an option, it is a mistake.
+function pip(x,y,ring){
+  var inside=false,i,j,xi,yi,xj,yj;
+  for(i=0,j=ring.length-1;i<ring.length;j=i++){
+    xi=ring[i][0]; yi=ring[i][1]; xj=ring[j][0]; yj=ring[j][1];
+    if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
+}
+function onLand(lon,lat){
+  var i,r,c;
+  for(i=0;i<LAND.length;i++){
+    c=LAND[i];
+    if(apart(c.clon,c.clat,lon,lat)>c.rad)continue;       // nowhere near: skip the rings entirely
+    for(r=0;r<c.r.length;r++)if(pip(lon,lat,c.r[r]))return true;
+  }
+  return false;
+}
+var WATER={};
+function crossesWater(a,b){
+  var k=legKey(a,b);
+  if(WATER[k]!==undefined)return WATER[k];
+  var t,q,wet=false;
+  // The ends are skipped: a coastal city sits within a coastline drawn to 0.1° and reads as sea
+  // often enough to be useless. It is the middle of the line that answers the question.
+  for(t=0.15;t<=0.86;t+=0.1){
+    q=gc([a.lat,a.lng],[b.lat,b.lng],t);
+    if(!onLand(q[1],q[0])){ wet=true; break; }
+  }
+  WATER[k]=wet;
+  return wet;
+}
+function canPick(a,b){ return canDrive(a,b)&&canRail(a,b)&&!crossesWater(a,b); }
+function chooseGround(a,b,dflt){
+  var p=LEGPICK[legKey(a,b)];
+  if(p==='road'&&canDrive(a,b))return 'road';
+  if(p==='rail'&&canRail(a,b))return 'rail';
+  if(ROADTRIP&&canDrive(a,b)&&!crossesWater(a,b))return 'road';
+  return dflt;
+}
+function legMode(a,b){
+  var m=baseMode(a,b);
+  return m==='air'?'air':chooseGround(a,b,m);
 }
 
 // --- where a plane can actually put you down --------------------------------------
@@ -252,7 +319,9 @@ function gatewayFor(c){
 // Getting from the airport to the place. Where the country has a rail network a longer transfer is
 // the train — Geneva to Zermatt is a train, not a taxi — and everything else is the road.
 function transferMode(ap,c){
-  return (RAIL[c.country]&&RAIL[ap.country]&&km([ap.lat,ap.lng],[c.lat,c.lng])>=60)?'rail':'road';
+  var d=km([ap.lat,ap.lng],[c.lat,c.lng]);
+  var dflt=(RAIL[c.country]&&RAIL[ap.country]&&d>=60)?'rail':'road';
+  return chooseGround(ap,c,dflt);
 }
 // The journey as it is actually made, which is not the list of stops: a flight into a place with
 // no airport becomes a flight to the gateway and then a transfer. `stop` is the index into STOPS
@@ -719,7 +788,9 @@ function removeStop(i){ STOPS.splice(i,1); NIGHTS.splice(i,1); syncHot(); render
 function idle(){ spin=true; document.getElementById('tSpin').classList.add('on');
   goTo(HOME.lng,HOME.lat,1); }
 function setNights(i,d){ NIGHTS[i]=Math.max(1,Math.min(21,NIGHTS[i]+d)); renderTrip(); }
-function clearTrip(){ STOPS=[]; NIGHTS=[]; HOT={}; fly=null; SEEN={}; renderTrip(); idle(); }
+function clearTrip(){ STOPS=[]; NIGHTS=[]; HOT={}; fly=null; SEEN={};
+  LEGPICK={}; ROADTRIP=false; document.getElementById('tRoad').classList.remove('on');
+  renderTrip(); idle(); }
 
 var MODEW={air:'by air',rail:'by train',road:'by road'};
 // Rough hours, so the schedule says something about the day rather than only the place.
@@ -735,8 +806,15 @@ function legHours(a,b,mode){
 function hopRow(S){
   var d=km([S.a.lat,S.a.lng],[S.b.lat,S.b.lng]);
   var to=S.b.air?(S.b.n+' ('+S.b.code+')'):S.b.n;
-  return '<div class="hop"><span class="bar"></span>'+esc(MODEW[S.mode]+' to '+to)+' · '+
-    Math.round(d).toLocaleString()+' km · ~'+legHours(S.a,S.b,S.mode)+'h</div>';
+  var swap='';
+  if(S.mode!=='air'&&canPick(S.a,S.b)){
+    var alt=(S.mode==='rail')?'road':'rail';
+    swap='<button type="button" class="swap" data-sw="'+esc(legKey(S.a,S.b)+'|'+alt)+'">'+
+      (alt==='road'?'drive it':'by train')+'</button>';
+  }
+  return '<div class="hop"><span class="bar"></span><span class="hw">'+
+    esc(MODEW[S.mode]+' to '+to)+' · '+Math.round(d).toLocaleString()+' km · ~'+
+    legHours(S.a,S.b,S.mode)+'h</span>'+swap+'</div>';
 }
 function renderTrip(){
   buildLegs();
@@ -845,6 +923,10 @@ document.getElementById('quick').addEventListener('click',function(e){
 
 // The schedule and the globe are the same thing seen twice: tapping a day flies to that stop.
 document.getElementById('trip').addEventListener('click',function(e){
+  // Changing how a leg is covered does not change where the trip goes, so it redraws where it is
+  // rather than flying the whole thing again from home.
+  var sw=e.target.closest('.swap');
+  if(sw){ var s2=sw.getAttribute('data-sw').split('|'); LEGPICK[s2[0]]=s2[1]; renderTrip(); return; }
   var nb=e.target.closest('.nb');
   if(nb){ var pr=nb.getAttribute('data-n').split('|'); setNights(+pr[0],+pr[1]); return; }
   var rm=e.target.closest('.rm');
@@ -864,6 +946,12 @@ document.getElementById('tTheme').addEventListener('click',function(e){
   document.documentElement.setAttribute('data-theme',b.getAttribute('data-t'));
   syncTheme();
 });
+// "I'm renting a car" — every leg that can be driven becomes the drive. It clears the per-leg
+// choices on the way through, because this button is the broad stroke and those were the detail.
+document.getElementById('tRoad').onclick=function(){
+  ROADTRIP=!ROADTRIP; this.classList.toggle('on',ROADTRIP);
+  LEGPICK={}; renderTrip();
+};
 document.getElementById('tSpin').onclick=function(){ spin=!spin; this.classList.toggle('on',spin); };
 document.getElementById('tFlat').onclick=function(){ flat=!flat; this.classList.toggle('on',flat); };
 // Stand back to the sphere WITHOUT losing the trip: the line, the pins and the country all stay,
