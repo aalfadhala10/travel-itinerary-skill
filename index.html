@@ -3349,10 +3349,29 @@
       while(msgs.length && msgs[msgs.length-1].role!=='user')msgs.pop(); // must not end on assistant (drop the "…" typing placeholder)
       if(!msgs.length){ resolve(null); return; }
       var ctx=tripContext(); if(ctx)msgs[msgs.length-1].content+=ctx; // only on the copy we send
+      // fetch() waits for ever. A request that hangs — a slow model, a dropped connection, a phone
+      // that changed network mid-send — leaves the typing dots on screen with nothing behind them,
+      // which is the "it froze" everybody has seen. Every attempt gets a clock, so the worst case
+      // is an apology and a button rather than a dead dialog.
+      var TIMEOUT=28000;
+      function askOnce(){
+        var ac=null; try{ ac=new AbortController(); }catch(e){}
+        var opts={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'chat',messages:msgs})};
+        if(ac)opts.signal=ac.signal;
+        var timer=setTimeout(function(){ try{ if(ac)ac.abort(); }catch(e){} },TIMEOUT);
+        return fetch(CONFIG.aiEndpoint,opts).then(function(r){
+          clearTimeout(timer);
+          // The doorman says "slow down", which is not the same as a lost reply and must not be
+          // answered with "try again" — trying again immediately fails in exactly the same way.
+          if(r.status===429)return r.json().then(function(j){ return {__busy:true,retry:(j&&j.retry)||60}; },
+                                                function(){ return {__busy:true,retry:60}; });
+          return r.json();
+        },function(e){ clearTimeout(timer); throw e; });
+      }
       function ask(tries){
-        return fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'chat',messages:msgs})})
-          .then(function(r){return r.json();})
+        return askOnce()
           .then(function(d){
+            if(d&&d.__busy)return d;                                        // no point retrying a queue
             if(d&&d.chat&&(d.chat.reply||d.chat.ready))return d.chat;
             // Report it, so a dropped reply shows up in the stats instead of only in somebody's
             // console — you can't fix what you can't see happening.
@@ -3459,6 +3478,15 @@
     });
   }
   function handleAI(res){
+    // Turned away for being too quick is a different thing from a reply that got lost, and saying
+    // "try again" to somebody who has to wait a minute just sends them round the same loop.
+    if(res&&res.__busy){
+      var secs=Math.max(15,Math.min(300,res.retry||60));
+      botSay(LANG==='ar'?('في زحمة على الخدمة حالياً — انتظر '+secs+' ثانية وجرّب مرة ثانية. كل اللي كتبته محفوظ.')
+        :(LANG==='es'?('El servicio está saturado — espera '+secs+' segundos e inténtalo otra vez. No se ha perdido nada.')
+        :('Things are busy right now — wait '+secs+' seconds and try again. Everything you told me is still here.')));
+      CHATCHIPS=[{t:retryLabel(),a:'retry',v:''}]; chatRender(); return;
+    }
     // No reply at all counts as a failure, not a turn — otherwise the chat shows chips under
     // silence, which reads as the bot ignoring you.
     if(!res||(!res.reply&&!res.ready)){
@@ -4054,7 +4082,10 @@
     return ' <span class="rate'+(r.r>=GOODMIN?' good':'')+'" dir="ltr" title="'+esc(t)+'">'+
       '<span class="rstar">★</span>'+r.r.toFixed(1)+'</span>';
   }
-  function areaLabel(a){ a=(a||'').trim(); if(!a)return '';
+  function areaLabel(a,name){ a=(a||'').trim(); if(!a)return '';
+    // "تسوغشبيتسه · تسوغشبيتسه" — the neighbourhood a place sits in is often named after it, and
+    // printing the word twice reads as a stutter rather than as information.
+    if(name&&a.toLowerCase()===String(name).trim().toLowerCase())return '';
     if(LANG!=='ar'&&/[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(a))return '';
     if(a.split(/\s+/).length>4||a.length>28)return '';
     return ' <span class="area">· '+esc(a)+'</span>'; }
@@ -4090,7 +4121,7 @@
   function eslot(tm,poi,city,sk,o,ck,food,hop){
     // print the local name, but search Maps for the English one — it resolves far more reliably
     return '<div class="slot" data-sk="'+sk+'"><div class="t">'+tm+'</div>'
-      +'<div class="d">'+link(locName(ck,poi.n),poi.n+' '+city,poi.n+' '+city)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a))+hopLabel(hop)+'</div>'
+      +'<div class="d">'+link(locName(ck,poi.n),poi.n+' '+city,poi.n+' '+city)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a),locName(ck,poi.n))+hopLabel(hop)+'</div>'
       +'<button type="button" class="picbtn" data-pic="'+esc(poi.n+' '+city)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>'
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
   }
@@ -4590,9 +4621,23 @@
     if(LANG==='ar'){ var a=cityAr(k); if(a)return a; }
     return fallback||((DEST[k]&&DEST[k].city)||'');
   }
+  // "بحيرة آييزee" — a translation that stopped halfway and left the tail of the English word stuck
+  // to the Arabic. The prompt asks for clean Arabic and mostly gets it, but a name is printed to a
+  // paying traveller and half a word is worse than the English one, so this is enforced here
+  // rather than hoped for. Latin letters TOUCHING Arabic letters is the tell; "متحف BMW" has a
+  // space and is a real form, so it survives.
+  function halfTranslated(x){
+    if(!/[؀-ۿ]/.test(x)||!/[A-Za-z]/.test(x))return false;   // one script only — nothing to check
+    if(/[؀-ۿ][A-Za-z]|[A-Za-z][؀-ۿ]/.test(x))return true;    // welded together, no space
+    // A whole English word left inside an Arabic name — "وادي بارتناخ gorge" — is the same failure
+    // with a space in it. Lower case is the tell: brands keep their capitals (BMW, W, Ritz-Carlton).
+    return /(^|\s)[a-z]{2,}(\s|$)/.test(x);
+  }
   function locName(ck,n){
     if(LANG==='en'||!n)return n;
-    var m=locLoad(ck,LANG); return (m&&m[n])?m[n]:n;
+    var m=locLoad(ck,LANG), v=(m&&m[n])?m[n]:'';
+    if(!v||halfTranslated(v))return n;                        // fall back to the name we trust
+    return v;
   }
   function needNames(ck,lang){
     var d=DEST[ck]; if(!d)return [];
