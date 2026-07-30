@@ -374,7 +374,7 @@ const PLACE_TTL_CLOSED = 60 * 60 * 24 * 365;
 // Returns what Google knows about each place: whether it has shut, and how it's rated. Both come
 // from the same lookup, so asking for the rating costs nothing extra beyond the field mask.
 async function placeFacts(names, city, env) {
-  const out = { closed: [], rated: {} };
+  const out = { closed: [], rated: {}, pins: {}, unknown: [] };
   if (!env.GOOGLE_PLACES_KEY) return out;
   const kv = env.CITIES;
   // Sequential on purpose: a plan is ~20 names, almost all cached after the first traveller, and
@@ -386,11 +386,17 @@ async function placeFacts(names, city, env) {
     if (!fact) {
       await spend(env, "places");                           // one lookup, one unit of the day's budget
       fact = await placeLookup(name, city, env.GOOGLE_PLACES_KEY);
-      if (!fact) continue;                       // lookup failed — say nothing rather than guess
+      // Nothing on Google under that name is worth knowing: either the spelling in our data is
+      // wrong or the place isn't real, and either way a link to it will come back empty. Reported
+      // so the names can be corrected instead of quietly shipping a dead link.
+      if (!fact) { out.unknown.push(name); continue; }
       if (kv) await kv.put(k, JSON.stringify(fact),
         { expirationTtl: fact.s === "CLOSED_PERMANENTLY" ? PLACE_TTL_CLOSED : PLACE_TTL_OPEN });
+      // fall through
     }
     if (fact.s === "CLOSED_PERMANENTLY") out.closed.push(name);
+    // Google knows this pin, so hand back the one thing that makes a link certain.
+    if (fact.id) out.pins[name] = { id: fact.id, gn: fact.gn || "", lat: fact.lat || 0, lng: fact.lng || 0 };
     // A 5.0 from four people says less than a 4.3 from nine hundred — carry the count too.
     if (fact.r > 0) out.rated[name] = { r: fact.r, n: fact.n || 0 };
   }
@@ -404,7 +410,9 @@ async function placeLookup(name, city, key) {
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": key,
-        "X-Goog-FieldMask": "places.displayName,places.businessStatus,places.rating,places.userRatingCount",
+        // places.id is the whole point of paying for this: it is the ONE string that makes a Maps
+        // link land on the exact pin instead of running a text search that can come back empty.
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.location,places.businessStatus,places.rating,places.userRatingCount",
       },
       body: JSON.stringify({ textQuery: name + (city ? ", " + city : ""), maxResultCount: 1 }),
     });
@@ -417,7 +425,12 @@ async function placeLookup(name, city, key) {
     const found = String((p.displayName && p.displayName.text) || "").toLowerCase();
     const asked = name.toLowerCase();
     if (found && !found.includes(asked.slice(0, 6)) && !asked.includes(found.slice(0, 6))) return null;
-    return { s: p.businessStatus || "OPERATIONAL", r: p.rating || 0, n: p.userRatingCount || 0 };
+    return {
+      s: p.businessStatus || "OPERATIONAL", r: p.rating || 0, n: p.userRatingCount || 0,
+      id: p.id || "",                                    // the exact pin, for the map link
+      gn: (p.displayName && p.displayName.text) || "",   // what Google itself calls it
+      lat: (p.location && p.location.latitude) || 0, lng: (p.location && p.location.longitude) || 0,
+    };
   } catch (e) {
     return null;
   }
