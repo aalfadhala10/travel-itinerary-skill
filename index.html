@@ -5240,7 +5240,34 @@
     if(keys.length>=3 || (pp.roadtrip && keys.length>=2)){ planRoute(keys,days,pp.vibes.length?pp.vibes:['Culture'],pp.budget,pp.pace,pp.roadtrip); }
     else { ROUTE=null; plan(); }
   }
+  // A budget and a date belong to a trip, not to the app. Typing 10,000 for Dubai and then
+  // searching Tokyo carried the 10,000 over silently, and it had been sitting there for days.
+  // The signature is the destination fields ONLY, so it tells a new search apart from an edit for
+  // free: every edit — nights, travellers, pace, a swap, a shuffle — re-plans the same
+  // destination, and re-planning the same destination keeps everything the traveller set.
+  var LASTSEARCH=null, LASTBA='', LASTSD='';
+  function searchSig(){
+    return String(($('dest')||{}).value||'').trim().toLowerCase()+'|'+
+           String(($('dest2')||{}).value||'').trim().toLowerCase();
+  }
+  function noteSearch(){
+    LASTSEARCH=searchSig();
+    LASTBA=String(($('budgetAmt')||{}).value||'');
+    LASTSD=String(($('startDate')||{}).value||'');
+  }
+  function freshSearch(){
+    var sig=searchSig(), b=$('budgetAmt'), d=$('startDate');
+    // Only what was LEFT BEHIND gets cleared. Somebody typing a new destination and a new budget
+    // together means both, and wiping the number they just entered would be worse than keeping a
+    // stale one. Untouched since the last plan is what "carried over" actually means.
+    if(LASTSEARCH!==null&&sig!==LASTSEARCH){
+      if(b&&b.value===LASTBA)b.value='';
+      if(d&&d.value===LASTSD)d.value='';
+    }
+    noteSearch();
+  }
   function planRoute(keys,daysArg,vibes,budget,pace,drive){
+    freshSearch();
     var t=I18N[LANG],o=t.out;
     keys=(keys||[]).filter(function(k){return DEST[k];});
     if(keys.length<2){ if(keys[0])$('dest').value=DEST[keys[0]].city; ROUTE=null; plan(); return; }
@@ -5531,6 +5558,7 @@
     $('adults').value=s.adults||2; $('kids').value=s.kids||0; $('startDate').value=s.sd||''; $('homeCur').value=s.cur||'USD';
     try{ $('budgetAmt').value=s.ba||''; }catch(e){}
     if(s.d2){ $('city2wrap').classList.remove('is-hidden'); $('addCity').classList.add('is-hidden'); $('dest2').value=s.d2; }
+    noteSearch();   // a saved or shared trip arrives with its own budget and date
     if(s.budget)document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===s.budget);});
     if(s.vibes&&s.vibes.length)document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',s.vibes.indexOf(c.dataset.v)>=0);});
     if(render===false)return;
@@ -5567,6 +5595,7 @@
 
   // how many days a single city can fill before it starts repeating (~its POIs / 4, clamped 2–3)
   function plan(){
+    freshSearch();
     ROUTE=null; ROUTEDRIVE=false;
     LASTPLAN=function(){ plan(); };
     var t=I18N[LANG],o=t.out;
