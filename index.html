@@ -540,17 +540,19 @@
      where you're reading, so most people never found it — the arrows here are always in reach. */
   .pgbar{position:sticky;top:0;z-index:6;padding:9px 0 7px;margin-bottom:12px;background:var(--paper);
     box-shadow:0 1px 0 var(--line)}
-  .pgrow{display:flex;align-items:center;gap:8px}
-  .pgtabs{flex:1;min-width:0;display:flex;align-items:center;gap:6px;overflow-x:auto;
+  .pgrow{display:flex;align-items:center;gap:10px;margin-top:8px}
+  .pgtabs{display:flex;align-items:center;gap:6px;overflow-x:auto;
     -webkit-overflow-scrolling:touch}
   .pgtabs::-webkit-scrollbar{display:none}
-  .pgarrow{flex:0 0 auto;width:36px;height:36px;border:1px solid var(--line);border-radius:10px;
-    background:var(--paper2);color:var(--ink);font-size:22px;line-height:1;cursor:pointer;
+  .pgarrow{flex:0 0 auto;width:40px;height:36px;border:1px solid var(--line);border-radius:10px;
+    background:var(--paper2);color:var(--ink);cursor:pointer;
     display:flex;align-items:center;justify-content:center}
+  .pgarrow svg{width:20px;height:20px;display:block}
   .pgarrow:hover{border-color:var(--teal);color:var(--teal)}
-  .pgarrow:disabled{opacity:.3;cursor:default}
+  .pgarrow:disabled{opacity:.28;cursor:default}
   /* which day of how many — the highlighted chip scrolls out of sight on a long trip */
-  .pgcount{margin-top:6px;text-align:center;font-size:14px;font-weight:600;color:var(--muted)}
+  .pgcount{flex:1;min-width:0;text-align:center;font-size:15px;font-weight:700;color:var(--ink);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pgtab{flex:0 0 auto;min-width:34px;height:34px;padding:0 11px;border:1px solid var(--line);
     border-radius:9px;background:var(--paper2);color:var(--muted);font-size:14.5px;font-weight:600;
     font-family:var(--ff-data);cursor:pointer;white-space:nowrap}
@@ -3545,6 +3547,10 @@
 
   var PICSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2"/><circle cx="8.5" cy="10" r="1.5" fill="currentColor"/><path d="M21 16l-5-5-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var SWAPSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h13M17 20l4-4-4-4M21 16H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // Drawn, not typed. U+2039/U+203A carry the Bidi_Mirrored property, so on an Arabic page the
+  // browser silently flips them and the back arrow points forward. An SVG says what it says.
+  var CHEVL='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var CHEVR='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var SHUFSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 4v5h-5M3 20a9 9 0 0 1 15-6.7L21 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function poiByName(ck,name){ var d=DEST[ck]; if(!d)return null; var all=d.poi.concat(d.food); for(var i=0;i<all.length;i++)if(all[i].n===name)return all[i]; return null; }
   // Compact tuner shown atop a plan: adjust trip length and get a fresh version without scrolling up.
@@ -3623,22 +3629,25 @@
 
     var L=pgLabels(), rtl=(LANG==='ar');
     var bar=document.createElement('div'); bar.className='pgbar';
-    var row=document.createElement('div'); row.className='pgrow';
     var tabs=document.createElement('div'); tabs.className='pgtabs';
+    // An arrow on its own says "something moves" but not what. Sat either side of "Day 1 of 5" it
+    // can only mean one thing, and the pair no longer competes with the chips for the same row.
+    var row=document.createElement('div'); row.className='pgrow';
+    var count=document.createElement('div'); count.className='pgcount';
     function arrow(dir){
       var b=document.createElement('button');
       b.type='button'; b.className='pgarrow '+(dir<0?'prev':'next');
       b.setAttribute('data-pgd',dir);
       b.setAttribute('aria-label',dir<0?L.prev:L.next);
       b.title=(dir<0?L.prev:L.next);
-      // the glyph follows the reading direction, not the DOM order
-      b.textContent=((dir<0)===rtl)?'›':'‹';
+      // back points the way you came, which on an Arabic page is to the right
+      var right=((dir<0)===rtl);
+      b.setAttribute('data-arrow',right?'right':'left');
+      b.innerHTML=right?CHEVR:CHEVL;
       return b;
     }
-    row.appendChild(arrow(-1)); row.appendChild(tabs); row.appendChild(arrow(1));
-    bar.appendChild(row);
-    var count=document.createElement('div'); count.className='pgcount';
-    bar.appendChild(count);
+    row.appendChild(arrow(-1)); row.appendChild(count); row.appendChild(arrow(1));
+    bar.appendChild(tabs); bar.appendChild(row);
     var pages=buckets.map(function(items,i){
       var pg=document.createElement('div'); pg.setAttribute('data-pg',i);
       // keep the little inset the .route wrapper used to give a day
