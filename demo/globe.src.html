@@ -519,7 +519,12 @@ function draw(){
     var S=LEGS[seg], A=[S.a.lat,S.a.lng], B=[S.b.lat,S.b.lng];
     var h1=gc(A,B,prog), h2=gc(A,B,Math.min(1,prog+0.012));
     var q1=proj(h1[1],h1[0]), q2=proj(h2[1],h2[0]);
-    if(q1&&q2)vehicle(S.mode,q1,Math.atan2(q2[1]-q1[1],q2[0]-q1[0]));
+    if(q1&&q2){
+      vehicle(S.mode,q1,Math.atan2(q2[1]-q1[1],q2[0]-q1[0]));
+      // The thing that is moving is the thing you are watching, so no label may print across it.
+      // "Santorini" was sitting squarely on the ferry in both themes.
+      LBOX.push([q1[0],q1[1]+12,24,24]);
+    }
   }
 
   // Home, where it all started
@@ -586,14 +591,15 @@ function draw(){
     ctx.beginPath(); ctx.arc(p[0],p[1],rr,0,Math.PI*2);
     ctx.fillStyle=col('--amber'); ctx.fill();
     ctx.restore();
+    // The pin itself is occupied space. Labels used to dodge other labels but happily print
+    // straight across a marker, which is how INN ended up sitting on top of stop 1 — and this
+    // has to be claimed BEFORE the name is placed, or a stop covers its own pin.
+    LBOX.push([p[0],p[1]+rr,rr*2,rr*2]);
     if(k>0.55){
       ctx.fillStyle='#10202c'; ctx.font='700 11px ui-monospace,monospace';
       ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(i2+1),p[0],p[1]+.5);
       label([p[0],p[1]-rr-7],c.n,col('--ink'));
     }
-    // The pin itself is occupied space. Labels used to dodge other labels but happily print
-    // straight across a marker, which is how INN ended up sitting on top of stop 1.
-    LBOX.push([p[0],p[1]+rr,rr*2,rr*2]);
   });
   gateways();
 }
@@ -617,9 +623,12 @@ function leg(A,B,frac,mode){
   if(frac<1)stroke(upto,N,col('--line'),1.4,[3,5]);         // the way still to go
   // A wide soft pass under a crisp one: the line stops being a hairline on a dark ocean.
   ctx.save();
-  ctx.globalAlpha=0.22; stroke(0,upto,main,7,[]); ctx.globalAlpha=1;
-  ctx.shadowColor=main; ctx.shadowBlur=8;
-  stroke(0,upto,main,intl?2:1.8,dash);
+  // A glow is how you make a line carry on a dark ocean. On a pale one it does the opposite — it
+  // spreads the colour out and leaves the line weaker than if there had been no glow at all. So
+  // the light page gets no bloom and a slightly heavier stroke instead.
+  ctx.globalAlpha=DARK?0.22:0.14; stroke(0,upto,main,7,[]); ctx.globalAlpha=1;
+  if(DARK){ ctx.shadowColor=main; ctx.shadowBlur=8; }
+  stroke(0,upto,main,(intl?2:1.8)+(DARK?0:0.5),dash);
   // brightest right behind the plane, so the eye is pulled to where the movement is
   if(frac>0.02&&frac<1)stroke(Math.max(0,upto-Math.round(N*0.12)),upto,DARK?'#ffffff':'#0d4a63',intl?2.2:2,[]);
   ctx.restore();
