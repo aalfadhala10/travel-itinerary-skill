@@ -651,6 +651,12 @@ function chatTurn(messages, apiKey) {
     "there)? Which city/airport will they fly home from? Then reflect the answer in `cities`: for a loop, make the " +
     "LAST stop the same city they started from (the return-to-airport leg); for one-way, make the last stop the " +
     "city they fly out of. Set roadtrip=true for these. " +
+    "THE APP EXPLAINS ARRIVAL BY ITSELF, so do not turn an airport into a stop. Every plan already " +
+    "opens by telling the traveller which airport they land at and how to cover the last leg — the " +
+    "drive or the light aircraft, with times and costs. So a gateway city belongs in `cities` ONLY " +
+    "when they say in so many words that they want to SLEEP there. 'I'll drive to Garmisch directly' " +
+    "means cities is ['Garmisch-Partenkirchen'] and Munich appears nowhere, not as one night and not " +
+    "as five. Putting it in anyway invents a stay they refused and pushes every later day back. " +
     "ARRIVAL & DEPARTURE — ALWAYS ACCOUNT FOR THIS. Many towns have no airport, so the traveller lands somewhere " +
     "else and continues by car or train. Before finishing, work out which airport they realistically fly into and " +
     "out of, and SAY IT in your reply — e.g. for Garmisch-Partenkirchen: 'You'd fly into Munich, then it's about a " +
