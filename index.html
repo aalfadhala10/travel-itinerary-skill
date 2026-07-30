@@ -120,10 +120,12 @@
   :root[data-theme="light"] .daychip.active{color:#fff}
   .editfab{position:fixed;bottom:22px;right:18px;z-index:6;padding:12px 18px;border-radius:999px;border:none;background:var(--teal);color:#fff;font-size:14px;font-weight:700;font-family:var(--ff-body);box-shadow:var(--shadow);cursor:pointer;transition:filter .15s}
   .editfab:hover{filter:brightness(1.06)}
-  /* Both floating buttons land exactly on top of the Back/Next controls. While the pager is on
-     screen they step aside — the controls under them are the navigation at that moment. */
+  /* Both floating buttons land exactly on top of the Back/Next controls, so while those are on
+     screen these move up out of the way. They used to fade out entirely, which meant the chat
+     button disappeared for the whole bottom of every page — exactly where somebody who has read
+     the day is most likely to want to change something. Stepping aside is enough. */
   .editfab,.chatfab{transition:opacity .18s,transform .18s,bottom .25s}
-  body.pgnav-vis .editfab,body.pgnav-vis .chatfab{opacity:0;transform:translateY(10px);pointer-events:none}
+  body.pgnav-vis .editfab,body.pgnav-vis .chatfab{bottom:210px}
   /* the "how was your plan?" card lands there too — it can wait until they're not mid-navigation */
   body.pgnav-vis .fbnudge.show{opacity:0;transform:translateX(-50%) translateY(30px);pointer-events:none}
   @media (prefers-color-scheme:dark){.editfab{color:#0a1310}}
@@ -429,6 +431,9 @@
   .slot.hotelrow{border-top:none;padding-bottom:12px}
   .slot.hotelrow .t{color:var(--amber)}
   .hotelwarn{margin:0 0 8px;font-size:14px;color:var(--clay)}
+  button.menulink{border:none;background:none;padding:0;cursor:pointer;font-family:var(--ff-body)}
+  .hotelin{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font-size:15px;font-family:var(--ff-body)}
+  .hotelin:focus{border-color:var(--teal);outline:none}
   .menulink{margin-inline-start:8px;font-size:14px;font-weight:600;color:var(--teal);text-decoration:none;white-space:nowrap}
   .menulink:hover{text-decoration:underline}
   .menulink::before{content:'· ';color:var(--muted);font-weight:400}
@@ -2393,7 +2398,36 @@
     var one=dest.hotels&&dest.hotels[tier];
     return one?[one]:[];
   }
+  // Somebody who has already booked doesn't want a recommendation, they want their own hotel to be
+  // the point the days are built around. Kept per city, so a two-city trip can have one of each.
+  var MYHOTEL=null;
+  function myHotelLoad(){ if(MYHOTEL)return MYHOTEL; try{ MYHOTEL=JSON.parse(localStorage.getItem('bosla_myhotel')||'{}')||{}; }catch(e){ MYHOTEL={}; } return MYHOTEL; }
+  function myHotelSave(){ try{ localStorage.setItem('bosla_myhotel',JSON.stringify(MYHOTEL||{})); }catch(e){} }
+  function myHotel(ck){ var m=myHotelLoad()[ck]; return (m&&String(m).trim())||''; }
+  function setMyHotel(ck,name){
+    myHotelLoad();
+    name=String(name||'').trim().slice(0,80);
+    if(name)MYHOTEL[ck]=name; else delete MYHOTEL[ck];
+    myHotelSave();
+    // Look it up like any other place, so their hotel gets the same pin, coordinates and rating —
+    // and so the day is measured from where they are actually sleeping.
+    var d=DEST[ck];
+    if(name&&d&&CONFIG.aiEndpoint){
+      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'places',city:d.city,names:[name]})})
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+          var pins=(res&&res.pins)||{}, rat=(res&&res.rated)||{}, got=false, pp=pinsLoad(), rr=ratedLoad();
+          Object.keys(pins).forEach(function(k2){ var x=pins[k2];
+            if(x&&x.id){ pp[String(k2).toLowerCase()]={id:x.id,gn:x.gn||'',lat:+x.lat||0,lng:+x.lng||0}; got=true; } });
+          Object.keys(rat).forEach(function(k2){ rr[String(k2).toLowerCase()]={r:+rat[k2].r||0,n:+rat[k2].n||0}; got=true; });
+          if(got){ pinsSave(); ratedSave(); if(planLive())rerenderKeep(); }
+        })
+        .catch(function(){});
+    }
+  }
   function hotelPick(dest,tier){
+    var mine=myHotel(keyOf(dest)); if(mine)return mine;   // theirs beats anything we would suggest
     var pool=hotelPool(dest,tier);
     if(!pool.length)return (dest.hotels&&dest.hotels[tier])||'';
     var rated=pool.filter(function(h){ return ratingOf(h); });
@@ -2428,9 +2462,12 @@
         :(es?'No hay ninguno con 4+ en esta categoría — este es el mejor disponible.'
         :"Nothing in this price bracket rates 4+ — this is the best there is."))+'</div>';
     }
+    var mine=!!myHotel(ck);
+    var edit=ar?(mine?'غيّره':'عندي فندق'):(es?(mine?'Cambiar':'Ya tengo hotel'):(mine?'Change':'I booked my own'));
     return '<div class="slot hotelrow" data-q="'+esc(q)+'"><div class="t">'+esc(lbl)+'</div>'+
       '<div class="d">'+link(h,q,'',h)+ratingTag(h)+
-      ' <a class="menulink booklink" href="'+bookUrl(q)+'" target="_blank" rel="noopener">'+esc(o.book)+'</a></div></div>'+warn;
+      (mine?'':' <a class="menulink booklink" href="'+bookUrl(q)+'" target="_blank" rel="noopener">'+esc(o.book)+'</a>')+
+      ' <button type="button" class="menulink hoteledit" data-hk="'+esc(ck)+'">'+esc(edit)+'</button></div></div>'+warn;
   }
   var COUNTRY_TZ={};  // country → IANA timezone (for local-time display)
   var COUNTRY_LANG={};// country → phrasebook language code
@@ -5545,7 +5582,7 @@
     return {d:$('dest').value, d2:$('dest2').value, days:$('days').value, pace:$('pace').value,
       adults:$('adults').value, kids:$('kids').value, sd:$('startDate').value, cur:$('homeCur').value,
       budget:picked('budgetChips')[0]||'Mid-range', vibes:picked('vibeChips'), lang:LANG,
-      ba:$('budgetAmt').value, bc:$('homeCur').value,
+      ba:$('budgetAmt').value, bc:$('homeCur').value, mh:myHotelLoad(),
       rt:(ROUTE&&ROUTE.length>=2?ROUTE:null), dr:ROUTEDRIVE, seed:SEED, edits:DAYEDITS, rot:DAYROT};
   }
   function saveState(){try{localStorage.setItem('rihla_v1',JSON.stringify(stateObj()));}catch(e){}}
@@ -5751,6 +5788,7 @@
     $('dest').value=s.d||''; $('days').value=s.days||5; $('pace').value=s.pace||'balanced';
     $('adults').value=s.adults||2; $('kids').value=s.kids||0; $('startDate').value=s.sd||''; $('homeCur').value=s.cur||'USD';
     try{ $('budgetAmt').value=s.ba||''; }catch(e){}
+    if(s.mh&&typeof s.mh==='object'){ MYHOTEL=s.mh; myHotelSave(); }   // the hotel they actually booked
     if(s.d2){ $('city2wrap').classList.remove('is-hidden'); $('addCity').classList.add('is-hidden'); $('dest2').value=s.d2; }
     noteSearch();   // a saved or shared trip arrives with its own budget and date
     if(s.budget)document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===s.budget);});
@@ -6159,6 +6197,29 @@
       bud.classList.remove('flash'); void bud.offsetWidth; bud.classList.add('flash');
       return;
     }
+    var he=e.target.closest('.hoteledit');
+    if(he){
+      var hk=he.getAttribute('data-hk'), row=he.closest('.slot');
+      var open=$('out').querySelector('.hotelbox'); if(open)open.parentNode.removeChild(open);
+      if(row&&row.nextElementSibling&&row.nextElementSibling.classList.contains('hotelbox'))return; // toggle
+      var ar2=LANG==='ar', es2=LANG==='es';
+      var ph=ar2?'اسم فندقك':(es2?'El nombre de tu hotel':'Your hotel name');
+      var ok=ar2?'احفظ':(es2?'Guardar':'Save');
+      var clr=ar2?'رجّع اقتراحكم':(es2?'Volver al sugerido':'Use your suggestion');
+      var box=document.createElement('div'); box.className='swappick hotelbox';
+      box.innerHTML='<div class="spk">'+esc(ph)+'</div>'+
+        '<input type="text" class="hotelin" value="'+esc(myHotel(hk))+'" placeholder="'+esc(ph)+'">'+
+        '<button type="button" class="spkmore hotelok" data-hk="'+esc(hk)+'">'+esc(ok)+'</button>'+
+        (myHotel(hk)?('<button type="button" class="spkmore hotelclr" data-hk="'+esc(hk)+'">'+esc(clr)+'</button>'):'');
+      row.parentNode.insertBefore(box,row.nextElementSibling);
+      try{ box.querySelector('.hotelin').focus(); }catch(err){}
+      return;
+    }
+    var hok=e.target.closest('.hotelok');
+    if(hok){ var bx=hok.closest('.hotelbox'), v=(bx&&bx.querySelector('.hotelin').value)||'';
+      setMyHotel(hok.getAttribute('data-hk'),v); rerenderKeep(); return; }
+    var hclr=e.target.closest('.hotelclr');
+    if(hclr){ setMyHotel(hclr.getAttribute('data-hk'),''); rerenderKeep(); return; }
     var pa=e.target.closest('.pgarrow'); if(pa){ if(!pa.disabled)pgGo(PAGE+(+pa.getAttribute('data-pgd'))); return; }
     var pb=e.target.closest('.pgbtn'); if(pb){ if(!pb.disabled)pgGo(PAGE+(+pb.getAttribute('data-pgd'))); return; }
     // "Jump to day" turns a page rather than scrolling to one
