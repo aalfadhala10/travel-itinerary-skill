@@ -42,6 +42,50 @@ function cityKey(name) {
   return String(name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+// --- keeping the bill yours ------------------------------------------------------
+// This worker is a public URL and every answer it gives costs real money — Anthropic for the
+// writing, Google for the place lookups. The CORS check above stops nothing: a browser obeys it,
+// `curl` doesn't, and the URL is sitting in the page source of the app.
+//
+// Two counters, both kept in the KV we already have. One is per visitor per minute, which stops a
+// single person hammering it. The other is the whole day's spend across everybody, which is the
+// backstop for the case the first one can't see — a thousand different addresses at once.
+//
+// Both count only when money is ACTUALLY spent. A city served from cache costs nothing and is not
+// counted, or a popular destination would eat the day's budget on free answers.
+const RL_PER_MIN     = 25;    // requests a minute from one address
+const DAY_LLM_CAP    = 600;   // Claude calls a day, everyone together
+const DAY_PLACES_CAP = 2000;  // Google place lookups a day, everyone together
+
+function today() { return new Date().toISOString().slice(0, 10); }
+
+async function peek(kv, key) {
+  if (!kv) return 0;
+  try { return parseInt(await kv.get(key), 10) || 0; } catch (e) { return 0; }
+}
+// Read, add, write. Two requests landing in the same millisecond can both read the same number and
+// one increment is lost — which is fine here. This is a safety valve, not an invoice: it only has
+// to be roughly right, and erring low means a real traveller is never turned away by a rounding
+// error. If it ever needs to be exact, that's Durable Objects, and it isn't worth it yet.
+async function bump(kv, key, ttl, by) {
+  if (!kv) return 0;
+  const n = (await peek(kv, key)) + (by || 1);
+  try { await kv.put(key, String(n), { expirationTtl: ttl }); } catch (e) {}
+  return n;
+}
+async function overBudget(env, kind, cap) {
+  return (await peek(env.CITIES, "spend:" + kind + ":" + today())) >= cap;
+}
+function spend(env, kind, n) {
+  return bump(env.CITIES, "spend:" + kind + ":" + today(), 172800, n || 1);
+}
+// A minute-stamped key, so yesterday's counters expire themselves and nothing has to be cleaned up.
+async function tooFast(env, request) {
+  const ip = request.headers.get("CF-Connecting-IP") || "anon";
+  const key = "rl:" + ip + ":" + Math.floor(Date.now() / 60000);
+  return (await bump(env.CITIES, key, 120)) > RL_PER_MIN;
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -50,6 +94,19 @@ export default {
 
     let body;
     try { body = await request.json(); } catch { return reply({ error: "bad json" }, 400, origin); }
+
+    // One person, too many knocks. 429 is the status that means "not wrong, just slow down" —
+    // `retry` tells the app how long to wait so it can say something sensible instead of failing.
+    if (await tooFast(env, request)) return reply({ error: "too many requests", retry: 60 }, 429, origin);
+
+    // Everything below that talks to Claude shares one daily allowance, and everything that talks
+    // to Google shares another. Checked BEFORE the work, so the call that would break the budget
+    // never happens rather than being noticed afterwards.
+    const LLM = { city: 1, food: 1, names: 1, chat: 1, parse: 1, suggest: 1 };
+    if (LLM[body.action] && await overBudget(env, "llm", DAY_LLM_CAP))
+      return reply({ error: "daily limit reached", retry: 3600 }, 429, origin);
+    if (body.action === "places" && await overBudget(env, "places", DAY_PLACES_CAP))
+      return reply({ closed: [], rated: {} }, 200, origin);   // silent: the app is fine without it
 
     try {
       if (body.action === "city") {
@@ -63,6 +120,7 @@ export default {
         if (!env.ANTHROPIC_API_KEY) return reply({ error: "server not configured" }, 500, origin);
         const text = String(body.text || "").slice(0, 1200).trim();
         if (!text) return reply({ error: "empty text" }, 400, origin);
+        await spend(env, "llm");
         return reply({ parsed: await parseTrip(text, env.ANTHROPIC_API_KEY) }, 200, origin);
       }
       if (body.action === "chat") {
@@ -75,12 +133,14 @@ export default {
         while (msgs.length && msgs[0].role !== "user") msgs.shift();                       // must START on a user turn
         while (msgs.length && msgs[msgs.length - 1].role !== "user") msgs.pop();            // must NOT end on assistant (a trailing "…"/prefill breaks structured outputs)
         if (!msgs.length) return reply({ error: "no messages" }, 400, origin);
+        await spend(env, "llm");
         return reply({ chat: await chatTurn(msgs, env.ANTHROPIC_API_KEY) }, 200, origin);
       }
       if (body.action === "suggest") {
         if (!env.ANTHROPIC_API_KEY) return reply({ error: "server not configured" }, 500, origin);
         const text = String(body.text || "").slice(0, 1200).trim();
         if (!text) return reply({ error: "empty text" }, 400, origin);
+        await spend(env, "llm");
         return reply({ suggest: await suggestTrip(text, env.ANTHROPIC_API_KEY) }, 200, origin);
       }
       if (body.action === "food") {
@@ -108,8 +168,13 @@ export default {
         if (!names.length) return reply({ closed: [], rated: {} }, 200, origin);
         return reply(await placeFacts(names, city, env), 200, origin);
       }
-      if (body.action === "list")  return reply({ cities: await listNames(env) }, 200, origin);
-      if (body.action === "dump")  return reply({ cities: await dumpAll(env) }, 200, origin);
+      // These two hand over every city we have ever built. They're yours, not the public's.
+      // Set an ADMIN_KEY secret in Cloudflare and they lock; leave it unset and nothing changes.
+      if (body.action === "list" || body.action === "dump") {
+        if (env.ADMIN_KEY && body.admin !== env.ADMIN_KEY) return reply({ error: "not allowed" }, 403, origin);
+        if (body.action === "list") return reply({ cities: await listNames(env) }, 200, origin);
+        return reply({ cities: await dumpAll(env) }, 200, origin);
+      }
       return reply({ error: "unknown action" }, 400, origin);
     } catch (e) {
       return reply({ error: String(e && e.message ? e.message : e) }, 500, origin);
@@ -125,6 +190,7 @@ async function getOrBuildCity(name, env) {
     const hit = await kv.get(k, "json");
     if (hit) return { city: hit, cached: true };
   }
+  await spend(env, "llm");                                 // counted here: this is the call that costs
   const city = await generateCity(name, env.ANTHROPIC_API_KEY);
   if (kv && city && city.valid) {
     await kv.put(k, JSON.stringify(city));                 // remember under the searched name
@@ -143,6 +209,7 @@ async function getOrBuildFood(name, country, env) {
     const hit = await kv.get(k, "json");
     if (hit) return { food: hit, cached: true };
   }
+  await spend(env, "llm");
   const res = await generateFood(name, country, env.ANTHROPIC_API_KEY);
   const food = (res && res.valid && Array.isArray(res.food)) ? res.food.filter((f) => f && f.n && f.a) : [];
   if (kv && food.length >= 4) await kv.put(k, JSON.stringify(food));
@@ -185,6 +252,7 @@ async function getOrBuildNames(city, country, lang, items, env) {
     }
   }
   const missing = items.filter((n) => !have[n]);
+  await spend(env, "llm");
   const res = await generateNames(city, country, lang, missing, env.ANTHROPIC_API_KEY);
   const got = (res && Array.isArray(res.items)) ? res.items : [];
   got.forEach((x) => { if (x && x.en && x.tr) have[x.en] = x.tr; });
@@ -237,6 +305,7 @@ async function placeFacts(names, city, env) {
     let fact = null;
     if (kv) { try { fact = await kv.get(k, "json"); } catch (e) { fact = null; } }
     if (!fact) {
+      await spend(env, "places");                           // one lookup, one unit of the day's budget
       fact = await placeLookup(name, city, env.GOOGLE_PLACES_KEY);
       if (!fact) continue;                       // lookup failed — say nothing rather than guess
       if (kv) await kv.put(k, JSON.stringify(fact),
