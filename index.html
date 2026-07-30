@@ -2456,7 +2456,7 @@
   }
   function curTier(){ try{ return picked('budgetChips')[0]||'Mid-range'; }catch(e){ return 'Mid-range'; } }
   // The hotel opens every day: it is where the day starts, and where the route is measured from.
-  function hotelSlot(ck,o){
+  function hotelSlot(ck,o,fromDay,nights){
     var d=DEST[ck]; if(!d)return '';
     var tier=curTier(), h=hotelPick(d,tier); if(!h)return '';
     var ar=LANG==='ar', es=LANG==='es';
@@ -2472,7 +2472,7 @@
     var edit=ar?(mine?'غيّره':'عندي فندق'):(es?(mine?'Cambiar':'Ya tengo hotel'):(mine?'Change':'I booked my own'));
     return '<div class="slot hotelrow" data-q="'+esc(q)+'"><div class="t">'+esc(lbl)+'</div>'+
       '<div class="d">'+link(h,q,'',h)+ratingTag(h)+
-      (mine?'':' <a class="menulink booklink" href="'+bookUrl(q)+'" target="_blank" rel="noopener">'+esc(o.book)+'</a>')+
+      (mine?'':' <a class="menulink booklink" href="'+bookHotelUrl(h,d.city,fromDay,nights)+'" target="_blank" rel="noopener">'+esc(o.book)+'</a>')+
       ' <button type="button" class="menulink hoteledit" data-hk="'+esc(ck)+'">'+esc(edit)+'</button></div></div>'+warn;
   }
   var COUNTRY_TZ={};  // country → IANA timezone (for local-time display)
@@ -2876,16 +2876,23 @@
   }
   // Booking needs check-in/out dates + occupancy to show *availability* — without them a filtered
   // search drops into a "no properties available" state. Reuse the trip's own dates & travellers.
-  function bookDates(){
+  // `fromDay` is the day of the trip this stay begins on and `nights` is how long it lasts. Both
+  // default to the whole holiday, which is right for a city-wide search and wrong for a hotel:
+  // asking a hotel in Abu Dhabi for all fourteen nights of a two-city trip returns "no properties
+  // available", and a traveller who just wanted to see the room reads that as a general page.
+  function bookDates(fromDay,nights){
     var p='';
     try{
       var sd=($('startDate')&&$('startDate').value)||'';
       var days=Math.max(1,Math.min(30,parseInt(($('days')&&$('days').value)||'5',10)||5));
       var ad=Math.max(1,parseInt(($('adults')&&$('adults').value)||'2',10)||2);
+      var from=Math.max(1,parseInt(fromDay,10)||1);
+      var stay=Math.max(1,parseInt(nights,10)||days);
       if(/^\d{4}-\d{2}-\d{2}$/.test(sd)){
         var ci=new Date(sd+'T00:00:00');
         if(!isNaN(ci.getTime())){
-          var co=new Date(ci.getTime()); co.setDate(co.getDate()+days);
+          ci.setDate(ci.getDate()+(from-1));            // arrive when the trip actually gets here
+          var co=new Date(ci.getTime()); co.setDate(co.getDate()+stay);
           var f=function(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);};
           p+='&checkin='+f(ci)+'&checkout='+f(co);
         }
@@ -2899,8 +2906,20 @@
     return p;
   }
   var KID_AGE=8;
-  function bookUrl(q){
-    var u="https://www.booking.com/searchresults.html?ss="+encodeURIComponent(q)+bookDates();
+  // Booking resolves a property by NAME, so the name has to be one. "Southern Sun Abu Dhabi Abu
+  // Dhabi" — our hotel name with the city stapled on when the name already carried it — resolves
+  // to nothing in particular and drops you on a city-wide list, which is exactly what it looked
+  // like. Google's spelling of the hotel beats ours, since that is the one the world uses.
+  function bookQuery(h,city){
+    var p=pinOf(h), name=h;
+    if(p&&p.gn&&/[A-Za-z]/.test(p.gn))name=p.gn;         // Google's name, unless it came back non-Latin
+    var a=String(name).toLowerCase(), b=String(city||'').toLowerCase();
+    if(!b||a.indexOf(b)>=0)return name;                  // already says where it is
+    return name+' '+city;
+  }
+  function bookHotelUrl(h,city,fromDay,nights){ return bookUrl(bookQuery(h,city),fromDay,nights); }
+  function bookUrl(q,fromDay,nights){
+    var u="https://www.booking.com/searchresults.html?ss="+encodeURIComponent(q)+bookDates(fromDay,nights);
     if(CONFIG.bookingAID){u+="&aid="+encodeURIComponent(CONFIG.bookingAID);if(CONFIG.bookingLabel)u+="&label="+encodeURIComponent(CONFIG.bookingLabel);}
     return u;
   }
@@ -4605,7 +4624,7 @@
         +'<button type="button" class="dayshuffle" data-shuf="'+ck+'|'+d+'" title="'+o.shuffleDay+'">'+SHUFSVG+'<span>'+o.shuffleDay+'</span></button>'
         +'<span class="dchev" aria-hidden="true"></span></div>'
         +'<div class="dsum">'+sum+'</div>'
-        +'<div class="dbody">'+(d===1?arrivalCard(ck):'')+dayHint(o)+hotelSlot(ck,o)+body+dayRouteLink(walk,match.city)+'</div></div>';
+        +'<div class="dbody">'+(d===1?arrivalCard(ck):'')+dayHint(o)+hotelSlot(ck,o,fromDay,count)+body+dayRouteLink(walk,match.city)+'</div></div>';
     }
     return html;
   }
@@ -5887,7 +5906,7 @@
       var title=multi?(c1+' → '+c2+' · '+days+' '+o.daysUnit):(c1+', '+esc(m1.country)+' · '+days+' '+o.daysUnit);
       LASTPLANNAME=(multi&&m2)?(m1.city+' - '+m2.city):(m1.country||m1.city);
       var h1=hotelPick(m1,budget), h2=multi?hotelPick(m2,budget):'';
-      var stay=multi?(link(h1,h1+' '+m1.city)+' / '+link(h2,h2+' '+m2.city)):(link(h1,h1+' '+m1.city)+' · <a href="'+bookUrl(h1+' '+m1.city)+'" target="_blank" rel="noopener">'+o.book+'</a>');
+      var stay=multi?(link(h1,h1+' '+m1.city)+' / '+link(h2,h2+' '+m2.city)):(link(h1,h1+' '+m1.city)+' · <a href="'+bookHotelUrl(h1,m1.city,1,days)+'" target="_blank" rel="noopener">'+o.book+'</a>');
       var ml=di?di.monthLabel:null;
       var cd=di?(di.du>0?'<div class="season">'+o.countdown(di.du)+'</div> ':(di.du===0?'<div class="season">'+o.today+'</div> ':'')):'';
       var seasons=cd+'<div class="season">'+seasonLine(m1,t,ml)+'</div>'+(multi?' <div class="season">'+seasonLine(m2,t,ml)+'</div>':'')+timeThereLine(m1,t)+weatherBox(m1,$('startDate').value,t);
