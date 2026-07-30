@@ -57,21 +57,68 @@
   .segb+.segb{border-inline-start:1px solid var(--line)}
   .segb.on{background:var(--amber);color:#10202c;font-weight:700}
   .foot{font-size:13px;color:var(--muted);line-height:1.7;margin-top:6px}
+  .pick{margin-bottom:12px}
+  .pl{display:block;font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);
+    font-weight:700;margin:0 0 5px}
+  .pl+.ac{margin-bottom:10px}
+  .ac{position:relative}
+  .ac input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:11px;
+    background:var(--paper2);color:var(--ink);font-size:15px;font-family:inherit}
+  .ac input:focus{border-color:var(--teal);outline:none}
+  .acmenu{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:9;background:var(--card);
+    border:1px solid var(--line);border-radius:11px;overflow:hidden;display:none;
+    box-shadow:0 10px 26px rgba(0,0,0,.28)}
+  .acmenu.on{display:block}
+  .acr{display:flex;gap:9px;align-items:center;width:100%;padding:10px 12px;border:none;
+    background:none;color:var(--ink);font-size:15px;font-family:inherit;cursor:pointer;text-align:start}
+  .acr:hover,.acr.sel{background:var(--paper2)}
+  .acr .c2{color:var(--muted);font-size:13.5px}
+  .quick{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
+  .qb{padding:7px 11px;border:1px dashed var(--line);border-radius:999px;background:none;
+    color:var(--muted);font-size:14px;font-family:inherit;cursor:pointer}
+  .qb:hover{border-color:var(--teal);color:var(--teal)}
+  /* the schedule, beside the globe rather than instead of it */
+  .trip{margin-top:12px}
+  .stop{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--line);
+    border-radius:11px;background:var(--paper2);cursor:pointer}
+  .stop.on{border-color:var(--amber);background:var(--amber-soft)}
+  .stop .no{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--amber);
+    color:#10202c;font:700 12px ui-monospace,monospace;display:flex;align-items:center;justify-content:center}
+  .stop .nm{flex:1;min-width:0;font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .stop .nm i{display:block;font-style:normal;font-weight:400;font-size:13px;color:var(--muted)}
+  .nights{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+  .nb{width:26px;height:26px;border:1px solid var(--line);border-radius:8px;background:var(--card);
+    color:var(--ink);font-size:15px;font-family:inherit;cursor:pointer;line-height:1}
+  .nn{min-width:44px;text-align:center;font-size:13px;color:var(--muted)}
+  .rm{width:26px;height:26px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:15px}
+  .rm:hover{color:var(--clay)}
+  .hop{display:flex;align-items:center;gap:8px;padding:5px 0 5px 12px;font-size:13.5px;color:var(--muted)}
+  .hop .bar{width:2px;height:20px;background:var(--line);border-radius:2px;flex:0 0 auto;margin-inline-start:9px}
+  .empty{padding:12px;border:1px dashed var(--line);border-radius:11px;color:var(--muted);font-size:14px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Where on the planet</h1>
-  <p class="note">A demo, not the app. Tap a country: the globe turns to it, the country lights up,
-  and a plane flies the whole trip from Doha — the flight in, then every hop between the cities —
-  drawing the line as it goes.
+  <p class="note">A demo, not the app. Build a trip: say where you are flying from, then add stops.
+  The globe turns to them, the countries light up, and the journey is flown leg by leg — the flight
+  in, then every hop between the cities, by whatever that hop actually uses.
   <b>Drag to spin, pinch or scroll to zoom, double-tap to stand back.</b></p>
 
   <div class="card">
+    <div class="pick">
+      <label class="pl" for="fromIn">Flying from</label>
+      <div class="ac"><input id="fromIn" type="text" autocomplete="off" placeholder="your city">
+        <div class="acmenu" id="fromMenu"></div></div>
+      <label class="pl" for="toIn">Add a stop</label>
+      <div class="ac"><input id="toIn" type="text" autocomplete="off" placeholder="any of 738 cities — type a name">
+        <div class="acmenu" id="toMenu"></div></div>
+      <div class="quick" id="quick"></div>
+    </div>
     <div class="hdr" id="hdr">The world</div>
     <canvas id="cv" width="800" height="800"></canvas>
-    <div class="cap" id="cap"><span class="dim">Pick somewhere below.</span></div>
-    <div class="chips" id="chips"></div>
+    <div class="cap" id="cap"><span class="dim">Type a city above, or try one of these.</span></div>
+    <div class="trip" id="trip"></div>
     <div class="row">
       <span class="seg" id="tTheme" role="group" aria-label="Theme">
         <button type="button" class="segb" data-t="dark">Dark</button>
@@ -81,7 +128,7 @@
       <button class="toggle" id="tFlat">Flat map</button>
       <button class="toggle" id="tGlobe">Whole globe</button>
       <button class="toggle" id="tAgain">Fly it again</button>
-      <button class="toggle" id="tReset">Back to the world</button>
+      <button class="toggle" id="tReset">Clear the trip</button>
     </div>
   </div>
 
@@ -95,6 +142,7 @@
 
 <script>
 /*__WORLD__*/
+/*__CITIES__*/
 /*__TRIPS__*/
 
 var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
@@ -142,12 +190,52 @@ function wantDetail(){
   }).catch(function(){ FINEBUSY=false; });
 }
 
-var HOME={n:'Doha',lat:25.3,lng:51.5};
-var view={lon:51.5,lat:20,zoom:1};       // where the globe is pointing
-var target=null, tween=null, flat=false, spin=true, arc=true;
-var fly=null;        // {seg,t,...} — which leg the plane is on and how far along it is
+// Every city the app knows, with the coordinates it uses: [city, country, flag, lat, lng, arabic, region]
+var CITY=CITIES.cities.map(function(a){
+  return {n:a[0],country:a[1],flag:a[2],lat:a[3],lng:a[4],ar:a[5],region:a[6]};
+});
+var RAIL={}; CITIES.rail.forEach(function(c){ RAIL[c]=1; });
+var GROUND_MAX=CITIES.groundMax;
+
+// The app's own rule, not a second opinion: inside one country a short hop goes by rail where the
+// country has rail and by road where it doesn't; between two European countries a short hop is rail;
+// anything else is a flight. Two places deciding this differently is how they start disagreeing.
+function legMode(a,b){
+  var d=km([a.lat,a.lng],[b.lat,b.lng]);
+  if(d>=GROUND_MAX)return 'air';
+  if(a.country===b.country)return RAIL[a.country]?'rail':'road';
+  if(a.region==='eu'&&b.region==='eu')return 'rail';
+  return 'air';
+}
+
+// Where they are flying from. The phone's clock is a decent guess and they can overrule it.
+var TZCITY={'Asia/Qatar':'Doha','Asia/Kuwait':'Kuwait City','Asia/Bahrain':'Manama','Asia/Muscat':'Muscat',
+  'Asia/Riyadh':'Riyadh','Asia/Dubai':'Dubai','Asia/Baghdad':'Baghdad','Asia/Beirut':'Beirut',
+  'Asia/Amman':'Amman','Asia/Karachi':'Karachi','Asia/Kolkata':'Mumbai','Asia/Calcutta':'Mumbai',
+  'Africa/Cairo':'Cairo','Europe/Kiev':'Kyiv','America/Sao_Paulo':'Sao Paulo','Pacific/Auckland':'Auckland'};
+function findCity(q){
+  q=String(q||'').toLowerCase().trim(); if(!q)return null;
+  var exact=null,starts=null,has=null,i;
+  for(i=0;i<CITY.length;i++){
+    var c=CITY[i], n=c.n.toLowerCase();
+    if(n===q){ exact=c; break; }
+    if(!starts&&n.indexOf(q)===0)starts=c;
+    if(!has&&(n.indexOf(q)>=0||(c.ar&&c.ar.indexOf(q)>=0)))has=c;
+  }
+  return exact||starts||has;
+}
+function guessHome(){
+  var tz=''; try{ tz=(Intl.DateTimeFormat().resolvedOptions()||{}).timeZone||''; }catch(e){}
+  var g=TZCITY[tz]||String(tz).split('/').pop().replace(/_/g,' ');
+  return findCity(g)||findCity('Doha')||CITY[0];
+}
+var HOME=guessHome();
+var STOPS=[];                            // the trip they are building, in order
+var NIGHTS=[];                           // nights in each stop
+var view={lon:HOME.lng,lat:20,zoom:1};   // where the globe is pointing
+var tween=null, flat=false, spin=true;
+var fly=null;        // {seg,t,...} — which leg the vehicle is on and how far along it is
 var SEEN={}, NOW=0;  // when each stop first appeared, so it can drop in rather than blink on
-var sel=null;                            // the chosen trip
 var DPR=Math.min(2,window.devicePixelRatio||1);
 
 function size(){
@@ -266,16 +354,16 @@ function draw(){
   }
   // land — everything quiet, then the chosen country on top of it with a glow so the eye lands there
   LAND.forEach(function(c){
-    if(sel&&c.n===sel.country)return;
+    if(HOT[c.n])return;
     if(!facing(c))return;
     ctx.beginPath();
     c.r.forEach(function(r){ drawRing(r,true); });
     ctx.fillStyle=col('--land'); ctx.fill();
     ctx.strokeStyle=col('--landline'); ctx.lineWidth=.7; ctx.stroke();
   });
-  if(sel){
+  if(STOPS.length){
     LAND.forEach(function(c){
-      if(c.n!==sel.country)return;
+      if(!HOT[c.n]||!facing(c))return;
       ctx.save();
       ctx.beginPath(); c.r.forEach(function(r){ drawRing(r,true); });
       ctx.shadowColor=col('--amber'); ctx.shadowBlur=18;
@@ -287,15 +375,15 @@ function draw(){
   }
   shade(w);                                               // the light goes over the land, not under it
 
-  if(!sel)return;
+  if(!STOPS.length)return;
 
   // The plane flies the WHOLE trip, not just the arrival: Doha to the first city, then every hop
   // between the cities, drawing the line as it goes. Legs already flown are solid; the leg being
   // flown is drawn as far as the plane has got; the rest is faint, so you can see where it is going.
-  var route=[{lat:HOME.lat,lng:HOME.lng,n:HOME.n}].concat(sel.cities);
+  var route=[HOME].concat(STOPS);
   var last=route.length-2;                                // index of the final leg
   var seg=fly?fly.seg:last, prog=fly?fly.t:1;
-  for(var si=0;si<sel.cities.length;si++)if(seg>=si&&!SEEN[si])SEEN[si]=NOW;
+  for(var si=0;si<STOPS.length;si++)if(seg>=si&&!SEEN[si])SEEN[si]=NOW;
 
   for(var L=0;L<=last;L++){
     var frac=(L<seg)?1:((L===seg)?prog:0);
@@ -320,7 +408,7 @@ function draw(){
   // Stand far enough back and three cities are three pixels: the pins pile up and the names print
   // through each other. Below that distance the trip is one marker with the country's name on it,
   // which is all that can honestly be said at that size.
-  var pts2=sel.cities.map(function(c){ return proj(c.lng,c.lat); }).filter(Boolean);
+  var pts2=STOPS.map(function(c){ return proj(c.lng,c.lat); }).filter(Boolean);
   var span=0, i3, j3;
   for(i3=0;i3<pts2.length;i3++)for(j3=i3+1;j3<pts2.length;j3++)
     span=Math.max(span,Math.hypot(pts2[i3][0]-pts2[j3][0],pts2[i3][1]-pts2[j3][1]));
@@ -333,11 +421,11 @@ function draw(){
     ctx.restore();
     ctx.fillStyle='#10202c'; ctx.font='700 11px ui-monospace,monospace';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(String(sel.cities.length),mx,my+.5);
-    label([mx,my-15],sel.country,col('--ink'));
+    ctx.fillText(String(STOPS.length),mx,my+.5);
+    label([mx,my-15],STOPS[0].country,col('--ink'));
     return;
   }
-  sel.cities.forEach(function(c,i2){
+  STOPS.forEach(function(c,i2){
     if(seg<i2)return;
     var p=proj(c.lng,c.lat); if(!p)return;
     // Landing on a place should feel like arriving at it: the pin drops in with a little overshoot
@@ -368,7 +456,7 @@ function draw(){
 // The first leg is the flight in. After that it is whatever the trip actually uses — a train
 // between Tokyo and Kyoto, a drive from Cappadocia to Antalya, a light aircraft into the Mara.
 // Drawing a plane on all of them would be the map contradicting the plan.
-function modeOf(L){ return L===0?'air':((sel.modes&&sel.modes[L-1])||'road'); }
+function modeOf(L){ return L===0?'air':legMode(STOPS[L-1],STOPS[L]); }
 function leg(A,B,frac,mode){
   var intl=(mode==='air'), N=intl?96:48, pts=[], i;
   for(i=0;i<=N;i++)pts.push(gc(A,B,i/N));
@@ -503,48 +591,163 @@ function fitZoom(cs,c){
   var span=far/6371*180/Math.PI;                          // degrees from the middle
   return Math.max(1.4,Math.min(9,26/Math.max(2.2,span)));
 }
-function pick(key){
-  var t=TRIPS[key]; if(!t)return;
-  sel={country:key,label:t.label,cities:t.cities,modes:t.modes||[]};
+// The order matters, because the flight cannot be seen from the destination: your home city is
+// off-screen once you are zoomed in on Japan. Stand back far enough to hold both ends, fly it in,
+// come down on the trip, then fly the hops between the cities.
+function launch(){
+  if(!STOPS.length)return;
+  // The idle spin is for an empty planet. Leave it running and it carries the trip off the side of
+  // the canvas a few seconds after it lands — which is exactly when you want to look at it.
   spin=false; document.getElementById('tSpin').classList.remove('on');
-  var c=centre(t.cities), d=km([HOME.lat,HOME.lng],[t.cities[0].lat,t.cities[0].lng]);
-  var hrs=Math.round((d/800+1)*2)/2;
-  // The order matters, because the flight cannot be seen from the destination: Doha is off-screen
-  // once you are zoomed in on Japan. Stand back far enough to hold both ends, fly it in, come down
-  // on the country, then fly the hops between the cities.
+  var b=STOPS[0], mid=gc([HOME.lat,HOME.lng],[b.lat,b.lng],0.5);
+  var deg=km([HOME.lat,HOME.lng],[b.lat,b.lng])/6371*180/Math.PI;
+  var z0=Math.max(1,Math.min(2.4,86/Math.max(38,deg*1.5)));
   fly=null; SEEN={};
-  launch(t,c);
-  document.getElementById('hdr').textContent=t.label.replace(/^\S+\s/,'');
-  var W={air:'by air',rail:'by train',road:'by road'};
-  var chain=t.cities.map(function(x,i){
-    return (i?('<span class="dim"> —'+W[(t.modes&&t.modes[i-1])||'road']+'→ </span>'):'')+(i+1)+'. '+x.n;
-  }).join('');
-  document.getElementById('cap').innerHTML=
-    '<b>'+t.label+'</b> · '+chain+
-    '<br><span class="dim">'+Math.round(d).toLocaleString()+' km from Doha · about '+hrs+
-    'h in the air · then the hops are what the trip actually uses</span>';
-  [].forEach.call(document.querySelectorAll('.chip'),function(b){ b.classList.toggle('on',b.dataset.k===key); });
-}
-function launch(t,c){
-  var b=[t.cities[0].lat,t.cities[0].lng];
-  var mid=gc([HOME.lat,HOME.lng],b,0.5);
-  var deg=km([HOME.lat,HOME.lng],b)/6371*180/Math.PI;      // how far apart the two ends are
-  var z0=Math.max(1,Math.min(2.4,86/Math.max(38,deg*1.5)));// stand back far enough to hold both
   goTo(mid[1],mid[0],z0,function(){ takeoff(); });
 }
-function reset(){
-  sel=null; spin=true; document.getElementById('tSpin').classList.add('on');
-  document.getElementById('hdr').textContent='The world';
-  document.getElementById('cap').innerHTML='<span class="dim">Pick somewhere below.</span>';
-  [].forEach.call(document.querySelectorAll('.chip'),function(b){ b.classList.remove('on'); });
-  goTo(51.5,20,1);
-}
+// Which countries to light up — a trip can cross several, and each of them is part of it.
+var HOT={};
+function syncHot(){ HOT={}; STOPS.forEach(function(c){ HOT[c.country]=1; }); }
 
-// --- chips, toggles, drag, zoom ---------------------------------------------------
-var chips=document.getElementById('chips');
-Object.keys(TRIPS).forEach(function(k){
-  var b=document.createElement('button'); b.className='chip'; b.dataset.k=k;
-  b.textContent=TRIPS[k].label; b.onclick=function(){ pick(k); }; chips.appendChild(b);
+// --- the trip they are building ---------------------------------------------------
+function addStop(c){
+  if(!c)return;
+  if(STOPS.length&&STOPS[STOPS.length-1].n===c.n)return;   // the same place twice in a row
+  if(STOPS.length>=6)return;
+  STOPS.push(c); NIGHTS.push(3);
+  syncHot(); renderTrip(); launch();
+}
+function removeStop(i){ STOPS.splice(i,1); NIGHTS.splice(i,1); syncHot(); renderTrip();
+  if(STOPS.length)launch(); else { fly=null; SEEN={}; idle(); } }
+// Nothing to look at: back to the whole planet, turning slowly.
+function idle(){ spin=true; document.getElementById('tSpin').classList.add('on');
+  goTo(HOME.lng,HOME.lat,1); }
+function setNights(i,d){ NIGHTS[i]=Math.max(1,Math.min(21,NIGHTS[i]+d)); renderTrip(); }
+function clearTrip(){ STOPS=[]; NIGHTS=[]; HOT={}; fly=null; SEEN={}; renderTrip(); idle(); }
+
+var MODEW={air:'by air',rail:'by train',road:'by road'};
+// Rough hours, so the schedule says something about the day rather than only the place.
+function legHours(a,b,mode){
+  var d=km([a.lat,a.lng],[b.lat,b.lng]);
+  if(mode==='air')return Math.max(1,Math.round((d/750+1.2)*2)/2);
+  if(mode==='rail')return Math.max(0.5,Math.round((d/120)*2)/2);
+  return Math.max(0.5,Math.round((d/75)*2)/2);
+}
+function renderTrip(){
+  var box=document.getElementById('trip');
+  if(!STOPS.length){
+    box.innerHTML='<div class="empty">No stops yet — type a city above, or tap one of the suggestions.</div>';
+    document.getElementById('hdr').textContent='The world';
+    document.getElementById('cap').innerHTML='<span class="dim">Type a city above, or try one of these.</span>';
+    return;
+  }
+  var day=1, html='', i;
+  for(i=0;i<STOPS.length;i++){
+    var c=STOPS[i], nts=NIGHTS[i];
+    if(i>0){
+      var m=legMode(STOPS[i-1],c), d=km([STOPS[i-1].lat,STOPS[i-1].lng],[c.lat,c.lng]);
+      html+='<div class="hop"><span class="bar"></span>'+esc(MODEW[m])+' · '+
+        Math.round(d).toLocaleString()+' km · ~'+legHours(STOPS[i-1],c,m)+'h</div>';
+    }
+    html+='<div class="stop" data-go="'+i+'">'+
+      '<span class="no">'+(i+1)+'</span>'+
+      '<span class="nm">'+esc(c.flag+' '+c.n)+'<i>'+esc(c.country)+' · days '+day+'–'+(day+nts-1)+'</i></span>'+
+      '<span class="nights"><button type="button" class="nb" data-n="'+i+'|-1">−</button>'+
+      '<span class="nn">'+nts+' night'+(nts>1?'s':'')+'</span>'+
+      '<button type="button" class="nb" data-n="'+i+'|1">+</button></span>'+
+      '<button type="button" class="rm" data-rm="'+i+'" aria-label="Remove">✕</button></div>';
+    day+=nts;
+  }
+  box.innerHTML=html;
+  var total=NIGHTS.reduce(function(a,b){return a+b;},0);
+  var far=km([HOME.lat,HOME.lng],[STOPS[0].lat,STOPS[0].lng]);
+  document.getElementById('hdr').textContent=STOPS.map(function(c){return c.n;}).join(' → ');
+  document.getElementById('cap').innerHTML='<b>'+esc(STOPS[0].flag+' '+STOPS[0].country)+'</b> · '+
+    total+' nights across '+STOPS.length+' stop'+(STOPS.length>1?'s':'')+
+    '<br><span class="dim">'+Math.round(far).toLocaleString()+' km from '+esc(HOME.n)+
+    ' · tap a stop to fly to it</span>';
+}
+function esc(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// --- typing a city ----------------------------------------------------------------
+function suggest(q,n){
+  q=String(q||'').toLowerCase().trim();
+  var out=[],i;
+  if(!q)return out;
+  for(i=0;i<CITY.length&&out.length<(n||7);i++){
+    var c=CITY[i], nm=c.n.toLowerCase(), ct=c.country.toLowerCase();
+    if(nm.indexOf(q)===0||ct.indexOf(q)===0||(c.ar&&c.ar.indexOf(q)===0))out.push(c);
+  }
+  for(i=0;i<CITY.length&&out.length<(n||7);i++){
+    var c2=CITY[i];
+    if(out.indexOf(c2)>=0)continue;
+    if(c2.n.toLowerCase().indexOf(q)>=0||c2.country.toLowerCase().indexOf(q)>=0||
+       (c2.ar&&c2.ar.indexOf(q)>=0))out.push(c2);
+  }
+  return out;
+}
+function wireAC(inputId,menuId,onPick){
+  var inp=document.getElementById(inputId), menu=document.getElementById(menuId), list=[], at=-1;
+  function close(){ menu.classList.remove('on'); menu.innerHTML=''; list=[]; at=-1; }
+  function open(){
+    list=suggest(inp.value);
+    if(!list.length){ close(); return; }
+    menu.innerHTML=list.map(function(c,i){
+      return '<button type="button" class="acr" data-i="'+i+'">'+esc(c.flag)+
+        '<span>'+esc(c.n)+' <span class="c2">'+esc(c.country)+'</span></span></button>'; }).join('');
+    menu.classList.add('on'); at=-1;
+  }
+  inp.addEventListener('input',open);
+  inp.addEventListener('focus',open);
+  inp.addEventListener('blur',function(){ setTimeout(close,160); });
+  inp.addEventListener('keydown',function(e){
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+      e.preventDefault(); if(!list.length)return;
+      at=(at+(e.key==='ArrowDown'?1:-1)+list.length)%list.length;
+      [].forEach.call(menu.querySelectorAll('.acr'),function(b,i){ b.classList.toggle('sel',i===at); });
+    } else if(e.key==='Enter'){
+      e.preventDefault();
+      var c=list[at>=0?at:0]||findCity(inp.value);
+      if(c){ onPick(c); close(); }
+    } else if(e.key==='Escape')close();
+  });
+  menu.addEventListener('mousedown',function(e){
+    var b=e.target.closest('.acr'); if(!b)return;
+    e.preventDefault(); onPick(list[+b.getAttribute('data-i')]); close();
+  });
+  return inp;
+}
+// --- wiring -----------------------------------------------------------------------
+var fromIn=wireAC('fromIn','fromMenu',function(c){ HOME=c; fromIn.value=c.n;
+  syncHot(); renderTrip(); if(STOPS.length){ SEEN={}; launch(); } else idle(); });
+var toIn=wireAC('toIn','toMenu',function(c){ addStop(c); toIn.value=''; });
+fromIn.value=HOME.n;
+
+// A blank box is a puzzle. These are just cities, put through the same door as anything typed.
+var QUICK=['Maasai Mara','Tokyo','Barcelona','Phuket','Cappadocia','Zermatt','Tbilisi','Bali'];
+document.getElementById('quick').innerHTML=QUICK.map(function(nm){
+  var c=findCity(nm);
+  return c?('<button type="button" class="qb" data-q="'+esc(c.n)+'">'+esc(c.flag+' '+c.n)+'</button>'):'';
+}).join('');
+document.getElementById('quick').addEventListener('click',function(e){
+  var b=e.target.closest('.qb'); if(!b)return; addStop(findCity(b.getAttribute('data-q')));
+});
+
+// The schedule and the globe are the same thing seen twice: tapping a day flies to that stop.
+document.getElementById('trip').addEventListener('click',function(e){
+  var nb=e.target.closest('.nb');
+  if(nb){ var pr=nb.getAttribute('data-n').split('|'); setNights(+pr[0],+pr[1]); return; }
+  var rm=e.target.closest('.rm');
+  if(rm){ removeStop(+rm.getAttribute('data-rm')); return; }
+  var st=e.target.closest('.stop');
+  if(st){
+    var i2=+st.getAttribute('data-go'), c=STOPS[i2];
+    [].forEach.call(document.querySelectorAll('.stop'),function(x){ x.classList.remove('on'); });
+    st.classList.add('on');
+    // Right down onto the city, not merely "no further out than we already are" — Kyoto and Osaka
+    // are 43km apart, so at the zoom that frames Japan their two pins are one pin.
+    fly=null; goTo(c.lng,c.lat,15);
+  }
 });
 document.getElementById('tTheme').addEventListener('click',function(e){
   var b=e.target.closest('.segb'); if(!b)return;
@@ -556,13 +759,12 @@ document.getElementById('tFlat').onclick=function(){ flat=!flat; this.classList.
 // Stand back to the sphere WITHOUT losing the trip: the line, the pins and the country all stay,
 // which is the whole point of wanting to see it from further away.
 function wholeGlobe(){
-  var c=sel?centre(sel.cities):{lon:51.5,lat:20};
+  var c=STOPS.length?centre(STOPS):{lon:HOME.lng,lat:HOME.lat};
   goTo(c.lon,c.lat,1);
 }
 document.getElementById('tGlobe').onclick=wholeGlobe;
-document.getElementById('tAgain').onclick=function(){
-  if(sel){ SEEN={}; launch(TRIPS[sel.country],centre(sel.cities)); } };
-document.getElementById('tReset').onclick=reset;
+document.getElementById('tAgain').onclick=function(){ if(STOPS.length){ SEEN={}; launch(); } };
+document.getElementById('tReset').onclick=clearTrip;
 
 // The page said "pinch to zoom" and only ever listened for a wheel, so on a phone there was no way
 // to zoom at all — and after picking a country you were left at whatever zoom the trip fitted into,
@@ -607,8 +809,8 @@ cv.addEventListener('wheel',function(e){ e.preventDefault();
   setZoom(view.zoom*(e.deltaY>0?0.92:1.08)); },{passive:false});
 
 function takeoff(){
-  if(!sel)return;
-  var route=[{lat:HOME.lat,lng:HOME.lng}].concat(sel.cities), durs=[], i;
+  if(!STOPS.length)return;
+  var route=[HOME].concat(STOPS), durs=[], i;
   for(i=0;i<route.length-1;i++){
     var d=km([route[i].lat,route[i].lng],[route[i+1].lat,route[i+1].lng]);
     // A short hop and a long haul should not take the same time on screen, but nor should Tokyo
@@ -630,8 +832,8 @@ function frame(now){
         // Landed. Come down on the country before flying the hops inside it — at world scale a
         // 200km drive between two towns is a pixel.
         fly.hold=true;
-        var c2=centre(sel.cities);
-        goTo(c2.lon,c2.lat,fitZoom(sel.cities,c2),function(){
+        var c2=centre(STOPS);
+        goTo(c2.lon,c2.lat,fitZoom(STOPS,c2),function(){
           if(!fly)return;
           if(fly.durs.length>1){ fly.hold=false; fly.seg=1; fly.t=0; fly.t0=null; } else fly=null;
         });
@@ -642,7 +844,7 @@ function frame(now){
   draw();
   requestAnimationFrame(frame);
 }
-syncTheme(); size(); requestAnimationFrame(frame);
+syncTheme(); renderTrip(); size(); requestAnimationFrame(frame);
 </script>
 </body>
 </html>
