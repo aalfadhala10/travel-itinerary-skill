@@ -219,20 +219,34 @@ var AIR=AIRPORTS.map(function(a){
   return {n:a[0],code:a[1],country:a[2],lat:a[3],lng:a[4],flag:FLAG[a[2]]||'',air:true};
 });
 var OWN_KM=30;                           // this close and the airport IS the city's airport
+var OWN_EXTRA=80;                        // how much further your own country's airport may be
 var GWCACHE={};
+function nearestAir(c,ok){
+  var best=null,bd=1e9,i,d;
+  for(i=0;i<AIR.length;i++){
+    if(!ok(AIR[i]))continue;
+    d=km([c.lat,c.lng],[AIR[i].lat,AIR[i].lng]);
+    if(d<bd){ bd=d; best=AIR[i]; }
+  }
+  return best?{ap:best,d:bd}:null;
+}
 function gatewayFor(c){
   if(c.air)return null;                                   // an airport is already an airport
   if(GWCACHE[c.n]!==undefined)return GWCACHE[c.n];
-  var best=null,bd=1e9,same=null,sd=1e9,i,d;
-  for(i=0;i<AIR.length;i++){
-    d=km([c.lat,c.lng],[AIR[i].lat,AIR[i].lng]);
-    if(d<bd){ bd=d; best=AIR[i]; }
-    if(AIR[i].country===c.country&&d<sd){ sd=d; same=AIR[i]; }
-  }
-  // Crossing a border on the way in is normal — Geneva is how you reach Zermatt — but where the
-  // country has its own airport at a comparable distance, that is the one people actually use.
-  if(same&&sd<=bd*1.8){ best=same; bd=sd; }
-  GWCACHE[c.n]=(bd<=OWN_KM)?null:best;
+  var any=nearestAir(c,function(){ return true; });
+  if(!any){ GWCACHE[c.n]=null; return null; }
+  // Crossing a border on the way in happens — Geneva is genuinely how you reach Zermatt — but a
+  // border is friction, and where your own country has an airport that is not much further, that
+  // is the one people actually use. Garmisch is 31km from Innsbruck and 109km from Munich, and
+  // everybody flies to Munich.
+  //
+  // Both tests earn their place. The ratio alone left Garmisch at Innsbruck; an allowance alone,
+  // set wide enough to fix it, started driving people to islands and overriding cities that have
+  // a perfectly good airport of their own. Together they move exactly one city in 738 — which is
+  // the point, because the other 737 were already right.
+  var own=nearestAir(c,function(a){ return a.country===c.country; });
+  var pick=(own&&(own.d<=any.d*1.8||own.d-any.d<=OWN_EXTRA))?own:any;
+  GWCACHE[c.n]=(pick.d<=OWN_KM)?null:pick.ap;
   return GWCACHE[c.n];
 }
 // Getting from the airport to the place. Where the country has a rail network a longer transfer is
