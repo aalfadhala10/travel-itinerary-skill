@@ -2770,7 +2770,20 @@
   }
   // which of the three the traveller is actually taking on this leg
   function legMode(o,tr,driving){ if(tr.mode===o.modeFly)return 'fly'; if(driving)return 'drive'; return tr.rail?'transit':'drive'; }
-  function mapUrl(q){return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(q);}
+  // A text search is a guess. "Bangla Road Phuket" is a real street that Google cannot find under
+  // that phrasing, so the link opened "no results" on a place the traveller was standing next to.
+  // Google hands back a place id with the rating we already pay for; with it the link lands on the
+  // exact pin every time. Without one, the search is still the fallback.
+  var PINS=null;
+  function pinsLoad(){ if(PINS)return PINS; try{ PINS=JSON.parse(localStorage.getItem('bosla_pins')||'{}')||{}; }catch(e){ PINS={}; } return PINS; }
+  function pinsSave(){ try{ localStorage.setItem('bosla_pins',JSON.stringify(PINS||{})); }catch(e){} }
+  function pinOf(n){ var p=pinsLoad()[String(n||'').toLowerCase()]; return (p&&p.id)?p:null; }
+  function mapUrl(q,name){
+    var p=name?pinOf(name):null;
+    if(p)return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(p.gn||q)+
+      "&query_place_id="+encodeURIComponent(p.id);
+    return "https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(q);
+  }
   // Booking needs check-in/out dates + occupancy to show *availability* — without them a filtered
   // search drops into a "no properties available" state. Reuse the trip's own dates & travellers.
   function bookDates(){
@@ -2832,7 +2845,9 @@
     if(CONFIG.toursLink) return CONFIG.toursLink+(CONFIG.toursLink.indexOf('?')>=0?'&':'?')+"sub_id="+encodeURIComponent(sub);
     return "https://www.getyourguide.com/s/?q="+encodeURIComponent(city);
   }
-  function link(name,q,pic){return '<a href="'+mapUrl(q)+'" target="_blank" rel="noopener"'+(pic?' data-pic="'+esc(pic)+'"':'')+'>'+esc(name)+'</a>';}
+  // `real` is the place's own English name, which is how the pin is keyed — the printed name may be
+  // the Arabic one and the query may carry the city on the end.
+  function link(name,q,pic,real){return '<a href="'+mapUrl(q,real)+'" target="_blank" rel="noopener"'+(pic?' data-pic="'+esc(pic)+'"':'')+'>'+esc(name)+'</a>';}
 
   function wireChips(id,multi){
     var box=$(id);
@@ -4175,7 +4190,7 @@
     // worked right up until restaurants stopped having photos — and then the swap picker could no
     // longer tell which place you were replacing, so it offered you the same one back.
     return '<div class="slot" data-sk="'+sk+'" data-q="'+esc(q)+'"><div class="t">'+tm+'</div>'
-      +'<div class="d">'+link(locName(ck,poi.n),q,food?'':q)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a),locName(ck,poi.n))+hopLabel(hop)+(food?menuLink(poi.n,city):'')+'</div>'
+      +'<div class="d">'+link(locName(ck,poi.n),q,food?'':q,poi.n)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a),locName(ck,poi.n))+hopLabel(hop)+(food?menuLink(poi.n,city):'')+'</div>'
       +(food?'':'<button type="button" class="picbtn" data-pic="'+esc(q)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>')
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
   }
@@ -4767,8 +4782,23 @@
         .then(function(r){return r.json();})
         .then(function(res){
           var shut=(res&&Array.isArray(res.closed))?res.closed:[];
+          var pins=(res&&res.pins&&typeof res.pins==='object')?res.pins:{};
+          if(Object.keys(pins).length){
+            var pp=pinsLoad();
+            Object.keys(pins).forEach(function(n){ var x=pins[n];
+              if(x&&x.id)pp[String(n).toLowerCase()]={id:x.id,gn:x.gn||'',lat:+x.lat||0,lng:+x.lng||0}; });
+            pinsSave();
+          }
+          // A name Google has never heard of is either misspelled in our data or not a real place.
+          // Either way its link would open "no results", so it goes in the stats to be corrected.
+          if(res&&Array.isArray(res.unknown)&&res.unknown.length){
+            res.unknown.slice(0,20).forEach(function(n){
+              try{ track('noplace',{dest:d.city,country:d.country||'',msg:String(n).slice(0,60)}); }catch(e){}
+            });
+          }
           var rat=(res&&res.rated&&typeof res.rated==='object')?res.rated:{};
           var changed=false;
+          if(Object.keys(pins).length)changed=true;
           if(Object.keys(rat).length){
             var rr=ratedLoad();
             Object.keys(rat).forEach(function(n){ rr[String(n).toLowerCase()]={r:+rat[n].r||0,n:+rat[n].n||0}; });

@@ -76,6 +76,7 @@ function doGet(e) {
   var sessCountry = {}; // one visitor-country per session (from their timezone)
   var chatMsgTotal = 0, chatPlanTotal = 0, chatDests = {}, chatMsgList = [];
   var chatErrTotal = 0, chatErrs = {}, closedList = {}, foodErrs = {}; // replies that never arrived; places found shut
+  var noPlace = {}; // names Google has never heard of — misspelled in our data, or not real
 
   for (var i = 0; i < eRows.length; i++) {
     var r = eRows[i];
@@ -94,6 +95,7 @@ function doGet(e) {
     else if (ev === 'chat_err') { chatErrTotal++; if (msg) chatErrs[msg] = (chatErrs[msg] || 0) + 1; }
     else if (ev === 'food_err') { foodErrs[(dest || '?') + ' — ' + (msg || '')] = (foodErrs[(dest || '?') + ' — ' + (msg || '')] || 0) + 1; }
     else if (ev === 'closed') { if (msg) closedList[msg + (dest ? ' — ' + dest : '')] = (closedList[msg + (dest ? ' — ' + dest : '')] || 0) + 1; }
+    else if (ev === 'noplace') { if (msg) noPlace[msg + (dest ? ' — ' + dest : '')] = (noPlace[msg + (dest ? ' — ' + dest : '')] || 0) + 1; }
     if (received instanceof Date) {
       var key = Utilities.formatDate(received, 'GMT', 'yyyy-MM-dd');
       byDay[key] = (byDay[key] || 0) + 1;
@@ -205,6 +207,9 @@ function doGet(e) {
     '<div style="height:24px"></div>' +
     '<h3>Places found permanently closed (fix these in the data)</h3>' +
     '<table><tr><th>Place</th><th class="n">Times</th></tr>' + rowsHtml(topList(closedList, 30)) + '</table>' +
+    '<div style="height:24px"></div>' +
+    '<h3>Names Google cannot find (misspelled in our data, or not a real place — fix these)</h3>' +
+    '<table><tr><th>Name</th><th class="n">Times</th></tr>' + rowsHtml(topList(noPlace, 40)) + '</table>' +
     '<div style="height:24px"></div>' +
     '<h3>Missing places — asked for, not in our data (add these next)</h3>' +
     '<table><tr><th>What they typed</th><th class="n">Times</th></tr>' + rowsHtml(topList(misses, 30)) + '</table>' +
