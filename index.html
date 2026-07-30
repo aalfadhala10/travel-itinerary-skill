@@ -5657,9 +5657,46 @@
     if(nx && nx.classList && nx.classList.contains('swappick')){ nx.parentNode.removeChild(nx); return; } // toggle closed
     var open=$('out').querySelector('.swappick'); if(open)open.parentNode.removeChild(open);
     var sk=btn.getAttribute('data-sk'), parts=sk.split('|'), ck=parts[0], isFood=(parts[2]==='d'||parts[2]==='l'), dd=DEST[ck]; if(!dd)return;
-    var arr=isFood?dd.food:dd.poi, cur=((slot.querySelector('.d a')||{}).textContent||'').trim();
+    var arr=isFood?dd.food:dd.poi;
+    // The printed name is the local one on an Arabic page, so comparing it against the English name
+    // in the data never matched — and the place you were trying to get rid of was offered back to
+    // you as one of its own replacements. The Maps query carries the English name; use that.
+    function slotName(sl){
+      var a=sl&&sl.querySelector('.d a'), q=a&&a.getAttribute('data-pic');
+      return q?String(q).replace(new RegExp('\\s+'+dd.city+'$'),'').trim():'';
+    }
+    var cur=slotName(slot);
+    // Nor should it offer somewhere already on this day — swapping one place for another one you
+    // are visiting three hours later is not a swap.
+    var day=slot.closest('.day'), onToday={};
+    if(day)[].slice.call(day.querySelectorAll('.slot')).forEach(function(sl){ var n2=slotName(sl); if(n2)onToday[n2]=1; });
+    // Nearest to where you'll be standing: the stop printed above this one.
+    var co=POI_CO[ck], here=null, pv=slot.previousElementSibling;
+    while(pv&&!here){
+      if(pv.classList&&pv.classList.contains('slot')){ var pn=slotName(pv); if(co&&co[pn])here=co[pn]; }
+      pv=pv.previousElementSibling;
+    }
+    var opts=[];
+    arr.forEach(function(pl,i){ if(pl.n===cur||onToday[pl.n])return; opts.push({p:pl,i:i}); });
+    // Same order of priority the plan itself uses: well reviewed first, and among those the
+    // closest — because a swap you have to drive across town for is not really an option.
+    var good=opts.filter(function(x){ return wellRated(x.p.n); });
+    if(good.length>=4)opts=good;
+    if(co&&here)opts.sort(function(a2,b2){
+      var ca=co[a2.p.n], cb=co[b2.p.n];
+      if(!ca&&!cb)return 0; if(!ca)return 1; if(!cb)return -1;
+      return d2co(ca,here)-d2co(cb,here);
+    });
+    var SHOW=8, all=(btn.getAttribute('data-all')==='1'), shown=all?opts:opts.slice(0,SHOW);
     var o=I18N[LANG].out, html='<div class="spk">'+o.pickTitle+'</div>';
-    arr.forEach(function(pl,i){ if(pl.n===cur)return; html+='<button type="button" data-sk="'+sk+'" data-i="'+i+'">'+esc(pl.n)+' <span style="opacity:.6">· '+esc(pl.a)+'</span></button>'; });
+    shown.forEach(function(x){
+      html+='<button type="button" data-sk="'+sk+'" data-i="'+x.i+'">'+esc(locName(ck,x.p.n))+
+        ' <span style="opacity:.6">· '+esc(locName(ck,x.p.a))+'</span></button>';
+    });
+    if(!all&&opts.length>SHOW){
+      var mlbl=LANG==='ar'?('عرض الكل ('+opts.length+')'):(LANG==='es'?('Ver todos ('+opts.length+')'):('Show all '+opts.length));
+      html+='<button type="button" class="spkmore spkall" data-sk="'+sk+'">'+esc(mlbl)+'</button>';
+    }
     if(isFood){ // don't want any of the local picks? widen the list, then fall back to the map
       if(CONFIG.aiEndpoint&&!FOODGOT[ck])html+='<button type="button" class="spkmore spkfood" data-food="'+ck+'">'+esc(moreFoodLbl())+'</button>';
       var q=encodeURIComponent('restaurants in '+dd.city), lbl=LANG==='ar'?('كل المطاعم في '+dd.city+' على الخريطة ←'):(LANG==='es'?('Más restaurantes en '+dd.city+' →'):('More restaurants in '+dd.city+' →'));
@@ -5678,6 +5715,12 @@
         if(added){ rerenderKeep(); }
         else if(mf.isConnected){ mf.textContent=(LANG==='ar'?'ما لقيت زيادة':(LANG==='es'?'Sin más opciones':'No more to add')); }
       });
+      return; }
+    var sa=e.target.closest('.spkall');
+    if(sa){ var ssk=sa.getAttribute('data-sk');
+      var sbtn=$('out').querySelector('.swapbtn[data-sk="'+ssk+'"]');
+      if(sbtn){ var pick=sa.closest('.swappick'); if(pick)pick.parentNode.removeChild(pick);
+        sbtn.setAttribute('data-all','1'); openSwap(sbtn); sbtn.removeAttribute('data-all'); }
       return; }
     var pk=e.target.closest('.swappick button');
     if(pk&&pk.getAttribute('data-sk')){ var sk=pk.getAttribute('data-sk'), i=+pk.getAttribute('data-i'), pr2=sk.split('|'), ck=pr2[0], isFood=(pr2[2]==='d'||pr2[2]==='l');
