@@ -1,4 +1,4 @@
-const CACHE = 'bosla-v5';
+const CACHE = 'bosla-v6';
 const ASSETS = ['./', './index.html', './favicon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './manifest.webmanifest'];
 self.addEventListener('install', function(e){
   e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll(ASSETS); }).then(function(){ return self.skipWaiting(); }));
@@ -30,7 +30,15 @@ self.addEventListener('fetch', function(e){
     );
     return;
   }
-  // Cache-first for static assets (icons, manifest)
+  // Cache-first, but ONLY for the handful of files this worker was told about. It used to be
+  // cache-first for anything else on the origin, which meant /demo/globe.html was frozen at
+  // whichever version you happened to load first and no amount of refreshing would move it.
+  // A service worker should only manage what it knows; everything else is the browser's business.
+  var known = ASSETS.some(function(a2){
+    var n2 = a2.replace(/^\.\//, '');
+    return n2 && url.pathname.endsWith('/' + n2);
+  });
+  if (!known) return;                                     // hands off — plain network, plain refresh
   e.respondWith(
     caches.match(e.request).then(function(cached){
       return cached || fetch(e.request).then(function(resp){
