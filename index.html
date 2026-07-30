@@ -4253,10 +4253,20 @@
   }
   // Breakfast is nearly always wherever you slept, so we don't burn a curated restaurant on it —
   // it's one honest line that opens a "breakfast near <area>" search on the map.
-  function bslot(tm,city,area,o){
-    var q='breakfast '+(area?area+' ':'')+city;
-    return '<div class="slot meal"><div class="t">'+tm+'</div>'
-      +'<div class="d">'+link(o.bfastTxt,q)+'</div></div>';
+  // "Breakfast near your stay" was searching the NEIGHBOURHOOD, which is a guess, while the row
+  // directly above it names the actual hotel. When we know where they sleep — and now we do, down
+  // to the coordinates — the search is centred on the hotel itself, which is what "near your stay"
+  // was always supposed to mean.
+  function bslot(tm,city,area,o,hotel){
+    var q='breakfast '+(area?area+' ':'')+city, href='';
+    if(hotel){
+      var hp=pinOf(hotel);
+      // Centring the map is the only way to say "near HERE" to Maps; a text query can only ask.
+      if(hp&&hp.lat&&hp.lng)href='https://www.google.com/maps/search/'+encodeURIComponent(o.bfastTxt&&LANG==='en'?'breakfast':'breakfast')+'/@'+hp.lat+','+hp.lng+',16z';
+      else q='breakfast near '+hotel+' '+city;
+    }
+    var a='<a href="'+(href||mapUrl(q))+'" target="_blank" rel="noopener">'+esc(o.bfastTxt)+'</a>';
+    return '<div class="slot meal"><div class="t">'+tm+'</div><div class="d">'+a+'</div></div>';
   }
   // Generated destination banner — a climate-tinted scene (no external images, works offline).
   // mountains for alpine, sun+waves for islands/tropical, dunes for hot/dry, a skyline otherwise.
@@ -4497,14 +4507,15 @@
       // Three meals, in the right places: breakfast opens the day, lunch lands after the
       // morning block, dinner closes it — each near where you actually are at that hour.
       var lunchAt=(spd>=4?2:1);
-      body+=bslot(o.times.breakfast,match.city,STAYAREA,o);
+      // The hotel is where the day starts: breakfast is searched around it, and the route handed
+      // to Google begins there. Declared before either uses it.
+      var hn=hotelPick(match,curTier())||'';
+      if(hn)walk.push(hn);
+      body+=bslot(o.times.breakfast,match.city,STAYAREA,o,hn);
       txt.push('  '+o.times.breakfast+': '+o.bfastTxt);
       // Choose the day's stops first — that is where the neighbourhood grouping does its work —
       // and only then decide what order to walk them in. Choosing and ordering at the same time is
       // what produced hotel -> far side of town -> back past somewhere you'd already walked by.
-      // The hotel is where the day starts, so the route handed to Google starts there too.
-      var hn=(function(){ var hh=hotelPick(match,curTier()); return hh||''; })();
-      if(hn)walk.push(hn);
       var picks=[], pinned=[], sk;
       for(var s=0;s<spd;s++){
         sk=ck+'|'+d+'|'+s;
