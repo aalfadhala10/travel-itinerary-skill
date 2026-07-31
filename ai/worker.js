@@ -883,7 +883,7 @@ async function pubTouch(kv, r) {
   await kv.put("pub:" + r.id, JSON.stringify(r));
   const idx = await pubIdx(kv);
   const i = idx.findIndex((x) => x.id === r.id);
-  if (r.hidden) { if (i >= 0) idx.splice(i, 1); }
+  if (r.hidden || r.unlisted) { if (i >= 0) idx.splice(i, 1); }
   else if (i >= 0) idx[i] = pubRow(r);
   else idx.unshift(pubRow(r));
   await pubIdxSave(kv, idx);
@@ -925,6 +925,7 @@ async function community(body, env, request, origin) {
     const delkey = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)).replace(/-/g, "");
     const r = { id, t: Date.now(), title, name, lang, cities, days, k: delkey,
       state: JSON.parse(state), likes: 0, comments: [], photos: [] };
+    if (body.vis === "link") r.unlisted = 1;   // reachable by its link, absent from the feed
     await pubTouch(kv, r);
     return reply({ id, key: delkey }, 200, origin);
   }

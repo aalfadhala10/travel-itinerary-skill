@@ -866,6 +866,18 @@
   .cmsearch{width:100%;padding:12px 14px;margin:0 0 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:15px}
   @keyframes heartpop{0%{transform:scale(1)}45%{transform:scale(1.45)}100%{transform:scale(1)}}
   .cmbtn.liked svg,.cmstat.liked svg{animation:heartpop .35s ease}
+  .cmpsheet{position:fixed;inset:0;z-index:88;background:rgba(4,7,13,.55);display:none;align-items:flex-end}
+  .cmpsheet.show{display:flex}
+  .cmppanel{width:100%;max-height:78vh;overflow-y:auto;background:var(--card);border-radius:20px 20px 0 0;padding:10px 18px 26px;box-shadow:0 -18px 50px rgba(0,0,0,.4)}
+  .cmpgrab{width:44px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 14px}
+  .cmptitle{font-size:18px;font-weight:700;margin-bottom:2px}
+  .cmpsub{color:var(--muted);font-size:13.5px;margin-bottom:12px}
+  .cmprow{display:flex;align-items:center;gap:12px;width:100%;padding:15px 4px;border:none;border-bottom:1px solid var(--line);background:none;color:var(--ink);font-size:15.5px;cursor:pointer;text-align:start;text-decoration:none}
+  .cmprow:last-of-type{border-bottom:none}
+  .cmprow b{font-weight:600}
+  .cmprow .cmpgo{margin-inline-start:auto;color:var(--amber);font-size:14px;font-weight:700;white-space:nowrap}
+  .cmpnote{color:var(--muted);font-size:12.5px;margin-top:10px;text-align:center}
+  #app[dir="rtl"] .cmprow{direction:rtl}
   .cmlight{position:fixed;inset:0;z-index:90;background:rgba(4,7,13,.92);display:none;align-items:center;justify-content:center;padding:20px}
   .cmlight.show{display:flex}
   .cmlight img{max-width:100%;max-height:86vh;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
@@ -1029,6 +1041,16 @@
     </div>
   </div>
 
+  <div class="cmpsheet" id="cmpSheet" aria-hidden="true">
+    <div class="cmppanel">
+      <div class="cmpgrab" aria-hidden="true"></div>
+      <div class="cmptitle" id="cmpTitle"></div>
+      <div class="cmpsub" id="cmpSub"></div>
+      <div id="cmpRows"></div>
+      <div class="cmpnote" id="cmpNote"></div>
+    </div>
+  </div>
+
   <div class="cmlight" id="cmLight" aria-hidden="true">
     <button type="button" class="cmlx" id="cmLightX" aria-label="Close">✕</button>
     <img id="cmLightImg" alt="">
@@ -1042,6 +1064,10 @@
       <p class="wsub" id="pubSub"></p>
       <input type="text" id="pubTitle" maxlength="60" style="width:100%;padding:13px;margin:8px 0;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:15.5px">
       <input type="text" id="pubName" maxlength="30" style="width:100%;padding:13px;margin:0 0 8px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:15.5px">
+      <div class="cmsort" id="pubVis" style="margin:2px 0 10px">
+        <button type="button" class="chip active" data-vis="feed" id="pubVisFeed">Everyone</button>
+        <button type="button" class="chip" data-vis="link" id="pubVisLink">Link only</button>
+      </div>
       <p class="wsub" id="pubNote" style="font-size:13px"></p>
       <p class="wsub" style="font-size:12px"><a href="terms.html" target="_blank" rel="noopener" style="color:var(--muted)">Terms · الشروط</a></p>
       <button type="button" class="pubgo" id="pubGo">Publish</button>
@@ -2568,7 +2594,7 @@
     var edit=ar?(mine?'غيّره':'عندي فندق'):(es?(mine?'Cambiar':'Ya tengo hotel'):(mine?'Change':'I booked my own'));
     return '<div class="slot hotelrow" data-q="'+esc(q)+'"><div class="t">'+esc(lbl)+'</div>'+
       '<div class="d">'+link(h,q,'',h)+ratingTag(h)+
-      (mine?'':' <a class="menulink booklink" href="'+bookHotelUrl(h,d.city,fromDay,nights)+'" target="_blank" rel="noopener">'+esc(o.book)+'</a>')+
+      (mine?'':' <button type="button" class="menulink booklink" data-cmp="1" data-h="'+esc(h)+'" data-city="'+esc(d.city)+'" data-from="'+fromDay+'" data-n="'+nights+'">'+esc(cmpLbl())+'</button>')+
       ' <button type="button" class="menulink hoteledit" data-hk="'+esc(ck)+'">'+esc(edit)+'</button></div></div>'+warn;
   }
   var COUNTRY_TZ={};  // country → IANA timezone (for local-time display)
@@ -5986,8 +6012,16 @@
     var box=$('mytrips'), arr=loadTrips(), u=I18N[LANG].ui;
     if(!arr.length){ box.innerHTML=''; box.classList.add('is-hidden'); return; }
     box.classList.remove('is-hidden');
-    var chips=arr.map(function(tr,i){return '<span class="triptag" data-trip="'+i+'">'+esc(tripLabel(tr.state))+'<b class="tx" data-del="'+i+'" title="✕">✕</b></span>';}).join('');
-    box.innerHTML='<div class="mytrips"><div class="maphdr">'+u.myTrips+'</div><div class="triptags">'+chips+'</div></div>';
+    // cards with the destination's climate artwork, like the community feed — a saved trip
+    // deserves a face, not a chip
+    var cards=arr.map(function(tr,i){
+      var cover='';
+      try{ var m=matchDest(tr.state.d||''); if(m&&m.summer)cover='<div class="cmcover">'+heroArt(m.summer.cond,m.flag)+'</div>'; }catch(e){}
+      return '<div class="cmcard" data-trip="'+i+'">'+cover+'<div class="cmtitle">'+esc(tripLabel(tr.state))+
+        '</div><div class="cmmeta"><span>'+esc(tr.state.days||'')+' '+esc(u.days||'')+'</span>'+
+        '<button type="button" class="cmreport" data-del="'+i+'" style="margin:0;display:inline">✕</button></div></div>';
+    }).join('');
+    box.innerHTML='<div class="mytrips"><div class="maphdr">'+u.myTrips+'</div>'+cards+'</div>';
   }
   function saveTrip(){
     var arr=loadTrips(), s=stateObj(), label=tripLabel(s);
@@ -6084,6 +6118,56 @@
     else if(nav==='feedback'){ closeDrawer(); openFeedback(); }
   });
 
+  /* ---- Compare stay prices, inside the app --------------------------------------------------
+     One tap on the hotel opens a sheet listing the big booking sites, each deep-linked to THIS
+     hotel on THESE dates — choose a site, see its price there. We show no numbers ourselves:
+     live prices need a paid feed, and invented ones would be worse than none. Google's row is
+     first because Google's hotel page IS a price comparison across all of them. */
+  function cmpLbl(){ return LANG==='ar'?'قارن الأسعار':(LANG==='es'?'Comparar precios':'Compare prices'); }
+  function cmpDates(fromDay,nights){
+    var sd=($('startDate')&&$('startDate').value)||'';
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(sd))return null;
+    var days=Math.max(1,Math.min(30,parseInt(($('days')&&$('days').value)||'5',10)||5));
+    var from=Math.max(1,parseInt(fromDay,10)||1), stay=Math.max(1,parseInt(nights,10)||days);
+    var ci=new Date(sd+'T00:00:00'); if(isNaN(ci.getTime()))return null;
+    ci.setDate(ci.getDate()+(from-1));
+    var co=new Date(ci.getTime()); co.setDate(co.getDate()+stay);
+    function f(d){ return d.toISOString().slice(0,10); }
+    return {ci:f(ci),co:f(co),n:stay};
+  }
+  function openCompare(h,city,fromDay,nights){
+    var ar=LANG==='ar', es=LANG==='es';
+    var q=bookQuery(h,city), enc=encodeURIComponent(q), dt=cmpDates(fromDay,nights);
+    var ad=Math.max(1,parseInt(($('adults')&&$('adults').value)||'2',10)||2);
+    var rows=[
+      {n:'Google',u:'https://www.google.com/travel/search?q='+enc,
+        d:ar?'يقارن كل المواقع':(es?'compara todos los sitios':'compares every site')},
+      {n:'Booking.com',u:bookUrl(q,fromDay,nights)},
+      {n:'Agoda',u:'https://www.agoda.com/search?q='+enc+(dt?'&checkIn='+dt.ci+'&checkOut='+dt.co:'')+'&adults='+ad},
+      {n:'Hotels.com',u:'https://www.hotels.com/Hotel-Search?destination='+enc+(dt?'&startDate='+dt.ci+'&endDate='+dt.co:'')+'&adults='+ad},
+      {n:'Expedia',u:'https://www.expedia.com/Hotel-Search?destination='+enc+(dt?'&startDate='+dt.ci+'&endDate='+dt.co:'')+'&adults='+ad},
+      {n:'Trip.com',u:'https://www.trip.com/hotels/?keyword='+enc}
+    ];
+    $('cmpTitle').textContent=h;
+    $('cmpSub').textContent=city+(dt?' · '+dt.ci+' → '+dt.co+' · '+dt.n+(ar?' ليلة':(es?' noches':' nights')):'')+' · '+ad+(ar?' بالغين':(es?' adultos':' adults'));
+    $('cmpRows').innerHTML=rows.map(function(r){
+      return '<a class="cmprow" href="'+r.u+'" target="_blank" rel="noopener"><b>'+esc(r.n)+'</b>'+
+        (r.d?'<span style="color:var(--muted);font-size:12.5px">'+esc(r.d)+'</span>':'')+
+        '<span class="cmpgo">'+esc(ar?'شوف السعر ←':(es?'Ver precio →':'See price →'))+'</span></a>';
+    }).join('');
+    $('cmpNote').textContent=ar?'الأسعار تظهر عند كل موقع — نفس الفندق، نفس التواريخ.'
+      :(es?'Los precios se muestran en cada sitio — mismo hotel, mismas fechas.'
+      :'Prices show on each site — same hotel, same dates.');
+    var sh=$('cmpSheet'); sh.classList.add('show'); sh.setAttribute('aria-hidden','false');
+    try{track('compare_open',{});}catch(e){}
+  }
+  $('cmpSheet').addEventListener('click',function(e){ if(!e.target.closest('.cmppanel')||e.target.closest('.cmprow')){ var sh=$('cmpSheet'); setTimeout(function(){ sh.classList.remove('show'); sh.setAttribute('aria-hidden','true'); },80); } });
+  $('out').addEventListener('click',function(e){
+    var b=e.target.closest('[data-cmp]'); if(!b)return;
+    e.preventDefault();
+    openCompare(b.getAttribute('data-h'),b.getAttribute('data-city'),b.getAttribute('data-from'),b.getAttribute('data-n'));
+  });
+
   /* ---- Community: publish a trip, browse others', like, comment, add photos ------------------
      No accounts, as promised on the welcome screen. Nothing leaves the phone until the traveller
      presses Publish, and the modal says plainly that publishing is public. A first name is
@@ -6103,7 +6187,7 @@
       report:'Report this trip',reported:'Thank you — we will take a look.',
       cmtDone:'Comment added',photoDone:'Photo added — thank you for sharing',
       pts:function(n){return n+' points';},ptsNote:function(n){return n+' points to your next free trip credit';},
-      ptsCredit:'You earned a free trip credit!',mine:'Yours',del:'Remove my trip',delAsk:'Remove this trip from the community? This cannot be undone.',deleted:'Your trip was removed',search:'Search a city or a name…',lvls:['New traveller','Explorer','Wayfarer','Compass master']},
+      ptsCredit:'You earned a free trip credit!',mine:'Yours',visFeed:'Everyone',visLink:'Link only',noteLink:'Only people you send the link to can open it — it stays out of the public feed.',linkReady:'Published — link copied, send it to your friends',del:'Remove my trip',delAsk:'Remove this trip from the community? This cannot be undone.',deleted:'Your trip was removed',search:'Search a city or a name…',lvls:['New traveller','Explorer','Wayfarer','Compass master']},
     ar:{title:'رحلات المسافرين',sub:'خطط حقيقية شاركها ناس جرّبوها. افتح أي وحدة وخلها لك.',
       newest:'الأحدث',top:'الأكثر إعجاباً',days:'أيام',by:'من',use:'استخدم هذه الخطة',shareT:'مشاركة',like:'إعجاب',liked:'أعجبتني',
       photos:'صور',comments:'تعليقات',addPhoto:'أضف صورة',writeCmt:'اكتب تعليق…',send:'إرسال',
@@ -6117,7 +6201,7 @@
       report:'أبلغ عن هذه الرحلة',reported:'شكراً لك — بنراجعها.',
       cmtDone:'تم إضافة تعليقك',photoDone:'تمت إضافة الصورة — شكراً لمشاركتك',
       pts:function(n){return n+' نقطة';},ptsNote:function(n){return 'باقي '+n+' نقطة على رصيد رحلة مجاني';},
-      ptsCredit:'حصلت على رصيد رحلة مجاني!',mine:'رحلتك',del:'احذف رحلتي',delAsk:'تحذف هذه الرحلة من رحلات المسافرين؟ ما تقدر ترجعها.',deleted:'انحذفت رحلتك',search:'ابحث عن مدينة أو اسم…',lvls:['مسافر جديد','مستكشف','رحّالة','خبير البوصلة']},
+      ptsCredit:'حصلت على رصيد رحلة مجاني!',mine:'رحلتك',visFeed:'للجميع',visLink:'بالرابط فقط',noteLink:'ما يفتحها إلا اللي ترسل له الرابط — ما تظهر في الصفحة العامة.',linkReady:'تم النشر — انتسخ الرابط، أرسله لأصحابك',del:'احذف رحلتي',delAsk:'تحذف هذه الرحلة من رحلات المسافرين؟ ما تقدر ترجعها.',deleted:'انحذفت رحلتك',search:'ابحث عن مدينة أو اسم…',lvls:['مسافر جديد','مستكشف','رحّالة','خبير البوصلة']},
     es:{title:'Viajes de viajeros',sub:'Planes reales compartidos por quienes los usaron. Abre uno y hazlo tuyo.',
       newest:'Más recientes',top:'Más gustados',days:'días',by:'por',use:'Usar este plan',shareT:'Compartir',like:'Me gusta',liked:'Te gusta',
       photos:'fotos',comments:'comentarios',addPhoto:'Añadir foto',writeCmt:'Escribe un comentario…',send:'Enviar',
@@ -6131,7 +6215,7 @@
       report:'Denunciar este viaje',reported:'Gracias — lo revisaremos.',
       cmtDone:'Comentario añadido',photoDone:'Foto añadida — gracias por compartir',
       pts:function(n){return n+' puntos';},ptsNote:function(n){return n+' puntos para tu próximo crédito de viaje';},
-      ptsCredit:'¡Ganaste un crédito de viaje gratis!',mine:'Tuyo',del:'Eliminar mi viaje',delAsk:'¿Eliminar este viaje de la comunidad? No se puede deshacer.',deleted:'Tu viaje fue eliminado',search:'Busca una ciudad o un nombre…',lvls:['Viajero nuevo','Explorador','Trotamundos','Maestro de la brújula']}
+      ptsCredit:'¡Ganaste un crédito de viaje gratis!',mine:'Tuyo',visFeed:'Todos',visLink:'Solo con enlace',noteLink:'Solo quien reciba el enlace puede abrirlo — no aparece en el muro público.',linkReady:'Publicado — enlace copiado, envíalo a tus amigos',del:'Eliminar mi viaje',delAsk:'¿Eliminar este viaje de la comunidad? No se puede deshacer.',deleted:'Tu viaje fue eliminado',search:'Busca una ciudad o un nombre…',lvls:['Viajero nuevo','Explorador','Trotamundos','Maestro de la brújula']}
   };
   var SHARESVG='<svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.6"/><circle cx="17.5" cy="5.5" r="2.6"/><circle cx="17.5" cy="18.5" r="2.6"/><path d="M8.3 10.8l6.9-4M8.3 13.2l6.9 4"/></svg>';
   var HEARTSVG='<svg viewBox="0 0 24 24"><path d="M12 21C7 16.5 3 13 3 8.8 3 6 5.2 4 7.8 4c1.6 0 3.1.8 4.2 2.2C13.1 4.8 14.6 4 16.2 4 18.8 4 21 6 21 8.8c0 4.2-4 7.7-9 12.2z"/></svg>';
@@ -6317,6 +6401,8 @@
     var c=CTXT[LANG]||CTXT.en, m=$('pubModal');
     $('pubTitleH').textContent=c.pubTitleH; $('pubSub').textContent=c.pubSub; $('pubNote').textContent=c.pubNote;
     $('pubTitle').placeholder=c.pubTitlePh; $('pubName').placeholder=c.pubNamePh; $('pubGo').textContent=c.pub;
+    $('pubVisFeed').textContent=c.visFeed; $('pubVisLink').textContent=c.visLink;
+    document.querySelectorAll('#pubVis .chip').forEach(function(x){ x.classList.toggle('active',x.getAttribute('data-vis')==='feed'); });
     var s=stateObj(), cities=[s.d]; if(s.rt&&s.rt.length)cities=s.rt.map(function(k){return DEST[k]?DEST[k].city:k;}); else if(s.d2)cities.push(s.d2);
     $('pubTitle').value=cities.join(' → ')+' · '+s.days+' '+(LANG==='ar'?'أيام':(LANG==='es'?'días':'days'));
     $('pubName').value=getName()||'';
@@ -6325,6 +6411,12 @@
   function closePublish(){ var m=$('pubModal'); m.classList.remove('show'); m.setAttribute('aria-hidden','true'); }
   $('pubClose').addEventListener('click',closePublish);
   $('pubModal').addEventListener('click',function(e){ if(e.target===this)closePublish(); });
+  $('pubVis').addEventListener('click',function(e){
+    var b=e.target.closest('[data-vis]'); if(!b)return;
+    document.querySelectorAll('#pubVis .chip').forEach(function(x){ x.classList.toggle('active',x===b); });
+    var c=CTXT[LANG]||CTXT.en;
+    $('pubNote').textContent=(b.getAttribute('data-vis')==='link')?c.noteLink:c.pubNote;
+  });
   function pubSig(s){ try{ return [s.d,s.d2,s.days,s.seed,(s.rt||[]).join('.')].join('|'); }catch(e){ return ''; } }
   $('pubGo').addEventListener('click',function(){
     var c=CTXT[LANG]||CTXT.en, s=stateObj();
@@ -6333,9 +6425,16 @@
     if(sig&&localStorage.getItem('bosla_pub_last')===sig){ closePublish(); toast(c.published); return; }
     var cities=[s.d]; if(s.rt&&s.rt.length)cities=s.rt.map(function(k){return DEST[k]?DEST[k].city:k;}); else if(s.d2)cities.push(s.d2);
     var btn=$('pubGo'); btn.disabled=true;
-    pubApi('pub_add',{title:$('pubTitle').value,name:$('pubName').value,state:s,cities:cities,days:parseInt(s.days,10)||1,lang:LANG})
+    var vis=(document.querySelector('#pubVis .chip.active')||{}).getAttribute&&(document.querySelector('#pubVis .chip.active').getAttribute('data-vis'))||'feed';
+    pubApi('pub_add',{title:$('pubTitle').value,name:$('pubName').value,state:s,cities:cities,days:parseInt(s.days,10)||1,lang:LANG,vis:vis})
       .then(function(d){ if(d&&d.id&&d.key){ try{ var mn=JSON.parse(localStorage.getItem('bosla_pub_mine')||'{}'); mn[d.id]=d.key; localStorage.setItem('bosla_pub_mine',JSON.stringify(mn)); localStorage.setItem('bosla_pub_last',sig); }catch(e){} }
-        btn.disabled=false; closePublish(); toast(c.published); addPts(20); try{track('pub_add',{});}catch(e){} })
+        btn.disabled=false; closePublish();
+        if(vis==='link'&&d&&d.id){
+          var lk=location.href.split('#')[0]+'#pub='+d.id;
+          if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(lk).then(function(){},function(){});
+          toast(c.linkReady);
+        } else { toast(c.published); }
+        addPts(20); try{track('pub_add',{vis:vis});}catch(e){} })
       .catch(function(){ btn.disabled=false; toast(c.offline); });
   });
   $('cmTeaser').addEventListener('click',openCommunity);
