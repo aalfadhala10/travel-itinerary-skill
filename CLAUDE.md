@@ -45,6 +45,9 @@ as the card behind it or the continents vanish.
 - **Israel is excluded** — from destinations, and from the demo's airport table.
 - Arabic is **Khaleeji**, not Modern Standard.
 - **Never scrape or republish** copyrighted text, photos or reviews. Link out instead.
+  The one sanctioned photo path: the Worker's `cityphoto` pipeline — Wikipedia's lead image for
+  the exact city, accepted only when Commons says the licence is open (PD/CC0/CC BY/CC BY-SA),
+  cached in KV with author + licence + source, and always displayed with its attribution chip.
 - The Anthropic API key lives **only** as an encrypted Cloudflare secret (`env.ANTHROPIC_API_KEY`).
   It must never appear in the app, the repo, or a screenshot.
 - The welcome screen promises *"Saved on this device only — no account, no email."* Nothing may

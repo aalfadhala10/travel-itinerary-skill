@@ -868,6 +868,9 @@
   .cmcover{margin:-16px -16px 12px;height:84px;overflow:hidden;border-radius:16px 16px 0 0;position:relative;background:var(--paper2)}
   .cmcover.cmflag .bg{position:absolute;inset:-50px;display:flex;align-items:center;justify-content:center;font-size:280px;line-height:1;filter:blur(26px) saturate(1.35);opacity:.85;pointer-events:none}
   .cmcover.cmflag .fg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:56px;line-height:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.35))}
+  .cmcover .cph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .cmattr{position:absolute;bottom:4px;inset-inline-end:6px;z-index:2;font-size:9.5px;line-height:1;color:#fff;background:rgba(0,0,0,.45);border-radius:999px;padding:3px 7px;text-decoration:none;max-width:70%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .cmattr:hover{background:rgba(0,0,0,.65)}
   .cmcover img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(1.05)}
   .cmcover .hero-art{height:74px;border-radius:0}
   .cmcover .hero-art svg{width:100%;height:74px;display:block}
@@ -6037,12 +6040,13 @@
     // deserves a face, not a chip
     var cards=arr.map(function(tr,i){
       var cover='';
-      try{ var m=matchDest(tr.state.d||''); if(m)cover=flagCover(m.flag); }catch(e){}
+      try{ var m=matchDest(tr.state.d||''); if(m)cover=flagCover(m.flag,keyOf(m)); }catch(e){}
       return '<div class="cmcard" data-trip="'+i+'">'+cover+'<div class="cmtitle" dir="auto">'+esc(tripLabel(tr.state))+
         '</div><div class="cmmeta"><span>'+esc(tr.state.days||'')+' '+esc(u.days||'')+'</span>'+
         '<button type="button" class="cmreport" data-del="'+i+'" style="margin:0;display:inline">✕</button></div></div>';
     }).join('');
     box.innerHTML='<div class="mytrips"><div class="maphdr">'+u.myTrips+'</div>'+cards+'</div>';
+    try{ upgradeCovers(box); }catch(e){}
   }
   function saveTrip(){
     var arr=loadTrips(), s=stateObj(), label=tripLabel(s);
@@ -6170,7 +6174,7 @@
     arr.forEach(function(x){ if(!byCity[x.ck]){ byCity[x.ck]=[]; order.push(x.ck); } byCity[x.ck].push(x); });
     order.forEach(function(ck){
       var d=DEST[ck], city=d?cityName(ck,d.city):ck, cover='';
-      try{ if(d)cover=flagCover(d.flag); }catch(e){}
+      try{ if(d)cover=flagCover(d.flag,ck); }catch(e){}
       h+='<div class="cmcard svgroup" data-noopen="1">'+cover+'<div class="cmtitle">'+esc(city)+'</div>'
         +byCity[ck].map(function(x){
           return '<div class="svrow"><a href="'+mapUrl(x.n+' '+(d?d.city:''))+'" target="_blank" rel="noopener">'+esc(locName(ck,x.n))+'</a>'
@@ -6181,6 +6185,7 @@
         +'</div>';
     });
     box.innerHTML=h;
+    try{ upgradeCovers(box); }catch(e){}
     box.scrollIntoView({behavior:'smooth',block:'start'});
   }
   $('out').addEventListener('click',function(e){
@@ -6393,16 +6398,54 @@
   // No photo yet? The country's flag carries the card: a blurred wash of it as the backdrop and
   // the crisp flag on top. Bold, instantly readable, zero assets, and within the no-emoji rule's
   // one exception. A real traveller photo still beats it the moment one is shared.
-  function flagCover(flag){
+  function flagCover(flag,ck){
     if(!flag)return '';
-    return '<div class="cmcover cmflag"><span class="bg" aria-hidden="true">'+flag+'</span><span class="fg" aria-hidden="true">'+flag+'</span></div>';
+    return '<div class="cmcover cmflag"'+(ck?' data-cph="'+esc(ck)+'"':'')+'><span class="bg" aria-hidden="true">'+flag+'</span><span class="fg" aria-hidden="true">'+flag+'</span></div>';
+  }
+  // The legal pipeline's last step: the Worker hands back a Wikimedia photo with its author and
+  // licence, cached in KV forever server-side and 90 days here. The flag paints first, the
+  // photograph fades in over it when the record arrives — and never without its attribution.
+  var CPH={};
+  function cityPhotoGet(ck){
+    if(ck in CPH)return Promise.resolve(CPH[ck]);
+    try{
+      var raw=localStorage.getItem('bosla_cph_'+ck);
+      if(raw){ var o=JSON.parse(raw); if(o&&Date.now()-o.t<90*864e5){ CPH[ck]=o.p; return Promise.resolve(o.p); } }
+    }catch(e){}
+    var d=DEST[ck];
+    if(!d||!CONFIG.aiEndpoint){ CPH[ck]=null; return Promise.resolve(null); }
+    return fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'cityphoto',name:d.city,country:d.country||''})})
+      .then(function(r){return r.json();})
+      .then(function(res){
+        var p=(res&&res.photo&&res.photo.url&&String(res.photo.url).indexOf('https://upload.wikimedia.org/')===0)?res.photo:null;
+        CPH[ck]=p; try{localStorage.setItem('bosla_cph_'+ck,JSON.stringify({t:Date.now(),p:p}));}catch(e){}
+        return p;
+      }).catch(function(){ CPH[ck]=null; return null; });
+  }
+  function upgradeCovers(root){
+    var seen={};
+    (root||document).querySelectorAll('.cmcover[data-cph]').forEach(function(cv){
+      var ck=cv.getAttribute('data-cph'); if(seen[ck+cv.className])return;
+      cityPhotoGet(ck).then(function(p){
+        if(!p||!cv.isConnected)return;
+        var img=document.createElement('img');
+        img.className='cph'; img.loading='lazy'; img.alt='';
+        img.onerror=function(){ img.remove(); };            // photo dead? the flag is still there
+        img.src=p.url;
+        var at=document.createElement('a');
+        at.className='cmattr'; at.href=p.src||'#'; at.target='_blank'; at.rel='noopener';
+        at.textContent='© '+p.author+' · '+p.licence;
+        cv.appendChild(img); cv.appendChild(at);
+      });
+    });
   }
   function cmCover(r){
     if(r.th&&r.th.indexOf('data:image/jpeg;base64,')===0)
       return '<div class="cmcover"><img src="'+r.th+'" alt="" loading="lazy"></div>';
     try{
       var m=matchDest((r.cities||[])[0]||'');
-      if(m)return flagCover(m.flag);
+      if(m)return flagCover(m.flag,keyOf(m));
     }catch(e){}
     return '';
   }
@@ -6438,6 +6481,7 @@
         +'<span class="cmstat">'+CAMSVG+' '+(r.np||0)+'</span></div></div>';
     });
     box.innerHTML=h;
+    upgradeCovers(box);
     var si=$('cmSearch');
     if(si)si.addEventListener('input',function(){ CMQUERY=si.value.trim();
       var was=si.selectionStart; renderFeed();
@@ -6595,6 +6639,7 @@
   $('cmTeaser').addEventListener('click',openCommunity);
   // one delegated handler for everything inside the community box
   $('community').addEventListener('click',function(e){
+    if(e.target.closest('.cmattr'))return;   // the photo credit is a link, not a card tap
     var c=CTXT[LANG]||CTXT.en, t;
     if((t=e.target.closest('[data-cmsort]'))){ CMSORT=t.getAttribute('data-cmsort'); renderFeed(); return; }
     if((t=e.target.closest('[data-cmback]'))){ openCommunity(); return; }

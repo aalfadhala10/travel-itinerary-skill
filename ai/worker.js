@@ -196,6 +196,8 @@ export default {
         if (!names.length) return reply({ closed: [], rated: {} }, 200, origin);
         return reply(await placeFacts(names, city, env), 200, origin);
       }
+      if (body.action === "cityphoto") return await cityPhoto(body, env, origin);
+
       // --- Community: published trips, likes, comments, photos --------------------------------
       // No accounts, in keeping with the app's promise. Publishing is an explicit act; a name is
       // whatever the traveller typed. Everything lives in the same KV, costs no AI budget, and is
@@ -1053,4 +1055,62 @@ async function community(body, env, request, origin) {
   }
 
   return reply({ error: "unknown action" }, 400, origin);
+}
+
+
+// --- city photographs, legally ------------------------------------------------------------------
+// The pipeline: the app names the city -> Wikipedia's lead image for that exact page is the
+// closest thing the internet has to "the one iconic photo" -> Commons tells us its author and
+// licence -> only openly-licensed images pass -> the record (url, author, licence, source page)
+// is cached in KV forever and the app displays it WITH the attribution. No scraping, no
+// hotlinking mystery images, nothing whose provenance we cannot show. Wikimedia asks callers to
+// identify themselves, so we do.
+const PHOTO_UA = { headers: { "User-Agent": "Bosla-Travel-App/1.0 (https://aalfadhala10.github.io/travel-itinerary-skill/)" } };
+const LICENCE_OK = /^(public domain|pd|cc0|cc[ -]by(?:[ -]sa)?(?: \d\.\d)?)$/i;
+
+async function cityPhoto(body, env, origin) {
+  const kv = env.CITIES;
+  const name = String(body.name || "").slice(0, 60).trim();
+  const country = String(body.country || "").slice(0, 60).trim();
+  if (name.length < 2) return reply({ error: "name too short" }, 400, origin);
+  const ckey = "photo:" + cityKey(name);
+  if (kv) {
+    const hit = await kv.get(ckey);
+    if (hit) return reply(JSON.parse(hit), 200, origin);
+  }
+
+  async function leadImage(title) {
+    const u = "https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&prop=pageimages&piprop=name&titles=" + encodeURIComponent(title);
+    const r = await fetch(u, PHOTO_UA); if (!r.ok) return null;
+    const d = await r.json();
+    const p = Object.values((d.query && d.query.pages) || {})[0];
+    return (p && p.pageimage) ? p.pageimage : null;
+  }
+  async function fileInfo(file) {
+    const u = "https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=900&titles=" + encodeURIComponent("File:" + file);
+    const r = await fetch(u, PHOTO_UA); if (!r.ok) return null;
+    const d = await r.json();
+    const p = Object.values((d.query && d.query.pages) || {})[0];
+    const ii = p && p.imageinfo && p.imageinfo[0];
+    if (!ii || !ii.thumburl) return null;
+    const md = ii.extmetadata || {};
+    const lic = md.LicenseShortName && md.LicenseShortName.value || "";
+    if (!LICENCE_OK.test(lic.trim())) return null;             // free licences only, or no photo at all
+    const author = String(md.Artist && md.Artist.value || "").replace(/<[^>]*>/g, "").trim().slice(0, 80);
+    return { url: ii.thumburl, author: author || "Wikimedia Commons", licence: lic.trim(), src: ii.descriptionurl || "" };
+  }
+
+  let photo = null;
+  try {
+    const file = (country ? await leadImage(name + ", " + country) : null) || await leadImage(name);
+    if (file) photo = await fileInfo(file);
+  } catch (e) { photo = null; }
+
+  const rec = { photo };
+  if (kv) {
+    // a found photo is cached forever (the licence record travels with it); a miss is retried
+    // after a week, because pages gain photos
+    try { await kv.put(ckey, JSON.stringify(rec), photo ? undefined : { expirationTtl: 604800 }); } catch (e) {}
+  }
+  return reply(rec, 200, origin);
 }
