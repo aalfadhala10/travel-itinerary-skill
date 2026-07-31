@@ -837,9 +837,11 @@
   #app[dir="rtl"] .route{padding-left:0;padding-right:4px}
   /* ---- Community: traveller-shared trips ---- */
   .cmwrap{margin:26px 0 8px}
-  /* browsing shared trips is a screen, not a section under the planner */
+  /* browsing shared trips — or your favourites — is a screen, not a section under the planner */
   body.cmmode .card,body.cmmode #cmTeaser,body.cmmode #mytrips,body.cmmode #lastTrip,
   body.cmmode #out,body.cmmode #saved,body.cmmode .intro,body.cmmode .editfab{display:none!important}
+  body.svmode .card,body.svmode #cmTeaser,body.svmode #mytrips,body.svmode #lastTrip,
+  body.svmode #out,body.svmode #community,body.svmode .intro,body.svmode .editfab{display:none!important}
   .cmhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
   .cmhead h2{font-size:22px;margin:0}
   .cmsub{color:var(--muted);font-size:14.5px;margin:2px 0 14px}
@@ -6154,9 +6156,9 @@
     var it=e.target.closest('.drawitem'); if(!it)return;
     var nav=it.getAttribute('data-nav');
     if(nav==='how'){ closeDrawer(); showIntro(); $('intro').scrollIntoView({behavior:'smooth',block:'center'}); }
-    else if(nav==='trips'){ closeDrawer(); exitCm(); var mt=$('mytrips'); if(!mt.classList.contains('is-hidden'))mt.scrollIntoView({behavior:'smooth',block:'start'}); else toast(I18N[LANG].ui.noTrips); }
+    else if(nav==='trips'){ closeDrawer(); exitCm(); exitSv(); var mt=$('mytrips'); if(!mt.classList.contains('is-hidden'))mt.scrollIntoView({behavior:'smooth',block:'start'}); else toast(I18N[LANG].ui.noTrips); }
     else if(nav==='community'){ closeDrawer(); openCommunity(); }
-    else if(nav==='saved'){ closeDrawer(); exitCm(); openSavedView(); }
+    else if(nav==='saved'){ closeDrawer(); openSavedView(); }
     else if(nav==='install'){ closeDrawer(); doInstall(); }
     else if(nav==='share'){ closeDrawer(); shareApp(); }
     else if(nav==='feedback'){ closeDrawer(); openFeedback(); }
@@ -6222,8 +6224,11 @@
   }
   function openSavedView(){
     var c=svTxt(), box=$('saved'), arr=loadSaved(), onTrip=tripCks();
+    enterSv();
     box.classList.remove('is-hidden');
-    var h='<div class="cmhead"><h2>'+esc(c.t)+'</h2></div>';
+    var back=LANG==='ar'?'رجوع':(LANG==='es'?'Volver':'Back');
+    var h='<button type="button" class="cmback" data-svexit="1"><span class="cmbkch">‹</span> '+esc(back)+'</button>'
+      +'<div class="cmhead"><h2>'+esc(c.t)+'</h2></div>';
     // the shelf they sort their world onto: coffee, photo spots, nature, shopping...
     h+='<div class="cmsort">'+['all','coffee','food','photo','nature','shopping','other'].map(function(k){
       return '<button type="button" class="chip'+(SVCAT===k?' active':'')+'" data-svcat="'+k+'">'
@@ -6271,6 +6276,8 @@
   });
   $('saved').addEventListener('click',function(e){
     var t, c=svTxt();
+    if(e.target.closest('.cmattr'))return;
+    if((t=e.target.closest('[data-svexit]'))){ exitSv(); window.scrollTo({top:0,behavior:'smooth'}); return; }
     if((t=e.target.closest('[data-svcat]'))){ SVCAT=t.getAttribute('data-svcat'); openSavedView(); return; }
     if((t=e.target.closest('[data-addcat]'))){
       document.querySelectorAll('#svAddCat .chip').forEach(function(x){ x.classList.toggle('active',x===t); });
@@ -6292,6 +6299,7 @@
       var dayEl=document.querySelector('#out .pg.on .day');
       var day=dayEl?parseInt(String(dayEl.id).replace('day-',''),10)||1:1;
       (DAYADD[day]=DAYADD[day]||[]).push({n:name});
+      exitSv();                                     // the schedule it just joined takes the screen
       rerenderKeep(); toast(c.added(day));
       try{track('fav_toplan',{});}catch(x){}
       return;
@@ -6305,6 +6313,7 @@
       storeSaved(arr2); openSavedView(); return;
     }
     if((t=e.target.closest('[data-svplan]'))){
+      exitSv();
       $('dest').value=t.getAttribute('data-svplan'); $('dest2').value='';
       newSeed(); DAYEDITS={}; DAYROT={}; ROUTE=null;
       $('planBtn').click(); return;
@@ -6497,10 +6506,15 @@
     if(LANG==='es')return day<1?'hoy':(day===1?'ayer':('hace '+day+' días'));
     return day<1?'today':(day===1?'yesterday':(day+' days ago'));
   }
-  function enterCm(){ document.body.classList.add('cmmode'); }
+  function enterCm(){ document.body.classList.add('cmmode'); document.body.classList.remove('svmode'); }
   function exitCm(){
     document.body.classList.remove('cmmode');
     $('community').classList.add('is-hidden');
+  }
+  function enterSv(){ document.body.classList.add('svmode'); exitCm(); }
+  function exitSv(){
+    document.body.classList.remove('svmode');
+    $('saved').classList.add('is-hidden');
   }
   function openCommunity(){
     var c=CTXT[LANG]||CTXT.en, box=$('community');

@@ -1069,15 +1069,63 @@ async function community(body, env, request, origin) {
 const PHOTO_UA = { headers: { "User-Agent": "Bosla-Travel-App/1.0 (https://aalfadhala10.github.io/travel-itinerary-skill/)" } };
 const LICENCE_OK = /^(public domain|pd|cc0|cc[ -]by(?:[ -]sa)?(?: \d\.\d)?)$/i;
 
+// The photo should be the postcard, not the street: Doha is its corniche towers, Cairo is the
+// pyramids, Dubai is the Burj. For the cities everyone flies to, the landmark is curated below —
+// each value is the English Wikipedia article whose lead image IS that postcard. For any other
+// city a traveller types, Claude names the landmark once (cheap model, cached in KV forever),
+// and the city page itself remains the fallback when neither yields a usable, openly-licensed
+// image.
+const ICON = {
+  doha: "West Bay (Doha)", cairo: "Giza pyramid complex", dubai: "Burj Khalifa",
+  abudhabi: "Sheikh Zayed Grand Mosque", riyadh: "Kingdom Centre", kuwaitcity: "Kuwait Towers",
+  manama: "Bahrain World Trade Center", muscat: "Sultan Qaboos Grand Mosque",
+  mecca: "Masjid al-Haram", medina: "Al-Masjid an-Nabawi", amman: "Amman Citadel",
+  petra: "Al-Khazneh", luxor: "Karnak", istanbul: "Hagia Sophia", paris: "Eiffel Tower",
+  rome: "Colosseum", london: "Big Ben", newyork: "Statue of Liberty",
+  sanfrancisco: "Golden Gate Bridge", sydney: "Sydney Opera House", agra: "Taj Mahal",
+  delhi: "India Gate", moscow: "Saint Basil's Cathedral", beijing: "Forbidden City",
+  athens: "Acropolis of Athens", barcelona: "Sagrada Família", singapore: "Marina Bay Sands",
+  kualalumpur: "Petronas Towers", bangkok: "Wat Arun", tokyo: "Tokyo Tower",
+  kyoto: "Kinkaku-ji", seoul: "Gyeongbokgung", shanghai: "The Bund", toronto: "CN Tower",
+  lasvegas: "Las Vegas Strip", la: "Hollywood Sign", chicago: "Cloud Gate",
+  washington: "United States Capitol", rio: "Christ the Redeemer",
+  cusco: "Machu Picchu", cancun: "Chichen Itza", casablanca: "Hassan II Mosque",
+  marrakech: "Jemaa el-Fnaa", venice: "Grand Canal (Venice)", florence: "Florence Cathedral",
+  pisa: "Leaning Tower of Pisa", milan: "Milan Cathedral", munich: "Marienplatz",
+  berlin: "Brandenburg Gate", vienna: "Schönbrunn Palace", prague: "Charles Bridge",
+  budapest: "Hungarian Parliament Building", capetown: "Table Mountain",
+  seville: "Plaza de España, Seville", amsterdam: "Canals of Amsterdam",
+  sanaa: "Old City of Sana'a", giza: "Giza pyramid complex", hongkong: "Victoria Harbour",
+};
+
+const ICON_SCHEMA = {
+  type: "object", additionalProperties: false, required: ["title"],
+  properties: { title: { type: "string", description: "English Wikipedia article title of the single most iconic landmark of the city, or empty string if unsure" } },
+};
+
 async function cityPhoto(body, env, origin) {
   const kv = env.CITIES;
   const name = String(body.name || "").slice(0, 60).trim();
   const country = String(body.country || "").slice(0, 60).trim();
   if (name.length < 2) return reply({ error: "name too short" }, 400, origin);
-  const ckey = "photo:" + cityKey(name);
+  const ckey = "photo:v2:" + cityKey(name);
   if (kv) {
     const hit = await kv.get(ckey);
     if (hit) return reply(JSON.parse(hit), 200, origin);
+  }
+
+  // which article carries the postcard for this city?
+  let iconTitle = ICON[cityKey(name)] || null;
+  if (!iconTitle && env.ANTHROPIC_API_KEY && !(await overBudget(env, "llm", DAY_LLM_CAP))) {
+    try {
+      const got = await claude(env.ANTHROPIC_API_KEY, "claude-haiku-4-5",
+        "Name the single most iconic, photogenic landmark of the given city — the one a postcard would show. " +
+        "Reply with the exact English Wikipedia article title for it. If you are not confident, reply with an empty title.",
+        name + (country ? ", " + country : ""), ICON_SCHEMA, 100);
+      const t = got && String(got.title || "").trim();
+      if (t && t.length > 2 && t.length < 80) iconTitle = t;
+      await spend(env, "llm");
+    } catch (e) { iconTitle = null; }
   }
 
   async function leadImage(title) {
@@ -1103,8 +1151,15 @@ async function cityPhoto(body, env, origin) {
 
   let photo = null;
   try {
-    const file = (country ? await leadImage(name + ", " + country) : null) || await leadImage(name);
-    if (file) photo = await fileInfo(file);
+    // the landmark's postcard first; the city page only when the landmark yields nothing usable
+    if (iconTitle) {
+      const f0 = await leadImage(iconTitle);
+      if (f0) photo = await fileInfo(f0);
+    }
+    if (!photo) {
+      const file = (country ? await leadImage(name + ", " + country) : null) || await leadImage(name);
+      if (file) photo = await fileInfo(file);
+    }
   } catch (e) { photo = null; }
 
   const rec = { photo };
