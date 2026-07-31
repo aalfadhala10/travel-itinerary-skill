@@ -75,24 +75,28 @@
   .lang{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:14.5px;cursor:pointer;user-select:none;transition:all .15s}
   .lang.active{background:var(--ink);border-color:var(--ink);color:var(--paper);font-weight:600}
 
-  .hero{text-align:center;padding:6px 4px 2px}
-  .compass{width:60px;height:60px;margin:0 auto 6px;border-radius:50%;border:2px solid var(--teal);position:relative;background:var(--card);box-shadow:var(--shadow)}
-  .compass::before{content:"";position:absolute;inset:0;margin:auto;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:22px solid var(--amber);transform:translateY(-3px) rotate(38deg);transform-origin:50% 70%;animation:settle 1.5s cubic-bezier(.2,.85,.25,1) 1}
+  .hero{text-align:center;padding:14px 4px 2px;position:relative}
+  /* a quiet halo behind the compass — dawn in the light theme, a deep night glow in the dark one.
+     pure gradient: no image to load, nothing to break offline */
+  .hero::before{content:"";position:absolute;left:50%;top:-30px;transform:translateX(-50%);width:340px;height:230px;border-radius:50%;background:radial-gradient(closest-side,var(--amber-soft),transparent 70%);pointer-events:none}
+  .compass{width:70px;height:70px;margin:0 auto 8px;border-radius:50%;border:2px solid var(--amber);position:relative;background:var(--card);box-shadow:0 0 0 6px var(--amber-soft),var(--shadow)}
+  .compass::before{content:"";position:absolute;inset:0;margin:auto;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:26px solid var(--amber);transform:translateY(-3px) rotate(38deg);transform-origin:50% 70%;animation:settle 1.5s cubic-bezier(.2,.85,.25,1) 1}
   @keyframes settle{0%{transform:translateY(-3px) rotate(230deg)}60%{transform:translateY(-3px) rotate(20deg)}100%{transform:translateY(-3px) rotate(38deg)}}
   @media (prefers-reduced-motion:reduce){.compass::before{animation:none}}
-  .compass::after{content:"";position:absolute;inset:0;margin:auto;width:6px;height:6px;border-radius:50%;background:var(--teal)}
-  h1{font-family:var(--ff-display);font-size:40px;margin:2px 0 0;letter-spacing:normal;font-weight:600}
+  .compass::after{content:"";position:absolute;inset:0;margin:auto;width:7px;height:7px;border-radius:50%;background:var(--teal)}
+  h1{font-family:var(--ff-display);font-size:44px;margin:2px 0 0;letter-spacing:normal;font-weight:600}
   .tag{color:var(--muted);font-size:15px;max-width:420px;margin:6px auto 0;text-wrap:balance}
   .eyebrow{font-family:var(--ff-data);font-size:14px;letter-spacing:3px;text-transform:uppercase;color:var(--amber);font-weight:600}
 
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px;margin-top:22px;position:relative}
-  .card::before{content:"";position:absolute;top:-1px;left:50%;transform:translateX(-50%);width:44px;height:6px;border-radius:0 0 8px 8px;background:var(--paper);border:1px solid var(--line);border-top:none}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:22px 20px;margin-top:22px;position:relative;overflow:hidden}
+  /* a hairline of light along the top edge gives the card a face without another border */
+  .card::before{content:"";position:absolute;top:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,var(--amber-soft) 30%,var(--amber) 50%,var(--amber-soft) 70%,transparent)}
   /* 11px uppercase reads as decoration, not as a question you're meant to answer */
   label{display:block;font-family:var(--ff-data);font-size:14.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin:16px 0 8px;font-weight:600}
   label:first-of-type{margin-top:0}
   .hint{text-transform:none;letter-spacing:0;font-weight:400}
-  input,select{width:100%;padding:14px;border-radius:11px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);font-size:16px;font-family:var(--ff-body);outline:none;transition:border-color .15s}
-  input:focus,select:focus{border-color:var(--teal)}
+  input,select{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);font-size:16px;font-family:var(--ff-body);outline:none;transition:border-color .15s,box-shadow .15s}
+  input:focus,select:focus{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-soft)}
   .combo{position:relative;margin-top:10px}
   .combo input{padding-right:42px}
   #app[dir="rtl"] .combo input{padding-right:14px;padding-left:42px}
@@ -341,9 +345,9 @@
   .wellang{padding:9px 16px;border:1px solid var(--line);border-radius:999px;background:var(--paper2);color:var(--ink);font-size:14px;font-weight:600;font-family:var(--ff-body);cursor:pointer;transition:all .15s}
   .wellang:hover{border-color:var(--teal)}
   .wellang.active{background:var(--ink);border-color:var(--ink);color:var(--paper)}
-  .welbtn{width:100%;padding:15px;border:none;border-radius:12px;background:var(--amber);color:#231a0a;font-size:16px;font-weight:700;font-family:var(--ff-body);cursor:pointer;box-shadow:var(--shadow);transition:filter .15s}
-  .welbtn:hover{filter:brightness(1.05)}
-  .welbtn:active{transform:translateY(1px)}
+  .welbtn,.pubgo{width:100%;padding:15px;border:none;border-radius:12px;background:var(--amber);color:#231a0a;font-size:16px;font-weight:700;font-family:var(--ff-body);cursor:pointer;box-shadow:var(--shadow);transition:filter .15s}
+  .welbtn:hover,.pubgo:hover{filter:brightness(1.05)}
+  .welbtn:active,.pubgo:active{transform:translateY(1px)}
   .weldiv{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px;margin:16px 0;font-family:var(--ff-data);letter-spacing:1.5px;text-transform:uppercase}
   .weldiv::before,.weldiv::after{content:"";flex:1;height:1px;background:var(--line)}
   #app[dir="rtl"] .weldiv{letter-spacing:normal;font-family:var(--ff-body)}
@@ -813,6 +817,55 @@
   #app[dir="rtl"] .day:last-child{border-right-color:transparent}
   #app[dir="rtl"] .day::before{left:auto;right:-7px}
   #app[dir="rtl"] .route{padding-left:0;padding-right:4px}
+  /* ---- Community: traveller-shared trips ---- */
+  .cmwrap{margin:26px 0 8px}
+  .cmhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+  .cmhead h2{font-size:22px;margin:0}
+  .cmsub{color:var(--muted);font-size:14.5px;margin:2px 0 14px}
+  .cmsort{display:flex;gap:8px;margin:0 0 14px}
+  .cmsort .chip{padding:8px 14px}
+  .cmcard{background:var(--paper2);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer;transition:transform .12s, box-shadow .12s}
+  .cmcard:active{transform:scale(.985)}
+  .cmtitle{font-size:17px;font-weight:700;margin-bottom:3px}
+  .cmmeta{color:var(--muted);font-size:13.5px;display:flex;flex-wrap:wrap;gap:4px 10px}
+  .cmstats{display:flex;gap:14px;margin-top:10px;color:var(--muted);font-size:13.5px;align-items:center}
+  .cmstat{display:inline-flex;align-items:center;gap:5px}
+  .cmstat svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8}
+  .cmstat.liked{color:#e05d6f}
+  .cmstat.liked svg{fill:#e05d6f;stroke:#e05d6f}
+  .cmempty{background:var(--paper2);border:1px dashed var(--line);border-radius:16px;padding:26px 18px;text-align:center;color:var(--muted);font-size:15px;line-height:1.6}
+  .cmback{background:none;border:none;color:var(--amber);font-size:15px;font-weight:600;padding:6px 0;cursor:pointer}
+  .cmdetail .cmtitle{font-size:20px}
+  .cmuse{display:block;width:100%;margin:14px 0 6px;padding:15px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--amber),#d9973f);color:#1c1710;font-size:16.5px;font-weight:700;cursor:pointer}
+  .cmrow{display:flex;gap:10px;margin:8px 0}
+  .cmrow .cmbtn{flex:1;padding:11px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:14.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+  .cmrow .cmbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
+  .cmbtn.liked{color:#e05d6f;border-color:#e05d6f}
+  .cmbtn.liked svg{fill:#e05d6f;stroke:#e05d6f}
+  .cmphotos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+  .cmphotos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;border:1px solid var(--line)}
+  .cmphotos .cmpadd{aspect-ratio:1;border:1px dashed var(--line);border-radius:12px;background:none;color:var(--muted);font-size:13px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+  .cmpadd svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6}
+  .cmcmts{margin:14px 0 4px}
+  .cmcmt{background:var(--paper2);border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-bottom:8px;font-size:14.5px;line-height:1.5}
+  .cmcmt b{font-size:13px;color:var(--amber);display:block;margin-bottom:2px}
+  .cmcform{display:flex;gap:8px;margin-top:10px}
+  .cmcform input{flex:1;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:15px}
+  .cmcform button{padding:12px 16px;border:none;border-radius:12px;background:var(--amber);color:#1c1710;font-weight:700;cursor:pointer}
+  .cmreport{background:none;border:none;color:var(--muted);font-size:12.5px;cursor:pointer;margin:8px auto 0;display:block;text-decoration:underline}
+  .ptschip{display:inline-flex;align-items:center;gap:6px;background:var(--paper2);border:1px solid var(--amber);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--amber);font-weight:700;margin-top:8px}
+  .ptschip svg{width:14px;height:14px;fill:currentColor;stroke:none}
+  .cmloading{text-align:center;color:var(--muted);padding:30px 0;font-size:14.5px}
+  #app[dir="rtl"] .cmback{transform:scaleX(-1)}
+  .cmteaser{display:flex;align-items:center;gap:13px;width:100%;margin-top:14px;padding:15px 16px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);cursor:pointer;text-align:start;box-shadow:var(--shadow);transition:transform .1s}
+  .cmteaser:active{transform:scale(.99)}
+  .cmticon{width:38px;height:38px;flex-shrink:0;border-radius:12px;background:var(--amber-soft);display:flex;align-items:center;justify-content:center}
+  .cmticon svg{width:19px;height:19px;fill:none;stroke:var(--amber);stroke-width:1.8}
+  .cmttext{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .cmttext b{font-size:15.5px}
+  .cmttext span{color:var(--muted);font-size:13.5px}
+  .cmtgo{margin-inline-start:auto;color:var(--muted);font-size:22px;line-height:1}
+  #app[dir="rtl"] .cmtgo{transform:scaleX(-1)}
 </style>
 
 <canvas id="topo" aria-hidden="true"></canvas>
@@ -928,7 +981,14 @@
     </div>
   </div>
 
+  <button type="button" class="cmteaser" id="cmTeaser">
+    <span class="cmticon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21C7 16.5 3 13 3 8.8 3 6 5.2 4 7.8 4c1.6 0 3.1.8 4.2 2.2C13.1 4.8 14.6 4 16.2 4 18.8 4 21 6 21 8.8c0 4.2-4 7.7-9 12.2z"/></svg></span>
+    <span class="cmttext"><b id="cmTeaserT">Traveller trips</b><span id="cmTeaserS">Real plans shared by other travellers</span></span>
+    <span class="cmtgo" aria-hidden="true">›</span>
+  </button>
+
   <div id="mytrips" class="is-hidden"></div>
+  <div id="community" class="cmwrap is-hidden"></div>
   <div class="lasttrip is-hidden" id="lastTrip"></div>
   <div class="out" id="out" aria-live="polite"></div>
   <p class="foot" id="foot"></p>
@@ -943,12 +1003,25 @@
       <nav>
         <button type="button" class="drawitem" data-nav="how" id="navHow">How it works</button>
         <button type="button" class="drawitem" data-nav="trips" id="navTrips">My trips</button>
+        <button type="button" class="drawitem" data-nav="community" id="navCommunity">Traveller trips</button>
         <button type="button" class="drawitem" data-nav="install" id="navInstall">Add to Home Screen</button>
         <button type="button" class="drawitem" data-nav="share" id="navShare">Share بوصلة</button>
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
+    </div>
+  </div>
+
+  <div class="welcome" id="pubModal" aria-hidden="true">
+    <div class="welcard">
+      <button type="button" class="welclose" id="pubClose" aria-label="Close">✕</button>
+      <h2 id="pubTitleH">Share with travellers</h2>
+      <p class="wsub" id="pubSub"></p>
+      <input type="text" id="pubTitle" maxlength="60" style="width:100%;padding:13px;margin:8px 0;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:15.5px">
+      <input type="text" id="pubName" maxlength="30" style="width:100%;padding:13px;margin:0 0 8px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:15.5px">
+      <p class="wsub" id="pubNote" style="font-size:13px"></p>
+      <button type="button" class="pubgo" id="pubGo">Publish</button>
     </div>
   </div>
 
@@ -3754,6 +3827,7 @@
     $('welDiv').textContent=u.nameLabel; $('welName').setAttribute('placeholder',u.namePh); $('welNote').textContent=u.welcomeNote;
     renderWelcome(); $('editFab').textContent=u.editTrip;
     $('drawerEdit').textContent=u.profileTitle; $('navHow').textContent=u.navHow; $('navTrips').textContent=u.myTrips; $('navInstall').textContent=u.navInstall; $('navShare').textContent=u.navShare; $('navFeedback').textContent=u.navFeedback; $('drawerAbout').textContent=u.menuAbout;
+    try{ var cx=CTXT[LANG]||CTXT.en; $('navCommunity').textContent=cx.title; $('cmTeaserT').textContent=cx.title; $('cmTeaserS').textContent=cx.sub.split('.')[0]+'.'; drawPts(); }catch(e){}
     $('introTitle').textContent=u.introTitle; $('introS1').textContent=u.introS1; $('introS2').textContent=u.introS2; $('introS3').textContent=u.introS3;
     try{ $('moreOptsLbl').textContent=(lang==='ar'?'خيارات أكثر':(lang==='es'?'Más opciones':'More options')); }catch(e){}
     try{ if(LASTSTATE&&!$('lastTrip').classList.contains('is-hidden'))showLastTrip(LASTSTATE); }catch(e){}
@@ -5817,7 +5891,8 @@
     var acts='<div class="actions">'+
       '<button class="act" type="button" data-act="save">'+o.save+'</button>'+
       '<button class="act" type="button" data-act="wa">'+o.waShare+'</button>'+
-      '<button class="act" type="button" data-act="share">'+o.share+'</button>';
+      '<button class="act" type="button" data-act="share">'+o.share+'</button>'+
+      '<button class="act" type="button" data-act="pub">'+esc((CTXT[LANG]||CTXT.en).pubBtn)+'</button>';
     var icsR=icsFor(ms.map(function(m){return m.city;}).join(' → ')+' — بوصلة',t.ui.budgets[budget]+' · '+subVibes,calStart(),days); if(icsR)acts+='<a class="act" download="bosla-route.ics" href="data:text/calendar;charset=utf-8,'+encodeURIComponent(icsR)+'">'+o.addCal+'</a>';
     if(access){ acts+='<button class="act" type="button" data-act="copy">'+o.copy+'</button><button class="act" type="button" data-act="print">'+o.print+'</button>'; }
     html+=acts+'</div>';
@@ -5968,9 +6043,242 @@
     var nav=it.getAttribute('data-nav');
     if(nav==='how'){ closeDrawer(); showIntro(); $('intro').scrollIntoView({behavior:'smooth',block:'center'}); }
     else if(nav==='trips'){ closeDrawer(); var mt=$('mytrips'); if(!mt.classList.contains('is-hidden'))mt.scrollIntoView({behavior:'smooth',block:'start'}); else toast(I18N[LANG].ui.noTrips); }
+    else if(nav==='community'){ closeDrawer(); openCommunity(); }
     else if(nav==='install'){ closeDrawer(); doInstall(); }
     else if(nav==='share'){ closeDrawer(); shareApp(); }
     else if(nav==='feedback'){ closeDrawer(); openFeedback(); }
+  });
+
+  /* ---- Community: publish a trip, browse others', like, comment, add photos ------------------
+     No accounts, as promised on the welcome screen. Nothing leaves the phone until the traveller
+     presses Publish, and the modal says plainly that publishing is public. A first name is
+     whatever they typed in their profile. Points reward contributions and quietly turn into the
+     same trip credits the paywall will sell — the discount ladder the beta grows into. */
+  var CTXT={
+    en:{title:'Traveller trips',sub:'Real plans shared by people who used them. Open one, make it yours.',
+      newest:'Newest',top:'Most liked',days:'days',by:'by',use:'Use this plan',like:'Like',liked:'Liked',
+      photos:'photos',comments:'comments',addPhoto:'Add photo',writeCmt:'Write a comment…',send:'Send',
+      pubBtn:'Share with travellers',pubTitleH:'Share with travellers',
+      pubSub:'Put this plan in the community feed so others can use it, like it, and add their photos.',
+      pubTitlePh:'Give your trip a title',pubNamePh:'Your first name (shown on the card)',
+      pubNote:'Publishing makes this plan public to everyone using بوصلة. Your name and plan only — nothing else leaves your device.',
+      pub:'Publish',published:'Published — travellers can now see your trip',
+      applied:'Plan loaded — it is yours to edit now',empty:'No shared trips yet — yours could be the first.',
+      offline:'The community feed could not be reached — try again in a moment.',
+      report:'Report this trip',reported:'Thank you — we will take a look.',
+      cmtDone:'Comment added',photoDone:'Photo added — thank you for sharing',
+      pts:function(n){return n+' points';},ptsNote:function(n){return n+' points to your next free trip credit';},
+      ptsCredit:'You earned a free trip credit!'},
+    ar:{title:'رحلات المسافرين',sub:'خطط حقيقية شاركها ناس جرّبوها. افتح أي وحدة وخلها لك.',
+      newest:'الأحدث',top:'الأكثر إعجاباً',days:'أيام',by:'من',use:'استخدم هذه الخطة',like:'إعجاب',liked:'أعجبتني',
+      photos:'صور',comments:'تعليقات',addPhoto:'أضف صورة',writeCmt:'اكتب تعليق…',send:'إرسال',
+      pubBtn:'شارك مع المسافرين',pubTitleH:'شارك مع المسافرين',
+      pubSub:'انشر خطتك في صفحة المسافرين عشان غيرك يستخدمها ويعجب فيها ويضيف صوره.',
+      pubTitlePh:'عنوان رحلتك',pubNamePh:'اسمك الأول (يظهر على البطاقة)',
+      pubNote:'النشر يخلي الخطة عامة لكل مستخدمي بوصلة. اسمك وخطتك فقط — ولا شي غيرهم يطلع من جهازك.',
+      pub:'انشر',published:'تم النشر — المسافرون يشوفون رحلتك الحين',
+      applied:'تم تحميل الخطة — عدّلها كيفك',empty:'ما فيه رحلات مشتركة بعد — ممكن تكون رحلتك الأولى.',
+      offline:'ما قدرنا نوصل لرحلات المسافرين — جرّب بعد شوي.',
+      report:'أبلغ عن هذه الرحلة',reported:'شكراً لك — بنراجعها.',
+      cmtDone:'تم إضافة تعليقك',photoDone:'تمت إضافة الصورة — شكراً لمشاركتك',
+      pts:function(n){return n+' نقطة';},ptsNote:function(n){return 'باقي '+n+' نقطة على رصيد رحلة مجاني';},
+      ptsCredit:'حصلت على رصيد رحلة مجاني!'},
+    es:{title:'Viajes de viajeros',sub:'Planes reales compartidos por quienes los usaron. Abre uno y hazlo tuyo.',
+      newest:'Más recientes',top:'Más gustados',days:'días',by:'por',use:'Usar este plan',like:'Me gusta',liked:'Te gusta',
+      photos:'fotos',comments:'comentarios',addPhoto:'Añadir foto',writeCmt:'Escribe un comentario…',send:'Enviar',
+      pubBtn:'Compartir con viajeros',pubTitleH:'Compartir con viajeros',
+      pubSub:'Publica tu plan en el muro de viajeros para que otros lo usen, den me gusta y añadan sus fotos.',
+      pubTitlePh:'Título de tu viaje',pubNamePh:'Tu nombre (aparece en la tarjeta)',
+      pubNote:'Publicar hace este plan público para todos los usuarios de بوصلة. Solo tu nombre y tu plan — nada más sale de tu dispositivo.',
+      pub:'Publicar',published:'Publicado — los viajeros ya pueden ver tu viaje',
+      applied:'Plan cargado — ahora es tuyo para editar',empty:'Aún no hay viajes compartidos — el tuyo puede ser el primero.',
+      offline:'No se pudo cargar el muro — inténtalo en un momento.',
+      report:'Denunciar este viaje',reported:'Gracias — lo revisaremos.',
+      cmtDone:'Comentario añadido',photoDone:'Foto añadida — gracias por compartir',
+      pts:function(n){return n+' puntos';},ptsNote:function(n){return n+' puntos para tu próximo crédito de viaje';},
+      ptsCredit:'¡Ganaste un crédito de viaje gratis!'}
+  };
+  var HEARTSVG='<svg viewBox="0 0 24 24"><path d="M12 21C7 16.5 3 13 3 8.8 3 6 5.2 4 7.8 4c1.6 0 3.1.8 4.2 2.2C13.1 4.8 14.6 4 16.2 4 18.8 4 21 6 21 8.8c0 4.2-4 7.7-9 12.2z"/></svg>';
+  var CMTSVG='<svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2.5-2.7A8 8 0 1 1 21 12z"/></svg>';
+  var CAMSVG='<svg viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="14" r="3.4"/></svg>';
+  var STARSVG='<svg viewBox="0 0 24 24"><path d="M12 2.7l2.9 5.9 6.5.9-4.7 4.6 1.1 6.4L12 17.5l-5.8 3-1.1-6.4L.4 9.5l6.5-.9z"/></svg>';
+  function pubApi(action,payload){
+    if(!CONFIG.aiEndpoint)return Promise.reject(new Error('off'));
+    payload=payload||{}; payload.action=action;
+    return fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      .then(function(r){ return r.json().then(function(d){ if(!r.ok||d.error)throw new Error(d.error||('http '+r.status)); return d; }); });
+  }
+  // ---- points: contributions become the trip credits the paywall sells ----
+  var PTS_CREDIT=50;
+  function getPts(){ try{return parseInt(localStorage.getItem('bosla_pts'),10)||0;}catch(e){return 0;} }
+  function addPts(n){
+    var c=CTXT[LANG]||CTXT.en, was=getPts(), now=was+n;
+    try{localStorage.setItem('bosla_pts',String(now));}catch(e){}
+    if(Math.floor(now/PTS_CREDIT)>Math.floor(was/PTS_CREDIT)){ setCredits(getCredits()+1); toast(c.ptsCredit); }
+    try{ var el=document.getElementById('drawerPts'); if(el)el.innerHTML=STARSVG+' '+esc(c.pts(now)); }catch(e){}
+  }
+  function drawPts(){
+    var c=CTXT[LANG]||CTXT.en;
+    var host=$('drawerProfile'); if(!host)return;
+    var el=$('drawerPts');
+    if(!el){ el=document.createElement('span'); el.id='drawerPts'; el.className='ptschip'; host.appendChild(el); }
+    el.innerHTML=STARSVG+' '+esc(c.pts(getPts()));
+  }
+  // ---- the feed ----
+  var CMLIKED={}; try{ CMLIKED=JSON.parse(localStorage.getItem('bosla_liked')||'{}'); }catch(e){}
+  var CMSORT='new', CMFEED=[];
+  function cmAgo(t){
+    var d=Math.max(0,Date.now()-t), day=Math.floor(d/864e5);
+    if(LANG==='ar')return day<1?'اليوم':(day===1?'أمس':('قبل '+day+' يوم'));
+    if(LANG==='es')return day<1?'hoy':(day===1?'ayer':('hace '+day+' días'));
+    return day<1?'today':(day===1?'yesterday':(day+' days ago'));
+  }
+  function openCommunity(){
+    var c=CTXT[LANG]||CTXT.en, box=$('community');
+    box.classList.remove('is-hidden');
+    box.innerHTML='<div class="cmhead"><h2>'+esc(c.title)+'</h2></div><div class="cmsub">'+esc(c.sub)+'</div><div class="cmloading">…</div>';
+    box.scrollIntoView({behavior:'smooth',block:'start'});
+    pubApi('pub_feed').then(function(d){ CMFEED=d.trips||[]; renderFeed(); })
+      .catch(function(){ box.innerHTML='<div class="cmhead"><h2>'+esc(c.title)+'</h2></div><div class="cmempty">'+esc(c.offline)+'</div>'; });
+    try{track('community_open',{});}catch(e){}
+  }
+  function renderFeed(){
+    var c=CTXT[LANG]||CTXT.en, box=$('community');
+    var list=CMFEED.slice();
+    if(CMSORT==='top')list.sort(function(a,b){ return (b.likes||0)-(a.likes||0); });
+    var h='<div class="cmhead"><h2>'+esc(c.title)+'</h2></div><div class="cmsub">'+esc(c.sub)+'</div>'
+      +'<div class="cmsort"><button type="button" class="chip'+(CMSORT==='new'?' active':'')+'" data-cmsort="new">'+esc(c.newest)+'</button>'
+      +'<button type="button" class="chip'+(CMSORT==='top'?' active':'')+'" data-cmsort="top">'+esc(c.top)+'</button></div>';
+    if(!list.length)h+='<div class="cmempty">'+esc(c.empty)+'</div>';
+    list.forEach(function(r){
+      h+='<div class="cmcard" data-cmid="'+esc(r.id)+'"><div class="cmtitle">'+esc(r.title)+'</div>'
+        +'<div class="cmmeta"><span>'+esc((r.cities||[]).join(' → '))+'</span><span>'+r.days+' '+esc(c.days)+'</span>'
+        +'<span>'+esc(c.by)+' '+esc(r.name)+'</span><span>'+esc(cmAgo(r.t))+'</span></div>'
+        +'<div class="cmstats"><span class="cmstat'+(CMLIKED[r.id]?' liked':'')+'">'+HEARTSVG+' '+(r.likes||0)+'</span>'
+        +'<span class="cmstat">'+CMTSVG+' '+(r.nc||0)+'</span>'
+        +'<span class="cmstat">'+CAMSVG+' '+(r.np||0)+'</span></div></div>';
+    });
+    box.innerHTML=h;
+  }
+  function openPubTrip(id){
+    var c=CTXT[LANG]||CTXT.en, box=$('community');
+    box.innerHTML='<div class="cmloading">…</div>';
+    pubApi('pub_get',{id:id}).then(function(d){
+      var r=d.trip, liked=!!CMLIKED[r.id];
+      var h='<button type="button" class="cmback" data-cmback="1">‹ '+esc(c.title)+'</button>'
+        +'<div class="cmdetail"><div class="cmtitle">'+esc(r.title)+'</div>'
+        +'<div class="cmmeta"><span>'+esc((r.cities||[]).join(' → '))+'</span><span>'+r.days+' '+esc(c.days)+'</span>'
+        +'<span>'+esc(c.by)+' '+esc(r.name)+'</span><span>'+esc(cmAgo(r.t))+'</span></div>'
+        +'<button type="button" class="cmuse" data-cmuse="'+esc(r.id)+'">'+esc(c.use)+'</button>'
+        +'<div class="cmrow"><button type="button" class="cmbtn'+(liked?' liked':'')+'" data-cmlike="'+esc(r.id)+'">'+HEARTSVG+' <span>'+(r.likes||0)+'</span></button>'
+        +'<button type="button" class="cmbtn" data-cmphoto="'+esc(r.id)+'">'+CAMSVG+' '+esc(c.addPhoto)+'</button></div>'
+        +'<div class="cmphotos" id="cmPhotos"></div>'
+        +'<div class="cmcmts" id="cmCmts"></div>'
+        +'<div class="cmcform"><input type="text" id="cmCmtIn" maxlength="240" placeholder="'+esc(c.writeCmt)+'"><button type="button" data-cmcmt="'+esc(r.id)+'">'+esc(c.send)+'</button></div>'
+        +'<button type="button" class="cmreport" data-cmreport="'+esc(r.id)+'">'+esc(c.report)+'</button></div>';
+      box.innerHTML=h;
+      CMTRIP=r; renderCmts(r.comments||[]); loadPhotos(r.photos||[]);
+    }).catch(function(){ openCommunity(); });
+  }
+  var CMTRIP=null;
+  function renderCmts(list){
+    var host=$('cmCmts'); if(!host)return;
+    host.innerHTML=list.map(function(x){ return '<div class="cmcmt"><b>'+esc(x.n)+'</b>'+esc(x.x)+'</div>'; }).join('');
+  }
+  function loadPhotos(pids){
+    var host=$('cmPhotos'); if(!host)return;
+    host.innerHTML='';
+    pids.forEach(function(pid){
+      pubApi('pub_photo',{pid:pid}).then(function(d){
+        if(!d.d||d.d.indexOf('data:image/')!==0)return;      // only ever render an image data-url
+        var img=document.createElement('img'); img.src=d.d; img.alt=d.n||''; img.loading='lazy';
+        host.appendChild(img);
+      }).catch(function(){});
+    });
+  }
+  // squeeze a phone photo down to something KV is happy with: longest side 1280, JPEG, walk the
+  // quality down until it fits the worker's cap
+  function shrinkPhoto(file){
+    return new Promise(function(resolve,reject){
+      var img=new Image(), url=URL.createObjectURL(file);
+      img.onload=function(){
+        URL.revokeObjectURL(url);
+        var w=img.width,h=img.height,mx=1280;
+        if(w>mx||h>mx){ var s=mx/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
+        var cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        var q=0.72,out=cv.toDataURL('image/jpeg',q);
+        while(out.length>200000&&q>0.3){ q-=0.12; out=cv.toDataURL('image/jpeg',q); }
+        if(out.length>200000)reject(new Error('too big')); else resolve(out);
+      };
+      img.onerror=function(){ URL.revokeObjectURL(url); reject(new Error('bad image')); };
+      img.src=url;
+    });
+  }
+  function openPublish(){
+    var c=CTXT[LANG]||CTXT.en, m=$('pubModal');
+    $('pubTitleH').textContent=c.pubTitleH; $('pubSub').textContent=c.pubSub; $('pubNote').textContent=c.pubNote;
+    $('pubTitle').placeholder=c.pubTitlePh; $('pubName').placeholder=c.pubNamePh; $('pubGo').textContent=c.pub;
+    var s=stateObj(), cities=[s.d]; if(s.rt&&s.rt.length)cities=s.rt.map(function(k){return DEST[k]?DEST[k].city:k;}); else if(s.d2)cities.push(s.d2);
+    $('pubTitle').value=cities.join(' → ')+' · '+s.days+' '+(LANG==='ar'?'أيام':(LANG==='es'?'días':'days'));
+    $('pubName').value=getName()||'';
+    m.classList.add('show'); m.setAttribute('aria-hidden','false');
+  }
+  function closePublish(){ var m=$('pubModal'); m.classList.remove('show'); m.setAttribute('aria-hidden','true'); }
+  $('pubClose').addEventListener('click',closePublish);
+  $('pubModal').addEventListener('click',function(e){ if(e.target===this)closePublish(); });
+  $('pubGo').addEventListener('click',function(){
+    var c=CTXT[LANG]||CTXT.en, s=stateObj();
+    var cities=[s.d]; if(s.rt&&s.rt.length)cities=s.rt.map(function(k){return DEST[k]?DEST[k].city:k;}); else if(s.d2)cities.push(s.d2);
+    var btn=$('pubGo'); btn.disabled=true;
+    pubApi('pub_add',{title:$('pubTitle').value,name:$('pubName').value,state:s,cities:cities,days:parseInt(s.days,10)||1,lang:LANG})
+      .then(function(){ btn.disabled=false; closePublish(); toast(c.published); addPts(20); try{track('pub_add',{});}catch(e){} })
+      .catch(function(){ btn.disabled=false; toast(c.offline); });
+  });
+  $('cmTeaser').addEventListener('click',openCommunity);
+  // one delegated handler for everything inside the community box
+  $('community').addEventListener('click',function(e){
+    var c=CTXT[LANG]||CTXT.en, t;
+    if((t=e.target.closest('[data-cmsort]'))){ CMSORT=t.getAttribute('data-cmsort'); renderFeed(); return; }
+    if((t=e.target.closest('[data-cmback]'))){ openCommunity(); return; }
+    if((t=e.target.closest('[data-cmuse]'))){
+      if(CMTRIP&&CMTRIP.state){ try{ applyState(CMTRIP.state,true); toast(c.applied); addPts(2); try{track('pub_use',{});}catch(x){} }catch(x){} }
+      return;
+    }
+    if((t=e.target.closest('[data-cmlike]'))){
+      var id=t.getAttribute('data-cmlike');
+      if(CMLIKED[id])return;
+      CMLIKED[id]=1; try{localStorage.setItem('bosla_liked',JSON.stringify(CMLIKED));}catch(x){}
+      t.classList.add('liked');
+      pubApi('pub_like',{id:id}).then(function(d){ var n=t.querySelector('span'); if(n)n.textContent=d.likes; }).catch(function(){});
+      return;
+    }
+    if((t=e.target.closest('[data-cmcmt]'))){
+      var inp=$('cmCmtIn'), txt=(inp.value||'').trim(); if(!txt)return;
+      pubApi('pub_comment',{id:t.getAttribute('data-cmcmt'),name:getName()||'',txt:txt})
+        .then(function(d){ inp.value=''; renderCmts(d.comments||[]); toast(c.cmtDone); addPts(2); })
+        .catch(function(){ toast(c.offline); });
+      return;
+    }
+    if((t=e.target.closest('[data-cmphoto]'))){
+      var id2=t.getAttribute('data-cmphoto');
+      var fi=document.createElement('input'); fi.type='file'; fi.accept='image/*';
+      fi.addEventListener('change',function(){
+        var f=fi.files&&fi.files[0]; if(!f)return;
+        shrinkPhoto(f).then(function(data){
+          return pubApi('pub_photo_add',{id:id2,name:getName()||'',data:data});
+        }).then(function(d){ toast(c.photoDone); addPts(10); loadPhotos(d.photos||[]); })
+          .catch(function(){ toast(c.offline); });
+      });
+      fi.click();
+      return;
+    }
+    if((t=e.target.closest('[data-cmreport]'))){
+      pubApi('pub_report',{id:t.getAttribute('data-cmreport')}).catch(function(){});
+      toast(c.reported);
+      return;
+    }
+    if((t=e.target.closest('.cmcard'))){ openPubTrip(t.getAttribute('data-cmid')); return; }
   });
 
   /* in-app feedback form */
@@ -6199,7 +6507,8 @@
     var acts='<div class="actions">'+
       '<button class="act" type="button" data-act="save">'+o.save+'</button>'+
       '<button class="act" type="button" data-act="wa">'+o.waShare+'</button>'+
-      '<button class="act" type="button" data-act="share">'+o.share+'</button>';
+      '<button class="act" type="button" data-act="share">'+o.share+'</button>'+
+      '<button class="act" type="button" data-act="pub">'+esc((CTXT[LANG]||CTXT.en).pubBtn)+'</button>';
     var calTitle=(m1?(m1.city+(m1.country?', '+m1.country:'')):cap(dest||raw||'Trip'))+' — بوصلة';
     var calDesc=t.ui.budgets[budget]+' · '+t.ui.paces[pace]+(subVibes?' · '+subVibes:'');
     var icsP=icsFor(calTitle,calDesc,calStart(),days);
@@ -6230,6 +6539,7 @@
     if(act==='save'||act==='share'||act==='wa')track(act);
     if(act==='usecredit'){ if(getCredits()>0){ addUnlocked(currentDestKey()); setCredits(getCredits()-1); toast(o.unlocked); plan(); } return; }
     if(act==='buy'){ var pk=(CONFIG.packages||[])[+b.dataset.pkg]; if(!pk)return; if(pk.link){ window.open(pk.link,'_blank'); } else { setCredits(getCredits()+pk.credits); toast(o.creditsAdded(pk.credits)); plan(); } return; }
+    if(act==='pub'){ openPublish(); return; }
     if(act==='save'){ saveTrip(); toast(o.saved); return; }
     if(act==='wa'){ window.open('https://wa.me/?text='+encodeURIComponent(o.waMsg+'\n\n'+LASTTEXT+'\n\n'+shareLink()),'_blank'); return; }
     if(act==='print'){printPlan();return;}

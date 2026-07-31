@@ -51,6 +51,18 @@ as the card behind it or the continents vanish.
   be sent anywhere that would make that untrue.
 - Keep AI cost down: cache in KV, prefer the cheaper model where the task allows it.
 
+## Community (traveller-shared trips)
+
+The app has a community layer — publish a trip, browse others', like, comment, add photos, "use
+this plan" — served by the same Worker (`pub_*` actions, stored in the CITIES KV, no new
+bindings). It exists WITHOUT breaking the privacy promise: nothing is sent until the traveller
+presses Publish, and the modal says plainly that publishing is public. No accounts; a first name
+is whatever they typed. Contributions earn points (`bosla_pts`); every 50 points auto-grants one
+trip credit — the same credits the paywall sells, so points become the discount ladder.
+
+Moderation is self-serve: worker strips `<>`, caps every size and per-address daily count, and
+three reports hide a trip. Photos are canvas-compressed client-side to ≤~160KB JPEG before upload.
+
 ## Deploying
 
 GitHub Pages serves `main`. Develop on the feature branch, then merge:

@@ -196,6 +196,15 @@ export default {
         if (!names.length) return reply({ closed: [], rated: {} }, 200, origin);
         return reply(await placeFacts(names, city, env), 200, origin);
       }
+      // --- Community: published trips, likes, comments, photos --------------------------------
+      // No accounts, in keeping with the app's promise. Publishing is an explicit act; a name is
+      // whatever the traveller typed. Everything lives in the same KV, costs no AI budget, and is
+      // bounded hard: sizes, counts, and per-address daily caps. Three reports hide a trip with
+      // no admin on duty — a beta can't wait for one.
+      if (body.action && body.action.indexOf("pub_") === 0) {
+        if (!env.CITIES) return reply({ error: "no storage bound" }, 500, origin);
+        return await community(body, env, request, origin);
+      }
       // These two hand over every city we have ever built. They're yours, not the public's.
       // Set an ADMIN_KEY secret in Cloudflare and they lock; leave it unset and nothing changes.
       if (body.action === "list" || body.action === "dump") {
@@ -834,4 +843,161 @@ function parseTrip(text, apiKey) {
     "budget: Budget, Mid-range, or Luxury (default Mid-range). " +
     "roadtrip: true ONLY if the named cities can realistically be driven between (same country or landmass, not across an ocean).";
   return claude(apiKey, "claude-haiku-4-5", system, text, PARSE_SCHEMA, 500);
+}
+
+// --- community ---------------------------------------------------------------------------------
+// A published trip is the app's own replayable state plus a title and a first name. The feed is a
+// single compact KV record so browsing costs one read; the full trip (state, comments, photo ids)
+// is fetched only when opened. Photos are small JPEGs the app compresses before sending, stored
+// one per key. All of it is bounded — a public write endpoint with no bounds is an invitation.
+const PUB = {
+  TITLE: 60, NAME: 30, COMMENT: 240, STATE: 40000,     // character caps
+  PHOTO: 220000,                                        // ~160KB of JPEG, base64-grown
+  PHOTOS_PER_TRIP: 12, COMMENTS_PER_TRIP: 60,
+  FEED: 120,                                            // trips the feed remembers
+  DAY_PUBLISH: 5, DAY_PHOTOS: 12, DAY_COMMENTS: 30,     // per address per day
+  HIDE_AT: 3,                                           // reports before a trip disappears
+};
+
+function pubClean(s, max) {
+  // control chars out, angle brackets out (the app escapes too — belt and braces), length capped
+  return String(s || "").replace(/[\u0000-\u001F<>]/g, "").trim().slice(0, max);
+}
+async function pubDayCap(env, request, what, cap) {
+  const ip = request.headers.get("CF-Connecting-IP") || "anon";
+  return (await bump(env.CITIES, "pubrl:" + what + ":" + ip + ":" + today(), 172800)) > cap;
+}
+async function pubIdx(kv) {
+  try { return JSON.parse(await kv.get("pubidx")) || []; } catch (e) { return []; }
+}
+async function pubIdxSave(kv, idx) {
+  try { await kv.put("pubidx", JSON.stringify(idx.slice(0, PUB.FEED))); } catch (e) {}
+}
+// The feed row is rebuilt from the record, so likes/counts on cards can't drift far from truth.
+function pubRow(r) {
+  return { id: r.id, t: r.t, title: r.title, name: r.name, lang: r.lang,
+    cities: r.cities, days: r.days, likes: r.likes || 0,
+    nc: (r.comments || []).length, np: (r.photos || []).length };
+}
+async function pubTouch(kv, r) {
+  await kv.put("pub:" + r.id, JSON.stringify(r));
+  const idx = await pubIdx(kv);
+  const i = idx.findIndex((x) => x.id === r.id);
+  if (r.hidden) { if (i >= 0) idx.splice(i, 1); }
+  else if (i >= 0) idx[i] = pubRow(r);
+  else idx.unshift(pubRow(r));
+  await pubIdxSave(kv, idx);
+}
+
+async function community(body, env, request, origin) {
+  const kv = env.CITIES;
+  const act = body.action;
+
+  if (act === "pub_feed") {
+    return reply({ trips: await pubIdx(kv) }, 200, origin);
+  }
+
+  if (act === "pub_get") {
+    const raw = await kv.get("pub:" + pubClean(body.id, 40));
+    if (!raw) return reply({ error: "not found" }, 404, origin);
+    const r = JSON.parse(raw);
+    if (r.hidden) return reply({ error: "not found" }, 404, origin);
+    return reply({ trip: r }, 200, origin);
+  }
+
+  if (act === "pub_add") {
+    if (await pubDayCap(env, request, "add", PUB.DAY_PUBLISH))
+      return reply({ error: "daily limit reached", retry: 3600 }, 429, origin);
+    const title = pubClean(body.title, PUB.TITLE);
+    const name = pubClean(body.name, PUB.NAME) || "Traveller";
+    let state;
+    try { state = JSON.stringify(body.state); } catch (e) { state = ""; }
+    if (!title || !state || state.length < 20) return reply({ error: "missing pieces" }, 400, origin);
+    if (state.length > PUB.STATE) return reply({ error: "trip too large" }, 400, origin);
+    const cities = (Array.isArray(body.cities) ? body.cities : []).slice(0, 8)
+      .map((c) => pubClean(c, 40)).filter(Boolean);
+    const days = Math.max(1, Math.min(60, body.days | 0)) || 1;
+    const lang = ["en", "ar", "es"].indexOf(body.lang) >= 0 ? body.lang : "en";
+    const id = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)).replace(/-/g, "").slice(0, 16);
+    const r = { id, t: Date.now(), title, name, lang, cities, days,
+      state: JSON.parse(state), likes: 0, comments: [], photos: [] };
+    await pubTouch(kv, r);
+    return reply({ id }, 200, origin);
+  }
+
+  if (act === "pub_like") {
+    const id = pubClean(body.id, 40);
+    // one like per address per trip, forever-ish; the client also remembers its own likes
+    const ip = request.headers.get("CF-Connecting-IP") || "anon";
+    const seen = await kv.get("publike:" + id + ":" + ip);
+    const raw = await kv.get("pub:" + id);
+    if (!raw) return reply({ error: "not found" }, 404, origin);
+    const r = JSON.parse(raw);
+    if (!seen) {
+      r.likes = (r.likes || 0) + 1;
+      await kv.put("publike:" + id + ":" + ip, "1", { expirationTtl: 31536000 });
+      await pubTouch(kv, r);
+    }
+    return reply({ likes: r.likes || 0 }, 200, origin);
+  }
+
+  if (act === "pub_comment") {
+    if (await pubDayCap(env, request, "cm", PUB.DAY_COMMENTS))
+      return reply({ error: "daily limit reached", retry: 3600 }, 429, origin);
+    const id = pubClean(body.id, 40);
+    const txt = pubClean(body.txt, PUB.COMMENT);
+    const name = pubClean(body.name, PUB.NAME) || "Traveller";
+    if (!txt) return reply({ error: "empty" }, 400, origin);
+    const raw = await kv.get("pub:" + id);
+    if (!raw) return reply({ error: "not found" }, 404, origin);
+    const r = JSON.parse(raw);
+    if ((r.comments || []).length >= PUB.COMMENTS_PER_TRIP)
+      return reply({ error: "comments full" }, 400, origin);
+    r.comments.push({ n: name, x: txt, t: Date.now() });
+    await pubTouch(kv, r);
+    return reply({ comments: r.comments }, 200, origin);
+  }
+
+  if (act === "pub_photo_add") {
+    if (await pubDayCap(env, request, "ph", PUB.DAY_PHOTOS))
+      return reply({ error: "daily limit reached", retry: 3600 }, 429, origin);
+    const id = pubClean(body.id, 40);
+    const name = pubClean(body.name, PUB.NAME) || "Traveller";
+    const data = String(body.data || "");
+    if (data.indexOf("data:image/jpeg;base64,") !== 0 && data.indexOf("data:image/webp;base64,") !== 0)
+      return reply({ error: "jpeg or webp only" }, 400, origin);
+    if (data.length > PUB.PHOTO) return reply({ error: "photo too large" }, 400, origin);
+    const raw = await kv.get("pub:" + id);
+    if (!raw) return reply({ error: "not found" }, 404, origin);
+    const r = JSON.parse(raw);
+    if ((r.photos || []).length >= PUB.PHOTOS_PER_TRIP)
+      return reply({ error: "photos full" }, 400, origin);
+    const pid = id + "." + ((r.photos || []).length + 1) + "." + String(Date.now()).slice(-5);
+    await kv.put("pubphoto:" + pid, JSON.stringify({ n: name, d: data }));
+    r.photos.push(pid);
+    await pubTouch(kv, r);
+    return reply({ pid, photos: r.photos }, 200, origin);
+  }
+
+  if (act === "pub_photo") {
+    const raw = await kv.get("pubphoto:" + pubClean(body.pid, 60));
+    if (!raw) return reply({ error: "not found" }, 404, origin);
+    return reply(JSON.parse(raw), 200, origin);
+  }
+
+  if (act === "pub_report") {
+    const id = pubClean(body.id, 40);
+    const ip = request.headers.get("CF-Connecting-IP") || "anon";
+    const seen = await kv.get("pubrep:" + id + ":" + ip);
+    if (seen) return reply({ ok: 1 }, 200, origin);
+    await kv.put("pubrep:" + id + ":" + ip, "1", { expirationTtl: 31536000 });
+    const n = await bump(kv, "pubreports:" + id, 31536000);
+    if (n >= PUB.HIDE_AT) {
+      const raw = await kv.get("pub:" + id);
+      if (raw) { const r = JSON.parse(raw); r.hidden = 1; await pubTouch(kv, r); }
+    }
+    return reply({ ok: 1 }, 200, origin);
+  }
+
+  return reply({ error: "unknown action" }, 400, origin);
 }
