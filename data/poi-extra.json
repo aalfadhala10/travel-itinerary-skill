@@ -7739,5 +7739,1330 @@
    "lat": 19.447,
    "lng": -99.152
   }
+ ],
+ "chicago": [
+  {
+   "n": "Museum of Science and Industry",
+   "a": "Hyde Park",
+   "t": [
+    "Culture"
+   ],
+   "lat": 41.7906,
+   "lng": -87.5831
+  },
+  {
+   "n": "Chicago Riverwalk",
+   "a": "The Loop",
+   "t": [
+    "Relax"
+   ],
+   "lat": 41.888,
+   "lng": -87.626
+  },
+  {
+   "n": "360 Chicago Observation Deck",
+   "a": "Streeterville",
+   "t": [
+    "Culture"
+   ],
+   "lat": 41.8988,
+   "lng": -87.623
+  },
+  {
+   "n": "Wicker Park & Bucktown",
+   "a": "Wicker Park",
+   "t": [
+    "Shopping",
+    "Food"
+   ],
+   "lat": 41.9088,
+   "lng": -87.6796
+  },
+  {
+   "n": "Garfield Park Conservatory",
+   "a": "Garfield Park",
+   "t": [
+    "Nature"
+   ],
+   "lat": 41.8863,
+   "lng": -87.7172
+  },
+  {
+   "n": "Chinatown Chicago",
+   "a": "Chinatown",
+   "t": [
+    "Food",
+    "Culture"
+   ],
+   "lat": 41.853,
+   "lng": -87.632
+  },
+  {
+   "n": "Shedd Aquarium",
+   "a": "Museum Campus",
+   "t": [
+    "Nature"
+   ],
+   "lat": 41.8676,
+   "lng": -87.614
+  },
+  {
+   "n": "Maggie Daley Park",
+   "a": "The Loop",
+   "t": [
+    "Relax"
+   ],
+   "lat": 41.8826,
+   "lng": -87.6191
+  }
+ ],
+ "washington": [
+  {
+   "n": "Library of Congress",
+   "a": "Capitol Hill",
+   "t": [
+    "Culture"
+   ],
+   "lat": 38.8887,
+   "lng": -77.0047
+  },
+  {
+   "n": "National Gallery of Art",
+   "a": "National Mall",
+   "t": [
+    "Culture"
+   ],
+   "lat": 38.8913,
+   "lng": -77.0199
+  },
+  {
+   "n": "Eastern Market",
+   "a": "Capitol Hill",
+   "t": [
+    "Food",
+    "Shopping"
+   ],
+   "lat": 38.8863,
+   "lng": -76.9962
+  },
+  {
+   "n": "The Wharf",
+   "a": "Southwest Waterfront",
+   "t": [
+    "Food",
+    "Relax"
+   ],
+   "lat": 38.8783,
+   "lng": -77.022
+  },
+  {
+   "n": "National Zoo",
+   "a": "Woodley Park",
+   "t": [
+    "Nature"
+   ],
+   "lat": 38.9296,
+   "lng": -77.0498
+  },
+  {
+   "n": "Rock Creek Park Trails",
+   "a": "Rock Creek",
+   "t": [
+    "Nature"
+   ],
+   "lat": 38.952,
+   "lng": -77.048
+  },
+  {
+   "n": "Union Market",
+   "a": "NoMa",
+   "t": [
+    "Food"
+   ],
+   "lat": 38.9086,
+   "lng": -76.9989
+  },
+  {
+   "n": "Old Town Alexandria",
+   "a": "Alexandria",
+   "t": [
+    "Culture",
+    "Shopping"
+   ],
+   "lat": 38.8048,
+   "lng": -77.043
+  },
+  {
+   "n": "Dupont Circle & Embassy Row",
+   "a": "Dupont Circle",
+   "t": [
+    "Culture"
+   ],
+   "lat": 38.911,
+   "lng": -77.044
+  },
+  {
+   "n": "National Portrait Gallery",
+   "a": "Penn Quarter",
+   "t": [
+    "Culture"
+   ],
+   "lat": 38.898,
+   "lng": -77.023
+  }
+ ],
+ "orlando": [
+  {
+   "n": "Lake Eola Park Swan Boats",
+   "a": "Downtown",
+   "t": [
+    "Relax"
+   ],
+   "lat": 28.543,
+   "lng": -81.373
+  },
+  {
+   "n": "Winter Park & Scenic Boat Tour",
+   "a": "Winter Park",
+   "t": [
+    "Relax",
+    "Culture"
+   ],
+   "lat": 28.599,
+   "lng": -81.351
+  },
+  {
+   "n": "Wekiwa Springs Kayaking",
+   "a": "Apopka",
+   "t": [
+    "Nature",
+    "Adventure"
+   ],
+   "lat": 28.712,
+   "lng": -81.46
+  },
+  {
+   "n": "Orlando Science Center",
+   "a": "Loch Haven Park",
+   "t": [
+    "Culture"
+   ],
+   "lat": 28.572,
+   "lng": -81.368
+  },
+  {
+   "n": "East End Market",
+   "a": "Audubon Park",
+   "t": [
+    "Food"
+   ],
+   "lat": 28.57,
+   "lng": -81.348
+  },
+  {
+   "n": "The Mall at Millenia",
+   "a": "Millenia",
+   "t": [
+    "Shopping"
+   ],
+   "lat": 28.485,
+   "lng": -81.431
+  },
+  {
+   "n": "Orlando Premium Outlets",
+   "a": "Vineland",
+   "t": [
+    "Shopping"
+   ],
+   "lat": 28.388,
+   "lng": -81.492
+  },
+  {
+   "n": "Blue Spring State Park Manatees",
+   "a": "Orange City",
+   "t": [
+    "Nature"
+   ],
+   "lat": 28.947,
+   "lng": -81.34
+  }
+ ],
+ "honolulu": [
+  {
+   "n": "Lanikai Beach",
+   "a": "Kailua",
+   "t": [
+    "Relax"
+   ],
+   "lat": 21.393,
+   "lng": -157.715
+  },
+  {
+   "n": "Koko Head Crater Trail",
+   "a": "Hawaii Kai",
+   "t": [
+    "Adventure"
+   ],
+   "lat": 21.281,
+   "lng": -157.692
+  },
+  {
+   "n": "Bishop Museum",
+   "a": "Kalihi",
+   "t": [
+    "Culture"
+   ],
+   "lat": 21.333,
+   "lng": -157.871
+  },
+  {
+   "n": "Makapuu Lighthouse Trail",
+   "a": "Makapuu",
+   "t": [
+    "Nature"
+   ],
+   "lat": 21.305,
+   "lng": -157.65
+  },
+  {
+   "n": "Ala Moana Center",
+   "a": "Ala Moana",
+   "t": [
+    "Shopping"
+   ],
+   "lat": 21.291,
+   "lng": -157.843
+  },
+  {
+   "n": "KCC Farmers Market",
+   "a": "Diamond Head",
+   "t": [
+    "Food"
+   ],
+   "lat": 21.27,
+   "lng": -157.802
+  },
+  {
+   "n": "Waimea Valley Waterfall",
+   "a": "North Shore",
+   "t": [
+    "Nature"
+   ],
+   "lat": 21.638,
+   "lng": -158.057
+  },
+  {
+   "n": "Honolulu Museum of Art",
+   "a": "Makiki",
+   "t": [
+    "Culture"
+   ],
+   "lat": 21.304,
+   "lng": -157.849
+  }
+ ],
+ "buenosaires": [
+  {
+   "n": "Jardín Japonés",
+   "a": "Palermo",
+   "t": [
+    "Relax",
+    "Nature"
+   ],
+   "lat": -34.576,
+   "lng": -58.41
+  },
+  {
+   "n": "MALBA Museum",
+   "a": "Palermo",
+   "t": [
+    "Culture"
+   ],
+   "lat": -34.577,
+   "lng": -58.403
+  },
+  {
+   "n": "Café Tortoni",
+   "a": "Avenida de Mayo",
+   "t": [
+    "Food",
+    "Culture"
+   ],
+   "lat": -34.6085,
+   "lng": -58.3785
+  },
+  {
+   "n": "Reserva Ecológica Costanera Sur",
+   "a": "Puerto Madero",
+   "t": [
+    "Nature"
+   ],
+   "lat": -34.614,
+   "lng": -58.352
+  },
+  {
+   "n": "Feria de Mataderos",
+   "a": "Mataderos",
+   "t": [
+    "Culture",
+    "Shopping"
+   ],
+   "lat": -34.662,
+   "lng": -58.503
+  },
+  {
+   "n": "Barrio Chino",
+   "a": "Belgrano",
+   "t": [
+    "Food"
+   ],
+   "lat": -34.56,
+   "lng": -58.447
+  },
+  {
+   "n": "Usina del Arte",
+   "a": "La Boca",
+   "t": [
+    "Culture"
+   ],
+   "lat": -34.639,
+   "lng": -58.358
+  },
+  {
+   "n": "Galerías Pacífico",
+   "a": "Centro",
+   "t": [
+    "Shopping"
+   ],
+   "lat": -34.599,
+   "lng": -58.375
+  },
+  {
+   "n": "Palermo Rose Garden (El Rosedal)",
+   "a": "Palermo",
+   "t": [
+    "Nature",
+    "Relax"
+   ],
+   "lat": -34.571,
+   "lng": -58.418
+  }
+ ],
+ "auckland": [
+  {
+   "n": "Kelly Tarlton's Sea Life Aquarium",
+   "a": "Mission Bay",
+   "t": [
+    "Nature"
+   ],
+   "lat": -36.846,
+   "lng": 174.818
+  },
+  {
+   "n": "Mission Bay Beach",
+   "a": "Mission Bay",
+   "t": [
+    "Relax"
+   ],
+   "lat": -36.848,
+   "lng": 174.83
+  },
+  {
+   "n": "Ponsonby Road",
+   "a": "Ponsonby",
+   "t": [
+    "Food",
+    "Shopping"
+   ],
+   "lat": -36.856,
+   "lng": 174.746
+  },
+  {
+   "n": "Auckland Fish Market",
+   "a": "Wynyard Quarter",
+   "t": [
+    "Food"
+   ],
+   "lat": -36.843,
+   "lng": 174.757
+  },
+  {
+   "n": "One Tree Hill (Maungakiekie)",
+   "a": "Cornwall Park",
+   "t": [
+    "Nature"
+   ],
+   "lat": -36.9,
+   "lng": 174.783
+  },
+  {
+   "n": "Muriwai Gannet Colony",
+   "a": "Muriwai",
+   "t": [
+    "Nature"
+   ],
+   "lat": -36.828,
+   "lng": 174.43
+  },
+  {
+   "n": "Otara Market",
+   "a": "Otara",
+   "t": [
+    "Shopping",
+    "Culture"
+   ],
+   "lat": -36.962,
+   "lng": 174.844
+  },
+  {
+   "n": "Karekare Beach",
+   "a": "Waitakere Ranges",
+   "t": [
+    "Nature"
+   ],
+   "lat": -36.988,
+   "lng": 174.48
+  }
+ ],
+ "kathmandu": [
+  {
+   "n": "Kopan Monastery",
+   "a": "Budhanilkantha",
+   "t": [
+    "Culture"
+   ],
+   "lat": 27.742,
+   "lng": 85.365
+  },
+  {
+   "n": "Asan Bazaar",
+   "a": "Asan",
+   "t": [
+    "Shopping",
+    "Food"
+   ],
+   "lat": 27.708,
+   "lng": 85.311
+  },
+  {
+   "n": "Shivapuri National Park Hike",
+   "a": "Shivapuri",
+   "t": [
+    "Nature",
+    "Adventure"
+   ],
+   "lat": 27.79,
+   "lng": 85.38
+  },
+  {
+   "n": "Kirtipur Old Town",
+   "a": "Kirtipur",
+   "t": [
+    "Culture"
+   ],
+   "lat": 27.678,
+   "lng": 85.277
+  },
+  {
+   "n": "Chandragiri Hills Cable Car",
+   "a": "Chandragiri",
+   "t": [
+    "Nature",
+    "Adventure"
+   ],
+   "lat": 27.662,
+   "lng": 85.212
+  },
+  {
+   "n": "Narayanhiti Palace Museum",
+   "a": "Durbar Marg",
+   "t": [
+    "Culture"
+   ],
+   "lat": 27.714,
+   "lng": 85.318
+  },
+  {
+   "n": "Freak Street",
+   "a": "Basantapur",
+   "t": [
+    "Culture",
+    "Food"
+   ],
+   "lat": 27.703,
+   "lng": 85.307
+  },
+  {
+   "n": "Taudaha Lake",
+   "a": "Kirtipur",
+   "t": [
+    "Nature"
+   ],
+   "lat": 27.648,
+   "lng": 85.281
+  },
+  {
+   "n": "Seto Machindranath Temple",
+   "a": "Asan",
+   "t": [
+    "Culture"
+   ],
+   "lat": 27.706,
+   "lng": 85.31
+  },
+  {
+   "n": "Nagi Gompa Monastery",
+   "a": "Shivapuri",
+   "t": [
+    "Culture",
+    "Nature"
+   ],
+   "lat": 27.779,
+   "lng": 85.39
+  }
+ ],
+ "yokohama": [
+  {
+   "n": "Ramen Museum Shin-Yokohama",
+   "a": "Shin-Yokohama",
+   "t": [
+    "Food",
+    "Culture"
+   ],
+   "lat": 35.51,
+   "lng": 139.615
+  },
+  {
+   "n": "Zoorasia",
+   "a": "Asahi Ward",
+   "t": [
+    "Nature"
+   ],
+   "lat": 35.494,
+   "lng": 139.527
+  },
+  {
+   "n": "Osanbashi Pier",
+   "a": "Kannai",
+   "t": [
+    "Relax"
+   ],
+   "lat": 35.45,
+   "lng": 139.648
+  },
+  {
+   "n": "Noge Bar District",
+   "a": "Noge",
+   "t": [
+    "Food"
+   ],
+   "lat": 35.445,
+   "lng": 139.625
+  },
+  {
+   "n": "Kamakura Great Buddha Day Trip",
+   "a": "Kamakura",
+   "t": [
+    "Culture"
+   ],
+   "lat": 35.317,
+   "lng": 139.536
+  },
+  {
+   "n": "Enoshima Island Day Trip",
+   "a": "Fujisawa",
+   "t": [
+    "Nature",
+    "Culture"
+   ],
+   "lat": 35.3,
+   "lng": 139.48
+  },
+  {
+   "n": "Sogo Yokohama & Station Shopping",
+   "a": "Yokohama Station",
+   "t": [
+    "Shopping"
+   ],
+   "lat": 35.466,
+   "lng": 139.622
+  },
+  {
+   "n": "Negishi Forest Park",
+   "a": "Negishi",
+   "t": [
+    "Nature",
+    "Relax"
+   ],
+   "lat": 35.421,
+   "lng": 139.633
+  },
+  {
+   "n": "Yokohama Museum of Art",
+   "a": "Minato Mirai",
+   "t": [
+    "Culture"
+   ],
+   "lat": 35.457,
+   "lng": 139.63
+  }
+ ],
+ "thessaloniki": [
+  {
+   "n": "Ladadika District",
+   "a": "Ladadika",
+   "t": [
+    "Food",
+    "Culture"
+   ],
+   "lat": 40.635,
+   "lng": 22.938
+  },
+  {
+   "n": "Heptapyrgion Fortress",
+   "a": "Ano Poli",
+   "t": [
+    "Culture"
+   ],
+   "lat": 40.644,
+   "lng": 22.96
+  },
+  {
+   "n": "Kapani Market",
+   "a": "Centre",
+   "t": [
+    "Shopping",
+    "Food"
+   ],
+   "lat": 40.636,
+   "lng": 22.941
+  },
+  {
+   "n": "OTE Tower View",
+   "a": "HELEXPO",
+   "t": [
+    "Culture"
+   ],
+   "lat": 40.628,
+   "lng": 22.956
+  },
+  {
+   "n": "Waterfront Umbrellas Sculpture",
+   "a": "Nea Paralia",
+   "t": [
+    "Relax"
+   ],
+   "lat": 40.621,
+   "lng": 22.953
+  },
+  {
+   "n": "Vergina Royal Tombs Day Trip",
+   "a": "Vergina",
+   "t": [
+    "Culture"
+   ],
+   "lat": 40.486,
+   "lng": 22.316
+  },
+  {
+   "n": "Peraia Beach",
+   "a": "Peraia",
+   "t": [
+    "Relax"
+   ],
+   "lat": 40.5,
+   "lng": 22.927
+  },
+  {
+   "n": "Ataturk Museum",
+   "a": "Centre",
+   "t": [
+    "Culture"
+   ],
+   "lat": 40.639,
+   "lng": 22.948
+  },
+  {
+   "n": "Mount Chortiatis Trails",
+   "a": "Chortiatis",
+   "t": [
+    "Nature",
+    "Adventure"
+   ],
+   "lat": 40.607,
+   "lng": 23.1
+  }
+ ],
+ "chefchaouen": [
+  {
+   "n": "Souika Market Streets",
+   "a": "Medina",
+   "t": [
+    "Shopping"
+   ],
+   "lat": 35.169,
+   "lng": -5.263
+  },
+  {
+   "n": "Hammam Traditional Bath",
+   "a": "Medina",
+   "t": [
+    "Relax",
+    "Culture"
+   ],
+   "lat": 35.17,
+   "lng": -5.264
+  },
+  {
+   "n": "Jebel El-Kelaa Hike",
+   "a": "Rif Mountains",
+   "t": [
+    "Adventure",
+    "Nature"
+   ],
+   "lat": 35.19,
+   "lng": -5.25
+  },
+  {
+   "n": "Oued Laou Beach Day Trip",
+   "a": "Oued Laou",
+   "t": [
+    "Relax"
+   ],
+   "lat": 35.451,
+   "lng": -5.089
+  },
+  {
+   "n": "Local Weaving Cooperatives",
+   "a": "Medina",
+   "t": [
+    "Shopping",
+    "Culture"
+   ],
+   "lat": 35.1685,
+   "lng": -5.2635
+  },
+  {
+   "n": "Aladdin Rooftop Tea Houses",
+   "a": "Plaza Uta el-Hammam",
+   "t": [
+    "Food",
+    "Relax"
+   ],
+   "lat": 35.1688,
+   "lng": -5.2622
+  },
+  {
+   "n": "Mandala Pottery Painting",
+   "a": "Medina",
+   "t": [
+    "Culture"
+   ],
+   "lat": 35.1695,
+   "lng": -5.2645
+  },
+  {
+   "n": "Sunset at Hotel Atlas Viewpoint",
+   "a": "Upper Town",
+   "t": [
+    "Nature",
+    "Relax"
+   ],
+   "lat": 35.166,
+   "lng": -5.27
+  },
+  {
+   "n": "Souk Day (Monday & Thursday Market)",
+   "a": "Bab Souk",
+   "t": [
+    "Shopping",
+    "Culture"
+   ],
+   "lat": 35.172,
+   "lng": -5.268
+  }
+ ],
+ "tenerife": [
+  {
+   "n": "Teide Cable Car",
+   "a": "Teide National Park",
+   "t": [
+    "Adventure",
+    "Nature"
+   ],
+   "lat": 28.254,
+   "lng": -16.625
+  },
+  {
+   "n": "Garachico Rock Pools",
+   "a": "Garachico",
+   "t": [
+    "Relax",
+    "Nature"
+   ],
+   "lat": 28.373,
+   "lng": -16.764
+  },
+  {
+   "n": "Whale Watching Los Cristianos",
+   "a": "Los Cristianos",
+   "t": [
+    "Nature",
+    "Adventure"
+   ],
+   "lat": 28.05,
+   "lng": -16.718
+  },
+  {
+   "n": "La Orotava Old Town",
+   "a": "La Orotava",
+   "t": [
+    "Culture"
+   ],
+   "lat": 28.39,
+   "lng": -16.523
+  },
+  {
+   "n": "Punta de Teno Lighthouse",
+   "a": "Teno",
+   "t": [
+    "Nature"
+   ],
+   "lat": 28.342,
+   "lng": -16.921
+  },
+  {
+   "n": "Mercado Nuestra Señora de África",
+   "a": "Santa Cruz",
+   "t": [
+    "Food",
+    "Shopping"
+   ],
+   "lat": 28.46,
+   "lng": -16.253
+  },
+  {
+   "n": "Barranco del Infierno Trail",
+   "a": "Adeje",
+   "t": [
+    "Adventure"
+   ],
+   "lat": 28.123,
+   "lng": -16.722
+  },
+  {
+   "n": "Icod de los Vinos Dragon Tree",
+   "a": "Icod",
+   "t": [
+    "Nature",
+    "Culture"
+   ],
+   "lat": 28.367,
+   "lng": -16.722
+  },
+  {
+   "n": "Candelaria Basilica",
+   "a": "Candelaria",
+   "t": [
+    "Culture"
+   ],
+   "lat": 28.349,
+   "lng": -16.371
+  }
+ ],
+ "genoa": [
+  {
+   "n": "Nervi Coastal Walk",
+   "a": "Nervi",
+   "t": [
+    "Nature",
+    "Relax"
+   ],
+   "lat": 44.382,
+   "lng": 9.037
+  },
+  {
+   "n": "Mercato Orientale",
+   "a": "Centro",
+   "t": [
+    "Food",
+    "Shopping"
+   ],
+   "lat": 44.406,
+   "lng": 8.94
+  },
+  {
+   "n": "Bigo Panoramic Lift",
+   "a": "Porto Antico",
+   "t": [
+    "Culture"
+   ],
+   "lat": 44.41,
+   "lng": 8.926
+  },
+  {
+   "n": "Camogli Day Trip",
+   "a": "Camogli",
+   "t": [
+    "Relax",
+    "Culture"
+   ],
+   "lat": 44.349,
+   "lng": 9.155
+  },
+  {
+   "n": "Portofino Day Trip",
+   "a": "Portofino",
+   "t": [
+    "Nature",
+    "Culture"
+   ],
+   "lat": 44.303,
+   "lng": 9.21
+  },
+  {
+   "n": "Via del Campo",
+   "a": "Centro Storico",
+   "t": [
+    "Culture",
+    "Shopping"
+   ],
+   "lat": 44.409,
+   "lng": 8.928
+  },
+  {
+   "n": "Santa Margherita Ligure Day Trip",
+   "a": "Santa Margherita",
+   "t": [
+    "Relax",
+    "Culture"
+   ],
+   "lat": 44.335,
+   "lng": 9.211
+  },
+  {
+   "n": "Castello d'Albertis",
+   "a": "Castelletto",
+   "t": [
+    "Culture"
+   ],
+   "lat": 44.416,
+   "lng": 8.925
+  },
+  {
+   "n": "Righi Funicular & Viewpoint",
+   "a": "Righi",
+   "t": [
+    "Nature",
+    "Adventure"
+   ],
+   "lat": 44.425,
+   "lng": 8.933
+  }
+ ],
+ "manchester": [
+  {
+   "n": "Chetham's Library",
+   "a": "Medieval Quarter",
+   "t": [
+    "Culture"
+   ],
+   "lat": 53.486,
+   "lng": -2.244
+  },
+  {
+   "n": "Afflecks Palace",
+   "a": "Northern Quarter",
+   "t": [
+    "Shopping"
+   ],
+   "lat": 53.483,
+   "lng": -2.236
+  },
+  {
+   "n": "Whitworth Art Gallery",
+   "a": "Oxford Road",
+   "t": [
+    "Culture"
+   ],
+   "lat": 53.461,
+   "lng": -2.232
+  },
+  {
+   "n": "Curry Mile",
+   "a": "Rusholme",
+   "t": [
+    "Food"
+   ],
+   "lat": 53.45,
+   "lng": -2.222
+  },
+  {
+   "n": "MediaCity & Salford Quays",
+   "a": "Salford",
+   "t": [
+    "Culture"
+   ],
+   "lat": 53.472,
+   "lng": -2.297
+  },
+  {
+   "n": "Fletcher Moss Gardens",
+   "a": "Didsbury",
+   "t": [
+    "Nature",
+    "Relax"
+   ],
+   "lat": 53.411,
+   "lng": -2.231
+  },
+  {
+   "n": "Arndale Market",
+   "a": "City Centre",
+   "t": [
+    "Shopping",
+    "Food"
+   ],
+   "lat": 53.483,
+   "lng": -2.242
+  },
+  {
+   "n": "Imperial War Museum North",
+   "a": "Salford Quays",
+   "t": [
+    "Culture"
+   ],
+   "lat": 53.47,
+   "lng": -2.299
+  },
+  {
+   "n": "Peak District Day Trip",
+   "a": "Edale",
+   "t": [
+    "Nature",
+    "Adventure"
+   ],
+   "lat": 53.365,
+   "lng": -1.816
+  }
+ ],
+ "glasgow": [
+  {
+   "n": "Ashton Lane",
+   "a": "West End",
+   "t": [
+    "Food"
+   ],
+   "lat": 55.875,
+   "lng": -4.293
+  },
+  {
+   "n": "The Lighthouse Design Centre",
+   "a": "City Centre",
+   "t": [
+    "Culture"
+   ],
+   "lat": 55.86,
+   "lng": -4.254
+  },
+  {
+   "n": "Pollok Country Park",
+   "a": "Pollokshaws",
+   "t": [
+    "Nature"
+   ],
+   "lat": 55.828,
+   "lng": -4.308
+  },
+  {
+   "n": "Barras Market",
+   "a": "Calton",
+   "t": [
+    "Shopping"
+   ],
+   "lat": 55.854,
+   "lng": -4.236
+  },
+  {
+   "n": "Loch Lomond Day Trip",
+   "a": "Balloch",
+   "t": [
+    "Nature"
+   ],
+   "lat": 56.002,
+   "lng": -4.581
+  },
+  {
+   "n": "Stirling Castle Day Trip",
+   "a": "Stirling",
+   "t": [
+    "Culture"
+   ],
+   "lat": 56.124,
+   "lng": -3.947
+  },
+  {
+   "n": "Finnieston Strip",
+   "a": "Finnieston",
+   "t": [
+    "Food"
+   ],
+   "lat": 55.862,
+   "lng": -4.283
+  },
+  {
+   "n": "Merchant City",
+   "a": "Merchant City",
+   "t": [
+    "Food",
+    "Shopping"
+   ],
+   "lat": 55.858,
+   "lng": -4.245
+  },
+  {
+   "n": "Clydeside Waterfront Walk",
+   "a": "Clydeside",
+   "t": [
+    "Relax"
+   ],
+   "lat": 55.86,
+   "lng": -4.306
+  }
+ ],
+ "cologne": [
+  {
+   "n": "Flora und Botanischer Garten",
+   "a": "Riehl",
+   "t": [
+    "Nature"
+   ],
+   "lat": 50.958,
+   "lng": 6.973
+  },
+  {
+   "n": "Kolumba Art Museum",
+   "a": "Innenstadt",
+   "t": [
+    "Culture"
+   ],
+   "lat": 50.939,
+   "lng": 6.954
+  },
+  {
+   "n": "Ehrenstrasse Shopping",
+   "a": "Belgian Quarter",
+   "t": [
+    "Shopping"
+   ],
+   "lat": 50.939,
+   "lng": 6.939
+  },
+  {
+   "n": "KölnTriangle Panorama",
+   "a": "Deutz",
+   "t": [
+    "Culture"
+   ],
+   "lat": 50.94,
+   "lng": 6.972
+  },
+  {
+   "n": "Aachen Cathedral Day Trip",
+   "a": "Aachen",
+   "t": [
+    "Culture"
+   ],
+   "lat": 50.775,
+   "lng": 6.084
+  },
+  {
+   "n": "Brühl Palaces Day Trip",
+   "a": "Brühl",
+   "t": [
+    "Culture"
+   ],
+   "lat": 50.826,
+   "lng": 6.905
+  },
+  {
+   "n": "Rhine Cable Car",
+   "a": "Riehl",
+   "t": [
+    "Adventure",
+    "Relax"
+   ],
+   "lat": 50.959,
+   "lng": 6.97
+  }
+ ],
+ "quito": [
+  {
+   "n": "Calle La Floresta Food Scene",
+   "a": "La Floresta",
+   "t": [
+    "Food"
+   ],
+   "lat": -0.202,
+   "lng": -78.478
+  },
+  {
+   "n": "Museo Casa del Alabado",
+   "a": "Old Town",
+   "t": [
+    "Culture"
+   ],
+   "lat": -0.221,
+   "lng": -78.517
+  },
+  {
+   "n": "Itchimbía Park & Glass Palace",
+   "a": "Itchimbía",
+   "t": [
+    "Nature",
+    "Relax"
+   ],
+   "lat": -0.218,
+   "lng": -78.5
+  },
+  {
+   "n": "Otavalo Market Day Trip",
+   "a": "Otavalo",
+   "t": [
+    "Shopping",
+    "Culture"
+   ],
+   "lat": 0.234,
+   "lng": -78.262
+  },
+  {
+   "n": "Cotopaxi National Park Day Trip",
+   "a": "Cotopaxi",
+   "t": [
+    "Nature",
+    "Adventure"
+   ],
+   "lat": -0.68,
+   "lng": -78.438
+  },
+  {
+   "n": "Papallacta Hot Springs Day Trip",
+   "a": "Papallacta",
+   "t": [
+    "Relax",
+    "Nature"
+   ],
+   "lat": -0.365,
+   "lng": -78.144
+  },
+  {
+   "n": "Mercado Artesanal La Mariscal",
+   "a": "La Mariscal",
+   "t": [
+    "Shopping"
+   ],
+   "lat": -0.206,
+   "lng": -78.49
+  }
  ]
 }
