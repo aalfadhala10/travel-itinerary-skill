@@ -468,6 +468,15 @@
   .picbtn svg{width:16px;height:16px}
   .picbtn.on{border-color:var(--teal);color:var(--teal);opacity:1}
   @media (hover:none){.picbtn{display:flex}}
+  .svbtn{display:flex}
+  .svbtn.on{color:var(--amber);border-color:var(--amber);opacity:1}
+  .svbtn.on svg path{fill:var(--amber)}
+  .svgroup{margin-bottom:14px}
+  .svrow{display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px solid var(--line);font-size:15px}
+  .svrow:last-child{border-bottom:none}
+  .svrow .svarea{color:var(--muted);font-size:13px}
+  .svrow .svx{margin-inline-start:auto;background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:4px 8px}
+  .svplan{display:block;width:100%;margin-top:10px;padding:12px;border:1px solid var(--amber);border-radius:12px;background:var(--amber-soft);color:var(--amber);font-weight:700;font-size:14.5px;cursor:pointer}
   .picinline{margin:6px 0 2px;padding:6px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)}
   .picinline img{display:block;width:100%;max-height:200px;object-fit:cover;border-radius:8px}
   .picinline .pinone{font-size:14.5px;color:var(--muted);text-align:center;padding:8px}
@@ -1016,6 +1025,7 @@
 
   <div id="mytrips" class="is-hidden"></div>
   <div id="community" class="cmwrap is-hidden"></div>
+  <div id="saved" class="cmwrap is-hidden"></div>
   <div class="lasttrip is-hidden" id="lastTrip"></div>
   <div class="out" id="out" aria-live="polite"></div>
   <p class="foot" id="foot"></p>
@@ -1031,6 +1041,7 @@
         <button type="button" class="drawitem" data-nav="how" id="navHow">How it works</button>
         <button type="button" class="drawitem" data-nav="trips" id="navTrips">My trips</button>
         <button type="button" class="drawitem" data-nav="community" id="navCommunity">Traveller trips</button>
+        <button type="button" class="drawitem" data-nav="saved" id="navSaved">Saved places</button>
         <button type="button" class="drawitem" data-nav="install" id="navInstall">Add to Home Screen</button>
         <button type="button" class="drawitem" data-nav="share" id="navShare">Share بوصلة</button>
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
@@ -3876,7 +3887,7 @@
     $('welDiv').textContent=u.nameLabel; $('welName').setAttribute('placeholder',u.namePh); $('welNote').textContent=u.welcomeNote;
     renderWelcome(); $('editFab').textContent=u.editTrip;
     $('drawerEdit').textContent=u.profileTitle; $('navHow').textContent=u.navHow; $('navTrips').textContent=u.myTrips; $('navInstall').textContent=u.navInstall; $('navShare').textContent=u.navShare; $('navFeedback').textContent=u.navFeedback; $('drawerAbout').textContent=u.menuAbout;
-    try{ var cx=CTXT[LANG]||CTXT.en; $('navCommunity').textContent=cx.title; $('cmTeaserT').textContent=cx.title; $('cmTeaserS').textContent=cx.sub.split('.')[0]+'.'; drawPts(); }catch(e){}
+    try{ var cx=CTXT[LANG]||CTXT.en; $('navCommunity').textContent=cx.title; $('navSaved').textContent=svTxt().t; $('cmTeaserT').textContent=cx.title; $('cmTeaserS').textContent=cx.sub.split('.')[0]+'.'; drawPts(); }catch(e){}
     $('introTitle').textContent=u.introTitle; $('introS1').textContent=u.introS1; $('introS2').textContent=u.introS2; $('introS3').textContent=u.introS3; try{$('introS4').textContent=u.introS4;}catch(e){}
     try{ $('moreOptsLbl').textContent=(lang==='ar'?'خيارات أكثر':(lang==='es'?'Más opciones':'More options')); }catch(e){}
     try{ if(LASTSTATE&&!$('lastTrip').classList.contains('is-hidden'))showLastTrip(LASTSTATE); }catch(e){}
@@ -4508,6 +4519,7 @@
     return '<div class="slot" data-sk="'+sk+'" data-q="'+esc(q)+'"><div class="t">'+tm+'</div>'
       +'<div class="d">'+link(locName(ck,poi.n),q,food?'':q,poi.n)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a),locName(ck,poi.n))+hopLabel(hop)+(food?menuLink(poi.n,city):'')+'</div>'
       +(food?'':'<button type="button" class="picbtn" data-pic="'+esc(q)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>')
+      +'<button type="button" class="picbtn svbtn'+(isSaved(ck,poi.n)?' on':'')+'" data-sv="'+esc(ck)+'|'+esc(poi.n)+'|'+esc(poi.a||'')+'" aria-label="'+esc(svLbl())+'" title="'+esc(svLbl())+'">'+BKSVG+'</button>'
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
   }
   // Small stops the bot added on request ("put a coffee shop on day 2"), keyed by day number.
@@ -5953,7 +5965,8 @@
       '<button class="act" type="button" data-act="save">'+o.save+'</button>'+
       '<button class="act" type="button" data-act="wa">'+o.waShare+'</button>'+
       '<button class="act" type="button" data-act="share">'+o.share+'</button>'+
-      '<button class="act" type="button" data-act="pub">'+esc((CTXT[LANG]||CTXT.en).pubBtn)+'</button>';
+      '<button class="act" type="button" data-act="pub">'+esc((CTXT[LANG]||CTXT.en).pubBtn)+'</button>'+
+      '<button class="act" type="button" data-act="mates">'+esc(LANG==='ar'?'خطط معي رفقتك':(LANG==='es'?'Invitar compañeros':'Invite tripmates'))+'</button>';
     var icsR=icsFor(ms.map(function(m){return m.city;}).join(' → ')+' — بوصلة',t.ui.budgets[budget]+' · '+subVibes,calStart(),days); if(icsR)acts+='<a class="act" download="bosla-route.ics" href="data:text/calendar;charset=utf-8,'+encodeURIComponent(icsR)+'">'+o.addCal+'</a>';
     if(access){ acts+='<button class="act" type="button" data-act="copy">'+o.copy+'</button><button class="act" type="button" data-act="print">'+o.print+'</button>'; }
     html+=acts+'</div>';
@@ -6113,10 +6126,84 @@
     if(nav==='how'){ closeDrawer(); showIntro(); $('intro').scrollIntoView({behavior:'smooth',block:'center'}); }
     else if(nav==='trips'){ closeDrawer(); var mt=$('mytrips'); if(!mt.classList.contains('is-hidden'))mt.scrollIntoView({behavior:'smooth',block:'start'}); else toast(I18N[LANG].ui.noTrips); }
     else if(nav==='community'){ closeDrawer(); openCommunity(); }
+    else if(nav==='saved'){ closeDrawer(); openSavedView(); }
     else if(nav==='install'){ closeDrawer(); doInstall(); }
     else if(nav==='share'){ closeDrawer(); shareApp(); }
     else if(nav==='feedback'){ closeDrawer(); openFeedback(); }
   });
+
+  /* ---- Saved places -------------------------------------------------------------------------
+     The bookmark on any sight or restaurant drops it into a local list — on this device only,
+     like everything else. The list groups by city, each place opens in Maps, and a city's group
+     ends in "plan a trip here", which is the whole point of collecting inspiration. */
+  var BKSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.2L5 21V4.5a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
+  function svLbl(){ return LANG==='ar'?'احفظ المكان':(LANG==='es'?'Guardar lugar':'Save place'); }
+  function svTxt(){
+    return LANG==='ar'?{t:'أماكني المحفوظة',e:'ما حفظت شي بعد — اضغط علامة الحفظ عند أي مكان في خطتك.',p:'خطط رحلة هنا',on:'انحفظ في أماكنك',off:'انشال من المحفوظات'}
+      :(LANG==='es'?{t:'Lugares guardados',e:'Nada guardado aún — toca el marcador junto a un lugar de tu plan.',p:'Planear un viaje aquí',on:'Guardado en tus lugares',off:'Quitado de guardados'}
+      :{t:'Saved places',e:'Nothing saved yet — tap the bookmark next to any place in your plan.',p:'Plan a trip here',on:'Saved to your places',off:'Removed from saved'});
+  }
+  function loadSaved(){ try{ return JSON.parse(localStorage.getItem('bosla_saved')||'[]'); }catch(e){ return []; } }
+  function storeSaved(a){ try{ localStorage.setItem('bosla_saved',JSON.stringify(a.slice(0,200))); }catch(e){} }
+  function isSaved(ck,n){ return loadSaved().some(function(x){ return x.ck===ck&&x.n===n; }); }
+  function toggleSaved(ck,n,a){
+    var arr=loadSaved(), i=arr.findIndex(function(x){ return x.ck===ck&&x.n===n; }), c=svTxt();
+    if(i>=0){ arr.splice(i,1); toast(c.off); }
+    else { arr.unshift({ck:ck,n:n,a:a||''}); toast(c.on); addPts(1); }
+    storeSaved(arr);
+    return i<0;
+  }
+  function openSavedView(){
+    var c=svTxt(), box=$('saved'), arr=loadSaved();
+    box.classList.remove('is-hidden');
+    var h='<div class="cmhead"><h2>'+esc(c.t)+'</h2></div>';
+    if(!arr.length){ box.innerHTML=h+'<div class="cmempty">'+esc(c.e)+'</div>'; box.scrollIntoView({behavior:'smooth',block:'start'}); return; }
+    var byCity={},order=[];
+    arr.forEach(function(x){ if(!byCity[x.ck]){ byCity[x.ck]=[]; order.push(x.ck); } byCity[x.ck].push(x); });
+    order.forEach(function(ck){
+      var d=DEST[ck], city=d?cityName(ck,d.city):ck, cover='';
+      try{ if(d&&d.summer)cover='<div class="cmcover">'+heroArt(d.summer.cond,d.flag)+'</div>'; }catch(e){}
+      h+='<div class="cmcard svgroup" data-noopen="1">'+cover+'<div class="cmtitle">'+esc(city)+'</div>'
+        +byCity[ck].map(function(x){
+          return '<div class="svrow"><a href="'+mapUrl(x.n+' '+(d?d.city:''))+'" target="_blank" rel="noopener">'+esc(locName(ck,x.n))+'</a>'
+            +(x.a?'<span class="svarea">'+esc(locName(ck,x.a))+'</span>':'')
+            +'<button type="button" class="svx" data-svdel="'+esc(ck)+'|'+esc(x.n)+'" aria-label="✕">✕</button></div>';
+        }).join('')
+        +(d?'<button type="button" class="svplan" data-svplan="'+esc(d.city)+'">'+esc(c.p)+'</button>':'')
+        +'</div>';
+    });
+    box.innerHTML=h;
+    box.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  $('out').addEventListener('click',function(e){
+    var b=e.target.closest('[data-sv]'); if(!b)return;
+    var p=b.getAttribute('data-sv').split('|');
+    var on=toggleSaved(p[0],p[1],p[2]);
+    b.classList.toggle('on',on);
+  });
+  $('saved').addEventListener('click',function(e){
+    var t;
+    if((t=e.target.closest('[data-svdel]'))){
+      var p=t.getAttribute('data-svdel').split('|');
+      var arr=loadSaved().filter(function(x){ return !(x.ck===p[0]&&x.n===p[1]); });
+      storeSaved(arr); openSavedView(); return;
+    }
+    if((t=e.target.closest('[data-svplan]'))){
+      $('dest').value=t.getAttribute('data-svplan'); $('dest2').value='';
+      newSeed(); DAYEDITS={}; DAYROT={}; ROUTE=null;
+      $('planBtn').click(); return;
+    }
+  });
+  // invite tripmates: the trip's own replayable link, framed as an invitation to edit
+  function inviteMates(){
+    var ar=LANG==='ar', es=LANG==='es';
+    var msg=ar?'خطتنا على بوصلة — افتحها وعدّل عليها وأرسلها لي:'
+      :(es?'Nuestro plan en بوصلة — ábrelo, edítalo y reenvíamelo:'
+      :'Our trip plan on بوصلة — open it, edit it, and send it back:');
+    var link=buildTripLink();
+    if(navigator.share){ navigator.share({title:'بوصلة · Bosla',text:msg,url:link}).catch(function(){}); return; }
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(msg+'\n'+link).then(function(){ toast(I18N[LANG].ui.linkCopied); },function(){});
+  }
 
   /* ---- Compare stay prices, inside the app --------------------------------------------------
      One tap on the hotel opens a sheet listing the big booking sites, each deep-linked to THIS
@@ -6728,7 +6815,8 @@
       '<button class="act" type="button" data-act="save">'+o.save+'</button>'+
       '<button class="act" type="button" data-act="wa">'+o.waShare+'</button>'+
       '<button class="act" type="button" data-act="share">'+o.share+'</button>'+
-      '<button class="act" type="button" data-act="pub">'+esc((CTXT[LANG]||CTXT.en).pubBtn)+'</button>';
+      '<button class="act" type="button" data-act="pub">'+esc((CTXT[LANG]||CTXT.en).pubBtn)+'</button>'+
+      '<button class="act" type="button" data-act="mates">'+esc(LANG==='ar'?'خطط معي رفقتك':(LANG==='es'?'Invitar compañeros':'Invite tripmates'))+'</button>';
     var calTitle=(m1?(m1.city+(m1.country?', '+m1.country:'')):cap(dest||raw||'Trip'))+' — بوصلة';
     var calDesc=t.ui.budgets[budget]+' · '+t.ui.paces[pace]+(subVibes?' · '+subVibes:'');
     var icsP=icsFor(calTitle,calDesc,calStart(),days);
@@ -6760,6 +6848,7 @@
     if(act==='usecredit'){ if(getCredits()>0){ addUnlocked(currentDestKey()); setCredits(getCredits()-1); toast(o.unlocked); plan(); } return; }
     if(act==='buy'){ var pk=(CONFIG.packages||[])[+b.dataset.pkg]; if(!pk)return; if(pk.link){ window.open(pk.link,'_blank'); } else { setCredits(getCredits()+pk.credits); toast(o.creditsAdded(pk.credits)); plan(); } return; }
     if(act==='pub'){ openPublish(); return; }
+    if(act==='mates'){ inviteMates(); return; }
     if(act==='save'){ saveTrip(); toast(o.saved); return; }
     if(act==='wa'){ window.open('https://wa.me/?text='+encodeURIComponent(o.waMsg+'\n\n'+LASTTEXT+'\n\n'+shareLink()),'_blank'); return; }
     if(act==='print'){printPlan();return;}
