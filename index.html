@@ -1010,6 +1010,7 @@
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
+      <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
   </div>
 
@@ -1021,6 +1022,7 @@
       <input type="text" id="pubTitle" maxlength="60" style="width:100%;padding:13px;margin:8px 0;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:15.5px">
       <input type="text" id="pubName" maxlength="30" style="width:100%;padding:13px;margin:0 0 8px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:15.5px">
       <p class="wsub" id="pubNote" style="font-size:13px"></p>
+      <p class="wsub" style="font-size:12px"><a href="terms.html" target="_blank" rel="noopener" style="color:var(--muted)">Terms · الشروط</a></p>
       <button type="button" class="pubgo" id="pubGo">Publish</button>
     </div>
   </div>
@@ -1067,7 +1069,7 @@
   </div>
 </div>
 <div class="toast" id="toast" aria-hidden="true"></div>
-<button type="button" class="chatfab is-hidden" id="chatFab" aria-label="Ask بوصلة"><span class="chatfabic">💬</span><span class="chatfablbl" id="chatFabLbl">Ask بوصلة</span></button>
+<button type="button" class="chatfab is-hidden" id="chatFab" aria-label="Ask بوصلة"><span class="chatfabic"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M21 12a8 8 0 0 1-8 8H4l2.5-2.7A8 8 0 1 1 21 12z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></span><span class="chatfablbl" id="chatFabLbl">Ask بوصلة</span></button>
 <div class="chatpanel" id="chatPanel" aria-hidden="true">
   <div class="chatsheet">
     <div class="chathead"><span class="chattitle" id="chatTitle">Ask بوصلة</span><button type="button" class="chatx" id="chatX" aria-label="Close">✕</button></div>
@@ -5870,6 +5872,10 @@
         '<div class="stat"><div class="k">'+o.statStay+'</div><div class="v">'+stay+'</div></div>'+
         '<div class="stat"><div class="k">'+o.statPer+'</div><div class="v num">'+money(t,totalUSD)+'</div></div>'+
       '</div></div>';
+    // The stay search sits directly under the summary that names the hotel — "here is where you
+    // stay, and here is how to change it" — instead of at the bottom of the whole plan, which
+    // read as an afterthought once a hotel had already been chosen.
+    html+=staysBar(ms[0].city,ms[0].country,t);
     var startDay=1, routeHtml='', mapHtml='', upto=access?n:1;
     for(i=0;i<upto;i++){
       var stops=[], cnt=access?dc[i]:1;
@@ -5886,7 +5892,6 @@
       html+=flyCard(ms[0],t);
       var __seenC={}; ms.forEach(function(m){ if(!__seenC[m.country]){__seenC[m.country]=1; html+=appsCard(m.country,t)+salmanCard(m.country,t);} });
     }
-    html+=staysBar(ms[0].city,ms[0].country,t);
     html+='<p class="note">'+o.note(ms.map(function(m){return esc(m.city);}).join(' & '))+'</p>';
     var acts='<div class="actions">'+
       '<button class="act" type="button" data-act="save">'+o.save+'</button>'+
@@ -6056,7 +6061,7 @@
      same trip credits the paywall will sell — the discount ladder the beta grows into. */
   var CTXT={
     en:{title:'Traveller trips',sub:'Real plans shared by people who used them. Open one, make it yours.',
-      newest:'Newest',top:'Most liked',days:'days',by:'by',use:'Use this plan',like:'Like',liked:'Liked',
+      newest:'Newest',top:'Most liked',days:'days',by:'by',use:'Use this plan',shareT:'Share',like:'Like',liked:'Liked',
       photos:'photos',comments:'comments',addPhoto:'Add photo',writeCmt:'Write a comment…',send:'Send',
       pubBtn:'Share with travellers',pubTitleH:'Share with travellers',
       pubSub:'Put this plan in the community feed so others can use it, like it, and add their photos.',
@@ -6070,7 +6075,7 @@
       pts:function(n){return n+' points';},ptsNote:function(n){return n+' points to your next free trip credit';},
       ptsCredit:'You earned a free trip credit!'},
     ar:{title:'رحلات المسافرين',sub:'خطط حقيقية شاركها ناس جرّبوها. افتح أي وحدة وخلها لك.',
-      newest:'الأحدث',top:'الأكثر إعجاباً',days:'أيام',by:'من',use:'استخدم هذه الخطة',like:'إعجاب',liked:'أعجبتني',
+      newest:'الأحدث',top:'الأكثر إعجاباً',days:'أيام',by:'من',use:'استخدم هذه الخطة',shareT:'مشاركة',like:'إعجاب',liked:'أعجبتني',
       photos:'صور',comments:'تعليقات',addPhoto:'أضف صورة',writeCmt:'اكتب تعليق…',send:'إرسال',
       pubBtn:'شارك مع المسافرين',pubTitleH:'شارك مع المسافرين',
       pubSub:'انشر خطتك في صفحة المسافرين عشان غيرك يستخدمها ويعجب فيها ويضيف صوره.',
@@ -6084,7 +6089,7 @@
       pts:function(n){return n+' نقطة';},ptsNote:function(n){return 'باقي '+n+' نقطة على رصيد رحلة مجاني';},
       ptsCredit:'حصلت على رصيد رحلة مجاني!'},
     es:{title:'Viajes de viajeros',sub:'Planes reales compartidos por quienes los usaron. Abre uno y hazlo tuyo.',
-      newest:'Más recientes',top:'Más gustados',days:'días',by:'por',use:'Usar este plan',like:'Me gusta',liked:'Te gusta',
+      newest:'Más recientes',top:'Más gustados',days:'días',by:'por',use:'Usar este plan',shareT:'Compartir',like:'Me gusta',liked:'Te gusta',
       photos:'fotos',comments:'comentarios',addPhoto:'Añadir foto',writeCmt:'Escribe un comentario…',send:'Enviar',
       pubBtn:'Compartir con viajeros',pubTitleH:'Compartir con viajeros',
       pubSub:'Publica tu plan en el muro de viajeros para que otros lo usen, den me gusta y añadan sus fotos.',
@@ -6098,6 +6103,7 @@
       pts:function(n){return n+' puntos';},ptsNote:function(n){return n+' puntos para tu próximo crédito de viaje';},
       ptsCredit:'¡Ganaste un crédito de viaje gratis!'}
   };
+  var SHARESVG='<svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.6"/><circle cx="17.5" cy="5.5" r="2.6"/><circle cx="17.5" cy="18.5" r="2.6"/><path d="M8.3 10.8l6.9-4M8.3 13.2l6.9 4"/></svg>';
   var HEARTSVG='<svg viewBox="0 0 24 24"><path d="M12 21C7 16.5 3 13 3 8.8 3 6 5.2 4 7.8 4c1.6 0 3.1.8 4.2 2.2C13.1 4.8 14.6 4 16.2 4 18.8 4 21 6 21 8.8c0 4.2-4 7.7-9 12.2z"/></svg>';
   var CMTSVG='<svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2.5-2.7A8 8 0 1 1 21 12z"/></svg>';
   var CAMSVG='<svg viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="14" r="3.4"/></svg>';
@@ -6171,6 +6177,7 @@
         +'<span>'+esc(c.by)+' '+esc(r.name)+'</span><span>'+esc(cmAgo(r.t))+'</span></div>'
         +'<button type="button" class="cmuse" data-cmuse="'+esc(r.id)+'">'+esc(c.use)+'</button>'
         +'<div class="cmrow"><button type="button" class="cmbtn'+(liked?' liked':'')+'" data-cmlike="'+esc(r.id)+'">'+HEARTSVG+' <span>'+(r.likes||0)+'</span></button>'
+        +'<button type="button" class="cmbtn" data-cmshare="'+esc(r.id)+'">'+SHARESVG+' '+esc(c.shareT)+'</button>'
         +'<button type="button" class="cmbtn" data-cmphoto="'+esc(r.id)+'">'+CAMSVG+' '+esc(c.addPhoto)+'</button></div>'
         +'<div class="cmphotos" id="cmPhotos"></div>'
         +'<div class="cmcmts" id="cmCmts"></div>'
@@ -6251,6 +6258,12 @@
       CMLIKED[id]=1; try{localStorage.setItem('bosla_liked',JSON.stringify(CMLIKED));}catch(x){}
       t.classList.add('liked');
       pubApi('pub_like',{id:id}).then(function(d){ var n=t.querySelector('span'); if(n)n.textContent=d.likes; }).catch(function(){});
+      return;
+    }
+    if((t=e.target.closest('[data-cmshare]'))){
+      var lk=location.href.split('#')[0]+'#pub='+t.getAttribute('data-cmshare');
+      if(navigator.share){ navigator.share({title:'بوصلة · Bosla',url:lk}).catch(function(){}); }
+      else if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(lk).then(function(){toast(I18N[LANG].ui.linkCopied);},function(){}); }
       return;
     }
     if((t=e.target.closest('[data-cmcmt]'))){
@@ -6451,6 +6464,7 @@
           '<div class="stat"><div class="k">'+o.statStay+'</div><div class="v">'+stay+'</div></div>'+
           '<div class="stat"><div class="k">'+o.statPer+'</div><div class="v num">'+money(t,totalUSD)+'</div></div>'+
         '</div></div>';
+      html+=staysBar(m1.city,m1.country,t);   // beside the hotel it is about, not at the bottom
 
       var freeN=access?d1:1;
       var stops1=[], route1=emitDays(m1,1,freeN,days,vibes,spd,o,t,txt,stops1);
@@ -6469,7 +6483,6 @@
         html+=flyCard(m1,t)+appsCard(m1.country,t)+salmanCard(m1.country,t);
         if(multi&&m2&&m2.country!==m1.country)html+=appsCard(m2.country,t)+salmanCard(m2.country,t);
       }
-      html+=staysBar(m1.city,m1.country,t);
       txt.push(''); txt.push(o.budTotal+' ('+o.perPerson+'): ~$'+Math.round(totalUSD));
       note=o.note(esc(m1.city)+(multi?' & '+esc(m2.city):''));
     } else {
@@ -6943,6 +6956,8 @@
   (function(){
     try{
       var s=null, h=location.hash||'', shared=(h.indexOf('#trip=')===0);
+      // a friend sent a published trip: open the app straight onto it
+      if(h.indexOf('#pub=')===0){ var pid=h.slice(5); setTimeout(function(){ try{ $('community').classList.remove('is-hidden'); openPubTrip(pid); $('community').scrollIntoView(); }catch(e){} },400); }
       if(shared){ s=JSON.parse(decodeURIComponent(h.slice(6))); }
       if(!s){ s=JSON.parse(localStorage.getItem('rihla_v1')||'null'); shared=false; }
       if(s&&shared){ applyState(s,true); }            // someone opened a shared trip — show it
@@ -6954,9 +6969,9 @@
   })();
 
   // first-time welcome (skipped when opening a shared trip link)
-  (function(){ try{ if(!isWelcomed() && (location.hash||'').indexOf('#trip=')!==0){ showWelcome(); } }catch(e){} })();
+  (function(){ try{ if(!isWelcomed() && (location.hash||'').indexOf('#trip=')!==0 && (location.hash||'').indexOf('#pub=')!==0){ showWelcome(); } }catch(e){} })();
   // first-time "how it works" intro (skipped when opening a shared trip link)
-  (function(){ try{ if(localStorage.getItem('rihla_introseen')!=='1' && (location.hash||'').indexOf('#trip=')!==0){ showIntro(); } }catch(e){} })();
+  (function(){ try{ if(localStorage.getItem('rihla_introseen')!=='1' && (location.hash||'').indexOf('#trip=')!==0 && (location.hash||'').indexOf('#pub=')!==0){ showIntro(); } }catch(e){} })();
 
   // usage tracking: one page view, and outbound clicks (booking / maps / tours / flights) to gauge intent
   track('page_view',{});
