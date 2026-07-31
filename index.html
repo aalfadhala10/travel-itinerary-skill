@@ -3155,8 +3155,29 @@
             poi:c.poi.map(function(p){return {n:p.n,a:enArea(p.a),t:(Array.isArray(p.t)&&p.t.length?p.t:['Culture'])};}),
             food:(c.food||[]).map(function(p){return {n:p.n,a:enArea(p.a)};})};
           CUR[key]={s:c.curSymbol||'$',r:c.curRate||1};
+          // A model that doesn't know where something is answers 0,0 — and Null Island is 9,105km
+          // from Buffalo, which is how "Elmwood Avenue · 9105 km" got printed beside a street you
+          // can walk down. `!=null` let it through because zero is not null. Coordinates have to
+          // be real numbers, in range, not the empty point, and actually near the city they claim
+          // to belong to. Anything else is dropped, and the place carries no distance at all —
+          // which is what already happens for a place we never had a fix for.
+          // This matters past the label: these are the coordinates the day is routed by, so one
+          // bad point drags the whole nearest-first order around a spot in the Atlantic.
+          function okCo(la,ln,centre){
+            if(typeof la!=='number'||typeof ln!=='number'||!isFinite(la)||!isFinite(ln))return false;
+            if(la<-90||la>90||ln<-180||ln>180)return false;
+            if(la===0&&ln===0)return false;
+            return !centre||kmDist(centre,[la,ln])<=300;   // a day out is 80km; 300 catches continents
+          }
+          var ctr=okCo(c.lat,c.lng,null)?[c.lat,c.lng]:null;
           CO[key]=[c.lat,c.lng];
-          var pc={}; c.poi.forEach(function(p){ if(p.lat!=null&&p.lng!=null)pc[p.n]=[p.lat,p.lng]; }); POI_CO[key]=pc;
+          var pc={}, bad=0;
+          c.poi.forEach(function(p){
+            if(okCo(p.lat,p.lng,ctr))pc[p.n]=[p.lat,p.lng];
+            else if(p.lat!=null||p.lng!=null)bad++;
+          });
+          POI_CO[key]=pc;
+          if(bad)try{ track('ai_badcoord',{dest:c.city,dropped:bad,of:c.poi.length}); }catch(e){}
           HOTELS_X[key]={Budget:c.hotelsBudget||[],'Mid-range':c.hotelsMid||[],Luxury:c.hotelsLux||[]};
           try{ track('ai_city',{dest:c.city,country:c.country}); }catch(e){}
           resolve(key);
@@ -4195,6 +4216,11 @@
   // distance is that the traveller can SEE the order is sensible, and a number does that.
   function hopLabel(km){
     if(km==null||!(km>=0))return '';
+    // A hop is one stop to the next inside a single day. The longest honest one is a day trip out
+    // of town, well under 200km; a city-to-city move gets its own transfer card and never comes
+    // through here. So anything past this is a bad coordinate, and saying nothing beats saying
+    // 9,105km — the number is not load-bearing, and a wrong one costs more than a missing one.
+    if(km>500)return '';
     var ar=LANG==='ar', es=LANG==='es', t;
     if(km<1) t=String(Math.max(50,Math.round(km*1000/50)*50))+(ar?' م':' m');
     else t=(km<10?km.toFixed(1):String(Math.round(km)))+kmUnit();
