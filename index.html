@@ -865,8 +865,9 @@
   .ptschip{display:inline-flex;align-items:center;gap:6px;background:var(--paper2);border:1px solid var(--amber);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--amber);font-weight:700;margin-top:8px}
   .ptschip svg{width:14px;height:14px;fill:currentColor;stroke:none}
   .cmloading{text-align:center;color:var(--muted);padding:30px 0;font-size:14.5px}
-  #app[dir="rtl"] .cmback{transform:scaleX(-1)}
-  .cmcover{margin:-16px -16px 12px;height:74px;overflow:hidden;border-radius:16px 16px 0 0;position:relative}
+  .cmcover{margin:-16px -16px 12px;height:84px;overflow:hidden;border-radius:16px 16px 0 0;position:relative;background:var(--paper2)}
+  .cmcover.cmflag .bg{position:absolute;inset:-50px;display:flex;align-items:center;justify-content:center;font-size:280px;line-height:1;filter:blur(26px) saturate(1.35);opacity:.85;pointer-events:none}
+  .cmcover.cmflag .fg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:56px;line-height:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.35))}
   .cmcover img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(1.05)}
   .cmcover .hero-art{height:74px;border-radius:0}
   .cmcover .hero-art svg{width:100%;height:74px;display:block}
@@ -1073,7 +1074,7 @@
       <button type="button" class="welclose" id="pubClose" aria-label="Close">✕</button>
       <h2 id="pubTitleH">Share with travellers</h2>
       <p class="wsub" id="pubSub"></p>
-      <input type="text" id="pubTitle" maxlength="60" style="width:100%;padding:13px;margin:8px 0;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:15.5px">
+      <input type="text" id="pubTitle" dir="auto" maxlength="60" style="width:100%;padding:13px;margin:8px 0;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:15.5px">
       <input type="text" id="pubName" maxlength="30" style="width:100%;padding:13px;margin:0 0 8px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:15.5px">
       <div class="cmsort" id="pubVis" style="margin:2px 0 10px">
         <button type="button" class="chip active" data-vis="feed" id="pubVisFeed">Everyone</button>
@@ -6036,8 +6037,8 @@
     // deserves a face, not a chip
     var cards=arr.map(function(tr,i){
       var cover='';
-      try{ var m=matchDest(tr.state.d||''); if(m&&m.summer)cover='<div class="cmcover">'+heroArt(m.summer.cond,m.flag)+'</div>'; }catch(e){}
-      return '<div class="cmcard" data-trip="'+i+'">'+cover+'<div class="cmtitle">'+esc(tripLabel(tr.state))+
+      try{ var m=matchDest(tr.state.d||''); if(m)cover=flagCover(m.flag); }catch(e){}
+      return '<div class="cmcard" data-trip="'+i+'">'+cover+'<div class="cmtitle" dir="auto">'+esc(tripLabel(tr.state))+
         '</div><div class="cmmeta"><span>'+esc(tr.state.days||'')+' '+esc(u.days||'')+'</span>'+
         '<button type="button" class="cmreport" data-del="'+i+'" style="margin:0;display:inline">✕</button></div></div>';
     }).join('');
@@ -6169,7 +6170,7 @@
     arr.forEach(function(x){ if(!byCity[x.ck]){ byCity[x.ck]=[]; order.push(x.ck); } byCity[x.ck].push(x); });
     order.forEach(function(ck){
       var d=DEST[ck], city=d?cityName(ck,d.city):ck, cover='';
-      try{ if(d&&d.summer)cover='<div class="cmcover">'+heroArt(d.summer.cond,d.flag)+'</div>'; }catch(e){}
+      try{ if(d)cover=flagCover(d.flag); }catch(e){}
       h+='<div class="cmcard svgroup" data-noopen="1">'+cover+'<div class="cmtitle">'+esc(city)+'</div>'
         +byCity[ck].map(function(x){
           return '<div class="svrow"><a href="'+mapUrl(x.n+' '+(d?d.city:''))+'" target="_blank" rel="noopener">'+esc(locName(ck,x.n))+'</a>'
@@ -6242,8 +6243,8 @@
       {n:'Expedia',u:'https://www.expedia.com/Hotel-Search?destination='+enc+(dt?'&startDate='+dt.ci+'&endDate='+dt.co:'')+'&adults='+ad},
       {n:'Trip.com',u:'https://www.trip.com/hotels/?keyword='+enc}
     ];
-    $('cmpTitle').textContent=h;
-    $('cmpSub').textContent=city+(dt?' · '+dt.ci+' → '+dt.co+' · '+dt.n+(ar?' ليلة':(es?' noches':' nights')):'')+' · '+ad+(ar?' بالغين':(es?' adultos':' adults'));
+    $('cmpTitle').textContent=h; $('cmpTitle').setAttribute('dir','auto');
+    $('cmpSub').setAttribute('dir','auto'); $('cmpSub').textContent=city+(dt?' · '+dt.ci+' → '+dt.co+' · '+dt.n+(ar?' ليلة':(es?' noches':' nights')):'')+' · '+ad+(ar?' بالغين':(es?' adultos':' adults'));
     $('cmpRows').innerHTML=rows.map(function(r){
       return '<a class="cmprow" href="'+r.u+'" target="_blank" rel="noopener"><b>'+esc(r.n)+'</b>'+
         (r.d?'<span style="color:var(--muted);font-size:12.5px">'+esc(r.d)+'</span>':'')+
@@ -6275,7 +6276,7 @@
       pubSub:'Put this plan in the community feed so others can use it, like it, and add their photos.',
       pubTitlePh:'Give your trip a title',pubNamePh:'Your first name (shown on the card)',
       pubNote:'Publishing makes this plan public to everyone using بوصلة. Your name and plan only — nothing else leaves your device.',
-      pub:'Publish',published:'Published — travellers can now see your trip',
+      pub:'Publish',published:'Published — travellers can now see your trip',alreadyShared:'This trip is already in the feed — no duplicates',updatedShared:'Your published trip was updated — same card, same likes',
       applied:'Plan loaded — it is yours to edit now',empty:'No shared trips yet — yours could be the first.',
       offline:'The community feed could not be reached — try again in a moment.',
       report:'Report this trip',reported:'Thank you — we will take a look.',
@@ -6289,7 +6290,7 @@
       pubSub:'انشر خطتك في صفحة المسافرين عشان غيرك يستخدمها ويعجب فيها ويضيف صوره.',
       pubTitlePh:'عنوان رحلتك',pubNamePh:'اسمك الأول (يظهر على البطاقة)',
       pubNote:'النشر يخلي الخطة عامة لكل مستخدمي بوصلة. اسمك وخطتك فقط — ولا شي غيرهم يطلع من جهازك.',
-      pub:'انشر',published:'تم النشر — المسافرون يشوفون رحلتك الحين',
+      pub:'انشر',published:'تم النشر — المسافرون يشوفون رحلتك الحين',alreadyShared:'رحلتك هذي منشورة من قبل — ما ننسخها مرتين',updatedShared:'حدثنا رحلتك المنشورة — نفس البطاقة، نفس الإعجابات',
       applied:'تم تحميل الخطة — عدّلها كيفك',empty:'ما فيه رحلات مشتركة بعد — ممكن تكون رحلتك الأولى.',
       offline:'ما قدرنا نوصل لرحلات المسافرين — جرّب بعد شوي.',
       report:'أبلغ عن هذه الرحلة',reported:'شكراً لك — بنراجعها.',
@@ -6303,7 +6304,7 @@
       pubSub:'Publica tu plan en el muro de viajeros para que otros lo usen, den me gusta y añadan sus fotos.',
       pubTitlePh:'Título de tu viaje',pubNamePh:'Tu nombre (aparece en la tarjeta)',
       pubNote:'Publicar hace este plan público para todos los usuarios de بوصلة. Solo tu nombre y tu plan — nada más sale de tu dispositivo.',
-      pub:'Publicar',published:'Publicado — los viajeros ya pueden ver tu viaje',
+      pub:'Publicar',published:'Publicado — los viajeros ya pueden ver tu viaje',alreadyShared:'Este viaje ya está publicado — no lo duplicamos',updatedShared:'Tu viaje publicado se actualizó — misma tarjeta, mismos me gusta',
       applied:'Plan cargado — ahora es tuyo para editar',empty:'Aún no hay viajes compartidos — el tuyo puede ser el primero.',
       offline:'No se pudo cargar el muro — inténtalo en un momento.',
       report:'Denunciar este viaje',reported:'Gracias — lo revisaremos.',
@@ -6325,11 +6326,31 @@
   // ---- points: contributions become the trip credits the paywall sells ----
   var PTS_CREDIT=50;
   function getPts(){ try{return parseInt(localStorage.getItem('bosla_pts'),10)||0;}catch(e){return 0;} }
+  // Two ledgers. The visible balance rises and falls — delete a published trip and its points go
+  // with it. Credits, though, are granted off LIFETIME points, which only ever rise: without
+  // that, publish-to-50, collect the credit, delete, republish would mint credits in a loop.
+  function getPtsLife(){
+    try{ var v=parseInt(localStorage.getItem('bosla_pts_life'),10); return isNaN(v)?getPts():v; }catch(e){ return getPts(); }
+  }
   function addPts(n){
-    var c=CTXT[LANG]||CTXT.en, was=getPts(), now=was+n;
-    try{localStorage.setItem('bosla_pts',String(now));}catch(e){}
-    if(Math.floor(now/PTS_CREDIT)>Math.floor(was/PTS_CREDIT)){ setCredits(getCredits()+1); toast(c.ptsCredit); }
+    var c=CTXT[LANG]||CTXT.en, lifeWas=getPtsLife(), life=lifeWas+n;
+    try{ localStorage.setItem('bosla_pts_life',String(life)); localStorage.setItem('bosla_pts',String(getPts()+n)); }catch(e){}
+    if(Math.floor(life/PTS_CREDIT)>Math.floor(lifeWas/PTS_CREDIT)){ setCredits(getCredits()+1); toast(c.ptsCredit); }
     try{ drawPts(); }catch(e){}
+  }
+  function subPts(n){
+    try{ localStorage.setItem('bosla_pts',String(Math.max(0,getPts()-n))); }catch(e){}
+    try{ drawPts(); }catch(e){}
+  }
+  // publishing pays for the first two publishes a day; after that it still publishes, just unpaid
+  function pubPayable(){
+    var day=new Date().toISOString().slice(0,10), rec=null;
+    try{ rec=JSON.parse(localStorage.getItem('bosla_pts_pubday')||'null'); }catch(e){}
+    if(!rec||rec.d!==day)rec={d:day,n:0};
+    if(rec.n>=2)return false;
+    rec.n++;
+    try{ localStorage.setItem('bosla_pts_pubday',JSON.stringify(rec)); }catch(e){}
+    return true;
   }
   function ptsLevel(n){ return n>=300?3:n>=150?2:n>=50?1:0; }
   function drawPts(){
@@ -6369,19 +6390,31 @@
   function cmMine(){ try{ return JSON.parse(localStorage.getItem('bosla_pub_mine')||'{}'); }catch(e){ return {}; } }
   // a card's face: the first shared photo if the trip has one, else the destination's own
   // climate-tinted artwork — the same scene the itinerary banner uses, drawn locally for free
+  // No photo yet? The country's flag carries the card: a blurred wash of it as the backdrop and
+  // the crisp flag on top. Bold, instantly readable, zero assets, and within the no-emoji rule's
+  // one exception. A real traveller photo still beats it the moment one is shared.
+  function flagCover(flag){
+    if(!flag)return '';
+    return '<div class="cmcover cmflag"><span class="bg" aria-hidden="true">'+flag+'</span><span class="fg" aria-hidden="true">'+flag+'</span></div>';
+  }
   function cmCover(r){
     if(r.th&&r.th.indexOf('data:image/jpeg;base64,')===0)
       return '<div class="cmcover"><img src="'+r.th+'" alt="" loading="lazy"></div>';
     try{
       var m=matchDest((r.cities||[])[0]||'');
-      if(m&&m.summer)return '<div class="cmcover">'+heroArt(m.summer.cond,m.flag)+'</div>';
+      if(m)return flagCover(m.flag);
     }catch(e){}
     return '';
   }
   function renderFeed(){
     var c=CTXT[LANG]||CTXT.en, box=$('community'), mine=cmMine();
     var list=CMFEED.slice();
-    if(CMSORT==='top')list.sort(function(a,b){ return (b.likes||0)-(a.likes||0); });
+    if(CMSORT==='top')list.sort(function(a,b){
+      // photos weigh double a comment and two-thirds of a heart: the feed should surface trips
+      // people documented, which is the only "proof" a no-accounts app can honestly ask for
+      var sc=function(r){ return (r.likes||0)*3+(r.np||0)*2+(r.nc||0); };
+      return sc(b)-sc(a);
+    });
     if(CMQUERY){
       var q=CMQUERY.toLowerCase();
       list=list.filter(function(r){
@@ -6397,8 +6430,8 @@
     if(!list.length)h+='<div class="cmempty">'+esc(c.empty)+'</div>';
     list.forEach(function(r){
       h+='<div class="cmcard" data-cmid="'+esc(r.id)+'">'+cmCover(r)
-        +'<div class="cmtitle">'+esc(r.title)+(mine[r.id]?' <span class="cmmine">'+esc(c.mine)+'</span>':'')+'</div>'
-        +'<div class="cmmeta"><span>'+esc((r.cities||[]).join(' → '))+'</span><span>'+r.days+' '+esc(c.days)+'</span>'
+        +'<div class="cmtitle" dir="auto">'+esc(r.title)+(mine[r.id]?' <span class="cmmine">'+esc(c.mine)+'</span>':'')+'</div>'
+        +'<div class="cmmeta"><span dir="auto">'+esc((r.cities||[]).join(' → '))+'</span><span dir="auto">'+r.days+' '+esc(c.days)+'</span>'
         +'<span>'+esc(c.by)+' '+esc(r.name)+'</span><span>'+esc(cmAgo(r.t))+'</span></div>'
         +'<div class="cmstats"><span class="cmstat'+(CMLIKED[r.id]?' liked':'')+'">'+HEARTSVG+' '+(r.likes||0)+'</span>'
         +'<span class="cmstat">'+CMTSVG+' '+(r.nc||0)+'</span>'
@@ -6415,9 +6448,9 @@
     box.innerHTML='<div class="cmloading">…</div>';
     pubApi('pub_get',{id:id}).then(function(d){
       var r=d.trip, liked=!!CMLIKED[r.id];
-      var h='<button type="button" class="cmback" data-cmback="1">‹ '+esc(c.title)+'</button>'
-        +'<div class="cmdetail"><div class="cmtitle">'+esc(r.title)+'</div>'
-        +'<div class="cmmeta"><span>'+esc((r.cities||[]).join(' → '))+'</span><span>'+r.days+' '+esc(c.days)+'</span>'
+      var h='<button type="button" class="cmback" data-cmback="1"><span class="cmbkch">‹</span> '+esc(c.title)+'</button>'
+        +'<div class="cmdetail"><div class="cmtitle" dir="auto">'+esc(r.title)+'</div>'
+        +'<div class="cmmeta"><span dir="auto">'+esc((r.cities||[]).join(' → '))+'</span><span dir="auto">'+r.days+' '+esc(c.days)+'</span>'
         +'<span>'+esc(c.by)+' '+esc(r.name)+'</span><span>'+esc(cmAgo(r.t))+'</span></div>'
         +'<button type="button" class="cmuse" data-cmuse="'+esc(r.id)+'">'+esc(c.use)+'</button>'
         +'<div class="cmrow"><button type="button" class="cmbtn'+(liked?' liked':'')+'" data-cmlike="'+esc(r.id)+'" aria-label="'+esc(c.like)+'">'+HEARTSVG+' <span>'+(r.likes||0)+'</span></button>'
@@ -6446,7 +6479,7 @@
     if(!rel.length)return '';
     var h='<div class="cmhead" style="margin-top:18px"><h2 style="font-size:17px">'+esc(c.moreTo((r.cities||[])[0]||''))+'</h2></div>';
     rel.forEach(function(x){
-      h+='<div class="cmcard" data-cmid="'+esc(x.id)+'"><div class="cmtitle" style="font-size:15px">'+esc(x.title)+'</div>'
+      h+='<div class="cmcard" data-cmid="'+esc(x.id)+'"><div class="cmtitle" dir="auto" style="font-size:15px">'+esc(x.title)+'</div>'
         +'<div class="cmstats"><span class="cmstat">'+HEARTSVG+' '+(x.likes||0)+'</span>'
         +'<span class="cmstat">'+CMTSVG+' '+(x.nc||0)+'</span><span>'+esc(c.by)+' '+esc(x.name)+'</span></div></div>';
     });
@@ -6531,24 +6564,32 @@
     var c=CTXT[LANG]||CTXT.en;
     $('pubNote').textContent=(b.getAttribute('data-vis')==='link')?c.noteLink:c.pubNote;
   });
-  function pubSig(s){ try{ return [s.d,s.d2,s.days,s.seed,(s.rt||[]).join('.')].join('|'); }catch(e){ return ''; } }
   $('pubGo').addEventListener('click',function(){
     var c=CTXT[LANG]||CTXT.en, s=stateObj();
-    // publishing the identical trip twice is almost always a double-tap, not an intent
-    var sig=pubSig(s);
-    if(sig&&localStorage.getItem('bosla_pub_last')===sig){ closePublish(); toast(c.published); return; }
     var cities=[s.d]; if(s.rt&&s.rt.length)cities=s.rt.map(function(k){return DEST[k]?DEST[k].city:k;}); else if(s.d2)cities.push(s.d2);
     var btn=$('pubGo'); btn.disabled=true;
     var vis=(document.querySelector('#pubVis .chip.active')||{}).getAttribute&&(document.querySelector('#pubVis .chip.active').getAttribute('data-vis'))||'feed';
     pubApi('pub_add',{title:$('pubTitle').value,name:$('pubName').value,state:s,cities:cities,days:parseInt(s.days,10)||1,lang:LANG,vis:vis})
-      .then(function(d){ if(d&&d.id&&d.key){ try{ var mn=JSON.parse(localStorage.getItem('bosla_pub_mine')||'{}'); mn[d.id]=d.key; localStorage.setItem('bosla_pub_mine',JSON.stringify(mn)); localStorage.setItem('bosla_pub_last',sig); }catch(e){} }
+      .then(function(d){
         btn.disabled=false; closePublish();
+        // the worker recognised a trip we already published: refresh that card in place —
+        // same likes, same comments, no duplicate in the feed, and no points a second time
+        if(d&&d.dupe&&d.id){
+          var key=cmMine()[d.id];
+          if(key){
+            pubApi('pub_update',{id:d.id,key:key,title:$('pubTitle').value,state:s})
+              .then(function(){ toast(c.updatedShared); },function(){ toast(c.alreadyShared); });
+          } else { toast(c.alreadyShared); }
+          return;
+        }
+        if(d&&d.id&&d.key){ try{ var mn=JSON.parse(localStorage.getItem('bosla_pub_mine')||'{}'); mn[d.id]=d.key; localStorage.setItem('bosla_pub_mine',JSON.stringify(mn)); }catch(e){} }
         if(vis==='link'&&d&&d.id){
           var lk=location.href.split('#')[0]+'#pub='+d.id;
           if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(lk).then(function(){},function(){});
           toast(c.linkReady);
         } else { toast(c.published); }
-        addPts(20); try{track('pub_add',{vis:vis});}catch(e){} })
+        if(pubPayable())addPts(20);
+        try{track('pub_add',{vis:vis});}catch(e){} })
       .catch(function(){ btn.disabled=false; toast(c.offline); });
   });
   $('cmTeaser').addEventListener('click',openCommunity);
@@ -6603,6 +6644,7 @@
       if(!window.confirm(c.delAsk))return;
       pubApi('pub_del',{id:did,key:key}).then(function(){
         try{ var mn=cmMine(); delete mn[did]; localStorage.setItem('bosla_pub_mine',JSON.stringify(mn)); }catch(x){}
+        subPts(20);                          // the trip took its points with it
         toast(c.deleted); openCommunity();
       }).catch(function(){ toast(c.offline); });
       return;
