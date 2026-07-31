@@ -3827,7 +3827,7 @@
   // The plan is still built as one block of HTML; this splits the finished thing into pages
   // afterwards, so nothing about how a day is generated had to change. Overview first, then one
   // page per day, then everything you read once (packing, weather, phrases, booking) at the end.
-  var PAGE=0, PGFRESH=true; // PGFRESH: a brand-new plan opens on day one, a re-render stays put
+  var PAGE=0, PGFRESH=true; // PGFRESH: a brand-new plan opens on the trip page, a re-render stays put
   function pgLabels(){
     var ar=LANG==='ar', es=LANG==='es';
     return { over: ar?'الرحلة':(es?'Viaje':'Trip'),
@@ -3837,13 +3837,23 @@
   }
   // "Day 3 of 7" under the strip. On a two-week trip the chips scroll and the highlighted one is
   // the only thing telling you where you are — which is no use once it has scrolled off.
-  function pgCountText(i,dayCount,total){
-    var L=pgLabels();
-    if(i<=0)return L.over;
-    if(!dayCount||i>dayCount)return L.info;
-    if(LANG==='ar')return 'اليوم '+i+' من '+dayCount;
-    if(LANG==='es')return 'Día '+i+' de '+dayCount;
-    return 'Day '+i+' of '+dayCount;
+  // Reads the page rather than its position, because position no longer tells you: the trip comes
+  // first, then the things you read once, and only then day one.
+  function pgCountText(pg,dayCount){
+    var L=pgLabels(), k=pg?pg.getAttribute('data-pgk'):'';
+    if(k==='info')return L.info;
+    var d=+((pg&&pg.getAttribute('data-pgday'))||0);
+    if(!d)return L.over;
+    if(LANG==='ar')return 'اليوم '+d+' من '+dayCount;
+    if(LANG==='es')return 'Día '+d+' de '+dayCount;
+    return 'Day '+d+' of '+dayCount;
+  }
+  // Day numbers stopped being page numbers when the info page moved in front of them.
+  function pgIndexOfDay(d){
+    var out=$('out'); if(!out)return d;
+    var pgs=out.querySelectorAll(':scope > .pg');
+    for(var i=0;i<pgs.length;i++)if(+(pgs[i].getAttribute('data-pgday')||0)===d)return i;
+    return d;
   }
   function paginate(){
     var out=$('out'); if(!out||!out.classList.contains('show'))return;
@@ -3905,8 +3915,18 @@
     }
     row.appendChild(arrow(-1)); row.appendChild(count); row.appendChild(arrow(1));
     bar.appendChild(tabs); bar.appendChild(row);
-    var pages=buckets.map(function(items,i){
+    // The trip, then the things you read once, then the days. Packing lists and phrases were
+    // stranded past the end of a fortnight, where nobody scrolls to find them, and they belong
+    // with the summary — you read them while you are still deciding, not on the last afternoon.
+    var order=[{items:buckets[0],kind:'over'}];
+    if(tail.length)order.push({items:buckets[buckets.length-1],kind:'info'});
+    for(var bi=1;bi<=dayCount;bi++)order.push({items:buckets[bi],kind:'day',day:bi});
+
+    var pages=order.map(function(spec,i){
+      var items=spec.items;
       var pg=document.createElement('div'); pg.setAttribute('data-pg',i);
+      pg.setAttribute('data-pgk',spec.kind);
+      if(spec.day)pg.setAttribute('data-pgday',spec.day);
       // keep the little inset the .route wrapper used to give a day
       pg.className='pg'+((items[0]&&items[0].classList.contains('day'))?' dayp':'');
       items.forEach(function(el){ pg.appendChild(el); });
@@ -3914,17 +3934,18 @@
       pg.querySelectorAll('.day.dcol').forEach(function(d){ d.classList.remove('dcol'); });
       var t=document.createElement('button');
       t.type='button'; t.className='pgtab'; t.setAttribute('data-pgt',i);
-      t.textContent=(i===0?L.over:(tail.length&&i===buckets.length-1?L.info:String(i)));
+      t.textContent=(spec.kind==='over'?L.over:(spec.kind==='info'?L.info:String(spec.day)));
       tabs.appendChild(t);
       return pg;
     });
     // what's on the next page, so you can see where the trip is going before you tap
     function pgTitle(i){
       var pg=pages[i]; if(!pg)return '';
-      if(i===0)return L.over;
-      if(tail.length&&i===pages.length-1)return L.info;
+      var k=pg.getAttribute('data-pgk');
+      if(k==='over')return L.over;
+      if(k==='info')return L.info;
       var lbl=pg.querySelector('.dlabel');
-      return lbl?lbl.textContent.trim():(L.next+' '+i);
+      return lbl?lbl.textContent.trim():(L.next+' '+(pg.getAttribute('data-pgday')||i));
     }
     pages.forEach(function(pg,i){
       var nav=document.createElement('div'); nav.className='pgnav';
@@ -3956,11 +3977,10 @@
       foot.classList.add('pgfoot'); out.appendChild(foot); // outside the pages, so it's on all of them
     }
     out.setAttribute('data-days',dayCount);
-    // Land on day one. The overview is a tab away for anyone who wants it, but the first thing a
-    // traveller wants is the first day — and having to work out that you tap "1" to see any of
-    // your trip is not obvious.
-    var start=(PAGE!=null?PAGE:1);
-    if(PGFRESH){ start=(pages.length>1?1:0); PGFRESH=false; }
+    // Open on the trip, not on Tuesday morning. The first thing anyone wants after tapping Plan is
+    // what the trip IS — where, how long, what it costs — and day one is one tap from there.
+    var start=(PAGE!=null?PAGE:0);
+    if(PGFRESH){ start=0; PGFRESH=false; }
     pgGo(Math.min(start,pages.length-1),true,true); // a fresh render lands, it doesn't slide
   }
   var PGOBS=null;
@@ -3999,7 +4019,7 @@
       a.disabled=(d<0?i<=0:i>=pages.length-1);
     });
     var cnt=out.querySelector('.pgcount');
-    if(cnt)cnt.textContent=pgCountText(i,+(out.getAttribute('data-days')||0),pages.length);
+    if(cnt)cnt.textContent=pgCountText(pages[i],+(out.getAttribute('data-days')||0));
     var tab=out.querySelectorAll('.pgtab')[i];
     if(tab&&tab.scrollIntoView)try{ tab.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'}); }catch(e){}
     pgWatchNav();
@@ -6265,7 +6285,7 @@
     var pb=e.target.closest('.pgbtn'); if(pb){ if(!pb.disabled)pgGo(PAGE+(+pb.getAttribute('data-pgd'))); return; }
     // "Jump to day" turns a page rather than scrolling to one
     var dn=e.target.closest('.dnav'); if(dn){ var dd=+dn.getAttribute('data-day');
-      if($('out').querySelector(':scope > .pgbar')){ pgGo(dd); return; }
+      if($('out').querySelector(':scope > .pgbar')){ pgGo(pgIndexOfDay(dd)); return; }
       var el=document.getElementById('day-'+dd); if(el){ el.classList.remove('dcol'); el.scrollIntoView({behavior:'smooth',block:'start'}); } return; }
     // pick which hotel site to book on (remembered); highlight it, no navigation
     var pv=e.target.closest('button.provchip');
