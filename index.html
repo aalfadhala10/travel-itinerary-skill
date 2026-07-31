@@ -473,10 +473,19 @@
   .svbtn.on svg path{fill:var(--amber)}
   .svgroup{margin-bottom:14px}
   .svrow{display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px solid var(--line);font-size:15px}
+  .svrow a{color:var(--ink);text-decoration-color:var(--amber);text-underline-offset:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .svrow:last-child{border-bottom:none}
   .svrow .svarea{color:var(--muted);font-size:13px}
   .svrow .svx{margin-inline-start:auto;background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:4px 8px}
   .svplan{display:block;width:100%;margin-top:10px;padding:12px;border:1px solid var(--amber);border-radius:12px;background:var(--amber-soft);color:var(--amber);font-weight:700;font-size:14.5px;cursor:pointer}
+  .svcatic{display:inline-flex;vertical-align:-3px;margin-inline-end:5px}
+  .svcatic svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .svrow .svcatic{flex:0 0 auto;color:var(--amber)}
+  .svaddrow{display:flex;gap:8px;margin:10px 0}
+  .svaddrow input{flex:1;min-width:0;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--paper2);color:var(--ink);font-size:14.5px}
+  .svtoplan{margin-inline-start:auto;padding:7px 10px;border:1px solid var(--amber);border-radius:9px;background:var(--amber-soft);color:var(--amber);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .svrow:has(.svtoplan) .svx{margin-inline-start:6px}
+  .svmiss{color:var(--muted);font-size:12.5px;margin-top:8px;text-align:center}
   .picinline{margin:6px 0 2px;padding:6px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)}
   .picinline img{display:block;width:100%;max-height:200px;object-fit:cover;border-radius:8px}
   .picinline .pinone{font-size:14.5px;color:var(--muted);text-align:center;padding:8px}
@@ -4532,7 +4541,7 @@
     return '<div class="slot" data-sk="'+sk+'" data-q="'+esc(q)+'"><div class="t">'+tm+'</div>'
       +'<div class="d">'+link(locName(ck,poi.n),q,food?'':q,poi.n)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a),locName(ck,poi.n))+hopLabel(hop)+(food?menuLink(poi.n,city):'')+'</div>'
       +(food?'':'<button type="button" class="picbtn" data-pic="'+esc(q)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>')
-      +'<button type="button" class="picbtn svbtn'+(isSaved(ck,poi.n)?' on':'')+'" data-sv="'+esc(ck)+'|'+esc(poi.n)+'|'+esc(poi.a||'')+'" aria-label="'+esc(svLbl())+'" title="'+esc(svLbl())+'">'+BKSVG+'</button>'
+      +'<button type="button" class="picbtn svbtn'+(isSaved(ck,poi.n)?' on':'')+'" data-sv="'+esc(ck)+'|'+esc(poi.n)+'|'+esc(poi.a||'')+'|'+svCatOf(poi,food)+'" aria-label="'+esc(svLbl())+'" title="'+esc(svLbl())+'">'+BKSVG+'</button>'
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
   }
   // Small stops the bot added on request ("put a coffee shop on day 2"), keyed by day number.
@@ -6160,36 +6169,93 @@
   var BKSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.2L5 21V4.5a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
   function svLbl(){ return LANG==='ar'?'احفظ المكان':(LANG==='es'?'Guardar lugar':'Save place'); }
   function svTxt(){
-    return LANG==='ar'?{t:'أماكني المحفوظة',e:'ما حفظت شي بعد — اضغط علامة الحفظ عند أي مكان في خطتك.',p:'خطط رحلة هنا',on:'انحفظ في أماكنك',off:'انشال من المحفوظات'}
-      :(LANG==='es'?{t:'Lugares guardados',e:'Nada guardado aún — toca el marcador junto a un lugar de tu plan.',p:'Planear un viaje aquí',on:'Guardado en tus lugares',off:'Quitado de guardados'}
-      :{t:'Saved places',e:'Nothing saved yet — tap the bookmark next to any place in your plan.',p:'Plan a trip here',on:'Saved to your places',off:'Removed from saved'});
+    return LANG==='ar'?{t:'أماكني المفضلة',e:'ما عندك أماكن مفضلة بعد — احفظ من خطتك أو أضف مكان بنفسك.',p:'خطط رحلة هنا',on:'انحفظ في مفضلاتك',off:'انشال من المفضلة',
+      cats:{all:'الكل',coffee:'قهوة',food:'مطاعم',photo:'تصوير',nature:'طبيعة',shopping:'تسوق',other:'أخرى'},
+      addT:'أضف مكان بنفسك',addName:'اسم المكان',addCity:'المدينة',addBtn:'احفظه',
+      toPlan:'أضفها لجدولك',otherCity:function(c){return 'رحلتك الحالية ما تمر بـ'+c;},
+      added:function(d){return 'انضاف لليوم '+d+' من رحلتك';}}
+      :(LANG==='es'?{t:'Lugares favoritos',e:'Aún no tienes favoritos — guarda desde tu plan o añade uno tú mismo.',p:'Planear un viaje aquí',on:'Guardado en tus favoritos',off:'Quitado de favoritos',
+      cats:{all:'Todos',coffee:'Café',food:'Restaurantes',photo:'Fotografía',nature:'Naturaleza',shopping:'Compras',other:'Otros'},
+      addT:'Añade un lugar tú mismo',addName:'Nombre del lugar',addCity:'Ciudad',addBtn:'Guardar',
+      toPlan:'Añadir a mi plan',otherCity:function(c){return 'Tu viaje actual no pasa por '+c;},
+      added:function(d){return 'Añadido al día '+d+' de tu viaje';}}
+      :{t:'Favourite places',e:'No favourites yet — save from your plan, or add a place yourself.',p:'Plan a trip here',on:'Saved to your favourites',off:'Removed from favourites',
+      cats:{all:'All',coffee:'Coffee',food:'Restaurants',photo:'Photo spots',nature:'Nature',shopping:'Shopping',other:'Other'},
+      addT:'Add a place yourself',addName:'Place name',addCity:'City',addBtn:'Save it',
+      toPlan:'Add to my plan',otherCity:function(c){return 'Your current trip does not pass through '+c;},
+      added:function(d){return 'Added to day '+d+' of your trip';}});
+  }
+  var SVICON={
+    coffee:'<svg viewBox="0 0 24 24"><path d="M4 8h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8zM16 9h2.2a2.3 2.3 0 0 1 0 4.6H16"/></svg>',
+    food:'<svg viewBox="0 0 24 24"><path d="M7 3v7M4.5 3v4.5a2.5 2.5 0 0 0 5 0V3M7 10v11M16.5 3c-1.7 1.5-2.5 4-2.5 6.5 0 1.6 1 2.5 2.5 2.5V21M16.5 3V12"/></svg>',
+    photo:'<svg viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="14" r="3.4"/></svg>',
+    nature:'<svg viewBox="0 0 24 24"><path d="M12 21V9M12 21c0-5-3.5-7-7-7 0 4 3 7 7 7zm0-5c0-5 3-8 7-8 0 5-3 8-7 8z"/></svg>',
+    shopping:'<svg viewBox="0 0 24 24"><path d="M6 8h12l-1.2 12a1.5 1.5 0 0 1-1.5 1.4H8.7A1.5 1.5 0 0 1 7.2 20L6 8zM9 10V6.5a3 3 0 0 1 6 0V10"/></svg>',
+    other:'<svg viewBox="0 0 24 24"><path d="M12 2.7l2.9 5.9 6.5.9-4.7 4.6 1.1 6.4L12 17.5l-5.8 3-1.1-6.4L.4 9.5l6.5-.9z"/></svg>'
+  };
+  function svCatOf(poi,isFood){
+    if(isFood)return 'food';
+    var t=(poi&&poi.t)||[];
+    if(t.indexOf('Nature')>=0)return 'nature';
+    if(t.indexOf('Shopping')>=0)return 'shopping';
+    if(t.indexOf('Food')>=0)return 'food';
+    return 'other';
   }
   function loadSaved(){ try{ return JSON.parse(localStorage.getItem('bosla_saved')||'[]'); }catch(e){ return []; } }
   function storeSaved(a){ try{ localStorage.setItem('bosla_saved',JSON.stringify(a.slice(0,200))); }catch(e){} }
   function isSaved(ck,n){ return loadSaved().some(function(x){ return x.ck===ck&&x.n===n; }); }
-  function toggleSaved(ck,n,a){
+  function toggleSaved(ck,n,a,cat){
     var arr=loadSaved(), i=arr.findIndex(function(x){ return x.ck===ck&&x.n===n; }), c=svTxt();
     if(i>=0){ arr.splice(i,1); toast(c.off); }
-    else { arr.unshift({ck:ck,n:n,a:a||''}); toast(c.on); addPts(1); }
+    else { arr.unshift({ck:ck,n:n,a:a||'',cat:cat||'other'}); toast(c.on); addPts(1); }
     storeSaved(arr);
     return i<0;
   }
+  var SVCAT='all';
+  // which cities the trip on screen actually visits — the honest test for "does this fit"
+  function tripCks(){
+    if(!planLive())return [];
+    if(ROUTE&&ROUTE.length)return ROUTE.slice();
+    var out=[],m1=matchDest($('dest').value||''),m2=matchDest($('dest2').value||'');
+    if(m1)out.push(keyOf(m1)); if(m2)out.push(keyOf(m2));
+    return out;
+  }
   function openSavedView(){
-    var c=svTxt(), box=$('saved'), arr=loadSaved();
+    var c=svTxt(), box=$('saved'), arr=loadSaved(), onTrip=tripCks();
     box.classList.remove('is-hidden');
     var h='<div class="cmhead"><h2>'+esc(c.t)+'</h2></div>';
-    if(!arr.length){ box.innerHTML=h+'<div class="cmempty">'+esc(c.e)+'</div>'; box.scrollIntoView({behavior:'smooth',block:'start'}); return; }
+    // the shelf they sort their world onto: coffee, photo spots, nature, shopping...
+    h+='<div class="cmsort">'+['all','coffee','food','photo','nature','shopping','other'].map(function(k){
+      return '<button type="button" class="chip'+(SVCAT===k?' active':'')+'" data-svcat="'+k+'">'
+        +(k==='all'?'':'<span class="svcatic">'+SVICON[k]+'</span>')+esc(c.cats[k])+'</button>';
+    }).join('')+'</div>';
+    // a place of their own — the spot they stood on and never found again
+    h+='<div class="cmcard svgroup" data-noopen="1"><div class="cmtitle" style="font-size:15px">'+esc(c.addT)+'</div>'
+      +'<div class="svaddrow"><input type="text" id="svAddName" dir="auto" maxlength="60" placeholder="'+esc(c.addName)+'">'
+      +'<input type="text" id="svAddCity" dir="auto" maxlength="40" placeholder="'+esc(c.addCity)+'"></div>'
+      +'<div class="cmsort" id="svAddCat">'+['coffee','food','photo','nature','shopping','other'].map(function(k,i){
+        return '<button type="button" class="chip'+(i===0?' active':'')+'" data-addcat="'+k+'"><span class="svcatic">'+SVICON[k]+'</span>'+esc(c.cats[k])+'</button>';
+      }).join('')+'</div>'
+      +'<button type="button" class="svplan" data-svadd="1">'+esc(c.addBtn)+'</button></div>';
+    var list=arr.filter(function(x){ return SVCAT==='all'||(x.cat||'other')===SVCAT; });
+    if(!arr.length)h+='<div class="cmempty">'+esc(c.e)+'</div>';
     var byCity={},order=[];
-    arr.forEach(function(x){ if(!byCity[x.ck]){ byCity[x.ck]=[]; order.push(x.ck); } byCity[x.ck].push(x); });
-    order.forEach(function(ck){
-      var d=DEST[ck], city=d?cityName(ck,d.city):ck, cover='';
+    list.forEach(function(x){ var g=x.ck||('~'+(x.city||'')); if(!byCity[g]){ byCity[g]=[]; order.push(g); } byCity[g].push(x); });
+    order.forEach(function(g){
+      var ck=g.charAt(0)==='~'?null:g, d=ck?DEST[ck]:null;
+      var city=d?cityName(ck,d.city):(g.slice(1)||'—'), cover='';
       try{ if(d)cover=flagCover(d.flag,ck); }catch(e){}
+      var fits=ck&&onTrip.indexOf(ck)>=0;
       h+='<div class="cmcard svgroup" data-noopen="1">'+cover+'<div class="cmtitle">'+esc(city)+'</div>'
-        +byCity[ck].map(function(x){
-          return '<div class="svrow"><a href="'+mapUrl(x.n+' '+(d?d.city:''))+'" target="_blank" rel="noopener">'+esc(locName(ck,x.n))+'</a>'
-            +(x.a?'<span class="svarea">'+esc(locName(ck,x.a))+'</span>':'')
-            +'<button type="button" class="svx" data-svdel="'+esc(ck)+'|'+esc(x.n)+'" aria-label="✕">✕</button></div>';
+        +byCity[g].map(function(x){
+          var cat=x.cat||'other';
+          return '<div class="svrow"><span class="svcatic" title="'+esc(c.cats[cat])+'">'+SVICON[cat]+'</span>'
+            +'<a dir="auto" href="'+mapUrl(x.n+' '+(d?d.city:(x.city||'')))+'" target="_blank" rel="noopener">'+esc(ck?locName(ck,x.n):x.n)+'</a>'
+            +(x.a?'<span class="svarea">'+esc(ck?locName(ck,x.a):x.a)+'</span>':'')
+            +(fits?'<button type="button" class="svtoplan" data-svtoplan="'+esc(x.n)+'">'+esc(c.toPlan)+'</button>':'')
+            +'<button type="button" class="svx" data-svdel="'+esc(g)+'|'+esc(x.n)+'" aria-label="✕">✕</button></div>';
         }).join('')
+        +(onTrip.length&&ck&&!fits?'<div class="svmiss">'+esc(c.otherCity(city))+'</div>':'')
         +(d?'<button type="button" class="svplan" data-svplan="'+esc(d.city)+'">'+esc(c.p)+'</button>':'')
         +'</div>';
     });
@@ -6200,15 +6266,43 @@
   $('out').addEventListener('click',function(e){
     var b=e.target.closest('[data-sv]'); if(!b)return;
     var p=b.getAttribute('data-sv').split('|');
-    var on=toggleSaved(p[0],p[1],p[2]);
+    var on=toggleSaved(p[0],p[1],p[2],p[3]);
     b.classList.toggle('on',on);
   });
   $('saved').addEventListener('click',function(e){
-    var t;
+    var t, c=svTxt();
+    if((t=e.target.closest('[data-svcat]'))){ SVCAT=t.getAttribute('data-svcat'); openSavedView(); return; }
+    if((t=e.target.closest('[data-addcat]'))){
+      document.querySelectorAll('#svAddCat .chip').forEach(function(x){ x.classList.toggle('active',x===t); });
+      return;
+    }
+    if((t=e.target.closest('[data-svadd]'))){
+      var nm=($('svAddName').value||'').trim().slice(0,60);
+      var cty=($('svAddCity').value||'').trim().slice(0,40);
+      if(!nm)return;
+      var cat=(document.querySelector('#svAddCat .chip.active')||{}).getAttribute?document.querySelector('#svAddCat .chip.active').getAttribute('data-addcat'):'other';
+      var m=cty?matchDest(cty):null;
+      var arr=loadSaved();
+      arr.unshift(m?{ck:keyOf(m),n:nm,a:'',cat:cat}:{n:nm,city:cty,a:'',cat:cat});
+      storeSaved(arr); addPts(1); toast(c.on); openSavedView(); return;
+    }
+    if((t=e.target.closest('[data-svtoplan]'))){
+      var name=t.getAttribute('data-svtoplan');
+      // it lands on the day you are looking at; the overview lands it on day one
+      var dayEl=document.querySelector('#out .pg.on .day');
+      var day=dayEl?parseInt(String(dayEl.id).replace('day-',''),10)||1:1;
+      (DAYADD[day]=DAYADD[day]||[]).push({n:name});
+      rerenderKeep(); toast(c.added(day));
+      try{track('fav_toplan',{});}catch(x){}
+      return;
+    }
     if((t=e.target.closest('[data-svdel]'))){
       var p=t.getAttribute('data-svdel').split('|');
-      var arr=loadSaved().filter(function(x){ return !(x.ck===p[0]&&x.n===p[1]); });
-      storeSaved(arr); openSavedView(); return;
+      var arr2=loadSaved().filter(function(x){
+        var g=x.ck||('~'+(x.city||''));
+        return !(g===p[0]&&x.n===p[1]);
+      });
+      storeSaved(arr2); openSavedView(); return;
     }
     if((t=e.target.closest('[data-svplan]'))){
       $('dest').value=t.getAttribute('data-svplan'); $('dest2').value='';
