@@ -857,6 +857,15 @@
   .ptschip svg{width:14px;height:14px;fill:currentColor;stroke:none}
   .cmloading{text-align:center;color:var(--muted);padding:30px 0;font-size:14.5px}
   #app[dir="rtl"] .cmback{transform:scaleX(-1)}
+  .cmcover{margin:-16px -16px 12px;height:74px;overflow:hidden;border-radius:16px 16px 0 0;position:relative}
+  .cmcover img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(1.05)}
+  .cmcover .hero-art{height:74px;border-radius:0}
+  .cmcover .hero-art svg{width:100%;height:74px;display:block}
+  .cmcover .hero-flag{position:absolute;bottom:6px;inset-inline-end:10px;font-size:20px}
+  .cmmine{display:inline-block;vertical-align:2px;background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber);border-radius:999px;font-size:11px;font-weight:700;padding:1px 8px;margin-inline-start:6px}
+  .cmsearch{width:100%;padding:12px 14px;margin:0 0 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:15px}
+  @keyframes heartpop{0%{transform:scale(1)}45%{transform:scale(1.45)}100%{transform:scale(1)}}
+  .cmbtn.liked svg,.cmstat.liked svg{animation:heartpop .35s ease}
   .cmteaser{display:flex;align-items:center;gap:13px;width:100%;margin-top:14px;padding:15px 16px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);cursor:pointer;text-align:start;box-shadow:var(--shadow);transition:transform .1s}
   .cmteaser:active{transform:scale(.99)}
   .cmticon{width:38px;height:38px;flex-shrink:0;border-radius:12px;background:var(--amber-soft);display:flex;align-items:center;justify-content:center}
@@ -6073,7 +6082,7 @@
       report:'Report this trip',reported:'Thank you — we will take a look.',
       cmtDone:'Comment added',photoDone:'Photo added — thank you for sharing',
       pts:function(n){return n+' points';},ptsNote:function(n){return n+' points to your next free trip credit';},
-      ptsCredit:'You earned a free trip credit!'},
+      ptsCredit:'You earned a free trip credit!',mine:'Yours',del:'Remove my trip',delAsk:'Remove this trip from the community? This cannot be undone.',deleted:'Your trip was removed',search:'Search a city or a name…',lvls:['New traveller','Explorer','Wayfarer','Compass master']},
     ar:{title:'رحلات المسافرين',sub:'خطط حقيقية شاركها ناس جرّبوها. افتح أي وحدة وخلها لك.',
       newest:'الأحدث',top:'الأكثر إعجاباً',days:'أيام',by:'من',use:'استخدم هذه الخطة',shareT:'مشاركة',like:'إعجاب',liked:'أعجبتني',
       photos:'صور',comments:'تعليقات',addPhoto:'أضف صورة',writeCmt:'اكتب تعليق…',send:'إرسال',
@@ -6087,7 +6096,7 @@
       report:'أبلغ عن هذه الرحلة',reported:'شكراً لك — بنراجعها.',
       cmtDone:'تم إضافة تعليقك',photoDone:'تمت إضافة الصورة — شكراً لمشاركتك',
       pts:function(n){return n+' نقطة';},ptsNote:function(n){return 'باقي '+n+' نقطة على رصيد رحلة مجاني';},
-      ptsCredit:'حصلت على رصيد رحلة مجاني!'},
+      ptsCredit:'حصلت على رصيد رحلة مجاني!',mine:'رحلتك',del:'احذف رحلتي',delAsk:'تحذف هذه الرحلة من رحلات المسافرين؟ ما تقدر ترجعها.',deleted:'انحذفت رحلتك',search:'ابحث عن مدينة أو اسم…',lvls:['مسافر جديد','مستكشف','رحّالة','خبير البوصلة']},
     es:{title:'Viajes de viajeros',sub:'Planes reales compartidos por quienes los usaron. Abre uno y hazlo tuyo.',
       newest:'Más recientes',top:'Más gustados',days:'días',by:'por',use:'Usar este plan',shareT:'Compartir',like:'Me gusta',liked:'Te gusta',
       photos:'fotos',comments:'comentarios',addPhoto:'Añadir foto',writeCmt:'Escribe un comentario…',send:'Enviar',
@@ -6101,7 +6110,7 @@
       report:'Denunciar este viaje',reported:'Gracias — lo revisaremos.',
       cmtDone:'Comentario añadido',photoDone:'Foto añadida — gracias por compartir',
       pts:function(n){return n+' puntos';},ptsNote:function(n){return n+' puntos para tu próximo crédito de viaje';},
-      ptsCredit:'¡Ganaste un crédito de viaje gratis!'}
+      ptsCredit:'¡Ganaste un crédito de viaje gratis!',mine:'Tuyo',del:'Eliminar mi viaje',delAsk:'¿Eliminar este viaje de la comunidad? No se puede deshacer.',deleted:'Tu viaje fue eliminado',search:'Busca una ciudad o un nombre…',lvls:['Viajero nuevo','Explorador','Trotamundos','Maestro de la brújula']}
   };
   var SHARESVG='<svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.6"/><circle cx="17.5" cy="5.5" r="2.6"/><circle cx="17.5" cy="18.5" r="2.6"/><path d="M8.3 10.8l6.9-4M8.3 13.2l6.9 4"/></svg>';
   var HEARTSVG='<svg viewBox="0 0 24 24"><path d="M12 21C7 16.5 3 13 3 8.8 3 6 5.2 4 7.8 4c1.6 0 3.1.8 4.2 2.2C13.1 4.8 14.6 4 16.2 4 18.8 4 21 6 21 8.8c0 4.2-4 7.7-9 12.2z"/></svg>';
@@ -6121,14 +6130,16 @@
     var c=CTXT[LANG]||CTXT.en, was=getPts(), now=was+n;
     try{localStorage.setItem('bosla_pts',String(now));}catch(e){}
     if(Math.floor(now/PTS_CREDIT)>Math.floor(was/PTS_CREDIT)){ setCredits(getCredits()+1); toast(c.ptsCredit); }
-    try{ var el=document.getElementById('drawerPts'); if(el)el.innerHTML=STARSVG+' '+esc(c.pts(now)); }catch(e){}
+    try{ drawPts(); }catch(e){}
   }
+  function ptsLevel(n){ return n>=300?3:n>=150?2:n>=50?1:0; }
   function drawPts(){
     var c=CTXT[LANG]||CTXT.en;
     var host=$('drawerProfile'); if(!host)return;
     var el=$('drawerPts');
     if(!el){ el=document.createElement('span'); el.id='drawerPts'; el.className='ptschip'; host.appendChild(el); }
-    el.innerHTML=STARSVG+' '+esc(c.pts(getPts()));
+    var n=getPts();
+    el.innerHTML=STARSVG+' '+esc(c.lvls[ptsLevel(n)])+' · '+esc(c.pts(n));
   }
   // ---- the feed ----
   var CMLIKED={}; try{ CMLIKED=JSON.parse(localStorage.getItem('bosla_liked')||'{}'); }catch(e){}
@@ -6148,16 +6159,37 @@
       .catch(function(){ box.innerHTML='<div class="cmhead"><h2>'+esc(c.title)+'</h2></div><div class="cmempty">'+esc(c.offline)+'</div>'; });
     try{track('community_open',{});}catch(e){}
   }
+  var CMQUERY='';
+  function cmMine(){ try{ return JSON.parse(localStorage.getItem('bosla_pub_mine')||'{}'); }catch(e){ return {}; } }
+  // a card's face: the first shared photo if the trip has one, else the destination's own
+  // climate-tinted artwork — the same scene the itinerary banner uses, drawn locally for free
+  function cmCover(r){
+    if(r.th&&r.th.indexOf('data:image/jpeg;base64,')===0)
+      return '<div class="cmcover"><img src="'+r.th+'" alt="" loading="lazy"></div>';
+    try{
+      var m=matchDest((r.cities||[])[0]||'');
+      if(m&&m.summer)return '<div class="cmcover">'+heroArt(m.summer.cond,m.flag)+'</div>';
+    }catch(e){}
+    return '';
+  }
   function renderFeed(){
-    var c=CTXT[LANG]||CTXT.en, box=$('community');
+    var c=CTXT[LANG]||CTXT.en, box=$('community'), mine=cmMine();
     var list=CMFEED.slice();
     if(CMSORT==='top')list.sort(function(a,b){ return (b.likes||0)-(a.likes||0); });
+    if(CMQUERY){
+      var q=CMQUERY.toLowerCase();
+      list=list.filter(function(r){
+        return (r.title+' '+(r.cities||[]).join(' ')+' '+r.name).toLowerCase().indexOf(q)>=0;
+      });
+    }
     var h='<div class="cmhead"><h2>'+esc(c.title)+'</h2></div><div class="cmsub">'+esc(c.sub)+'</div>'
+      +'<input type="text" class="cmsearch" id="cmSearch" placeholder="'+esc(c.search)+'" value="'+esc(CMQUERY)+'">'
       +'<div class="cmsort"><button type="button" class="chip'+(CMSORT==='new'?' active':'')+'" data-cmsort="new">'+esc(c.newest)+'</button>'
       +'<button type="button" class="chip'+(CMSORT==='top'?' active':'')+'" data-cmsort="top">'+esc(c.top)+'</button></div>';
     if(!list.length)h+='<div class="cmempty">'+esc(c.empty)+'</div>';
     list.forEach(function(r){
-      h+='<div class="cmcard" data-cmid="'+esc(r.id)+'"><div class="cmtitle">'+esc(r.title)+'</div>'
+      h+='<div class="cmcard" data-cmid="'+esc(r.id)+'">'+cmCover(r)
+        +'<div class="cmtitle">'+esc(r.title)+(mine[r.id]?' <span class="cmmine">'+esc(c.mine)+'</span>':'')+'</div>'
         +'<div class="cmmeta"><span>'+esc((r.cities||[]).join(' → '))+'</span><span>'+r.days+' '+esc(c.days)+'</span>'
         +'<span>'+esc(c.by)+' '+esc(r.name)+'</span><span>'+esc(cmAgo(r.t))+'</span></div>'
         +'<div class="cmstats"><span class="cmstat'+(CMLIKED[r.id]?' liked':'')+'">'+HEARTSVG+' '+(r.likes||0)+'</span>'
@@ -6165,6 +6197,10 @@
         +'<span class="cmstat">'+CAMSVG+' '+(r.np||0)+'</span></div></div>';
     });
     box.innerHTML=h;
+    var si=$('cmSearch');
+    if(si)si.addEventListener('input',function(){ CMQUERY=si.value.trim();
+      var was=si.selectionStart; renderFeed();
+      var si2=$('cmSearch'); if(si2){ si2.focus(); try{si2.setSelectionRange(was,was);}catch(e){} } });
   }
   function openPubTrip(id){
     var c=CTXT[LANG]||CTXT.en, box=$('community');
@@ -6182,7 +6218,9 @@
         +'<div class="cmphotos" id="cmPhotos"></div>'
         +'<div class="cmcmts" id="cmCmts"></div>'
         +'<div class="cmcform"><input type="text" id="cmCmtIn" maxlength="240" placeholder="'+esc(c.writeCmt)+'"><button type="button" data-cmcmt="'+esc(r.id)+'">'+esc(c.send)+'</button></div>'
-        +'<button type="button" class="cmreport" data-cmreport="'+esc(r.id)+'">'+esc(c.report)+'</button></div>';
+        +(cmMine()[r.id]
+          ?'<button type="button" class="cmreport" data-cmdel="'+esc(r.id)+'">'+esc(c.del)+'</button>'
+          :'<button type="button" class="cmreport" data-cmreport="'+esc(r.id)+'">'+esc(c.report)+'</button>')+'</div>';
       box.innerHTML=h;
       CMTRIP=r; renderCmts(r.comments||[]); loadPhotos(r.photos||[]);
     }).catch(function(){ openCommunity(); });
@@ -6222,6 +6260,21 @@
       img.src=url;
     });
   }
+  // the card-face version of a photo: 96px wide, aggressively compressed, ~3-6KB
+  function thumbOf(data){
+    return new Promise(function(resolve){
+      var img=new Image();
+      img.onload=function(){
+        var w=96,h=Math.max(1,Math.round(img.height*96/img.width));
+        var cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        var out=cv.toDataURL('image/jpeg',0.55);
+        resolve(out.length<=7000?out:'');
+      };
+      img.onerror=function(){ resolve(''); };
+      img.src=data;
+    });
+  }
   function openPublish(){
     var c=CTXT[LANG]||CTXT.en, m=$('pubModal');
     $('pubTitleH').textContent=c.pubTitleH; $('pubSub').textContent=c.pubSub; $('pubNote').textContent=c.pubNote;
@@ -6239,7 +6292,8 @@
     var cities=[s.d]; if(s.rt&&s.rt.length)cities=s.rt.map(function(k){return DEST[k]?DEST[k].city:k;}); else if(s.d2)cities.push(s.d2);
     var btn=$('pubGo'); btn.disabled=true;
     pubApi('pub_add',{title:$('pubTitle').value,name:$('pubName').value,state:s,cities:cities,days:parseInt(s.days,10)||1,lang:LANG})
-      .then(function(){ btn.disabled=false; closePublish(); toast(c.published); addPts(20); try{track('pub_add',{});}catch(e){} })
+      .then(function(d){ if(d&&d.id&&d.key){ try{ var mn=JSON.parse(localStorage.getItem('bosla_pub_mine')||'{}'); mn[d.id]=d.key; localStorage.setItem('bosla_pub_mine',JSON.stringify(mn)); }catch(e){} }
+        btn.disabled=false; closePublish(); toast(c.published); addPts(20); try{track('pub_add',{});}catch(e){} })
       .catch(function(){ btn.disabled=false; toast(c.offline); });
   });
   $('cmTeaser').addEventListener('click',openCommunity);
@@ -6279,11 +6333,23 @@
       fi.addEventListener('change',function(){
         var f=fi.files&&fi.files[0]; if(!f)return;
         shrinkPhoto(f).then(function(data){
-          return pubApi('pub_photo_add',{id:id2,name:getName()||'',data:data});
+          return thumbOf(data).then(function(th){
+            return pubApi('pub_photo_add',{id:id2,name:getName()||'',data:data,thumb:th});
+          });
         }).then(function(d){ toast(c.photoDone); addPts(10); loadPhotos(d.photos||[]); })
           .catch(function(){ toast(c.offline); });
       });
       fi.click();
+      return;
+    }
+    if((t=e.target.closest('[data-cmdel]'))){
+      var did=t.getAttribute('data-cmdel'), key=cmMine()[did];
+      if(!key)return;
+      if(!window.confirm(c.delAsk))return;
+      pubApi('pub_del',{id:did,key:key}).then(function(){
+        try{ var mn=cmMine(); delete mn[did]; localStorage.setItem('bosla_pub_mine',JSON.stringify(mn)); }catch(x){}
+        toast(c.deleted); openCommunity();
+      }).catch(function(){ toast(c.offline); });
       return;
     }
     if((t=e.target.closest('[data-cmreport]'))){

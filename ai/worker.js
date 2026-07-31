@@ -877,7 +877,7 @@ async function pubIdxSave(kv, idx) {
 function pubRow(r) {
   return { id: r.id, t: r.t, title: r.title, name: r.name, lang: r.lang,
     cities: r.cities, days: r.days, likes: r.likes || 0,
-    nc: (r.comments || []).length, np: (r.photos || []).length };
+    nc: (r.comments || []).length, np: (r.photos || []).length, th: r.th || "" };
 }
 async function pubTouch(kv, r) {
   await kv.put("pub:" + r.id, JSON.stringify(r));
@@ -902,6 +902,7 @@ async function community(body, env, request, origin) {
     if (!raw) return reply({ error: "not found" }, 404, origin);
     const r = JSON.parse(raw);
     if (r.hidden) return reply({ error: "not found" }, 404, origin);
+    delete r.k;                                       // the deletion key is the publisher's alone
     return reply({ trip: r }, 200, origin);
   }
 
@@ -919,10 +920,13 @@ async function community(body, env, request, origin) {
     const days = Math.max(1, Math.min(60, body.days | 0)) || 1;
     const lang = ["en", "ar", "es"].indexOf(body.lang) >= 0 ? body.lang : "en";
     const id = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)).replace(/-/g, "").slice(0, 16);
-    const r = { id, t: Date.now(), title, name, lang, cities, days,
+    // the deletion key: proof-of-publisher without an account. It goes back to the publishing
+    // device once, lives in that device's localStorage, and never appears in pub_get or the feed.
+    const delkey = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)).replace(/-/g, "");
+    const r = { id, t: Date.now(), title, name, lang, cities, days, k: delkey,
       state: JSON.parse(state), likes: 0, comments: [], photos: [] };
     await pubTouch(kv, r);
-    return reply({ id }, 200, origin);
+    return reply({ id, key: delkey }, 200, origin);
   }
 
   if (act === "pub_like") {
@@ -975,6 +979,10 @@ async function community(body, env, request, origin) {
     const pid = id + "." + ((r.photos || []).length + 1) + "." + String(Date.now()).slice(-5);
     await kv.put("pubphoto:" + pid, JSON.stringify({ n: name, d: data }));
     r.photos.push(pid);
+    // a matchbox-sized thumb rides along in the feed row so cards can show a real photo without
+    // fetching every full image. First photo only, hard-capped tiny.
+    const th = String(body.thumb || "");
+    if (!r.th && th.indexOf("data:image/jpeg;base64,") === 0 && th.length <= 7000) r.th = th;
     await pubTouch(kv, r);
     return reply({ pid, photos: r.photos }, 200, origin);
   }
@@ -983,6 +991,20 @@ async function community(body, env, request, origin) {
     const raw = await kv.get("pubphoto:" + pubClean(body.pid, 60));
     if (!raw) return reply({ error: "not found" }, 404, origin);
     return reply(JSON.parse(raw), 200, origin);
+  }
+
+  if (act === "pub_del") {
+    const id = pubClean(body.id, 40);
+    const raw = await kv.get("pub:" + id);
+    if (!raw) return reply({ ok: 1 }, 200, origin);   // already gone is still gone
+    const r = JSON.parse(raw);
+    if (!r.k || r.k !== String(body.key || "")) return reply({ error: "not yours" }, 403, origin);
+    for (const pid of r.photos || []) { try { await kv.delete("pubphoto:" + pid); } catch (e) {} }
+    try { await kv.delete("pub:" + id); } catch (e) {}
+    const idx = await pubIdx(kv);
+    const i = idx.findIndex((x) => x.id === id);
+    if (i >= 0) { idx.splice(i, 1); await pubIdxSave(kv, idx); }
+    return reply({ ok: 1 }, 200, origin);
   }
 
   if (act === "pub_report") {
