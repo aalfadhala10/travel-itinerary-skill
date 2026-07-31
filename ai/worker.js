@@ -197,6 +197,7 @@ export default {
         return reply(await placeFacts(names, city, env), 200, origin);
       }
       if (body.action === "cityphoto") return await cityPhoto(body, env, origin);
+      if (body.action === "hotelprice") return await hotelPrice(body, env, origin);
 
       // --- Community: published trips, likes, comments, photos --------------------------------
       // No accounts, in keeping with the app's promise. Publishing is an explicit act; a name is
@@ -1015,7 +1016,7 @@ async function community(body, env, request, origin) {
     // a matchbox-sized thumb rides along in the feed row so cards can show a real photo without
     // fetching every full image. First photo only, hard-capped tiny.
     const th = String(body.thumb || "");
-    if (!r.th && th.indexOf("data:image/jpeg;base64,") === 0 && th.length <= 7000) r.th = th;
+    if (!r.th && th.indexOf("data:image/jpeg;base64,") === 0 && th.length <= 17000) r.th = th;
     await pubTouch(kv, r);
     return reply({ pid, photos: r.photos }, 200, origin);
   }
@@ -1113,4 +1114,48 @@ async function cityPhoto(body, env, origin) {
     try { await kv.put(ckey, JSON.stringify(rec), photo ? undefined : { expirationTtl: 604800 }); } catch (e) {}
   }
   return reply(rec, 200, origin);
+}
+
+
+// --- indicative hotel prices --------------------------------------------------------------------
+// Real numbers only ever come from a real source. Hotellook (Travelpayouts) serves cached market
+// prices and pays an affiliate commission on bookings — the owner adds TP_TOKEN (and TP_MARKER
+// for the commission) as Cloudflare secrets, and until then this action says so instead of
+// guessing. Prices are cached six hours per hotel+dates and always labelled approximate.
+async function hotelPrice(body, env, origin) {
+  if (!env.TP_TOKEN) return reply({ needsKey: 1 }, 200, origin);
+  const kv = env.CITIES;
+  const name = String(body.name || "").slice(0, 80).trim();
+  const city = String(body.city || "").slice(0, 60).trim();
+  const ci = String(body.checkin || ""), co = String(body.checkout || "");
+  const ad = Math.max(1, Math.min(8, body.adults | 0)) || 2;
+  if (!name || !city) return reply({ error: "missing" }, 400, origin);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ci) || !/^\d{4}-\d{2}-\d{2}$/.test(co))
+    return reply({ prices: null, noDates: 1 }, 200, origin);
+
+  const ckey = "hp:" + cityKey(city) + ":" + cityKey(name).slice(0, 24) + ":" + ci + ":" + co + ":" + ad;
+  if (kv) { const hit = await kv.get(ckey); if (hit) return reply(JSON.parse(hit), 200, origin); }
+
+  let out = { prices: null };
+  try {
+    const lu = await fetch("https://engine.hotellook.com/api/v2/lookup.json?query=" +
+      encodeURIComponent(name + " " + city) + "&lang=en&lookFor=hotel&limit=3&token=" + env.TP_TOKEN);
+    const ld = lu.ok ? await lu.json() : null;
+    const hotel = ld && ld.results && ld.results.hotels && ld.results.hotels[0];
+    if (hotel && hotel.id) {
+      const pr = await fetch("https://engine.hotellook.com/api/v2/cache.json?locationId=" + hotel.locationId +
+        "&checkIn=" + ci + "&checkOut=" + co + "&adults=" + ad + "&currency=usd&limit=200&token=" + env.TP_TOKEN);
+      const pd = pr.ok ? await pr.json() : null;
+      const row = Array.isArray(pd) ? pd.find((x) => x.hotelId === hotel.id) : null;
+      if (row && row.priceFrom > 0) {
+        const marker = env.TP_MARKER ? "&marker=" + encodeURIComponent(env.TP_MARKER) : "";
+        out = { prices: { from: Math.round(row.priceFrom), avg: Math.round(row.priceAvg || 0) || null,
+          currency: "USD", stay: true, hotel: hotel.label || name,
+          book: "https://search.hotellook.com/hotels?hotelId=" + hotel.id + "&checkIn=" + ci +
+            "&checkOut=" + co + "&adults=" + ad + marker } };
+      }
+    }
+  } catch (e) { out = { prices: null }; }
+  if (kv) { try { await kv.put(ckey, JSON.stringify(out), { expirationTtl: 21600 }); } catch (e) {} }
+  return reply(out, 200, origin);
 }
