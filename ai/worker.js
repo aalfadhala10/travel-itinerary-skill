@@ -15,17 +15,23 @@
  * SETUP: see ai/SETUP.md.
  */
 
+// Where the app is allowed to be served from. Add a line here BEFORE moving the app to a new
+// domain (a Cloudflare Pages address, a custom domain) or it will be turned away from its own
+// Worker and every AI feature will go quiet at once.
 const ALLOWED_ORIGINS = [
   "https://aalfadhala10.github.io",
   "http://localhost",
   "http://127.0.0.1",
 ];
+function originOk(origin) {
+  return ALLOWED_ORIGINS.some((o) => origin && origin.startsWith(o));
+}
 
 const TAGS  = ["Culture", "Food", "Nature", "Adventure", "Shopping", "Relax"];
 const CONDS = ["veryhot", "hotdry", "hothumid", "warm", "mild", "tropical", "alpine"];
 
 function corsHeaders(origin) {
-  const ok = ALLOWED_ORIGINS.some((o) => origin && origin.startsWith(o));
+  const ok = originOk(origin);
   return {
     "Access-Control-Allow-Origin": ok ? origin : ALLOWED_ORIGINS[0],
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -94,6 +100,18 @@ export default {
     const origin = request.headers.get("Origin") || "";
     if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders(origin) });
     if (request.method !== "POST") return reply({ error: "POST only" }, 405, origin);
+
+    // The allow-list above only ever set a CORS header, and a CORS header is an instruction to a
+    // BROWSER about whether it may read an answer that has already been fetched and already been
+    // paid for. It stops nothing. Somebody who copies index.html onto their own site — or skips
+    // the browser entirely — was spending this account's Anthropic and Google budget, and the
+    // first sign of it would have been the bill.
+    //
+    // Turning an unknown caller away here costs nothing and happens before any of that. It is not
+    // airtight: an Origin header is trivially forged outside a browser, so this stops the copy
+    // that is re-hosted, not a determined one. The per-minute and per-day caps below are what
+    // actually bound the damage, and they are the part to keep tight.
+    if (!originOk(origin)) return reply({ error: "not allowed from here" }, 403, origin);
 
     let body;
     try { body = await request.json(); } catch { return reply({ error: "bad json" }, 400, origin); }
