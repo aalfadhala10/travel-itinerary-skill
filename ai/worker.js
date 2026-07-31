@@ -859,6 +859,10 @@ const PUB = {
   HIDE_AT: 3,                                           // reports before a trip disappears
 };
 
+async function pubSha(str) {
+  const b = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(str));
+  return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("").slice(0, 20);
+}
 function pubClean(s, max) {
   // control chars out, angle brackets out (the app escapes too — belt and braces), length capped
   return String(s || "").replace(/[\u0000-\u001F<>]/g, "").trim().slice(0, max);
@@ -919,6 +923,13 @@ async function community(body, env, request, origin) {
       .map((c) => pubClean(c, 40)).filter(Boolean);
     const days = Math.max(1, Math.min(60, body.days | 0)) || 1;
     const lang = ["en", "ar", "es"].indexOf(body.lang) >= 0 ? body.lang : "en";
+    // The same person publishing the same trip again is a double-tap or an edit — never a new
+    // card. Fingerprint what the feed actually shows (cities, days, name) per address; a repeat
+    // hands back the existing trip so the app can update it in place instead of duplicating it.
+    const ip0 = request.headers.get("CF-Connecting-IP") || "anon";
+    const sig = await pubSha([cities.join("|").toLowerCase(), days, name.toLowerCase()].join("#"));
+    const prior = await kv.get("pubsig:" + ip0 + ":" + sig);
+    if (prior && await kv.get("pub:" + prior)) return reply({ id: prior, dupe: 1 }, 200, origin);
     const id = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)).replace(/-/g, "").slice(0, 16);
     // the deletion key: proof-of-publisher without an account. It goes back to the publishing
     // device once, lives in that device's localStorage, and never appears in pub_get or the feed.
@@ -927,7 +938,26 @@ async function community(body, env, request, origin) {
       state: JSON.parse(state), likes: 0, comments: [], photos: [] };
     if (body.vis === "link") r.unlisted = 1;   // reachable by its link, absent from the feed
     await pubTouch(kv, r);
+    await kv.put("pubsig:" + ip0 + ":" + sig, id, { expirationTtl: 2592000 });
     return reply({ id, key: delkey }, 200, origin);
+  }
+
+  if (act === "pub_update") {
+    // The publisher's own edit: replaces title and plan, keeps likes, comments, photos — and
+    // keeps the ORIGINAL timestamp, so updating a trip can never be used to bump it up the feed.
+    const id = pubClean(body.id, 40);
+    const raw = await kv.get("pub:" + id);
+    if (!raw) return reply({ error: "not found" }, 404, origin);
+    const r = JSON.parse(raw);
+    if (!r.k || r.k !== String(body.key || "")) return reply({ error: "not yours" }, 403, origin);
+    const title = pubClean(body.title, PUB.TITLE);
+    if (title) r.title = title;
+    try {
+      const st = JSON.stringify(body.state);
+      if (st && st.length >= 20 && st.length <= PUB.STATE) r.state = JSON.parse(st);
+    } catch (e) {}
+    await pubTouch(kv, r);
+    return reply({ id, updated: 1 }, 200, origin);
   }
 
   if (act === "pub_like") {
