@@ -866,6 +866,11 @@
   .cmsearch{width:100%;padding:12px 14px;margin:0 0 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:15px}
   @keyframes heartpop{0%{transform:scale(1)}45%{transform:scale(1.45)}100%{transform:scale(1)}}
   .cmbtn.liked svg,.cmstat.liked svg{animation:heartpop .35s ease}
+  .cmlight{position:fixed;inset:0;z-index:90;background:rgba(4,7,13,.92);display:none;align-items:center;justify-content:center;padding:20px}
+  .cmlight.show{display:flex}
+  .cmlight img{max-width:100%;max-height:86vh;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .cmlight .cmlname{position:fixed;bottom:26px;left:0;right:0;text-align:center;color:#ece5d6;font-size:14px;text-shadow:0 1px 8px rgba(0,0,0,.8)}
+  .cmlight .cmlx{position:fixed;top:18px;inset-inline-end:18px;width:38px;height:38px;border-radius:50%;border:none;background:rgba(255,255,255,.14);color:#fff;font-size:17px;cursor:pointer}
   .cmteaser{display:flex;align-items:center;gap:13px;width:100%;margin-top:14px;padding:15px 16px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);cursor:pointer;text-align:start;box-shadow:var(--shadow);transition:transform .1s}
   .cmteaser:active{transform:scale(.99)}
   .cmticon{width:38px;height:38px;flex-shrink:0;border-radius:12px;background:var(--amber-soft);display:flex;align-items:center;justify-content:center}
@@ -1021,6 +1026,12 @@
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
+  </div>
+
+  <div class="cmlight" id="cmLight" aria-hidden="true">
+    <button type="button" class="cmlx" id="cmLightX" aria-label="Close">✕</button>
+    <img id="cmLightImg" alt="">
+    <div class="cmlname" id="cmLightName"></div>
   </div>
 
   <div class="welcome" id="pubModal" aria-hidden="true">
@@ -6153,10 +6164,17 @@
   function openCommunity(){
     var c=CTXT[LANG]||CTXT.en, box=$('community');
     box.classList.remove('is-hidden');
-    box.innerHTML='<div class="cmhead"><h2>'+esc(c.title)+'</h2></div><div class="cmsub">'+esc(c.sub)+'</div><div class="cmloading">…</div>';
+    // yesterday's feed is a better first paint than a spinner; the fresh one lands over it
+    var cached=null; try{ cached=JSON.parse(localStorage.getItem('bosla_feed')||'null'); }catch(e){}
+    if(cached&&cached.length){ CMFEED=cached; renderFeed(); }
+    else box.innerHTML='<div class="cmhead"><h2>'+esc(c.title)+'</h2></div><div class="cmsub">'+esc(c.sub)+'</div><div class="cmloading">…</div>';
     box.scrollIntoView({behavior:'smooth',block:'start'});
-    pubApi('pub_feed').then(function(d){ CMFEED=d.trips||[]; renderFeed(); })
-      .catch(function(){ box.innerHTML='<div class="cmhead"><h2>'+esc(c.title)+'</h2></div><div class="cmempty">'+esc(c.offline)+'</div>'; });
+    pubApi('pub_feed').then(function(d){
+      CMFEED=d.trips||[]; renderFeed();
+      try{ localStorage.setItem('bosla_feed',JSON.stringify(CMFEED.slice(0,40))); }catch(e){}
+    }).catch(function(){
+      if(!(cached&&cached.length))box.innerHTML='<div class="cmhead"><h2>'+esc(c.title)+'</h2></div><div class="cmempty">'+esc(c.offline)+'</div>';
+    });
     try{track('community_open',{});}catch(e){}
   }
   var CMQUERY='';
@@ -6212,7 +6230,7 @@
         +'<div class="cmmeta"><span>'+esc((r.cities||[]).join(' → '))+'</span><span>'+r.days+' '+esc(c.days)+'</span>'
         +'<span>'+esc(c.by)+' '+esc(r.name)+'</span><span>'+esc(cmAgo(r.t))+'</span></div>'
         +'<button type="button" class="cmuse" data-cmuse="'+esc(r.id)+'">'+esc(c.use)+'</button>'
-        +'<div class="cmrow"><button type="button" class="cmbtn'+(liked?' liked':'')+'" data-cmlike="'+esc(r.id)+'">'+HEARTSVG+' <span>'+(r.likes||0)+'</span></button>'
+        +'<div class="cmrow"><button type="button" class="cmbtn'+(liked?' liked':'')+'" data-cmlike="'+esc(r.id)+'" aria-label="'+esc(c.like)+'">'+HEARTSVG+' <span>'+(r.likes||0)+'</span></button>'
         +'<button type="button" class="cmbtn" data-cmshare="'+esc(r.id)+'">'+SHARESVG+' '+esc(c.shareT)+'</button>'
         +'<button type="button" class="cmbtn" data-cmphoto="'+esc(r.id)+'">'+CAMSVG+' '+esc(c.addPhoto)+'</button></div>'
         +'<div class="cmphotos" id="cmPhotos"></div>'
@@ -6237,10 +6255,20 @@
       pubApi('pub_photo',{pid:pid}).then(function(d){
         if(!d.d||d.d.indexOf('data:image/')!==0)return;      // only ever render an image data-url
         var img=document.createElement('img'); img.src=d.d; img.alt=d.n||''; img.loading='lazy';
+        img.addEventListener('click',function(ev){ ev.stopPropagation(); cmLightbox(d.d,d.n||''); });
         host.appendChild(img);
       }).catch(function(){});
     });
   }
+  function cmLightbox(src,name){
+    $('cmLightImg').src=src; $('cmLightName').textContent=name;
+    var l=$('cmLight'); l.classList.add('show'); l.setAttribute('aria-hidden','false');
+  }
+  (function(){
+    function shut(){ var l=$('cmLight'); l.classList.remove('show'); l.setAttribute('aria-hidden','true'); $('cmLightImg').src=''; }
+    $('cmLight').addEventListener('click',shut);
+    $('cmLightX').addEventListener('click',shut);
+  })();
   // squeeze a phone photo down to something KV is happy with: longest side 1280, JPEG, walk the
   // quality down until it fits the worker's cap
   function shrinkPhoto(file){
@@ -6287,12 +6315,16 @@
   function closePublish(){ var m=$('pubModal'); m.classList.remove('show'); m.setAttribute('aria-hidden','true'); }
   $('pubClose').addEventListener('click',closePublish);
   $('pubModal').addEventListener('click',function(e){ if(e.target===this)closePublish(); });
+  function pubSig(s){ try{ return [s.d,s.d2,s.days,s.seed,(s.rt||[]).join('.')].join('|'); }catch(e){ return ''; } }
   $('pubGo').addEventListener('click',function(){
     var c=CTXT[LANG]||CTXT.en, s=stateObj();
+    // publishing the identical trip twice is almost always a double-tap, not an intent
+    var sig=pubSig(s);
+    if(sig&&localStorage.getItem('bosla_pub_last')===sig){ closePublish(); toast(c.published); return; }
     var cities=[s.d]; if(s.rt&&s.rt.length)cities=s.rt.map(function(k){return DEST[k]?DEST[k].city:k;}); else if(s.d2)cities.push(s.d2);
     var btn=$('pubGo'); btn.disabled=true;
     pubApi('pub_add',{title:$('pubTitle').value,name:$('pubName').value,state:s,cities:cities,days:parseInt(s.days,10)||1,lang:LANG})
-      .then(function(d){ if(d&&d.id&&d.key){ try{ var mn=JSON.parse(localStorage.getItem('bosla_pub_mine')||'{}'); mn[d.id]=d.key; localStorage.setItem('bosla_pub_mine',JSON.stringify(mn)); }catch(e){} }
+      .then(function(d){ if(d&&d.id&&d.key){ try{ var mn=JSON.parse(localStorage.getItem('bosla_pub_mine')||'{}'); mn[d.id]=d.key; localStorage.setItem('bosla_pub_mine',JSON.stringify(mn)); localStorage.setItem('bosla_pub_last',sig); }catch(e){} }
         btn.disabled=false; closePublish(); toast(c.published); addPts(20); try{track('pub_add',{});}catch(e){} })
       .catch(function(){ btn.disabled=false; toast(c.offline); });
   });
