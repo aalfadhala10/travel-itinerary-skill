@@ -828,6 +828,9 @@
   #app[dir="rtl"] .route{padding-left:0;padding-right:4px}
   /* ---- Community: traveller-shared trips ---- */
   .cmwrap{margin:26px 0 8px}
+  /* browsing shared trips is a screen, not a section under the planner */
+  body.cmmode .card,body.cmmode #cmTeaser,body.cmmode #mytrips,body.cmmode #lastTrip,
+  body.cmmode #out,body.cmmode #saved,body.cmmode .intro,body.cmmode .editfab{display:none!important}
   .cmhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
   .cmhead h2{font-size:22px;margin:0}
   .cmsub{color:var(--muted);font-size:14.5px;margin:2px 0 14px}
@@ -865,7 +868,9 @@
   .ptschip{display:inline-flex;align-items:center;gap:6px;background:var(--paper2);border:1px solid var(--amber);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--amber);font-weight:700;margin-top:8px}
   .ptschip svg{width:14px;height:14px;fill:currentColor;stroke:none}
   .cmloading{text-align:center;color:var(--muted);padding:30px 0;font-size:14.5px}
-  .cmcover{margin:-16px -16px 12px;height:84px;overflow:hidden;border-radius:16px 16px 0 0;position:relative;background:var(--paper2)}
+  .cmcover{margin:-16px -16px 12px;height:84px;overflow:hidden;border-radius:16px 16px 0 0;position:relative;background:var(--paper2);transition:height .35s ease}
+  .cmcover.cmtall{height:180px}
+  .cmdetail .cmcover{margin:10px 0 14px;border-radius:16px}
   .cmcover.cmflag .bg{position:absolute;inset:-50px;display:flex;align-items:center;justify-content:center;font-size:280px;line-height:1;filter:blur(26px) saturate(1.35);opacity:.85;pointer-events:none}
   .cmcover.cmflag .fg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:56px;line-height:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.35))}
   .cmcover .cph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -890,6 +895,10 @@
   .cmprow b{font-weight:600}
   .cmprow .cmpgo{margin-inline-start:auto;color:var(--amber);font-size:14px;font-weight:700;white-space:nowrap}
   .cmpnote{color:var(--muted);font-size:12.5px;margin-top:10px;text-align:center}
+  .cmplive{display:flex;align-items:center;gap:10px;margin:2px 0 10px;padding:13px 14px;border:1px solid var(--amber);border-radius:14px;background:var(--amber-soft)}
+  .cmplive .p{font-size:20px;font-weight:800;color:var(--amber);white-space:nowrap}
+  .cmplive .l{font-size:12.5px;color:var(--muted);line-height:1.35}
+  .cmplive a{margin-inline-start:auto;padding:10px 14px;border-radius:10px;background:var(--amber);color:#1c1710;font-weight:700;font-size:13.5px;text-decoration:none;white-space:nowrap}
   #app[dir="rtl"] .cmprow{direction:rtl}
   .cmlight{position:fixed;inset:0;z-index:90;background:rgba(4,7,13,.92);display:none;align-items:center;justify-content:center;padding:20px}
   .cmlight.show{display:flex}
@@ -6136,9 +6145,9 @@
     var it=e.target.closest('.drawitem'); if(!it)return;
     var nav=it.getAttribute('data-nav');
     if(nav==='how'){ closeDrawer(); showIntro(); $('intro').scrollIntoView({behavior:'smooth',block:'center'}); }
-    else if(nav==='trips'){ closeDrawer(); var mt=$('mytrips'); if(!mt.classList.contains('is-hidden'))mt.scrollIntoView({behavior:'smooth',block:'start'}); else toast(I18N[LANG].ui.noTrips); }
+    else if(nav==='trips'){ closeDrawer(); exitCm(); var mt=$('mytrips'); if(!mt.classList.contains('is-hidden'))mt.scrollIntoView({behavior:'smooth',block:'start'}); else toast(I18N[LANG].ui.noTrips); }
     else if(nav==='community'){ closeDrawer(); openCommunity(); }
-    else if(nav==='saved'){ closeDrawer(); openSavedView(); }
+    else if(nav==='saved'){ closeDrawer(); exitCm(); openSavedView(); }
     else if(nav==='install'){ closeDrawer(); doInstall(); }
     else if(nav==='share'){ closeDrawer(); shareApp(); }
     else if(nav==='feedback'){ closeDrawer(); openFeedback(); }
@@ -6250,6 +6259,7 @@
     ];
     $('cmpTitle').textContent=h; $('cmpTitle').setAttribute('dir','auto');
     $('cmpSub').setAttribute('dir','auto'); $('cmpSub').textContent=city+(dt?' · '+dt.ci+' → '+dt.co+' · '+dt.n+(ar?' ليلة':(es?' noches':' nights')):'')+' · '+ad+(ar?' بالغين':(es?' adultos':' adults'));
+    var old=document.querySelector('#cmpSheet .cmplive'); if(old)old.remove();
     $('cmpRows').innerHTML=rows.map(function(r){
       return '<a class="cmprow" href="'+r.u+'" target="_blank" rel="noopener"><b>'+esc(r.n)+'</b>'+
         (r.d?'<span style="color:var(--muted);font-size:12.5px">'+esc(r.d)+'</span>':'')+
@@ -6259,6 +6269,24 @@
       :(es?'Los precios se muestran en cada sitio — mismo hotel, mismas fechas.'
       :'Prices show on each site — same hotel, same dates.');
     var sh=$('cmpSheet'); sh.classList.add('show'); sh.setAttribute('aria-hidden','false');
+    // a real number, only from a real source: the Worker answers from Hotellook when the owner
+    // has connected a token; otherwise this quietly stays a link list
+    if(CONFIG.aiEndpoint&&dt){
+      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'hotelprice',name:h,city:city,checkin:dt.ci,checkout:dt.co,adults:ad})})
+        .then(function(r){return r.json();})
+        .then(function(res){
+          var p=res&&res.prices;
+          if(!p||!p.from||!sh.classList.contains('show'))return;
+          var lbl=ar?('سعر تقريبي لإقامتك كاملة — يتحدث كل ساعات'):(es?('precio aproximado de toda la estancia — se actualiza cada horas'):('approximate price for your whole stay — refreshed every few hours'));
+          var go=ar?'احجز':(es?'Reservar':'Book');
+          var div=document.createElement('div'); div.className='cmplive';
+          div.innerHTML='<span class="p">$'+(p.from|0)+'+</span><span class="l">'+esc(lbl)+'</span>'
+            +(p.book?'<a href="'+esc(p.book)+'" target="_blank" rel="noopener">'+esc(go)+'</a>':'');
+          var rowsEl=$('cmpRows'); rowsEl.parentNode.insertBefore(div,rowsEl);
+          try{track('price_shown',{});}catch(x){}
+        }).catch(function(){});
+    }
     try{track('compare_open',{});}catch(e){}
   }
   $('cmpSheet').addEventListener('click',function(e){ if(!e.target.closest('.cmppanel')||e.target.closest('.cmprow')){ var sh=$('cmpSheet'); setTimeout(function(){ sh.classList.remove('show'); sh.setAttribute('aria-hidden','true'); },80); } });
@@ -6375,8 +6403,14 @@
     if(LANG==='es')return day<1?'hoy':(day===1?'ayer':('hace '+day+' días'));
     return day<1?'today':(day===1?'yesterday':(day+' days ago'));
   }
+  function enterCm(){ document.body.classList.add('cmmode'); }
+  function exitCm(){
+    document.body.classList.remove('cmmode');
+    $('community').classList.add('is-hidden');
+  }
   function openCommunity(){
     var c=CTXT[LANG]||CTXT.en, box=$('community');
+    enterCm();
     box.classList.remove('is-hidden');
     // yesterday's feed is a better first paint than a spinner; the fresh one lands over it
     var cached=null; try{ cached=JSON.parse(localStorage.getItem('bosla_feed')||'null'); }catch(e){}
@@ -6437,12 +6471,13 @@
         at.className='cmattr'; at.href=p.src||'#'; at.target='_blank'; at.rel='noopener';
         at.textContent='© '+p.author+' · '+p.licence;
         cv.appendChild(img); cv.appendChild(at);
+        cv.classList.add('cmtall');           // a photograph is worth the height a flag is not
       });
     });
   }
   function cmCover(r){
     if(r.th&&r.th.indexOf('data:image/jpeg;base64,')===0)
-      return '<div class="cmcover"><img src="'+r.th+'" alt="" loading="lazy"></div>';
+      return '<div class="cmcover cmtall"><img src="'+r.th+'" alt="" loading="lazy"></div>';
     try{
       var m=matchDest((r.cities||[])[0]||'');
       if(m)return flagCover(m.flag,keyOf(m));
@@ -6465,7 +6500,9 @@
       });
     }
     if(CMSORT==='mine')list=list.filter(function(r){ return mine[r.id]; });
-    var h='<div class="cmhead"><h2>'+esc(c.title)+'</h2></div><div class="cmsub">'+esc(c.sub)+'</div>'
+    var back=LANG==='ar'?'خطط رحلة جديدة':(LANG==='es'?'Planear un viaje':'Plan a trip');
+    var h='<button type="button" class="cmback" data-cmexit="1"><span class="cmbkch">‹</span> '+esc(back)+'</button>'
+      +'<div class="cmhead"><h2>'+esc(c.title)+'</h2></div><div class="cmsub">'+esc(c.sub)+'</div>'
       +'<input type="text" class="cmsearch" id="cmSearch" placeholder="'+esc(c.search)+'" value="'+esc(CMQUERY)+'">'
       +'<div class="cmsort"><button type="button" class="chip'+(CMSORT==='new'?' active':'')+'" data-cmsort="new">'+esc(c.newest)+'</button>'
       +'<button type="button" class="chip'+(CMSORT==='top'?' active':'')+'" data-cmsort="top">'+esc(c.top)+'</button>'
@@ -6492,8 +6529,10 @@
     box.innerHTML='<div class="cmloading">…</div>';
     pubApi('pub_get',{id:id}).then(function(d){
       var r=d.trip, liked=!!CMLIKED[r.id];
+      var cover='';
+      try{ var dm=matchDest((r.cities||[])[0]||''); if(dm)cover=flagCover(dm.flag,keyOf(dm)); }catch(e){}
       var h='<button type="button" class="cmback" data-cmback="1"><span class="cmbkch">‹</span> '+esc(c.title)+'</button>'
-        +'<div class="cmdetail"><div class="cmtitle" dir="auto">'+esc(r.title)+'</div>'
+        +'<div class="cmdetail">'+cover+'<div class="cmtitle" dir="auto">'+esc(r.title)+'</div>'
         +'<div class="cmmeta"><span dir="auto">'+esc((r.cities||[]).join(' → '))+'</span><span dir="auto">'+r.days+' '+esc(c.days)+'</span>'
         +'<span>'+esc(c.by)+' '+esc(r.name)+'</span><span>'+esc(cmAgo(r.t))+'</span></div>'
         +'<button type="button" class="cmuse" data-cmuse="'+esc(r.id)+'">'+esc(c.use)+'</button>'
@@ -6508,6 +6547,7 @@
           :'<button type="button" class="cmreport" data-cmreport="'+esc(r.id)+'">'+esc(c.report)+'</button>')
         +relatedTrips(r)+'</div>';
       box.innerHTML=h;
+      try{ upgradeCovers(box); }catch(e){}
       CMTRIP=r; renderCmts(r.comments||[]); loadPhotos(r.photos||[]);
     }).catch(function(){ openCommunity(); });
   }
@@ -6573,16 +6613,18 @@
       img.src=url;
     });
   }
-  // the card-face version of a photo: 96px wide, aggressively compressed, ~3-6KB
+  // the card-face version of a photo: 320px wide — enough for a banner, ~10KB, quality walked
+  // down until it fits the worker's cap
   function thumbOf(data){
     return new Promise(function(resolve){
       var img=new Image();
       img.onload=function(){
-        var w=96,h=Math.max(1,Math.round(img.height*96/img.width));
+        var w=320,h=Math.max(1,Math.round(img.height*320/img.width));
         var cv=document.createElement('canvas'); cv.width=w; cv.height=h;
         cv.getContext('2d').drawImage(img,0,0,w,h);
-        var out=cv.toDataURL('image/jpeg',0.55);
-        resolve(out.length<=7000?out:'');
+        var q=0.6,out=cv.toDataURL('image/jpeg',q);
+        while(out.length>16000&&q>0.3){ q-=0.1; out=cv.toDataURL('image/jpeg',q); }
+        resolve(out.length<=16000?out:'');
       };
       img.onerror=function(){ resolve(''); };
       img.src=data;
@@ -6642,9 +6684,13 @@
     if(e.target.closest('.cmattr'))return;   // the photo credit is a link, not a card tap
     var c=CTXT[LANG]||CTXT.en, t;
     if((t=e.target.closest('[data-cmsort]'))){ CMSORT=t.getAttribute('data-cmsort'); renderFeed(); return; }
+    if((t=e.target.closest('[data-cmexit]'))){ exitCm(); window.scrollTo({top:0,behavior:'smooth'}); return; }
     if((t=e.target.closest('[data-cmback]'))){ openCommunity(); return; }
     if((t=e.target.closest('[data-cmuse]'))){
-      if(CMTRIP&&CMTRIP.state){ try{ applyState(CMTRIP.state,true); toast(c.applied); addPts(2); try{track('pub_use',{});}catch(x){} }catch(x){} }
+      if(CMTRIP&&CMTRIP.state){ try{
+        exitCm();                              // the chosen trip takes the whole screen, as any trip does
+        applyState(CMTRIP.state,true); toast(c.applied); addPts(2); try{track('pub_use',{});}catch(x){}
+      }catch(x){} }
       return;
     }
     if((t=e.target.closest('[data-cmlike]'))){
@@ -7367,7 +7413,7 @@
     try{
       var s=null, h=location.hash||'', shared=(h.indexOf('#trip=')===0);
       // a friend sent a published trip: open the app straight onto it
-      if(h.indexOf('#pub=')===0){ var pid=h.slice(5); setTimeout(function(){ try{ $('community').classList.remove('is-hidden'); openPubTrip(pid); $('community').scrollIntoView(); }catch(e){} },400); }
+      if(h.indexOf('#pub=')===0){ var pid=h.slice(5); setTimeout(function(){ try{ enterCm(); $('community').classList.remove('is-hidden'); openPubTrip(pid); $('community').scrollIntoView(); }catch(e){} },400); }
       if(shared){ s=JSON.parse(decodeURIComponent(h.slice(6))); }
       if(!s){ s=JSON.parse(localStorage.getItem('rihla_v1')||'null'); shared=false; }
       if(s&&shared){ applyState(s,true); }            // someone opened a shared trip — show it
