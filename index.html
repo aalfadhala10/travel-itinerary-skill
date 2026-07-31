@@ -3228,10 +3228,12 @@
             $('days').value=days; syncDayChips();
             document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',vibes.indexOf(c.dataset.v)>=0);});
             document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===budget);});
-            $('pace').value='balanced';
+            // Their words first, then whatever the control already says — never a reset to balanced,
+            // which threw away a pace they had deliberately set before describing the trip.
+            $('pace').value=paceWords(raw)||$('pace').value||'balanced';
             $('dest').value=DEST[ks[0]].city;
             if(ks.length>=2){ $('city2wrap').classList.remove('is-hidden'); $('addCity').classList.add('is-hidden'); $('dest2').value=DEST[ks[1]].city; } else { $('dest2').value=''; }
-            if(ks.length>=2){ planRoute(ks,days,vibes,budget,'balanced',!!pp.roadtrip); } else { ROUTE=null; plan(); }
+            if(ks.length>=2){ planRoute(ks,days,vibes,budget,$('pace').value,!!pp.roadtrip); } else { ROUTE=null; plan(); }
             resolve(true);
           });
         })
@@ -3251,11 +3253,11 @@
         .catch(function(){ resolve(null); });
     });
   }
-  function showSuggestions(sg){
+  function showSuggestions(sg,pace){
     var ar=LANG==='ar', es=LANG==='es';
     var intro=ar?'حسب وصفك، أقترح عليك:':(es?'Según lo que describes, te sugiero:':'Based on what you described, I’d suggest:');
     var hint=ar?'اختر وجهة لأخطط لها — أو عدّل وصفك وحاول مرة ثانية.':(es?'Elige un destino para planearlo — o ajusta tu descripción.':'Tap a destination to plan it — or tweak your description and try again.');
-    SUGHINTS={days:sg.days||0,vibes:(sg.vibes||[]),budget:sg.budget||'Mid-range',roadtrip:!!sg.roadtrip};
+    SUGHINTS={days:sg.days||0,vibes:(sg.vibes||[]),budget:sg.budget||'Mid-range',roadtrip:!!sg.roadtrip,pace:pace||null};
     var cards=sg.suggestions.slice(0,3).map(function(s){
       return '<button type="button" class="sugpick" data-place="'+esc(s.place)+'"><span class="sugflag">'+esc(s.flag||'📍')+'</span>'+
         '<span class="sugtext"><b>'+esc(s.place)+(s.country?'<span class="sugco">'+esc(s.country)+'</span>':'')+'</b><span class="sugwhy">'+esc(s.why||'')+'</span></span><span class="suggo">→</span></button>';
@@ -3273,7 +3275,7 @@
       $('days').value=days; syncDayChips();
       if(h.vibes&&h.vibes.length)document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',h.vibes.indexOf(c.dataset.v)>=0);});
       document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===(h.budget||'Mid-range'));});
-      $('pace').value='balanced';
+      $('pace').value=h.pace||$('pace').value||'balanced';
       $('dest').value=DEST[k].city; $('dest2').value=''; $('city2wrap').classList.add('is-hidden'); $('addCity').classList.remove('is-hidden');
       ROUTE=null; plan();
     };
@@ -3650,14 +3652,18 @@
       $('days').value=days; syncDayChips();
       document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',vibes.indexOf(c.dataset.v)>=0);});
       document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===budget);});
-      $('pace').value='balanced';
+      // Somebody who tells the bot "a relaxed five days in Rome" has chosen a pace as clearly as if
+      // they had opened the dropdown. Read the whole conversation, not just the last line — they
+      // may have said it three messages ago, and the plan is built from all of it.
+      $('pace').value=paceWords(CHATMSGS.filter(function(m){return m.role==='user';})
+        .map(function(m){return m.content;}).join(' '))||$('pace').value||'balanced';
       $('dest').value=DEST[ks[0]].city;
       if(ks.length>=2){ try{$('city2wrap').classList.remove('is-hidden'); $('addCity').classList.add('is-hidden');}catch(e){} $('dest2').value=DEST[ks[1]].city; }
       else { $('dest2').value=''; try{$('city2wrap').classList.add('is-hidden'); $('addCity').classList.remove('is-hidden');}catch(e){} }
       try{ track('chat_plan',{dest:DEST[ks[0]].city,country:DEST[ks[0]].country||'',cities:ks.length,days:days}); }catch(e){}
       setTimeout(function(){ chatClose();
         try{
-          if(ks.length>=2){ planRoute(ks,days,vibes,budget,'balanced',!!res.roadtrip); } else { ROUTE=null; plan(); }
+          if(ks.length>=2){ planRoute(ks,days,vibes,budget,$('pace').value,!!res.roadtrip); } else { ROUTE=null; plan(); }
         }catch(err){
           botSay(LANG==='ar'?'ما قدرت أجهّز هالمسار — جرّب أماكن ثانية:':(LANG==='es'?'No pude armar esa ruta — prueba otros lugares:':'I couldn’t build that route — try other places:'));
           CHATCHIPS=catChips(); chatOpen(); chatRender(); return;
@@ -5517,6 +5523,16 @@
   function arabicDigits(s){return String(s).replace(/[٠-٩]/g,function(d){return "٠١٢٣٤٥٦٧٨٩".indexOf(d);});}
   function lev(a,b){ var m=a.length,n=b.length,i,j,prev=[],cur=[]; for(j=0;j<=n;j++)prev[j]=j;
     for(i=1;i<=m;i++){ cur[0]=i; for(j=1;j<=n;j++){ var cost=a.charAt(i-1)===b.charAt(j-1)?0:1; cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+cost); } for(j=0;j<=n;j++)prev[j]=cur[j]; } return prev[n]; }
+  // "a relaxed week in Rome", «رحلة هادئة», "quiero verlo todo" — people say the pace as plainly as
+  // the dropdown asks it, and until now only the typed-description path listened. One reader for
+  // every way in. Null means they did not say, which is NOT the same as balanced: it means leave
+  // whatever they already chose alone.
+  function paceWords(raw){
+    var s=arabicDigits(String(raw||'').toLowerCase());
+    if(/(relax|slow|chill|easy|leisure|unhurried|هادئ|هادي|بطيء|براحتي|على راحتي|مرتاح|بدون استعجال|tranquil|relajad|con calma|sin prisa)/.test(s))return 'relaxed';
+    if(/(packed|intense|busy|jam|fast|cram|see everything|as much as|مكثف|مكثّف|مزدحم|كل شي|كل شيء|أشوف كل|اشوف كل|intens|apretad|verlo todo|lo m[áa]ximo)/.test(s))return 'packed';
+    return null;
+  }
   function parsePrompt(raw){
     var s=arabicDigits((raw||'').toLowerCase());
     // Total days: if the trip lists per-stop nights/days ("4 nights ... 2 nights ... one night"),
@@ -5533,7 +5549,7 @@
     if(/(shop|mall|market|souk|تسوق|شوبينغ|أسواق|اسواق)/.test(s))v.push('Shopping');
     if(/(relax|chill|spa|resort|استرخاء|راحة|هدوء|كسل)/.test(s))v.push('Relax');
     var budget=/(luxur|5 ?star|فخم|فاخر)/.test(s)?'Luxury':(/(budget|cheap|رخيص|اقتصادي|قليل)/.test(s)?'Budget':'Mid-range');
-    var pace=/(relax|slow|chill|هادئ|بطيء|مريح)/.test(s)?'relaxed':(/(packed|intense|fast|مكثف|كثير)/.test(s)?'packed':'balanced');
+    var pace=paceWords(s);          // null when they didn't say — the caller keeps their own choice
     var roadtrip=/(road ?trip|drive|driving|by car|self ?drive|رود ?تريب|أسوق|اسوق|أسوّق|سياق|سيارة|سياره|لفة|لفّة|جولة|جوله|تور|tour)/.test(s);
     var regions=[];
     if(/(europe|europa|أوروبا|اوروبا)/.test(s))regions.push('eu');
@@ -5671,7 +5687,7 @@
     if(CONFIG.aiEndpoint){ // AI understands the description; if it names no place, suggest some; else fall back to the local parser
       toast(I18N[LANG].ui.aiThinking||'Understanding your trip…');
       aiParse(raw).then(function(ok){ if(ok) return;
-        aiSuggest(raw).then(function(sg){ if(sg) showSuggestions(sg); else runPromptLocal(raw); });
+        aiSuggest(raw).then(function(sg){ if(sg) showSuggestions(sg,paceWords(raw)); else runPromptLocal(raw); });
       });
       return;
     }
@@ -5690,6 +5706,7 @@
   }
   function runPromptFinish(pp){
     pp.days=pp.days||(pp.roadtrip?12:5);
+    pp.pace=pp.pace||$('pace').value||'balanced';   // silence about the pace is not a vote for balanced
     var keys=buildRoute(pp,SEED);
     if(!keys.length){ toast(I18N[LANG].ui.promptNone); return; }
     var days=Math.max(1,Math.min(30,pp.days));
