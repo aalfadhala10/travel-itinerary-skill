@@ -71,7 +71,12 @@
   #topo{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
   .wrap{max-width:680px;margin:0 auto;padding:20px 18px 64px;position:relative;z-index:1}
 
-  .langbar{display:flex;justify-content:center;gap:6px;margin-bottom:8px}
+  .langbar{display:flex;justify-content:center;align-items:center;gap:8px;margin-bottom:8px}
+  .homebtn{width:38px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;padding:0}
+  .homebtn svg{width:17px;height:17px}
+  .homebtn:active{transform:translateY(1px)}
+  .langsel{appearance:none;-webkit-appearance:none;padding:7px 30px 7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" fill="none" stroke="%238b93a6" stroke-width="1.6" stroke-linecap="round"/></svg>') no-repeat right 12px center;color:var(--ink);font-size:14.5px;font-family:var(--ff-body);cursor:pointer;width:auto}
+  #app[dir="rtl"] .langsel{padding:7px 14px 7px 30px;background-position:left 12px center}
   .lang{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:14.5px;cursor:pointer;user-select:none;transition:all .15s}
   .lang.active{background:var(--ink);border-color:var(--ink);color:var(--paper);font-weight:600}
 
@@ -933,9 +938,14 @@
   <button type="button" class="themebtn" id="themeBtn">Dark</button>
   <button type="button" class="menubtn notranslate" translate="no" id="menuBtn" aria-label="Menu"><span></span><span></span><span></span></button>
   <div class="langbar" id="langbar">
-    <div class="lang" data-lang="en">English</div>
-    <div class="lang active" data-lang="ar">العربية</div>
-    <div class="lang" data-lang="es">Español</div>
+    <button type="button" class="homebtn" id="homeBtn" aria-label="Home">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11.5 12 4l8.5 7.5M5.5 10v9.5h13V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <select class="langsel" id="langSel" aria-label="Language">
+      <option value="ar">العربية</option>
+      <option value="en">English</option>
+      <option value="es">Español</option>
+    </select>
   </div>
 
   <header class="hero">
@@ -3895,7 +3905,7 @@
     LANG=lang; var t=I18N[lang],u=t.ui;
     if(!VOICEOVERRIDE)VOICELANG=lang; (function(){ var ml=$('micLang'); if(ml)ml.textContent=voiceLabel(VOICELANG); })();
     $('app').setAttribute('dir',t.dir);
-    document.querySelectorAll('#langbar .lang').forEach(function(el){el.classList.toggle('active',el.dataset.lang===lang);});
+    try{ $('langSel').value=lang; }catch(e){}
     $('heroEyebrow').textContent=u.eyebrow; $('heroTag').textContent=u.tag;
     $('lblDest').textContent=u.dest; $('dest').setAttribute('placeholder',u.destPh); $('surprise').textContent=u.surprise;
     $('lblDest2').textContent=u.dest2; $('addCityLabel').textContent=u.addCity; $('dest2').setAttribute('placeholder',u.dest2Ph);
@@ -3925,9 +3935,15 @@
   }
   function pickedLang(){ try{ var l=localStorage.getItem('bosla_lang'); return (l&&I18N[l])?l:null; }catch(e){ return null; } } // an explicit choice from the bar
   function startLang(){ return pickedLang()||'ar'; } // first-time visitors get Arabic
-  $('langbar').addEventListener('click',function(e){var b=e.target.closest('.lang'); if(!b)return;
-    try{ localStorage.setItem('bosla_lang',b.dataset.lang); }catch(err){}
-    applyLang(b.dataset.lang);});
+  $('langSel').addEventListener('change',function(){
+    try{ localStorage.setItem('bosla_lang',this.value); }catch(err){}
+    applyLang(this.value);
+  });
+  // the compass takes you home from anywhere: community, favourites, or halfway down a plan
+  $('homeBtn').addEventListener('click',function(){
+    try{ exitCm(); exitSv(); closeDrawer(); }catch(e){}
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
 
   function slot(ico,tm,d){return '<div class="slot"><div class="t">'+tm+'</div><div class="d">'+d+'</div></div>';}
   function timeLabels(o,n){var m=o.times; return n===2?[m.morning,m.evening]:n===4?[m.morning,m.midday,m.afternoon,m.evening]:[m.morning,m.afternoon,m.evening];}
