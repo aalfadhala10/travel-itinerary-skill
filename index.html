@@ -916,6 +916,12 @@
   .cmplive .l{font-size:12.5px;color:var(--muted);line-height:1.35}
   .cmplive a{margin-inline-start:auto;padding:10px 14px;border-radius:10px;background:var(--amber);color:#1c1710;font-weight:700;font-size:13.5px;text-decoration:none;white-space:nowrap}
   #app[dir="rtl"] .cmprow{direction:rtl}
+  .phrow{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
+  .phrow:last-of-type{border-bottom:none}
+  .phrow img{width:86px;height:86px;object-fit:cover;border-radius:12px;flex:0 0 auto;border:1px solid var(--line)}
+  .phrow textarea{flex:1;min-height:72px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:14.5px;font-family:var(--ff-body);resize:none;line-height:1.45}
+  body.lbopen .chatfab,body.lbopen .editfab{display:none!important}
+  .cmlight .cmlcap{position:fixed;bottom:46px;left:16px;right:16px;text-align:center;color:#fff;font-size:15px;line-height:1.5;text-shadow:0 1px 8px rgba(0,0,0,.8)}
   .cmlight{position:fixed;inset:0;z-index:90;background:rgba(4,7,13,.92);display:none;align-items:center;justify-content:center;padding:20px}
   .cmlight.show{display:flex}
   .cmlight img{max-width:100%;max-height:86vh;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
@@ -1082,7 +1088,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 00:27 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 00:49 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -1098,9 +1104,21 @@
     </div>
   </div>
 
+  <input type="file" id="cmPhotoInput" accept="image/*" multiple hidden>
+  <div class="cmpsheet" id="phSheet" aria-hidden="true">
+    <div class="cmppanel">
+      <div class="cmpgrab" aria-hidden="true"></div>
+      <div class="cmptitle" id="phTitle"></div>
+      <div class="cmpsub" id="phSub"></div>
+      <div id="phRows"></div>
+      <button type="button" class="pubgo" id="phGo" style="margin-top:6px">Upload</button>
+    </div>
+  </div>
+
   <div class="cmlight" id="cmLight" aria-hidden="true">
     <button type="button" class="cmlx" id="cmLightX" aria-label="Close">✕</button>
     <img id="cmLightImg" alt="">
+    <div class="cmlcap" id="cmLightCap"></div>
     <div class="cmlname" id="cmLightName"></div>
   </div>
 
@@ -6434,7 +6452,7 @@
       applied:'Plan loaded — it is yours to edit now',empty:'No shared trips yet — yours could be the first.',
       offline:'The community feed could not be reached — try again in a moment.',
       report:'Report this trip',reported:'Thank you — we will take a look.',
-      cmtDone:'Comment added',photoDone:'Photo added — thank you for sharing',
+      cmtDone:'Comment added',photoDone:'Photos added — thank you for sharing',phTitle:'Your photos, before they go up',phSub:function(n){return n+' photo'+(n===1?'':'s')+' — write a line under each one if you like';},phCap:'Describe this photo, the place, the moment… (optional)',phGo:'Share the photos',phBusy:'Compressing…',phMax:'Five photos at a time',
       pts:function(n){return n+' points';},ptsNote:function(n){return n+' points to your next free trip credit';},
       ptsCredit:'You earned a free trip credit!',mine:'Yours',visFeed:'Everyone',visLink:'Link only',noteLink:'Only people you send the link to can open it — it stays out of the public feed.',linkReady:'Published — link copied, send it to your friends',del:'Remove my trip',delAsk:'Remove this trip from the community? This cannot be undone.',deleted:'Your trip was removed',search:'Search a city or a name…',moreTo:function(c){return 'More trips to '+c;},lvls:['New traveller','Explorer','Wayfarer','Compass master']},
     ar:{title:'رحلات المسافرين',sub:'خطط حقيقية شاركها ناس جرّبوها. افتح أي وحدة وخلها لك.',
@@ -6448,7 +6466,7 @@
       applied:'تم تحميل الخطة — عدّلها كيفك',empty:'ما فيه رحلات مشتركة بعد — ممكن تكون رحلتك الأولى.',
       offline:'ما قدرنا نوصل لرحلات المسافرين — جرّب بعد شوي.',
       report:'أبلغ عن هذه الرحلة',reported:'شكراً لك — بنراجعها.',
-      cmtDone:'تم إضافة تعليقك',photoDone:'تمت إضافة الصورة — شكراً لمشاركتك',
+      cmtDone:'تم إضافة تعليقك',photoDone:'انضافت صورك — شكراً لمشاركتك',phTitle:'صورك قبل النشر',phSub:function(n){return n+' صور — اكتب سطر تحت كل وحدة إذا تبي';},phCap:'وصف الصورة، المكان، اللحظة… (اختياري)',phGo:'انشر الصور',phBusy:'جاري الضغط…',phMax:'خمس صور كحد أقصى بالمرة',
       pts:function(n){return n+' نقطة';},ptsNote:function(n){return 'باقي '+n+' نقطة على رصيد رحلة مجاني';},
       ptsCredit:'حصلت على رصيد رحلة مجاني!',mine:'رحلتك',visFeed:'للجميع',visLink:'بالرابط فقط',noteLink:'ما يفتحها إلا اللي ترسل له الرابط — ما تظهر في الصفحة العامة.',linkReady:'تم النشر — انتسخ الرابط، أرسله لأصحابك',del:'احذف رحلتي',delAsk:'تحذف هذه الرحلة من رحلات المسافرين؟ ما تقدر ترجعها.',deleted:'انحذفت رحلتك',search:'ابحث عن مدينة أو اسم…',moreTo:function(c){return 'رحلات ثانية إلى '+c;},lvls:['مسافر جديد','مستكشف','رحّالة','خبير البوصلة']},
     es:{title:'Viajes de viajeros',sub:'Planes reales compartidos por quienes los usaron. Abre uno y hazlo tuyo.',
@@ -6462,7 +6480,7 @@
       applied:'Plan cargado — ahora es tuyo para editar',empty:'Aún no hay viajes compartidos — el tuyo puede ser el primero.',
       offline:'No se pudo cargar el muro — inténtalo en un momento.',
       report:'Denunciar este viaje',reported:'Gracias — lo revisaremos.',
-      cmtDone:'Comentario añadido',photoDone:'Foto añadida — gracias por compartir',
+      cmtDone:'Comentario añadido',photoDone:'Fotos añadidas — gracias por compartir',phTitle:'Tus fotos, antes de publicar',phSub:function(n){return n+' foto'+(n===1?'':'s')+' — escribe una línea bajo cada una si quieres';},phCap:'Describe la foto, el lugar, el momento… (opcional)',phGo:'Publicar las fotos',phBusy:'Comprimiendo…',phMax:'Cinco fotos por vez',
       pts:function(n){return n+' puntos';},ptsNote:function(n){return n+' puntos para tu próximo crédito de viaje';},
       ptsCredit:'¡Ganaste un crédito de viaje gratis!',mine:'Tuyo',visFeed:'Todos',visLink:'Solo con enlace',noteLink:'Solo quien reciba el enlace puede abrirlo — no aparece en el muro público.',linkReady:'Publicado — enlace copiado, envíalo a tus amigos',del:'Eliminar mi viaje',delAsk:'¿Eliminar este viaje de la comunidad? No se puede deshacer.',deleted:'Tu viaje fue eliminado',search:'Busca una ciudad o un nombre…',moreTo:function(c){return 'Más viajes a '+c;},lvls:['Viajero nuevo','Explorador','Trotamundos','Maestro de la brújula']}
   };
@@ -6705,21 +6723,65 @@
     pids.forEach(function(pid){
       pubApi('pub_photo',{pid:pid}).then(function(d){
         if(!d.d||d.d.indexOf('data:image/')!==0)return;      // only ever render an image data-url
-        var img=document.createElement('img'); img.src=d.d; img.alt=d.n||''; img.loading='lazy';
-        img.addEventListener('click',function(ev){ ev.stopPropagation(); cmLightbox(d.d,d.n||''); });
+        var img=document.createElement('img'); img.src=d.d; img.alt=d.c||d.n||''; img.loading='lazy';
+        img.addEventListener('click',function(ev){ ev.stopPropagation(); cmLightbox(d.d,d.n||'',d.c||''); });
         host.appendChild(img);
       }).catch(function(){});
     });
   }
-  function cmLightbox(src,name){
+  function cmLightbox(src,name,cap){
     $('cmLightImg').src=src; $('cmLightName').textContent=name;
+    $('cmLightCap').textContent=cap||'';
     var l=$('cmLight'); l.classList.add('show'); l.setAttribute('aria-hidden','false');
+    document.body.classList.add('lbopen');            // the photo owns the screen — no bot bubble on top
   }
   (function(){
-    function shut(){ var l=$('cmLight'); l.classList.remove('show'); l.setAttribute('aria-hidden','true'); $('cmLightImg').src=''; }
+    function shut(){ var l=$('cmLight'); l.classList.remove('show'); l.setAttribute('aria-hidden','true'); $('cmLightImg').src=''; document.body.classList.remove('lbopen'); }
     $('cmLight').addEventListener('click',shut);
     $('cmLightX').addEventListener('click',shut);
   })();
+  // Five photos at a time, each with room for its own line — the sheet shows every picture with
+  // a caption box BEFORE anything uploads, because the story is half the photograph.
+  var PHTRIP=null,PHQUEUE=[];
+  $('cmPhotoInput').addEventListener('change',function(){
+    var c=CTXT[LANG]||CTXT.en;
+    var files=[].slice.call(this.files||[]).slice(0,5);
+    if(!files.length)return;
+    if((this.files||[]).length>5)toast(c.phMax);
+    Promise.all(files.map(function(f){ return shrinkPhoto(f).catch(function(){ return null; }); }))
+      .then(function(datas){
+        PHQUEUE=datas.filter(Boolean);
+        if(!PHQUEUE.length)return;
+        $('phTitle').textContent=c.phTitle;
+        $('phSub').textContent=c.phSub(PHQUEUE.length);
+        $('phGo').textContent=c.phGo; $('phGo').disabled=false;
+        $('phRows').innerHTML=PHQUEUE.map(function(d,i){
+          return '<div class="phrow"><img src="'+d+'" alt="">'
+            +'<textarea maxlength="140" data-phcap="'+i+'" dir="auto" placeholder="'+esc(c.phCap)+'"></textarea></div>';
+        }).join('');
+        var sh=$('phSheet'); sh.classList.add('show'); sh.setAttribute('aria-hidden','false');
+        document.body.classList.add('lbopen');
+      });
+  });
+  function phClose(){ var sh=$('phSheet'); sh.classList.remove('show'); sh.setAttribute('aria-hidden','true'); document.body.classList.remove('lbopen'); PHQUEUE=[]; }
+  $('phSheet').addEventListener('click',function(e){ if(!e.target.closest('.cmppanel'))phClose(); });
+  $('phGo').addEventListener('click',function(){
+    var c=CTXT[LANG]||CTXT.en, id=PHTRIP, q=PHQUEUE.slice();
+    if(!id||!q.length)return;
+    var caps=[].slice.call(document.querySelectorAll('#phRows [data-phcap]')).map(function(x){ return (x.value||'').trim().slice(0,140); });
+    var btn=$('phGo'); btn.disabled=true; btn.textContent=c.phBusy;
+    var last=null;
+    // one after another, so the worker's counters see them as the polite queue they are
+    q.reduce(function(p,data,i){
+      return p.then(function(){
+        return thumbOf(data).then(function(th){
+          return pubApi('pub_photo_add',{id:id,name:getName()||'',data:data,thumb:th,caption:caps[i]});
+        }).then(function(d){ last=d; });
+      });
+    },Promise.resolve())
+      .then(function(){ phClose(); toast(c.photoDone); addPts(10); if(last)loadPhotos(last.photos||[]); })
+      .catch(function(){ btn.disabled=false; btn.textContent=c.phGo; toast(c.offline); });
+  });
   // squeeze a phone photo down to something KV is happy with: longest side 1280, JPEG, walk the
   // quality down until it fits the worker's cap
   function shrinkPhoto(file){
@@ -6841,18 +6903,9 @@
       return;
     }
     if((t=e.target.closest('[data-cmphoto]'))){
-      var id2=t.getAttribute('data-cmphoto');
-      var fi=document.createElement('input'); fi.type='file'; fi.accept='image/*';
-      fi.addEventListener('change',function(){
-        var f=fi.files&&fi.files[0]; if(!f)return;
-        shrinkPhoto(f).then(function(data){
-          return thumbOf(data).then(function(th){
-            return pubApi('pub_photo_add',{id:id2,name:getName()||'',data:data,thumb:th});
-          });
-        }).then(function(d){ toast(c.photoDone); addPts(10); loadPhotos(d.photos||[]); })
-          .catch(function(){ toast(c.offline); });
-      });
-      fi.click();
+      PHTRIP=t.getAttribute('data-cmphoto');
+      $('cmPhotoInput').value='';
+      $('cmPhotoInput').click();
       return;
     }
     if((t=e.target.closest('[data-cmdel]'))){
