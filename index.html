@@ -489,6 +489,8 @@
   .svaddrow{display:flex;gap:8px;margin:10px 0}
   .svaddrow input{flex:1;min-width:0;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--paper2);color:var(--ink);font-size:14.5px}
   .svtoplan{margin-inline-start:auto;padding:7px 10px;border:1px solid var(--amber);border-radius:9px;background:var(--amber-soft);color:var(--amber);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .svmap{flex:0 0 auto;display:inline-flex;color:var(--amber);padding:3px;text-decoration:none!important}
+  .svmap svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
   .svrow:has(.svtoplan) .svx{margin-inline-start:6px}
   .svmiss{color:var(--muted);font-size:12.5px;margin-top:8px;text-align:center}
   .picinline{margin:6px 0 2px;padding:6px;border:1px solid var(--line);border-radius:10px;background:var(--paper2)}
@@ -1088,7 +1090,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 00:49 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 01:07 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -6207,17 +6209,17 @@
   var BKSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.2L5 21V4.5a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
   function svLbl(){ return LANG==='ar'?'احفظ المكان':(LANG==='es'?'Guardar lugar':'Save place'); }
   function svTxt(){
-    return LANG==='ar'?{t:'أماكني المفضلة',e:'ما عندك أماكن مفضلة بعد — احفظ من خطتك أو أضف مكان بنفسك.',p:'خطط رحلة هنا',on:'انحفظ في مفضلاتك',off:'انشال من المفضلة',
+    return LANG==='ar'?{t:'أماكني المفضلة',e:'ما عندك أماكن مفضلة بعد — احفظ من خطتك أو أضف مكان بنفسك.',maps:'افتحه في خرائط قوقل',on:'انحفظ في مفضلاتك',off:'انشال من المفضلة',
       cats:{all:'الكل',coffee:'قهوة',food:'مطاعم',photo:'تصوير',nature:'طبيعة',shopping:'تسوق',other:'أخرى'},
       addT:'أضف مكان بنفسك',addName:'اسم المكان',addCity:'المدينة',addBtn:'احفظه',
       toPlan:'أضفها لجدولك',otherCity:function(c){return 'رحلتك الحالية ما تمر بـ'+c;},
       added:function(d){return 'انضاف لليوم '+d+' من رحلتك';}}
-      :(LANG==='es'?{t:'Lugares favoritos',e:'Aún no tienes favoritos — guarda desde tu plan o añade uno tú mismo.',p:'Planear un viaje aquí',on:'Guardado en tus favoritos',off:'Quitado de favoritos',
+      :(LANG==='es'?{t:'Lugares favoritos',e:'Aún no tienes favoritos — guarda desde tu plan o añade uno tú mismo.',maps:'Abrir en Google Maps',on:'Guardado en tus favoritos',off:'Quitado de favoritos',
       cats:{all:'Todos',coffee:'Café',food:'Restaurantes',photo:'Fotografía',nature:'Naturaleza',shopping:'Compras',other:'Otros'},
       addT:'Añade un lugar tú mismo',addName:'Nombre del lugar',addCity:'Ciudad',addBtn:'Guardar',
       toPlan:'Añadir a mi plan',otherCity:function(c){return 'Tu viaje actual no pasa por '+c;},
       added:function(d){return 'Añadido al día '+d+' de tu viaje';}}
-      :{t:'Favourite places',e:'No favourites yet — save from your plan, or add a place yourself.',p:'Plan a trip here',on:'Saved to your favourites',off:'Removed from favourites',
+      :{t:'Favourite places',e:'No favourites yet — save from your plan, or add a place yourself.',maps:'Open in Google Maps',on:'Saved to your favourites',off:'Removed from favourites',
       cats:{all:'All',coffee:'Coffee',food:'Restaurants',photo:'Photo spots',nature:'Nature',shopping:'Shopping',other:'Other'},
       addT:'Add a place yourself',addName:'Place name',addCity:'City',addBtn:'Save it',
       toPlan:'Add to my plan',otherCity:function(c){return 'Your current trip does not pass through '+c;},
@@ -6292,12 +6294,13 @@
           var cat=x.cat||'other';
           return '<div class="svrow"><span class="svcatic" title="'+esc(c.cats[cat])+'">'+SVICON[cat]+'</span>'
             +'<a dir="auto" href="'+mapUrl(x.n+' '+(d?d.city:(x.city||'')))+'" target="_blank" rel="noopener">'+esc(ck?locName(ck,x.n):x.n)+'</a>'
+            +'<a class="svmap" href="'+mapUrl(x.n+' '+(d?d.city:(x.city||'')))+'" target="_blank" rel="noopener" aria-label="'+esc(c.maps)+'" title="'+esc(c.maps)+'">'
+              +'<svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-10.4a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10.4" r="2.3"/></svg></a>'
             +(x.a?'<span class="svarea">'+esc(ck?locName(ck,x.a):x.a)+'</span>':'')
             +(fits?'<button type="button" class="svtoplan" data-svtoplan="'+esc(x.n)+'">'+esc(c.toPlan)+'</button>':'')
             +'<button type="button" class="svx" data-svdel="'+esc(g)+'|'+esc(x.n)+'" aria-label="✕">✕</button></div>';
         }).join('')
         +(onTrip.length&&ck&&!fits?'<div class="svmiss">'+esc(c.otherCity(city))+'</div>':'')
-        +(d?'<button type="button" class="svplan" data-svplan="'+esc(d.city)+'">'+esc(c.p)+'</button>':'')
         +'</div>';
     });
     box.innerHTML=h;
@@ -6347,12 +6350,6 @@
         return !(g===p[0]&&x.n===p[1]);
       });
       storeSaved(arr2); openSavedView(); return;
-    }
-    if((t=e.target.closest('[data-svplan]'))){
-      exitSv();
-      $('dest').value=t.getAttribute('data-svplan'); $('dest2').value='';
-      newSeed(); DAYEDITS={}; DAYROT={}; ROUTE=null;
-      $('planBtn').click(); return;
     }
   });
   // invite tripmates: the trip's own replayable link, framed as an invitation to edit
