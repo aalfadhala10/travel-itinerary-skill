@@ -190,6 +190,7 @@
 </div>
 
 <script>
+var PAGEMODE='__MODE__';   // 'trip' plans journeys; 'rec' is the passport page
 /*__WORLD__*/
 /*__CITIES__*/
 /*__AIRPORTS__*/
@@ -1004,7 +1005,9 @@ document.getElementById('tFlat').onclick=function(){ flat=!flat; this.classList.
 // Stand back to the sphere WITHOUT losing the trip: the line, the pins and the country all stay,
 // which is the whole point of wanting to see it from further away.
 function wholeGlobe(){
-  var c=STOPS.length?centre(frameSet()):{lon:HOME.lng,lat:HOME.lat};
+  var c;
+  if(PAGEMODE==='rec'){ var h=recAnchor(REC.h); c=h?{lon:h.lng,lat:h.lat}:{lon:HOME.lng,lat:HOME.lat}; }
+  else c=STOPS.length?centre(frameSet()):{lon:HOME.lng,lat:HOME.lat};
   goTo(c.lon,c.lat,1);
 }
 
@@ -1149,14 +1152,15 @@ document.getElementById('tRecShare').onclick=function(){
   var n=REC.v.length; if(!n)return;
   var flags2=REC.v.map(function(nm){ var c=recAnchor(nm); return c?c.flag:''; }).join('');
   var txt='My travel record: '+n+' / '+COUNTRIES.length+' countries '+flags2+
-    '\nhttps://aalfadhala10.github.io/travel-itinerary-skill/demo/globe.html#rec='+recEncode();
+    '\nhttps://aalfadhala10.github.io/travel-itinerary-skill/demo/record.html#rec='+recEncode();
   if(navigator.share){ navigator.share({text:txt}).catch(function(){}); return; }
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt);
 };
 // come back a year and thirty countries later, and the record is exactly where it was left
 if(!REC.h&&HOME&&HOME.country)REC.h=HOME.country;
 // ...unless a friend's record arrived in the link — then show THEIRS, and keep yours untouched
-var SHAREDREC=recDecode(location.hash);
+if(PAGEMODE==='trip'&&/^#rec=/.test(location.hash))location.replace('record.html'+location.hash);
+var SHAREDREC=PAGEMODE==='rec'?recDecode(location.hash):null;
 if(SHAREDREC){
   RECOWN=REC; REC=SHAREDREC;
   var noteEl=document.createElement('div');
@@ -1174,8 +1178,39 @@ if(SHAREDREC){
 }
 recHomeIn.value=REC.h||'';
 renderRec();
-if(REC.v.length)recOn(true);
-document.getElementById('tGlobe').onclick=wholeGlobe;
+// Two globes, two jobs. The passport page runs the record full-time and borrows the view
+// controls; the planner page keeps its flights and offers a door to the passport instead.
+if(PAGEMODE==='rec'){
+  // the canvas lives in the planner card, so only the planner's own controls step aside
+  ['.pick','#trip','#cap','#quick'].forEach(function(sel){
+    var el=document.querySelector(sel); if(el)el.style.display='none'; });
+  document.getElementById('hdr').textContent='Where I have been';
+  document.querySelector('h1').textContent='My travel record';
+  document.querySelector('.note').innerHTML='Every country you have ever set foot in, as lines of '
+    +'light from home — with the count, the flags, and a link that carries the whole map. '
+    +'<b>Drag to spin, pinch or scroll to zoom.</b>';
+  document.title='\u0628\u0648\u0635\u0644\u0629 \u00b7 travel record';
+  var rc=document.getElementById('recCard'), row=document.querySelector('.card .row');
+  if(row)rc.appendChild(row);
+  ['tRoad','tAgain','tReset','tRec'].forEach(function(id){
+    var el=document.getElementById(id); if(el)el.style.display='none'; });
+  var mv=document.createElement('div'); mv.className='row';
+  mv.innerHTML='<a class="toggle" style="text-decoration:none" href="globe.html">Plan a trip instead</a>';
+  rc.appendChild(mv);
+  flat=true; var tf=document.getElementById('tFlat'); if(tf)tf.classList.add('on');
+  RECON=true; recHot();
+  var h0=recAnchor(REC.h); if(h0)goTo(h0.lng,h0.lat,1);
+} else {
+  document.getElementById('recCard').innerHTML='<div class="hdr">My travel record</div>'
+    +'<p class="note" style="margin:0 0 10px">Countries you have been to, drawn as lines of light '
+    +'from home — the count, the flags, and a link you can share.</p>'
+    +'<a class="toggle" style="text-decoration:none;display:inline-block" href="record.html">Open my travel record</a>';
+}
+document.getElementById('tGlobe').onclick=function(){
+  // "whole globe" means the sphere — leaving flat mode is the point of pressing it
+  if(flat){ flat=false; document.getElementById('tFlat').classList.remove('on'); }
+  wholeGlobe();
+};
 document.getElementById('tAgain').onclick=function(){ if(STOPS.length){ SEEN={}; launch(); } };
 document.getElementById('tReset').onclick=clearTrip;
 
