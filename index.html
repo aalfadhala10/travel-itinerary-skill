@@ -44,12 +44,12 @@
   }
   @media (prefers-color-scheme:dark){
     :root{
-      --paper:#0a0f19; --paper2:#0e1524; --card:#131d2e;
-      --ink:#ece5d6; --muted:#8b93a6; --line:#22304a;
-      --teal:#5f97cf; --teal-soft:#5f97cf1a;
-      --amber:#e4b25a; --amber-soft:#e4b25a22;
-      --clay:#d98a8f; --land:#1d2a40; --landline:#3a4a6c; --ocean1:#101c30; --ocean2:#0a1322;
-      --shadow:0 18px 44px rgba(0,0,0,.55);
+      --paper:#0c1526; --paper2:#13203a; --card:#182a4a;
+      --ink:#eef2f9; --muted:#93a3c0; --line:#283c60;
+      --teal:#6db1f7; --teal-soft:#6db1f71f;
+      --amber:#ddb45f; --amber-soft:#ddb45f24;
+      --clay:#d98a8f; --land:#1c2c4a; --landline:#3c527e; --ocean1:#12213c; --ocean2:#0a1428;
+      --shadow:0 18px 44px rgba(4,10,24,.6);
     }
   }
   :root[data-theme="light"]{
@@ -60,11 +60,11 @@
     --shadow:0 16px 38px rgba(30,36,28,.16);
   }
   :root[data-theme="dark"]{
-    --paper:#0a0f19; --paper2:#0e1524; --card:#131d2e;
-    --ink:#ece5d6; --muted:#8b93a6; --line:#22304a;
-    --teal:#5f97cf; --teal-soft:#5f97cf1a; --amber:#e4b25a; --amber-soft:#e4b25a22;
-    --clay:#d98a8f; --land:#1d2a40; --landline:#3a4a6c; --ocean1:#101c30; --ocean2:#0a1322;
-    --shadow:0 18px 44px rgba(0,0,0,.55);
+    --paper:#0c1526; --paper2:#13203a; --card:#182a4a;
+    --ink:#eef2f9; --muted:#93a3c0; --line:#283c60;
+    --teal:#6db1f7; --teal-soft:#6db1f71f; --amber:#ddb45f; --amber-soft:#ddb45f24;
+    --clay:#d98a8f; --land:#1c2c4a; --landline:#3c527e; --ocean1:#12213c; --ocean2:#0a1428;
+    --shadow:0 18px 44px rgba(4,10,24,.6);
   }
 
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -218,14 +218,29 @@
      decoration and had to hunt for the day. Swapped. */
   .day .dlabel{font-family:var(--ff-data);font-size:22px;letter-spacing:.2px;color:var(--amber);font-weight:700;line-height:1.25}
   .day h3{font-family:var(--ff-display);margin:3px 0 10px;font-size:16px;font-weight:600}
-  .slot{display:flex;gap:11px;padding:10px 0;border-top:1px dashed var(--line)}
+  /* Ahmed's itinerary design: gold icon, small gold category above, the place name big and
+     clean, meta on its own quieter line. The icon is a mask so it wears the theme's gold. */
+  .slot{display:flex;align-items:center;gap:9px;padding:25px 2px 12px;position:relative;border-top:1px solid var(--line)}
   .slot:first-of-type{border-top:none}
-  .slot .ico{font-size:18px;width:24px;text-align:center;flex-shrink:0}
-  .slot .t{font-family:var(--ff-data);font-size:14.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);width:96px;flex-shrink:0;padding-top:3px;line-height:1.35}
-  .slot .d{font-size:16.5px;line-height:1.5}
+  .slot::before{content:'';flex:0 0 22px;width:22px;height:22px;background:var(--amber);opacity:.92;
+    -webkit-mask:var(--ic,none) center/contain no-repeat;mask:var(--ic,none) center/contain no-repeat}
+  .slot .ico{display:none}
+  .slot .t{position:absolute;top:9px;inset-inline-start:33px;font-family:var(--ff-data);font-size:11px;
+    letter-spacing:1.6px;text-transform:uppercase;color:var(--amber);opacity:.85;font-weight:700;line-height:1.2;width:auto;padding:0}
+  .slot .d{flex:1;min-width:0;font-size:14.5px;line-height:1.5;color:var(--muted)}
+  .slot .d>a:first-child{display:block;color:var(--ink);font-size:17px;font-weight:600;line-height:1.35;
+    text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .slot .d a{color:inherit;text-decoration:underline;text-decoration-color:var(--amber);text-underline-offset:3px}
-  .slot .area{color:var(--muted);font-size:15px}
-  .slot .d{flex:1;min-width:0}
+  .slot .d>a:first-child:active{color:var(--amber)}
+  .slot .area{color:var(--muted);font-size:13.5px}
+  .slot[data-ic="bld"]{--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M5 20V5.5a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 15 5.5V20M15 9h3a1 1 0 0 1 1 1v10M3.5 20h17M8 8h2M8 12h2M8 16h2'/></svg>")}
+  .slot[data-ic="cup"]{--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 8h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8zM16 9h2.2a2.3 2.3 0 0 1 0 4.6H16M6 4.5v1M9.5 4.5v1M13 4.5v1'/></svg>")}
+  .slot[data-ic="sun"]{--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M5 17h14M7 17a5 5 0 0 1 10 0M12 6v2M5.5 9.5l1.4 1.4M18.5 9.5l-1.4 1.4M3 20.5h18'/></svg>")}
+  .slot[data-ic="clk"]{--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='8.5'/><path d='M12 7v5l3.4 2'/></svg>")}
+  .slot[data-ic="shp"]{--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 9l1.2-4h13.6L20 9M4 9h16M4 9a2.6 2.6 0 0 0 5.3 0A2.6 2.6 0 0 0 14.6 9 2.6 2.6 0 0 0 20 9M5.5 12v8h13v-8M9.5 20v-5h5v5'/></svg>")}
+  .slot[data-ic="eve"]{--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3.5 20 8H4l8-4.5zM5.5 8v9M9.8 8v9M14.2 8v9M18.5 8v9M3.5 20.5h17M3.5 17.5h17'/></svg>")}
+  .slot[data-ic="frk"]{--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M7 3v7M4.5 3v4.5a2.5 2.5 0 0 0 5 0V3M7 10v11M16.5 3c-1.7 1.5-2.5 4-2.5 6.5 0 1.6 1 2.5 2.5 2.5V21M16.5 3V12'/></svg>")}
+  .slot[data-ic="pin"]{--ic:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M12 21s-6.5-5.6-6.5-10.4a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z'/><circle cx='12' cy='10.4' r='2.3'/></svg>")}
   .swapbtn{flex:0 0 auto;width:30px;height:30px;padding:0;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.75;transition:opacity .15s,border-color .15s,color .15s}
   .swapbtn:hover{opacity:1;border-color:var(--teal);color:var(--teal)}
   .swapbtn svg{width:15px;height:15px}
@@ -241,7 +256,7 @@
   .day.dcol .dsum{display:block;color:var(--muted);font-size:14.5px;margin:-4px 0 4px;line-height:1.45}
   .day.dcol .dsum .dsmore{color:var(--amber);font-weight:600}
   .day.dcol h3{margin-bottom:0}
-  .dayshuffle{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);font-size:14.5px;font-weight:600;font-family:var(--ff-body);cursor:pointer}
+  .dayshuffle{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:1px solid var(--amber);border-radius:999px;background:transparent;color:var(--amber);font-size:14px;font-weight:700;font-family:var(--ff-body);cursor:pointer}
   .dayshuffle:hover{border-color:var(--teal);color:var(--teal)}
   .dayshuffle svg{width:13px;height:13px}
   .swappick{margin:6px 0 2px;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--paper2);display:flex;flex-wrap:wrap;gap:6px}
@@ -256,8 +271,10 @@
   .foot{color:var(--muted);font-size:14.5px;text-align:center;margin-top:34px;line-height:1.6;padding-bottom:88px}
   .foot b{color:var(--ink)}
 
-  .actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
-  .act{flex:1;min-width:92px;padding:11px;border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--ff-body);transition:all .15s;text-align:center;text-decoration:none}
+  .actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 4px}
+  .act{border:1px solid var(--line);border-radius:12px;padding:12px 6px;background:var(--paper2);color:var(--ink);
+    font-size:12.5px;font-weight:700;font-family:var(--ff-body);cursor:pointer;text-align:center}
+  .act:active{border-color:var(--amber);color:var(--amber)}
   .act:hover{border-color:var(--teal)}
   .act:active{transform:translateY(1px)}
 
@@ -350,6 +367,13 @@
   .welremove{display:inline-block;margin-top:6px;background:none;border:none;color:var(--muted);font-size:14.5px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-family:var(--ff-body)}
   .welremove:hover{color:var(--clay)}
   .welcome.show .welcard{transform:none}
+  .weleyebrow{font-size:11.5px;letter-spacing:2.2px;text-transform:uppercase;color:var(--amber);font-weight:800;margin:2px 0 4px}
+  #app[dir="rtl"] .weleyebrow{letter-spacing:normal;text-transform:none;font-size:13px}
+  .welsteps{background:var(--paper2);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:14px 0 16px;text-align:start}
+  .welsteps h3{margin:0 0 10px;font-size:16.5px;text-align:center}
+  .welstep{display:flex;align-items:flex-start;gap:11px;margin:9px 0;font-size:14px;line-height:1.5;color:var(--ink)}
+  .welstep b{flex:0 0 26px;width:26px;height:26px;border-radius:50%;background:var(--amber);color:var(--paper);
+    display:flex;align-items:center;justify-content:center;font-size:13.5px;font-variant-numeric:tabular-nums}
   .welcard .compass{margin:0 auto 8px}
   .welcard h2{font-family:var(--ff-display);font-size:26px;margin:6px 0 4px;font-weight:600}
   .welcard .wsub{color:var(--muted);font-size:14px;margin:0 auto 18px;max-width:300px;text-wrap:balance}
@@ -455,8 +479,9 @@
   .menulink::before{content:'· ';color:var(--muted);font-weight:400}
   .arrleg{margin-bottom:2px}
   .arrlast{margin-top:8px;font-size:14px;font-weight:600;color:var(--muted)}
-  .dayroute{display:block;margin-top:14px;padding:13px 14px;border:1px solid var(--teal);border-radius:12px;
-    color:var(--teal);font-weight:700;font-size:15px;text-align:center;text-decoration:none}
+  .dayroute{display:block;text-align:center;margin:14px 0 4px;padding:14px;border-radius:12px;font-weight:800;
+    font-size:15px;text-decoration:none;color:#241a06;
+    background:linear-gradient(100deg,var(--amber) 0%,#f0d489 50%,var(--amber) 100%);box-shadow:var(--shadow)}
   .dayroute:hover{background:var(--teal);color:var(--paper)}
   .dayroute::after{content:' \2192'}
   #app[dir="rtl"] .dayroute::after{content:' \2190'}
@@ -888,6 +913,20 @@
   body.recmode #out,body.recmode #community,body.recmode #saved,body.recmode .intro,
   body.recmode .editfab,body.recmode .chatfab{display:none!important}
   body.cmmode #recscr,body.svmode #recscr{display:none!important}
+  /* the bottom tab bar from Ahmed's mockups: four rooms, one hallway */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:8;display:flex;justify-content:space-around;
+    padding:7px 8px calc(9px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line)}
+  .tabbar .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;
+    color:var(--muted);font-size:11.5px;font-weight:600;font-family:var(--ff-body);cursor:pointer;padding:2px 0}
+  .tabbar .tab svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .tabbar .tab.on{color:var(--amber)}
+  body.lbopen .tabbar{display:none!important}
+  @media print{.tabbar,.topbtn{display:none!important}}
+  /* everything floating steps up over the bar, and the page leaves room for it */
+  .wrap{padding-bottom:120px}
+  .chatfab{bottom:76px}
+  .topbtn{bottom:82px}
+  .toast{bottom:86px}
   /* the passport screen: the pocket globe and its dressing */
   #recscr canvas{display:block;width:100%;height:auto;border-radius:14px;touch-action:none;cursor:grab}
   .reccard{background:var(--paper2);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
@@ -902,6 +941,14 @@
   .racm.on{display:block}
   .racm button{display:flex;align-items:center;gap:9px;width:100%;padding:11px 13px;border:none;background:none;color:var(--ink);font-size:15px;text-align:start;cursor:pointer;font-family:inherit}
   .racm button:hover{background:var(--amber-soft)}
+  .recswrow{display:flex;justify-content:flex-end;align-items:center;gap:9px;color:var(--muted);font-size:14px;margin-bottom:6px}
+  .recsw{position:relative;width:46px;height:27px;border-radius:999px;border:1px solid var(--line);background:var(--paper);cursor:pointer;padding:0}
+  .recsw i{position:absolute;top:2px;inset-inline-start:2px;width:21px;height:21px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
+  .recsw.on{background:var(--amber-soft);border-color:var(--amber)}
+  .recsw.on i{transform:translateX(19px);background:var(--amber)}
+  #app[dir="rtl"] .recsw.on i{transform:translateX(-19px)}
+  .recbar.reccnt{justify-content:center;margin:8px 0 2px}
+  .recbtn.main{flex:1;border:none;background:linear-gradient(100deg,var(--amber) 0%,#f0d489 50%,var(--amber) 100%);color:#241a06;font-weight:800;box-shadow:var(--shadow)}
   .recflags{display:flex;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
   .recflags::-webkit-scrollbar{display:none}
   .recflags span{flex:0 0 auto;width:34px;height:34px;border-radius:50%;background:var(--paper);
@@ -926,6 +973,15 @@
   .recempty{padding:12px;border:1px dashed var(--line);border-radius:11px;color:var(--muted);font-size:14px;margin-top:10px}
   /* the planning bot has no business on the community or favourites screens */
   body.cmmode .chatfab,body.svmode .chatfab{display:none!important}
+  /* explore cards: the photograph is the card, the title lives on it */
+  .cmcard.cmfeed{padding:0;overflow:hidden}
+  .cmcard.cmfeed .cmcovw{position:relative}
+  .cmcard.cmfeed .cmcover{margin:0;height:190px;border-radius:0}
+  .cmcard.cmfeed .cmov{position:absolute;inset-inline:0;bottom:0;padding:40px 14px 10px;
+    background:linear-gradient(180deg,rgba(6,12,26,0) 0%,rgba(6,12,26,.9) 78%)}
+  .cmcard.cmfeed .cmtitle{font-size:21px;font-weight:800;color:#fff;margin-bottom:2px;text-shadow:0 1px 6px rgba(0,0,0,.5)}
+  .cmcard.cmfeed .cmmeta{color:rgba(255,255,255,.86)}
+  .cmcard.cmfeed .cmstats{padding:10px 14px 12px}
   .cmhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
   .cmhead h2{font-size:22px;margin:0}
   .cmsub{color:var(--muted);font-size:14.5px;margin:2px 0 14px}
@@ -1180,7 +1236,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 14:19 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 19:18 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -1256,6 +1312,7 @@
     <div class="welcard">
       <button type="button" class="welclose is-hidden" id="welClose" aria-label="Close">✕</button>
       <div class="compass" aria-hidden="true"></div>
+      <div class="weleyebrow" id="welEyebrow">Pocket travel planner</div>
       <h2 id="welTitle">Welcome</h2>
       <div class="wellangs" id="welLangs">
         <button type="button" class="wellang" data-wl="ar" lang="ar">العربية</button>
@@ -1263,6 +1320,7 @@
         <button type="button" class="wellang" data-wl="es" lang="es">Español</button>
       </div>
       <p class="wsub" id="welSub"></p>
+      <div class="welsteps" id="welSteps"></div>
       <button type="button" class="welbtn" id="guestBtn"></button>
       <div class="weldiv" id="welDiv"></div>
       <input type="text" class="welname" id="welName" autocomplete="given-name" maxlength="24">
@@ -1276,6 +1334,12 @@
 <div class="offbar" id="offbar" aria-hidden="true"></div>
 <button type="button" class="chatfab is-hidden" id="chatFab" aria-label="Ask بوصلة"><span class="chatfabic"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M21 12a8 8 0 0 1-8 8H4l2.5-2.7A8 8 0 1 1 21 12z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></span><span class="chatfablbl" id="chatFabLbl">Ask بوصلة</span></button>
 <button type="button" class="topbtn" id="topBtn" aria-label="↑"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M6 14l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<nav class="tabbar" id="tabbar" aria-label="Navigation">
+  <button type="button" class="tab on" data-tab="home"><svg viewBox="0 0 24 24"><path d="M3.5 11.5 12 4l8.5 7.5M5.5 10v9.5h13V10"/></svg><span id="tabHome">Home</span></button>
+  <button type="button" class="tab" data-tab="trips"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M3.6 12h16.8M12 3.6c2.6 2.2 3.9 5 3.9 8.4s-1.3 6.2-3.9 8.4c-2.6-2.2-3.9-5-3.9-8.4s1.3-6.2 3.9-8.4z"/></svg><span id="tabTrips">Trips</span></button>
+  <button type="button" class="tab" data-tab="record"><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-10.4a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><path d="M9.6 10.4l1.8 1.8 3.4-3.4"/></svg><span id="tabRecord">Record</span></button>
+  <button type="button" class="tab" data-tab="saved"><svg viewBox="0 0 24 24"><path d="M7 4.5h10a1 1 0 0 1 1 1V20l-6-3.4L6 20V5.5a1 1 0 0 1 1-1z"/></svg><span id="tabSaved">Saved</span></button>
+</nav>
 <div class="chatpanel" id="chatPanel" aria-hidden="true">
   <div class="chatsheet">
     <div class="chathead"><span class="chattitle" id="chatTitle">Ask بوصلة</span><button type="button" class="chatx" id="chatX" aria-label="Close">✕</button></div>
@@ -2751,7 +2815,7 @@
     }
     var mine=!!myHotel(ck);
     var edit=ar?(mine?'غيّره':'عندي فندق'):(es?(mine?'Cambiar':'Ya tengo hotel'):(mine?'Change':'I booked my own'));
-    return '<div class="slot hotelrow" data-q="'+esc(q)+'"><div class="t">'+esc(lbl)+'</div>'+
+    return '<div class="slot hotelrow" data-ic="bld" data-q="'+esc(q)+'"><div class="t">'+esc(lbl)+'</div>'+
       '<div class="d">'+link(h,q,'',h)+ratingTag(h)+
       (mine?'':' <button type="button" class="menulink booklink" data-cmp="1" data-h="'+esc(h)+'" data-city="'+esc(d.city)+'" data-from="'+fromDay+'" data-n="'+nights+'">'+esc(cmpLbl())+'</button>')+
       ' <button type="button" class="menulink hoteledit" data-hk="'+esc(ck)+'">'+esc(edit)+'</button></div></div>'+warn;
@@ -4032,10 +4096,21 @@
     document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.textContent=u.vibes[c.dataset.v];});
     $('planBtn').textContent=u.btn; $('foot').innerHTML=u.foot;
     $('welSub').textContent=u.welcomeSub; $('guestBtn').textContent=u.guestBtn;
+    try{
+      $('welEyebrow').textContent=u.eyebrow;
+      $('welSteps').innerHTML='<h3>'+esc(u.introTitle)+'</h3>'+[u.introS1,u.introS2,u.introS3,u.introS4]
+        .map(function(x,i){ return '<div class="welstep"><b>'+(i+1)+'</b><span>'+esc(x)+'</span></div>'; }).join('');
+    }catch(we){}
     $('welDiv').textContent=u.nameLabel; $('welName').setAttribute('placeholder',u.namePh); $('welNote').textContent=u.welcomeNote;
     renderWelcome(); $('editFab').textContent=u.editTrip;
     $('drawerEdit').textContent=u.profileTitle; $('navHow').textContent=u.navHow; $('navTrips').textContent=u.myTrips; $('navInstall').textContent=u.navInstall; $('navShare').textContent=u.navShare; $('navFeedback').textContent=u.navFeedback; $('drawerAbout').textContent=u.menuAbout;
-    try{ var cx=CTXT[LANG]||CTXT.en; $('navCommunity').textContent=cx.title; $('navSaved').textContent=svTxt().t; $('navRecord').textContent=recTxt().t; try{updCtlHints();}catch(e2){} if(document.body.classList.contains('recmode'))openRecView(RECSHARED?RECV:null); $('cmTeaserT').textContent=cx.title; $('cmTeaserS').textContent=cx.sub.split('.')[0]+'.'; drawPts(); }catch(e){}
+    try{ var cx=CTXT[LANG]||CTXT.en; $('navCommunity').textContent=cx.title; $('navSaved').textContent=svTxt().t; $('navRecord').textContent=recTxt().t; try{updCtlHints();}catch(e2){} try{
+      var ar2=LANG==='ar', es2=LANG==='es';
+      $('tabHome').textContent=ar2?'الرئيسية':(es2?'Inicio':'Home');
+      $('tabTrips').textContent=ar2?'رحلات الناس':(es2?'Viajes':'Trips');
+      $('tabRecord').textContent=ar2?'سجلي':(es2?'Historial':'Record');
+      $('tabSaved').textContent=ar2?'مفضلاتي':(es2?'Guardados':'Saved');
+    }catch(e3){} if(document.body.classList.contains('recmode'))openRecView(RECSHARED?RECV:null); $('cmTeaserT').textContent=cx.title; $('cmTeaserS').textContent=cx.sub.split('.')[0]+'.'; drawPts(); }catch(e){}
     $('introTitle').textContent=u.introTitle; $('introS1').textContent=u.introS1; $('introS2').textContent=u.introS2; $('introS3').textContent=u.introS3; try{$('introS4').textContent=u.introS4;}catch(e){}
     try{ $('moreOptsLbl').textContent=(lang==='ar'?'خيارات أكثر':(lang==='es'?'Más opciones':'More options')); }catch(e){}
     try{ if(LASTSTATE&&!$('lastTrip').classList.contains('is-hidden'))showLastTrip(LASTSTATE); }catch(e){}
@@ -4098,7 +4173,7 @@
   $('dest').addEventListener('change',updCtlHints);
   setTimeout(updCtlHints,300);
 
-  function slot(ico,tm,d){return '<div class="slot"><div class="t">'+tm+'</div><div class="d">'+d+'</div></div>';}
+  function slot(ico,tm,d){return '<div class="slot"'+(ico?' data-ic="'+ico+'"':'')+'><div class="t">'+tm+'</div><div class="d">'+d+'</div></div>';}
   function timeLabels(o,n){var m=o.times; return n===2?[m.morning,m.evening]:n===4?[m.morning,m.midday,m.afternoon,m.evening]:[m.morning,m.afternoon,m.evening];}
   function dayTitle(o,d,total){return d===1?o.arrival:d===total?o.last:o.explore;}
   // small rest stops along a drive — coffee / ice cream / leg-stretch. Varies by leg, text-only (no emoji).
@@ -4118,6 +4193,30 @@
     return out;
   }
   function seasonLine(dest,t,label){var s=dest.summer;return (label||t.out.summer)+' · '+t.cond[s.cond]+' · ~'+s.temp+'°C';}
+  // The tab bar: one tap to any room, and the lit tab always tells the truth about where
+  // you are — synced from the body's mode classes so every path in and out counts.
+  function tabSync(){
+    var m=document.body.classList.contains('cmmode')?'trips'
+      :document.body.classList.contains('recmode')?'record'
+      :document.body.classList.contains('svmode')?'saved':'home';
+    document.querySelectorAll('#tabbar .tab').forEach(function(t){
+      t.classList.toggle('on',t.getAttribute('data-tab')===m);
+    });
+  }
+  (function(){
+    var bar=$('tabbar'); if(!bar)return;
+    bar.addEventListener('click',function(e){
+      var t=e.target.closest('.tab'); if(!t)return;
+      var k=t.getAttribute('data-tab');
+      if(k==='home'){ try{ exitCm(); exitSv(); exitRec(); }catch(err){} window.scrollTo({top:0,behavior:'smooth'}); }
+      else if(k==='trips')openCommunity();
+      else if(k==='record')openRecView();
+      else if(k==='saved')openSavedView();
+      tabSync();
+    });
+    new MutationObserver(tabSync).observe(document.body,{attributes:true,attributeFilter:['class']});
+    tabSync();
+  })();
   // The lift home: appears once you're two screens deep, one tap back to the top.
   (function(){
     var btn=$('topBtn'); if(!btn)return;
@@ -4852,11 +4951,13 @@
     // print the local name, but search Maps for the English one — it resolves far more reliably
     var q=poi.n+' '+city;
     var went=tripUnderway()&&wentMap()[q];
+    var ic=food?'frk':tm===o.times.morning?'sun':tm===o.times.midday?'clk'
+      :tm===o.times.afternoon?'shp':tm===o.times.evening?'eve':'pin';
     var wentBtn=tripUnderway()?'<button type="button" class="picbtn wentbtn'+(went?' on':'')+'" data-went="'+esc(q)+'" aria-label="'+esc(wentLbl())+'" title="'+esc(wentLbl())+'">'+WENTSVG+'</button>':'';
     // What this row IS, kept on the row itself. It used to be read off the photo attribute, which
     // worked right up until restaurants stopped having photos — and then the swap picker could no
     // longer tell which place you were replacing, so it offered you the same one back.
-    return '<div class="slot'+(went?' went':'')+'" data-sk="'+sk+'" data-q="'+esc(q)+'"><div class="t">'+tm+'</div>'
+    return '<div class="slot'+(went?' went':'')+'" data-ic="'+ic+'" data-sk="'+sk+'" data-q="'+esc(q)+'"><div class="t">'+tm+'</div>'
       +'<div class="d">'+link(locName(ck,poi.n),q,food?'':q,poi.n)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a),locName(ck,poi.n))+hopLabel(hop)+(food?menuLink(poi.n,city):'')+'</div>'
       +(food?'':'<button type="button" class="picbtn" data-pic="'+esc(q)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>')
       +'<button type="button" class="picbtn svbtn'+(isSaved(ck,poi.n)?' on':'')+'" data-sv="'+esc(ck)+'|'+esc(poi.n)+'|'+esc(poi.a||'')+'|'+svCatOf(poi,food)+'" aria-label="'+esc(svLbl())+'" title="'+esc(svLbl())+'">'+BKSVG+'</button>'
@@ -4868,7 +4969,7 @@
   var DAYADD={};
   function xslot(name,city,d,i,o){
     var q=name+' '+city;
-    return '<div class="slot extra"><div class="t">'+o.extraLbl+'</div>'
+    return '<div class="slot extra" data-ic="pin"><div class="t">'+o.extraLbl+'</div>'
       +'<div class="d">'+link(name,q,q)+'</div>'
       +'<button type="button" class="picbtn" data-pic="'+esc(q)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>'
       +'<button type="button" class="exdel" data-ex="'+d+'|'+i+'" aria-label="'+o.swapPlace+'">✕</button></div>';
@@ -4888,7 +4989,7 @@
       else q='breakfast near '+hotel+' '+city;
     }
     var a='<a href="'+(href||mapUrl(q))+'" target="_blank" rel="noopener">'+esc(o.bfastTxt)+'</a>';
-    return '<div class="slot meal"><div class="t">'+tm+'</div><div class="d">'+a+'</div></div>';
+    return '<div class="slot meal" data-ic="cup"><div class="t">'+tm+'</div><div class="d">'+a+'</div></div>';
   }
   // A day trip is the one time the restaurant list is no help: every name in it is in the city, so
   // dropping one onto a day that is 90km out books the motorway twice for a sandwich. Out there the
@@ -4900,7 +5001,7 @@
     // A few places are listed as "Al Zubarah Fort Day Trip" — fine as a heading, but inside a
     // sentence it reads as if you were eating near a day trip. The place is the fort.
     var nm=String(locName(ck,anchor.n)).replace(/\s*Day Trip$/i,'');
-    return '<div class="slot meal msearch"><div class="t">'+tm+'</div><div class="d"><a href="'+href+
+    return '<div class="slot meal msearch" data-ic="frk"><div class="t">'+tm+'</div><div class="d"><a href="'+href+
       '" target="_blank" rel="noopener">'+esc(o.eatNear(nm))+'</a></div></div>';
   }
   // Generated destination banner — a climate-tinted scene (no external images, works offline).
@@ -6797,9 +6898,9 @@
       if(!hot[c.n]||!facing(c))return;
       ctx.save();
       ctx.beginPath(); c.r.forEach(function(r2){ rgRing(ctx,cv,r2,true); });
-      ctx.shadowColor=rgCol('--amber'); ctx.shadowBlur=16;
-      ctx.fillStyle=rgCol('--amber-soft'); ctx.fill();
-      ctx.shadowBlur=9; ctx.strokeStyle=rgCol('--amber'); ctx.lineWidth=1.7; ctx.stroke();
+      ctx.shadowColor=rgCol('--teal'); ctx.shadowBlur=16;
+      ctx.fillStyle=rgCol('--teal-soft'); ctx.fill();
+      ctx.shadowBlur=9; ctx.strokeStyle=rgCol('--teal'); ctx.lineWidth=1.6; ctx.stroke();
       ctx.restore();
     });
     if(!RECV||!RECV.h)return;
@@ -6815,20 +6916,20 @@
         if(!q){ started=false; continue; }
         if(!started){ ctx.moveTo(q[0],q[1]); started=true; } else ctx.lineTo(q[0],q[1]);
       }
-      ctx.strokeStyle=rgCol('--amber'); ctx.globalAlpha=.8; ctx.lineWidth=1.3;
-      ctx.shadowColor=rgCol('--amber'); ctx.shadowBlur=7; ctx.stroke();
+      ctx.strokeStyle=rgCol('--teal'); ctx.globalAlpha=.85; ctx.lineWidth=1.3;
+      ctx.shadowColor=rgCol('--teal'); ctx.shadowBlur=7; ctx.stroke();
       var qd=rgProj(cv,c.lng,c.lat);
       if(qd){ ctx.shadowBlur=0; ctx.globalAlpha=1; ctx.beginPath();
-        ctx.arc(qd[0],qd[1],2.6,0,Math.PI*2); ctx.fillStyle=rgCol('--amber'); ctx.fill(); }
+        ctx.arc(qd[0],qd[1],2.6,0,Math.PI*2); ctx.fillStyle=rgCol('--teal'); ctx.fill(); }
     });
     ctx.restore();
     var hp=rgProj(cv,h.lng,h.lat);
     if(hp){
-      ctx.beginPath(); ctx.arc(hp[0],hp[1],4.2,0,Math.PI*2); ctx.fillStyle=rgCol('--teal'); ctx.fill();
+      ctx.beginPath(); ctx.arc(hp[0],hp[1],4.2,0,Math.PI*2); ctx.fillStyle=rgCol('--amber'); ctx.fill();
       ctx.font='700 15px '+rgCol('--ff-body');
       var nm2=rgCName(RECV.h);
       ctx.lineWidth=4; ctx.strokeStyle=rgCol('--paper'); ctx.strokeText(nm2,hp[0]+8,hp[1]-8);
-      ctx.fillStyle=rgCol('--teal'); ctx.fillText(nm2,hp[0]+8,hp[1]-8);
+      ctx.fillStyle=rgCol('--amber'); ctx.fillText(nm2,hp[0]+8,hp[1]-8);
     }
   }
   function rgLoop(){
@@ -6891,15 +6992,14 @@
       +'<div class="cmhead"><h2>'+esc(c.t)+'</h2></div><div class="cmsub">'+esc(c.sub)+'</div>'
       +(RECSHARED?'<div class="recempty" style="margin:0 0 10px">'+esc(c.sharedBy(rgCName(RECV.h||'')))
         +' <button type="button" class="recbtn" id="recMine" style="margin-inline-start:8px">'+esc(c.mine)+'</button></div>':'')
-      +'<div class="reccard"><canvas id="recCv" width="760" height="760"></canvas>'
-      +'<div class="recrow" style="justify-content:space-between;align-items:center">'
-      +'<span class="recseg"><button type="button" id="recFlatB" class="'+(RGFLAT?'on':'')+'">'+esc(c.flat)+'</button>'
-      +'<button type="button" id="recGlobeB" class="'+(RGFLAT?'':'on')+'">'+esc(c.globe)+'</button></span></div></div>'
+      +'<div class="reccard"><div class="recswrow"><span>'+esc(c.flat)+'</span>'
+      +'<button type="button" id="recFlatT" role="switch" aria-checked="'+(RGFLAT?'true':'false')+'" class="recsw'+(RGFLAT?' on':'')+'"><i></i></button></div>'
+      +'<canvas id="recCv" width="760" height="760"></canvas>'
+      +'<div class="recbar reccnt" id="recBar"></div></div>'
       +'<div class="reccard">'
       +'<div class="reclbl">'+esc(c.home)+'</div><div class="racw"><input type="text" id="recHomeIn" dir="auto" autocomplete="off" placeholder="'+esc(c.homePh)+'"><div class="racm" id="recHomeM"></div></div>'
       +'<div class="reclbl">'+esc(c.been)+'</div><div class="racw"><input type="text" id="recIn" dir="auto" autocomplete="off" placeholder="'+esc(c.beenPh)+'"><div class="racm" id="recM"></div></div>'
       +'<div class="recflags" id="recFlags" style="margin-top:12px"></div>'
-      +'<div class="recbar" id="recBar"></div>'
       +'<div class="recstats" id="recStats"></div>'
       +'<div class="recchips" id="recChips"></div>'
       +'<div class="recrow"><button type="button" class="recbtn main" id="recShareB">'+esc(c.share)+'</button>'
@@ -6933,10 +7033,13 @@
       else if(nm!==RECV.h&&RECV.v.indexOf(nm)<0)RECV.v.push(nm);
       recStore(); recRenderBits();
     });
-    $('recFlatB').onclick=function(){ RGFLAT=true; this.classList.add('on'); $('recGlobeB').classList.remove('on'); rgDraw(); };
-    $('recGlobeB').onclick=function(){ RGFLAT=false; this.classList.add('on'); $('recFlatB').classList.remove('on');
-      var a=rgAnchor(RECV.h); if(a){ RGV.lon=a.lng; RGV.lat=Math.max(-60,Math.min(60,a.lat)); }
-      rgDraw(); if(!RGRAF)RGRAF=requestAnimationFrame(rgLoop); };
+    $('recFlatT').onclick=function(){
+      RGFLAT=!RGFLAT;
+      this.classList.toggle('on',RGFLAT); this.setAttribute('aria-checked',RGFLAT?'true':'false');
+      if(!RGFLAT){ var a=rgAnchor(RECV.h); if(a){ RGV.lon=a.lng; RGV.lat=Math.max(-60,Math.min(60,a.lat)); }
+        if(!RGRAF)RGRAF=requestAnimationFrame(rgLoop); }
+      rgDraw();
+    };
     $('recShareB').onclick=function(){
       var c2=recTxt(),n=RECV.v.length; if(!n)return;
       var C=rgCountries();
@@ -7282,10 +7385,10 @@
       +(Object.keys(mine).length?'<button type="button" class="chip'+(CMSORT==='mine'?' active':'')+'" data-cmsort="mine">'+esc(c.mine)+'</button>':'')+'</div>';
     if(!list.length)h+='<div class="cmempty">'+esc(c.empty)+'</div>';
     list.forEach(function(r){
-      h+='<div class="cmcard" data-cmid="'+esc(r.id)+'">'+cmCover(r)
-        +'<div class="cmtitle" dir="auto">'+esc(r.title)+(mine[r.id]?' <span class="cmmine">'+esc(c.mine)+'</span>':'')+(Date.now()-(r.t||0)<172800000?' <span class="cmmine cmnew">'+esc(c.fresh)+'</span>':'')+'</div>'
+      h+='<div class="cmcard cmfeed" data-cmid="'+esc(r.id)+'"><div class="cmcovw">'+cmCover(r)
+        +'<div class="cmov"><div class="cmtitle" dir="auto">'+esc(r.title)+(mine[r.id]?' <span class="cmmine">'+esc(c.mine)+'</span>':'')+(Date.now()-(r.t||0)<172800000?' <span class="cmmine cmnew">'+esc(c.fresh)+'</span>':'')+'</div>'
         +'<div class="cmmeta"><span dir="auto">'+esc((r.cities||[]).join(' → '))+'</span><span dir="auto">'+r.days+' '+esc(c.days)+'</span>'
-        +'<span>'+esc(c.by)+' '+esc(r.name)+'</span><span>'+esc(cmAgo(r.t))+'</span></div>'
+        +'<span>'+esc(c.by)+' '+esc(r.name)+'</span><span>'+esc(cmAgo(r.t))+'</span></div></div></div>'
         +'<div class="cmstats"><span class="cmstat'+(CMLIKED[r.id]?' liked':'')+'">'+HEARTSVG+' '+(r.likes||0)+'</span>'
         +'<span class="cmstat">'+CMTSVG+' '+(r.nc||0)+'</span>'
         +'<span class="cmstat">'+CAMSVG+' '+(r.np||0)+'</span></div></div>';
