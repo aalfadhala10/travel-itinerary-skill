@@ -924,6 +924,7 @@
   .tabbar .tab svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   .tabbar .tab.on{color:var(--amber)}
   body.lbopen .tabbar{display:none!important}
+  body.welopen .chatfab,body.welopen .tabbar,body.welopen .topbtn{display:none!important}
   @media print{.tabbar,.topbtn{display:none!important}}
   /* everything floating steps up over the bar, and the page leaves room for it */
   .wrap{padding-bottom:120px}
@@ -1003,7 +1004,14 @@
   .cmempty{background:var(--paper2);border:1px dashed var(--line);border-radius:16px;padding:26px 18px;text-align:center;color:var(--muted);font-size:15px;line-height:1.6}
   .cmback{background:none;border:none;color:var(--amber);font-size:15px;font-weight:600;padding:6px 0;cursor:pointer}
   .cmdetail .cmtitle{font-size:20px}
-  .cmuse{display:block;width:100%;margin:14px 0 6px;padding:15px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--amber),#d9973f);color:#1c1710;font-size:16.5px;font-weight:700;cursor:pointer}
+  .cmuse{display:block;width:100%;margin:14px 0 6px;padding:15px;border:none;border-radius:14px;
+    background:linear-gradient(100deg,var(--amber) 0%,#f0d489 50%,var(--amber) 100%);color:#241a06;font-size:16.5px;font-weight:800;cursor:pointer;box-shadow:var(--shadow)}
+  .cmdetail .cmcovw{position:relative;border-radius:16px;overflow:hidden;margin-bottom:12px}
+  .cmdetail .cmcovw .cmcover{margin:0;height:200px;border-radius:0}
+  .cmdetail .cmov{position:absolute;inset-inline:0;bottom:0;padding:46px 14px 12px;
+    background:linear-gradient(180deg,rgba(6,12,26,0) 0%,rgba(6,12,26,.9) 78%)}
+  .cmdetail .cmov .cmtitle{font-size:22px;font-weight:800;color:#fff;margin:0 0 2px;text-shadow:0 1px 6px rgba(0,0,0,.5)}
+  .cmdetail .cmov .cmmeta{color:rgba(255,255,255,.86)}
   .cmrow{display:flex;gap:10px;margin:8px 0}
   .cmrow .cmbtn{flex:1;padding:11px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:14.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px}
   .cmrow .cmbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
@@ -1243,7 +1251,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 22:59 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 23:50 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -6602,8 +6610,9 @@
     try{ localStorage.setItem('bosla_lang',lg); }catch(err){}
     applyLang(lg); renderWelcome(); // keep the card in the chosen language
   });
-  function showWelcome(mode){ WELMODE=mode||'first'; $('welName').value=getName(); renderWelcome(); var w=$('welcome'); w.classList.add('show'); w.setAttribute('aria-hidden','false'); }
-  function hideWelcome(){ var w=$('welcome'); w.classList.remove('show'); w.setAttribute('aria-hidden','true'); }
+  function showWelcome(mode){ WELMODE=mode||'first'; $('welName').value=getName(); renderWelcome(); var w=$('welcome'); w.classList.add('show'); w.setAttribute('aria-hidden','false'); document.body.classList.add('welopen'); }
+  function hideWelcome(){ var w=$('welcome'); w.classList.remove('show'); w.setAttribute('aria-hidden','true'); document.body.classList.remove('welopen'); }
+  try{ if($('welcome').classList.contains('show'))document.body.classList.add('welopen'); }catch(e){}
   $('guestBtn').addEventListener('click',function(){ markWelcomed(); hideWelcome(); });
   $('welClose').addEventListener('click',hideWelcome);
   $('welRemove').addEventListener('click',function(){ setName(''); applyProfile(); renderMyTrips(); hideWelcome(); });
@@ -7440,10 +7449,13 @@
       var r=d.trip, liked=!!CMLIKED[r.id];
       var cover='';
       try{ var dm=matchDest((r.cities||[])[0]||''); if(dm)cover=flagCover(dm.flag,keyOf(dm)); }catch(e){}
+      var meta='<div class="cmmeta"><span dir="auto">'+esc((r.cities||[]).join(' → '))+'</span><span dir="auto">'+r.days+' '+esc(c.days)+'</span>'
+        +'<span>'+esc(c.by)+' '+esc(r.name)+'</span><span>'+esc(cmAgo(r.t))+'</span></div>';
+      var head=cover
+        ?'<div class="cmcovw">'+cover+'<div class="cmov"><div class="cmtitle" dir="auto">'+esc(r.title)+'</div>'+meta+'</div></div>'
+        :'<div class="cmtitle" dir="auto">'+esc(r.title)+'</div>'+meta;
       var h='<button type="button" class="cmback" data-cmback="1"><span class="cmbkch">‹</span> '+esc(c.title)+'</button>'
-        +'<div class="cmdetail">'+cover+'<div class="cmtitle" dir="auto">'+esc(r.title)+'</div>'
-        +'<div class="cmmeta"><span dir="auto">'+esc((r.cities||[]).join(' → '))+'</span><span dir="auto">'+r.days+' '+esc(c.days)+'</span>'
-        +'<span>'+esc(c.by)+' '+esc(r.name)+'</span><span>'+esc(cmAgo(r.t))+'</span></div>'
+        +'<div class="cmdetail">'+head
         +'<button type="button" class="cmuse" data-cmuse="'+esc(r.id)+'">'+esc(c.use)+'</button>'
         +'<div class="cmrow"><button type="button" class="cmbtn'+(liked?' liked':'')+'" data-cmlike="'+esc(r.id)+'" aria-label="'+esc(c.like)+'">'+HEARTSVG+' <span>'+(r.likes||0)+'</span></button>'
         +'<button type="button" class="cmbtn" data-cmshare="'+esc(r.id)+'">'+SHARESVG+' '+esc(c.shareT)+'</button>'
