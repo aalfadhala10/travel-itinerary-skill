@@ -1011,7 +1011,8 @@ async function community(body, env, request, origin) {
     if ((r.photos || []).length >= PUB.PHOTOS_PER_TRIP)
       return reply({ error: "photos full" }, 400, origin);
     const pid = id + "." + ((r.photos || []).length + 1) + "." + String(Date.now()).slice(-5);
-    await kv.put("pubphoto:" + pid, JSON.stringify({ n: name, d: data }));
+    const caption = pubClean(body.caption, 140);
+    await kv.put("pubphoto:" + pid, JSON.stringify({ n: name, d: data, c: caption }));
     r.photos.push(pid);
     // a matchbox-sized thumb rides along in the feed row so cards can show a real photo without
     // fetching every full image. First photo only, hard-capped tiny.
