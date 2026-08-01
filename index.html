@@ -1236,7 +1236,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 19:18 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 22:09 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -4142,15 +4142,15 @@
     try{
       var ar=LANG==='ar', es=LANG==='es', t=I18N[LANG];
       var pv=($('pace')||{}).value||'balanced';
-      var ph=ar?{relaxed:'هادئ = مكانين تقريبًا في اليوم، ووجبات على راحتك ووقت فاضي العصر.',
+      var ph=ar?{relaxed:'هادئ = مكانين تقريبًا في اليوم، ووجبات على راحتك ووقت فاضي العصر — وتذاكر ومواصلات أقل، فاليوم أرخص شوي.',
           balanced:'متوازن = ٣ أماكن تقريبًا في اليوم — يوم مليان وفيه مجال تتنفس.',
-          packed:'مكثّف = ٤ أماكن تقريبًا في اليوم — تبدأ بدري وتستغل كل ساعة.'}
-        :(es?{relaxed:'Relajado = unas 2 visitas al día, comidas sin prisa y tardes libres.',
+          packed:'مكثّف = ٤ أماكن تقريبًا في اليوم — تبدأ بدري وتستغل كل ساعة، وتذاكر ومواصلات أكثر فاليوم أغلى شوي.'}
+        :(es?{relaxed:'Relajado = unas 2 visitas al día, comidas sin prisa y tardes libres — menos entradas y trayectos, días algo más baratos.',
           balanced:'Equilibrado = unas 3 visitas al día — días llenos con espacio para respirar.',
-          packed:'Intenso = unas 4 visitas al día — madrugones y cada hora aprovechada.'}
-        :{relaxed:'Relaxed = about 2 places a day, unhurried meals, afternoons off.',
+          packed:'Intenso = unas 4 visitas al día — madrugones y cada hora aprovechada; más entradas y trayectos, días algo más caros.'}
+        :{relaxed:'Relaxed = about 2 places a day, unhurried meals, afternoons off — fewer tickets and rides, so days cost a little less.',
           balanced:'Balanced = about 3 places a day — full, with room to breathe.',
-          packed:'Packed = about 4 places a day — early starts, every hour used.'});
+          packed:'Packed = about 4 places a day — early starts, every hour used, and more tickets and rides, so days cost a little more.'});
       var pe=$('paceHint'); if(pe)pe.textContent=ph[pv]||'';
       var chip=document.querySelector('#budgetChips .chip.active');
       var tier=chip?chip.getAttribute('data-v'):'Mid-range';
@@ -4159,7 +4159,7 @@
         :'The tier sets the hotel class and daily spending style. Your amount below never changes the plan — we only check the plan against it.');
       var m=matchDest(($('dest')||{}).value||'');
       if(m&&m.cost&&m.cost[tier]){
-        var per=money(t,m.cost[tier]), cn=cityName(keyOf(m),m.city);
+        var per=money(t,Math.round(m.cost[tier]*(0.76+0.24*paceMul()))), cn=cityName(keyOf(m),m.city);
         line=(ar?('≈ '+per+' لليوم للشخص في '+cn+' على هذه الفئة. ')
           :(es?('≈ '+per+'/día por persona en '+cn+' en esta categoría. ')
           :('≈ '+per+'/day per person in '+cn+' at this tier. ')))+line;
@@ -4312,7 +4312,16 @@
     }
     return {usd:d>3000?420:(d>1200?260:180),km:Math.round(d),dur:hoursTxt(d/750+0.7),mode:o.modeFly};
   }
-  function catRows(base){return [['stay',0.42],['food',0.24],['activities',0.16],['localtx',0.08],['misc',0.10]].map(function(c){return {k:c[0],v:Math.round(base*c[1])};});}
+  // Money follows the rhythm (real beta catch: balanced and packed showed the same daily cost).
+  // The hotel and three meals don't care how packed a day is — but tickets and local rides do,
+  // so those two slices scale with places-per-day (2/3/4 -> x0.67/x1/x1.33).
+  function paceMul(){ var pv=($('pace')||{}).value; return pv==='relaxed'?2/3:pv==='packed'?4/3:1; }
+  function paceTotal(base){ return Math.round(base*(0.76+0.24*paceMul())); }
+  function catRows(base){
+    var f=paceMul();
+    return [['stay',0.42],['food',0.24],['activities',0.16*f],['localtx',0.08*f],['misc',0.10]]
+      .map(function(c){ return {k:c[0],v:Math.round(base*c[1])}; });
+  }
 
   var PICSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2"/><circle cx="8.5" cy="10" r="1.5" fill="currentColor"/><path d="M21 16l-5-5-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var SWAPSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h13M17 20l4-4-4-4M21 16H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -6388,7 +6397,7 @@
     var baseTotal=0,transferUSD=0,i;
     for(i=0;i<n;i++)baseTotal+=ms[i].cost[budget]*dc[i];
     for(i=1;i<n;i++)transferUSD+=transferInfo(t,ms[i-1],ms[i],kmDist(CO[keys[i-1]]||[0,0],CO[keys[i]]||[0,0]),ROUTEDRIVE).usd;
-    var totalUSD=baseTotal+transferUSD;
+    var totalUSD=paceTotal(baseTotal)+transferUSD;
     var subVibes=vibes.map(function(x){return t.ui.vibes[x];}).join(' · ')+(di?' · '+di.range:'');
     var title=ms.map(function(m){return esc(cityName(keyOf(m),m.city));}).join(' → ')+' · '+days+' '+o.daysUnit;
     LASTPLANNAME=(function(){var cs=[];ms.forEach(function(m){if(m.country&&cs.indexOf(m.country)<0)cs.push(m.country);});return cs.length===1?cs[0]:ms.map(function(m){return m.city;}).join(' - ');})();
@@ -7821,7 +7830,7 @@
       var d1=multi?Math.ceil(days/2):days, d2=multi?days-d1:0;
       var base1=m1.cost[budget]*d1, base2=multi?m2.cost[budget]*d2:0;
       var tr=multi?transferInfo(t,m1,m2,kmDist(CO[keyOf(m1)]||[0,0],CO[keyOf(m2)]||[0,0])):null, trUSD=tr?tr.usd:0;
-      var totalUSD=base1+base2+trUSD;
+      var totalUSD=paceTotal(base1+base2)+trUSD;
       var c1=esc(cityName(keyOf(m1),m1.city)), c2=multi?esc(cityName(keyOf(m2),m2.city)):'';
       var title=multi?(c1+' → '+c2+' · '+days+' '+o.daysUnit):(c1+', '+esc(m1.country)+' · '+days+' '+o.daysUnit);
       LASTPLANNAME=(multi&&m2)?(m1.city+' - '+m2.city):(m1.country||m1.city);
@@ -7893,7 +7902,7 @@
       html+='</div>';
       if(!access){ html+=paywallCard(t); paywallShown=true; }
       if(access){
-        html+=budgetCard(o,t,catRows(gbase),0,gbase,null,adults,kids);
+        html+=budgetCard(o,t,catRows(gbase),0,paceTotal(gbase),null,adults,kids);
       }
       html+=staysBar(cap(dest),'',t);
       note='<span style="color:var(--clay)">'+o.notCurated(esc(cap(dest)))+'</span><br>'+o.note(esc(cap(dest)));
