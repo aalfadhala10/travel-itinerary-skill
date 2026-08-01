@@ -741,7 +741,7 @@
   .pkgp{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
   .pkgper{color:var(--muted);font-size:14.5px;font-weight:400;margin-left:6px}
   #app[dir="rtl"] .pkgper{margin-left:0;margin-right:6px}
-  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:11px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s;z-index:5}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:11px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s;z-index:9;max-width:86vw}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .fbnudge{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(30px);width:calc(100% - 32px);max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px 10px;z-index:6;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
   .fbnudge.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
@@ -849,6 +849,8 @@
   body.cmmode #out,body.cmmode #saved,body.cmmode .intro,body.cmmode .editfab{display:none!important}
   body.svmode .card,body.svmode #cmTeaser,body.svmode #mytrips,body.svmode #lastTrip,
   body.svmode #out,body.svmode #community,body.svmode .intro,body.svmode .editfab{display:none!important}
+  /* the planning bot has no business on the community or favourites screens */
+  body.cmmode .chatfab,body.svmode .chatfab{display:none!important}
   .cmhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
   .cmhead h2{font-size:22px;margin:0}
   .cmsub{color:var(--muted);font-size:14.5px;margin:2px 0 14px}
@@ -1092,7 +1094,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 01:25 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 01:34 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -6936,6 +6938,7 @@
     if((t=e.target.closest('[data-cmreport]'))){
       pubApi('pub_report',{id:t.getAttribute('data-cmreport')}).catch(function(){});
       toast(c.reported);
+      try{track('pub_report',{id:t.getAttribute('data-cmreport')});}catch(x){}   // so the dashboard sees what travellers flag
       return;
     }
     if((t=e.target.closest('.cmcard'))){ openPubTrip(t.getAttribute('data-cmid')); return; }
