@@ -1115,7 +1115,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 03:14 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 04:32 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -4348,6 +4348,35 @@
   // Re-render without jumping to the top — and without throwing you back to page 1 while the
   // background updates (restaurants, closures, Arabic names) land under you.
   function rerenderKeep(){ var y=window.pageYOffset||document.documentElement.scrollTop||0; KEEPSCROLL=true; if(LASTPLAN)LASTPLAN(); window.scrollTo(0,y); }
+  // A flick of the thumb turns the page — the way a phone wants to be read. Gestures that begin
+  // inside anything that scrolls sideways (the day strip, chips) or a text field stay theirs,
+  // and in Arabic the pages turn the other way, like the book does.
+  (function(){
+    var sx=0,sy=0,st=0,live=false;
+    var out=$('out'); if(!out)return;
+    out.addEventListener('touchstart',function(e){
+      if(!e.touches||e.touches.length!==1){ live=false; return; }
+      live=true;
+      if(e.target.closest('textarea,input,select,.pgtabs,.daynav')){ live=false; return; }
+      var el=e.target;
+      while(el&&el!==out){
+        if(el.scrollWidth>el.clientWidth+4){ live=false; break; }
+        el=el.parentElement;
+      }
+      var tt=e.touches[0]; sx=tt.clientX; sy=tt.clientY; st=Date.now();
+    },{passive:true});
+    out.addEventListener('touchend',function(e){
+      if(!live)return; live=false;
+      var tt=e.changedTouches&&e.changedTouches[0]; if(!tt)return;
+      if(Date.now()-st>600)return;                            // a slow drag is a scroll, not a flick
+      var dx=tt.clientX-sx, dy=tt.clientY-sy;
+      if(Math.abs(dx)<64||Math.abs(dx)<Math.abs(dy)*2)return;
+      var fwd=dx<0;
+      if(($('app').getAttribute('dir')||'')==='rtl')fwd=!fwd;
+      if(PAGE==null)return;
+      pgGo(PAGE+(fwd?1:-1));
+    },{passive:true});
+  })();
   // Nights-per-city editor — the user decides how the total days split across cities (e.g. 8 Phuket / 4 Bangkok, not forced even).
   function nightsEditor(ms,dc){
     if(!ms||ms.length<2)return '';
