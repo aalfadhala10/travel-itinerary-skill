@@ -1115,7 +1115,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 03:14 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 04:32 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -4348,6 +4348,35 @@
   // Re-render without jumping to the top — and without throwing you back to page 1 while the
   // background updates (restaurants, closures, Arabic names) land under you.
   function rerenderKeep(){ var y=window.pageYOffset||document.documentElement.scrollTop||0; KEEPSCROLL=true; if(LASTPLAN)LASTPLAN(); window.scrollTo(0,y); }
+  // A flick of the thumb turns the page — the way a phone wants to be read. Gestures that begin
+  // inside anything that scrolls sideways (the day strip, chips) or a text field stay theirs,
+  // and in Arabic the pages turn the other way, like the book does.
+  (function(){
+    var sx=0,sy=0,st=0,live=false;
+    var out=$('out'); if(!out)return;
+    out.addEventListener('touchstart',function(e){
+      if(!e.touches||e.touches.length!==1){ live=false; return; }
+      live=true;
+      if(e.target.closest('textarea,input,select,.pgtabs,.daynav')){ live=false; return; }
+      var el=e.target;
+      while(el&&el!==out){
+        if(el.scrollWidth>el.clientWidth+4){ live=false; break; }
+        el=el.parentElement;
+      }
+      var tt=e.touches[0]; sx=tt.clientX; sy=tt.clientY; st=Date.now();
+    },{passive:true});
+    out.addEventListener('touchend',function(e){
+      if(!live)return; live=false;
+      var tt=e.changedTouches&&e.changedTouches[0]; if(!tt)return;
+      if(Date.now()-st>600)return;                            // a slow drag is a scroll, not a flick
+      var dx=tt.clientX-sx, dy=tt.clientY-sy;
+      if(Math.abs(dx)<64||Math.abs(dx)<Math.abs(dy)*2)return;
+      var fwd=dx<0;
+      if(($('app').getAttribute('dir')||'')==='rtl')fwd=!fwd;
+      if(PAGE==null)return;
+      pgGo(PAGE+(fwd?1:-1));
+    },{passive:true});
+  })();
   // Nights-per-city editor — the user decides how the total days split across cities (e.g. 8 Phuket / 4 Bangkok, not forced even).
   function nightsEditor(ms,dc){
     if(!ms||ms.length<2)return '';
@@ -4434,13 +4463,46 @@
   // --- Local time at the destination ---
   function tzOffH(zone,date){ try{ var p=new Intl.DateTimeFormat('en-US',{timeZone:zone,hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).formatToParts(date).reduce(function(a,x){a[x.type]=x.value;return a;},{});
     var asUTC=Date.UTC(+p.year,p.month-1,+p.day,(+p.hour)%24,+p.minute,+p.second); return (asUTC-date.getTime())/3600000; }catch(e){return null;} }
+  // The standard sunrise equation (NOAA simplification, within a few minutes) — enough to know
+  // when the light goes golden, which is all a traveller needs it for.
+  function sunTimes(lat,lng,date){
+    var rad=Math.PI/180;
+    var day=Math.floor(date.getTime()/86400000+0.5)+2440588-2451545;
+    var Js=day+0.0009-lng/360;
+    var M=(357.5291+0.98560028*Js)%360;
+    var C=1.9148*Math.sin(M*rad)+0.02*Math.sin(2*M*rad)+0.0003*Math.sin(3*M*rad);
+    var L=(M+C+180+102.9372)%360;
+    var Jt=2451545+Js+0.0053*Math.sin(M*rad)-0.0069*Math.sin(2*L*rad);
+    var dec=Math.asin(Math.sin(L*rad)*Math.sin(23.4397*rad));
+    var cosH=(Math.sin(-0.83*rad)-Math.sin(lat*rad)*Math.sin(dec))/(Math.cos(lat*rad)*Math.cos(dec));
+    if(cosH<-1||cosH>1)return null;              // midnight sun or polar night — say nothing
+    var H=Math.acos(cosH)/rad;
+    return { rise:new Date((Jt-H/360-2440587.5)*86400000), set:new Date((Jt+H/360-2440587.5)*86400000) };
+  }
   function timeThereLine(dest,t){
     var tz=COUNTRY_TZ[dest.country]; if(!tz)return '';
     try{ var now=new Date(), there=now.toLocaleTimeString(t.loc,{hour:'2-digit',minute:'2-digit',timeZone:tz});
       var destOff=tzOffH(tz,now); if(destOff===null)return '';
       var dh=Math.round(destOff-(-now.getTimezoneOffset()/60));
       var rel=dh>0?t.out.aheadOf(dh):(dh<0?t.out.behindOf(-dh):t.out.sameTime);
-      return '<div class="season">'+t.out.timeThere+': '+there+' · '+rel+'</div>';
+      // the sun's schedule for the trip's first day (or today, once it's underway)
+      var sun='';
+      try{
+        var co=CO[keyOf(dest)];
+        if(co){
+          var sd=($('startDate')||{}).value, base=new Date();
+          if(sd){ var s0=new Date(sd+'T12:00:00'); if(!isNaN(s0.getTime())&&s0>base)base=s0; }
+          var stt=sunTimes(co[0],co[1],base);
+          if(stt){
+            var fr=stt.rise.toLocaleTimeString(t.loc,{hour:'2-digit',minute:'2-digit',timeZone:tz});
+            var fs=stt.set.toLocaleTimeString(t.loc,{hour:'2-digit',minute:'2-digit',timeZone:tz});
+            sun='<div class="season">'+(LANG==='ar'?('الشروق '+fr+' · الغروب '+fs+' — أحلى ضوء للتصوير قبل الغروب بساعة')
+              :(LANG==='es'?('Amanece '+fr+' · atardece '+fs+' — la mejor luz, una hora antes del atardecer')
+              :('Sunrise '+fr+' · sunset '+fs+' — best photo light in the hour before sunset')))+'</div>';
+          }
+        }
+      }catch(e){}
+      return '<div class="season">'+t.out.timeThere+': '+there+' · '+rel+'</div>'+sun;
     }catch(e){return '';}
   }
   // --- Useful phrases in the local language ---
