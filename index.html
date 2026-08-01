@@ -1243,7 +1243,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 22:41 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 22:55 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -4922,7 +4922,7 @@
     return ' <span class="area">· '+esc(a)+'</span>'; }
   // Each day is its own page now, and the icons beside a place mean nothing until somebody tells
   // you. This shows the actual buttons next to what they do, at the top of every day.
-  function dayHint(o){
+  function dayHint(o,dnum){
     var ar=LANG==='ar', es=LANG==='es';
     var tapName=ar?'اضغط الاسم يفتح في خرائط قوقل':(es?'Toca un nombre para abrirlo en Google Maps':'Tap a name to open it in Google Maps');
     // On a mouse there's no photo button — the picture comes from hovering, which nobody discovers
@@ -4947,14 +4947,17 @@
     var whereTxt=ar?'المكان':(es?'Lugar':'Place');
     // The captions sit in the same flex row as a slot, so each word lands directly over its own
     // column of buttons — a legend off to the side is a puzzle you have to solve first.
+    var legend='<div class="dcap"><span class="t">'+esc(whenTxt)+'</span><span class="d">'+esc(whereTxt)+'</span>'+
+        '<span class="dcapw dcappic">'+esc(picTxt)+'</span>'+
+        '<span class="dcapw">'+esc(swapTxt)+'</span></div>';
+    // The lessons earn their space twice, then get out of the way (Ahmed's call): by day 3
+    // you know how the rows work, and a fortnight of repeated hints is just scroll.
+    if((dnum||1)>2)return legend;
     return '<div class="dhint"><span class="dhtouch">'+esc(tapName)+'</span>'+
       '<span class="dhhover">'+esc(hovName)+'</span></div>'+
       '<div class="dhint">'+esc(hopTxt)+'</div>'+
       '<div class="dhint">'+esc(menuTxt)+'</div>'+
-      '<div class="dhint">'+esc(hoursTxt)+'</div>'+
-      '<div class="dcap"><span class="t">'+esc(whenTxt)+'</span><span class="d">'+esc(whereTxt)+'</span>'+
-        '<span class="dcapw dcappic">'+esc(picTxt)+'</span>'+
-        '<span class="dcapw">'+esc(swapTxt)+'</span></div>';
+      '<div class="dhint">'+esc(hoursTxt)+'</div>'+legend;
   }
   // `food` marks a meal. The rating is shown on restaurants only: choosing where to eat is where a
   // score actually changes your mind, and a number beside every mosque and museum was just noise.
@@ -5434,7 +5437,7 @@
         +'<button type="button" class="dayshuffle dayshare" data-dshare="'+d+'" title="'+esc(o.shareDay)+'" aria-label="'+esc(o.shareDay)+'">'+SHARESVG+'</button>'
         +'<span class="dchev" aria-hidden="true"></span></div>'
         +'<div class="dsum">'+sum+'</div>'
-        +'<div class="dbody">'+(d===1?arrivalCard(ck):'')+dayHint(o)+hotelSlot(ck,o,fromDay,count)+body+dayRouteLink(walk,match.city)+'</div></div>';
+        +'<div class="dbody">'+(d===1?arrivalCard(ck):'')+dayHint(o,d)+hotelSlot(ck,o,fromDay,count)+body+dayRouteLink(walk,match.city)+'</div></div>';
     }
     return html;
   }
