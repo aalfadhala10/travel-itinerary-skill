@@ -99,6 +99,15 @@
     background:var(--card);color:var(--muted);font-size:12.5px;font-family:inherit;cursor:pointer}
   .swap:hover{border-color:var(--teal);color:var(--teal)}
   .empty{padding:12px;border:1px dashed var(--line);border-radius:11px;color:var(--muted);font-size:14px}
+  /* the travel record: a count that grows for years, and a chip per country conquered */
+  .recbar{display:flex;align-items:baseline;gap:10px;margin:4px 0 10px;font-size:15px}
+  .recbar b{font-size:26px;color:var(--amber);font-variant-numeric:tabular-nums}
+  .recbar .of{color:var(--muted)}
+  .recbar .pct{margin-inline-start:auto;color:var(--teal);font-weight:700}
+  .recchip{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid var(--line);
+    border-radius:999px;background:var(--paper2);font-size:14.5px}
+  .recchip .rd{border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 2px}
+  .recchip .rd:hover{color:var(--clay)}
 </style>
 </head>
 <body>
@@ -134,6 +143,26 @@
       <button class="toggle" id="tGlobe">Whole globe</button>
       <button class="toggle" id="tAgain">Fly it again</button>
       <button class="toggle" id="tReset">Clear the trip</button>
+    </div>
+  </div>
+
+  <div class="card" id="recCard">
+    <div class="hdr">My travel record</div>
+    <p class="note" style="margin:0 0 10px">Every country you have ever set foot in, drawn as lines
+    of light from home. Add them once — the count keeps itself, and it stays on this device.</p>
+    <div class="pick">
+      <label class="pl" for="recHomeIn">Home</label>
+      <div class="ac"><input id="recHomeIn" type="text" autocomplete="off" placeholder="your country">
+        <div class="acmenu" id="recHomeMenu"></div></div>
+      <label class="pl" for="recIn">I have been to…</label>
+      <div class="ac"><input id="recIn" type="text" autocomplete="off" placeholder="add a country">
+        <div class="acmenu" id="recMenu"></div></div>
+    </div>
+    <div class="recbar" id="recBar"></div>
+    <div class="chips" id="recChips"></div>
+    <div class="row">
+      <button class="toggle" id="tRec">Show on the globe</button>
+      <button class="toggle" id="tRecClear">Start over</button>
     </div>
   </div>
 
@@ -482,7 +511,7 @@ function draw(){
     ctx.fillStyle=col('--land'); ctx.fill();
     ctx.strokeStyle=col('--landline'); ctx.lineWidth=.7; ctx.stroke();
   });
-  if(STOPS.length){
+  if(STOPS.length||RECON){
     LAND.forEach(function(c){
       if(!HOT[c.n]||!facing(c))return;
       ctx.save();
@@ -496,6 +525,8 @@ function draw(){
   }
   shade(w);                                               // the light goes over the land, not under it
 
+  // the travel record replaces the trip on screen while it's showing — one story at a time
+  if(RECON){ recDrawLayer(); return; }
   if(!STOPS.length)return;
 
   // The whole journey is flown, not just the arrival: home to the first airport, the transfer to
@@ -875,15 +906,15 @@ function suggest(q,n){
   }
   return out;
 }
-function wireAC(inputId,menuId,onPick){
+function wireAC(inputId,menuId,onPick,sugFn){
   var inp=document.getElementById(inputId), menu=document.getElementById(menuId), list=[], at=-1;
   function close(){ menu.classList.remove('on'); menu.innerHTML=''; list=[]; at=-1; }
   function open(){
-    list=suggest(inp.value);
+    list=(sugFn||suggest)(inp.value);
     if(!list.length){ close(); return; }
     menu.innerHTML=list.map(function(c,i){
       return '<button type="button" class="acr" data-i="'+i+'">'+esc(c.flag)+
-        '<span>'+esc(c.n)+' <span class="c2">'+esc(c.country)+'</span></span></button>'; }).join('');
+        '<span>'+esc(c.n)+(c.country&&c.country!==c.n?' <span class="c2">'+esc(c.country)+'</span>':'')+'</span></button>'; }).join('');
     menu.classList.add('on'); at=-1;
   }
   inp.addEventListener('input',open);
@@ -896,7 +927,7 @@ function wireAC(inputId,menuId,onPick){
       [].forEach.call(menu.querySelectorAll('.acr'),function(b,i){ b.classList.toggle('sel',i===at); });
     } else if(e.key==='Enter'){
       e.preventDefault();
-      var c=list[at>=0?at:0]||findCity(inp.value);
+      var c=list[at>=0?at:0]||(sugFn?null:findCity(inp.value));
       if(c){ onPick(c); close(); }
     } else if(e.key==='Escape')close();
   });
@@ -961,6 +992,105 @@ function wholeGlobe(){
   var c=STOPS.length?centre(frameSet()):{lon:HOME.lng,lat:HOME.lat};
   goTo(c.lon,c.lat,1);
 }
+
+// --- My travel record ---------------------------------------------------------------
+// One entry per country we know, anchored on the first (largest) city we have for it —
+// good enough to hang a line of light on.
+var COUNTRIES=(function(){
+  var seen={},out=[];
+  CITY.forEach(function(c){
+    if(seen[c.country])return; seen[c.country]=1;
+    out.push({n:c.country,country:c.country,flag:c.flag,lat:c.lat,lng:c.lng});
+  });
+  out.sort(function(a,b){ return a.n<b.n?-1:1; });
+  return out;
+})();
+var REC=(function(){ try{ var r=JSON.parse(localStorage.getItem('bosla_beento')||'null');
+  if(r&&r.h&&Array.isArray(r.v))return r; }catch(e){} return {h:null,v:[]}; })();
+var RECON=false;
+function recSave(){ try{ localStorage.setItem('bosla_beento',JSON.stringify(REC)); }catch(e){} }
+function recAnchor(nm){ for(var i=0;i<COUNTRIES.length;i++)if(COUNTRIES[i].n===nm)return COUNTRIES[i]; return null; }
+function suggestCountry(q,n){
+  q=String(q||'').toLowerCase().trim();
+  var out=[],i;
+  if(!q)return out;
+  for(i=0;i<COUNTRIES.length&&out.length<(n||7);i++)
+    if(COUNTRIES[i].n.toLowerCase().indexOf(q)===0)out.push(COUNTRIES[i]);
+  for(i=0;i<COUNTRIES.length&&out.length<(n||7);i++)
+    if(out.indexOf(COUNTRIES[i])<0&&COUNTRIES[i].n.toLowerCase().indexOf(q)>=0)out.push(COUNTRIES[i]);
+  return out;
+}
+function recHot(){
+  if(!RECON){ syncHot(); return; }
+  HOT={};
+  if(REC.h)HOT[REC.h]=1;
+  REC.v.forEach(function(nm){ HOT[nm]=1; });
+}
+function recOn(on){
+  RECON=on;
+  document.getElementById('tRec').classList.toggle('on',on);
+  recHot();
+  if(on){ fly=null; var h=recAnchor(REC.h); goTo(h?h.lng:0,h?h.lat:20,1); }
+}
+function renderRec(){
+  var bar=document.getElementById('recBar'), chips=document.getElementById('recChips');
+  var n=REC.v.length, total=COUNTRIES.length;
+  bar.innerHTML='<b>'+n+'</b><span class="of">/ '+total+' countries</span>'
+    +(n?'<span class="pct">'+Math.round(n*100/total)+'%</span>':'');
+  chips.innerHTML=REC.v.map(function(nm,i){
+    var c=recAnchor(nm);
+    return '<span class="recchip">'+esc(c?c.flag:'')+' '+esc(nm)
+      +'<button type="button" class="rd" data-rd="'+i+'" aria-label="remove">✕</button></span>';
+  }).join('')||'<span class="empty">Type a country above — every one you add becomes a line from home.</span>';
+}
+function recDrawLayer(){
+  var h=recAnchor(REC.h); if(!h)return;
+  var A=[h.lat,h.lng];
+  ctx.save();
+  REC.v.forEach(function(nm){
+    var c=recAnchor(nm); if(!c)return;
+    var B=[c.lat,c.lng], started=false, STEPS=48;
+    ctx.beginPath();
+    for(var i=0;i<=STEPS;i++){
+      var p=gc(A,B,i/STEPS), q=proj(p[1],p[0]);
+      if(!q){ started=false; continue; }
+      if(!started){ ctx.moveTo(q[0],q[1]); started=true; } else ctx.lineTo(q[0],q[1]);
+    }
+    ctx.strokeStyle=col('--amber'); ctx.globalAlpha=.8; ctx.lineWidth=1.3;
+    ctx.shadowColor=col('--amber'); ctx.shadowBlur=7; ctx.stroke();
+    var qd=proj(c.lng,c.lat);
+    if(qd){ ctx.shadowBlur=0; ctx.globalAlpha=1; ctx.beginPath();
+      ctx.arc(qd[0],qd[1],2.4,0,Math.PI*2); ctx.fillStyle=col('--amber'); ctx.fill(); }
+  });
+  ctx.restore();
+  var hp=proj(h.lng,h.lat);
+  if(hp){ ctx.beginPath(); ctx.arc(hp[0],hp[1],4,0,Math.PI*2); ctx.fillStyle=col('--teal'); ctx.fill();
+    label(hp,REC.h,col('--teal')); }
+}
+var recHomeIn=wireAC('recHomeIn','recHomeMenu',function(c){
+  REC.h=c.n; recHomeIn.value=c.n; recSave(); renderRec();
+  if(!RECON)recOn(true); else { recHot(); }
+},suggestCountry);
+wireAC('recIn','recMenu',function(c){
+  var inp=document.getElementById('recIn'); inp.value='';
+  if(!REC.h){ REC.h=(HOME&&HOME.country)||c.n; recHomeIn.value=REC.h; }
+  if(c.n===REC.h||REC.v.indexOf(c.n)>=0)return;
+  REC.v.push(c.n); recSave(); renderRec();
+  if(!RECON)recOn(true); else recHot();
+},suggestCountry);
+document.getElementById('recChips').addEventListener('click',function(e){
+  var b=e.target.closest('[data-rd]'); if(!b)return;
+  REC.v.splice(+b.getAttribute('data-rd'),1); recSave(); renderRec(); recHot();
+});
+document.getElementById('tRec').onclick=function(){ recOn(!RECON); };
+document.getElementById('tRecClear').onclick=function(){
+  REC={h:REC.h,v:[]}; recSave(); renderRec(); recHot();
+};
+// come back a year and thirty countries later, and the record is exactly where it was left
+if(!REC.h&&HOME&&HOME.country)REC.h=HOME.country;
+recHomeIn.value=REC.h||'';
+renderRec();
+if(REC.v.length)recOn(true);
 document.getElementById('tGlobe').onclick=wholeGlobe;
 document.getElementById('tAgain').onclick=function(){ if(STOPS.length){ SEEN={}; launch(); } };
 document.getElementById('tReset').onclick=clearTrip;
