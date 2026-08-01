@@ -873,7 +873,9 @@
   .cmbtn.liked{color:#e05d6f;border-color:#e05d6f}
   .cmbtn.liked svg{fill:#e05d6f;stroke:#e05d6f}
   .cmphotos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
-  .cmphotos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;border:1px solid var(--line)}
+  .cmphotos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;border:1px solid var(--line);display:block}
+  .cmpcell{position:relative}
+  .cmpcell .cmpx{position:absolute;top:5px;inset-inline-end:5px;width:24px;height:24px;border:none;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .cmphotos .cmpadd{aspect-ratio:1;border:1px dashed var(--line);border-radius:12px;background:none;color:var(--muted);font-size:13px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
   .cmpadd svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6}
   .cmcmts{margin:14px 0 4px}
@@ -1090,7 +1092,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 01:07 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 01:25 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -6679,7 +6681,8 @@
         +'<button type="button" class="cmuse" data-cmuse="'+esc(r.id)+'">'+esc(c.use)+'</button>'
         +'<div class="cmrow"><button type="button" class="cmbtn'+(liked?' liked':'')+'" data-cmlike="'+esc(r.id)+'" aria-label="'+esc(c.like)+'">'+HEARTSVG+' <span>'+(r.likes||0)+'</span></button>'
         +'<button type="button" class="cmbtn" data-cmshare="'+esc(r.id)+'">'+SHARESVG+' '+esc(c.shareT)+'</button>'
-        +'<button type="button" class="cmbtn" data-cmphoto="'+esc(r.id)+'">'+CAMSVG+' '+esc(c.addPhoto)+'</button></div>'
+        // only the traveller who published the trip adds to its album; everyone else likes and comments
+        +(cmMine()[r.id]?'<button type="button" class="cmbtn" data-cmphoto="'+esc(r.id)+'">'+CAMSVG+' '+esc(c.addPhoto)+'</button>':'')+'</div>'
         +'<div class="cmphotos" id="cmPhotos"></div>'
         +'<div class="cmcmts" id="cmCmts"></div>'
         +'<div class="cmcform"><input type="text" id="cmCmtIn" maxlength="240" placeholder="'+esc(c.writeCmt)+'"><button type="button" data-cmcmt="'+esc(r.id)+'">'+esc(c.send)+'</button></div>'
@@ -6717,12 +6720,26 @@
   function loadPhotos(pids){
     var host=$('cmPhotos'); if(!host)return;
     host.innerHTML='';
+    var tripId=CMTRIP&&CMTRIP.id, ownKey=tripId?cmMine()[tripId]:null;
     pids.forEach(function(pid){
       pubApi('pub_photo',{pid:pid}).then(function(d){
         if(!d.d||d.d.indexOf('data:image/')!==0)return;      // only ever render an image data-url
+        var cell=document.createElement('div'); cell.className='cmpcell';
         var img=document.createElement('img'); img.src=d.d; img.alt=d.c||d.n||''; img.loading='lazy';
         img.addEventListener('click',function(ev){ ev.stopPropagation(); cmLightbox(d.d,d.n||'',d.c||''); });
-        host.appendChild(img);
+        cell.appendChild(img);
+        if(ownKey){                                           // the album's owner can take a photo down
+          var x=document.createElement('button'); x.type='button'; x.className='cmpx';
+          x.setAttribute('aria-label','✕'); x.textContent='✕';
+          x.addEventListener('click',function(ev){
+            ev.stopPropagation();
+            pubApi('pub_photo_del',{id:tripId,key:ownKey,pid:pid})
+              .then(function(res){ cell.remove(); if(CMTRIP)CMTRIP.photos=res.photos||[]; })
+              .catch(function(){ toast((CTXT[LANG]||CTXT.en).offline); });
+          });
+          cell.appendChild(x);
+        }
+        host.appendChild(cell);
       }).catch(function(){});
     });
   }
@@ -6772,7 +6789,7 @@
     q.reduce(function(p,data,i){
       return p.then(function(){
         return thumbOf(data).then(function(th){
-          return pubApi('pub_photo_add',{id:id,name:getName()||'',data:data,thumb:th,caption:caps[i]});
+          return pubApi('pub_photo_add',{id:id,key:cmMine()[id]||'',name:getName()||'',data:data,thumb:th,caption:caps[i]});
         }).then(function(d){ last=d; });
       });
     },Promise.resolve())
