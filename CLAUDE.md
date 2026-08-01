@@ -42,7 +42,11 @@ as the card behind it or the continents vanish.
 - **As simple as possible.** No dependency gets added without a reason that survives being said
   out loud.
 - **No emojis** anywhere in the interface, except country flags.
-- **Israel is excluded** — from destinations, and from the demo's airport table.
+- **Israel appears nowhere** — no destinations, no airport rows, no place or building names
+  containing it, in the app AND the demo. On the demo map its land is drawn as Palestine.
+  **Palestine is always included as a country** (it counts in the travel record, with its flag).
+  The only permitted mentions are in dev tooling that enforces this rule (tests and build
+  comments).
 - Arabic is **Khaleeji**, not Modern Standard.
 - **Never scrape or republish** copyrighted text, photos or reviews. Link out instead.
   The one sanctioned photo path: the Worker's `cityphoto` pipeline — Wikipedia's lead image for
