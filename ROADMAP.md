@@ -84,6 +84,19 @@ active guest · P3 non-Gulf share of weekly actives.
   the user exports them. After the JSON refactor, each is just a new file.
 
 ## Backlog
+- [ ] **Verified ticket-price ledger (Ahmed asked; hard, long-haul).** Today the budget is a
+  per-city day-rate split by fixed shares (42 stay / 24 food / 16×pace activities / 8×pace
+  local transport / 10 misc) — adding a specific attraction does NOT look up its entry fee.
+  The honest upgrade: a hand-verified `data/fees.json` (place → entry fee, currency, source
+  URL, checked-on date), starting with the ~100 most-planned landmarks from real usage data,
+  layered on top of the estimate: slots show the real fee, the budget grows a "confirmed
+  tickets" row, and the activities share shrinks by what's now known. Rules: no scraping, no
+  AI-invented prices — a fee ships only with a source and a date, and goes stale after 12
+  months. Add a validator like tools/add-poi.cjs. Accepted difficulty: prices change, vary by
+  age/resident status, and need periodic rechecking — that's why it's a ledger with dates,
+  not a promise of live accuracy. Related: measure estimate realism against live hotel prices
+  once TP_TOKEN is set (stay is 42% of the estimate — comparing it to real quotes gives the
+  first honest accuracy number).
 - [ ] **Arrival/departure airport in the MANUAL planner too.** The bot now works out
   which airport you fly into (e.g. Garmisch → land in Munich, ~1.5h drive) and asks
   whether you want a night there. The form-based planner still can't, because we
