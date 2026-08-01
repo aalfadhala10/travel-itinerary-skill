@@ -1130,7 +1130,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 05:50 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 07:42 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -4323,6 +4323,7 @@
     var start=(PAGE!=null?PAGE:0);
     if(PGFRESH){ start=0; PGFRESH=false; }
     pgGo(Math.min(start,pages.length-1),true,true); // a fresh render lands, it doesn't slide
+    scheduleSaveHint();
   }
   var PGOBS=null;
   function pgWatchNav(){
@@ -4372,6 +4373,25 @@
   // Re-render without jumping to the top — and without throwing you back to page 1 while the
   // background updates (restaurants, closures, Arabic names) land under you.
   function rerenderKeep(){ var y=window.pageYOffset||document.documentElement.scrollTop||0; KEEPSCROLL=true; if(LASTPLAN)LASTPLAN(); window.scrollTo(0,y); }
+  // If a plan has held their attention for a while and isn't saved, say so once — gently.
+  // Never auto-saves: their trips list is theirs.
+  var SAVEHINT={};
+  function scheduleSaveHint(){
+    try{
+      var lbl=tripLabel(stateObj());
+      if(SAVEHINT[lbl])return; SAVEHINT[lbl]=1;
+      setTimeout(function(){
+        try{
+          if(!planLive())return;
+          if(tripLabel(stateObj())!==lbl)return;                  // they moved on to another trip
+          if(loadTrips().some(function(x){ return tripLabel(x.state)===lbl; }))return;
+          toast(LANG==='ar'?'عجبتك الخطة؟ احفظها في «رحلاتي» عشان ما تضيع.'
+            :(LANG==='es'?'¿Te gusta el plan? Guárdalo en Mis viajes para no perderlo.'
+            :'Like this plan? Save it to My trips so it does not get lost.'));
+        }catch(e){}
+      },45000);
+    }catch(e){}
+  }
   // A flick of the thumb turns the page — the way a phone wants to be read. Gestures that begin
   // inside anything that scrolls sideways (the day strip, chips) or a text field stay theirs,
   // and in Arabic the pages turn the other way, like the book does.
