@@ -625,6 +625,10 @@
   .pgtab.today{border-color:var(--amber);color:var(--amber);font-weight:800}
   .pgtab.today.on{background:var(--amber);border-color:var(--amber);color:var(--paper)}
   .season.now{color:var(--amber);font-weight:700}
+  /* losing signal mid-trip is exactly when the plan matters most — say the good news plainly */
+  .offbar{position:fixed;top:0;left:0;right:0;z-index:10;background:var(--amber);color:#1c1710;text-align:center;
+    font-size:13px;font-weight:700;padding:7px 14px;transform:translateY(-110%);transition:transform .3s}
+  .offbar.show{transform:translateY(0)}
   .mtwhen{padding:2px 9px;border:1px solid var(--line);border-radius:999px;font-size:12px;color:var(--muted)}
   .mtwhen.now{border-color:var(--amber);color:var(--amber);font-weight:700}
   .mtwhen.past{opacity:.75}
@@ -1106,7 +1110,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 01:57 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 01:58 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -1199,6 +1203,7 @@
   </div>
 </div>
 <div class="toast" id="toast" aria-hidden="true"></div>
+<div class="offbar" id="offbar" aria-hidden="true"></div>
 <button type="button" class="chatfab is-hidden" id="chatFab" aria-label="Ask بوصلة"><span class="chatfabic"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M21 12a8 8 0 0 1-8 8H4l2.5-2.7A8 8 0 1 1 21 12z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></span><span class="chatfablbl" id="chatFabLbl">Ask بوصلة</span></button>
 <div class="chatpanel" id="chatPanel" aria-hidden="true">
   <div class="chatsheet">
@@ -4003,6 +4008,22 @@
     return out;
   }
   function seasonLine(dest,t,label){var s=dest.summer;return (label||t.out.summer)+' · '+t.cond[s.cond]+' · ~'+s.temp+'°C';}
+  // Offline is a promise kept, not an error: everything saved on the device keeps working.
+  (function(){
+    function msg(){ return LANG==='ar'?'أنت بدون إنترنت — خططك المحفوظة تشتغل عادي'
+      :(LANG==='es'?'Sin conexión — tus planes guardados siguen funcionando'
+      :'You are offline — your saved plans still work'); }
+    function upd(){
+      var b=$('offbar'); if(!b)return;
+      var off=(navigator.onLine===false);
+      if(off)b.textContent=msg();
+      b.classList.toggle('show',off);
+      b.setAttribute('aria-hidden',off?'false':'true');
+    }
+    window.addEventListener('online',upd);
+    window.addEventListener('offline',upd);
+    setTimeout(upd,1200);
+  })();
   // which trip-day is today, or 0 when the trip isn't underway — the pager marks that tab
   function tripTodayNum(days){
     var v=($('startDate')||{}).value; if(!v)return 0;
