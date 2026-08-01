@@ -1023,7 +1023,11 @@ var COUNTRIES=(function(){
 var REC=(function(){ try{ var r=JSON.parse(localStorage.getItem('bosla_beento')||'null');
   if(r&&r.h&&Array.isArray(r.v))return r; }catch(e){} return {h:null,v:[]}; })();
 var RECON=false;
-function recSave(){ try{ localStorage.setItem('bosla_beento',JSON.stringify(REC)); }catch(e){} }
+function recSave(){
+  // a friend's record on screen never overwrites the viewer's own
+  try{ if(typeof SHAREDREC!=='undefined'&&SHAREDREC)return; }catch(e){}
+  try{ localStorage.setItem('bosla_beento',JSON.stringify(REC)); }catch(e){}
+}
 function recAnchor(nm){ for(var i=0;i<COUNTRIES.length;i++)if(COUNTRIES[i].n===nm)return COUNTRIES[i]; return null; }
 function suggestCountry(q,n){
   q=String(q||'').toLowerCase().trim();
@@ -1124,16 +1128,50 @@ document.getElementById('tRec').onclick=function(){ recOn(!RECON); };
 document.getElementById('tRecClear').onclick=function(){
   REC={h:REC.h,v:[]}; recSave(); renderRec(); recHot();
 };
+// The record travels INSIDE the link — the friend who opens it sees the map, not a blank page.
+// Countries ride as indices into the alphabetical list, so seventy of them still fit in a chat.
+function recEncode(){
+  function ix(nm){ for(var i=0;i<COUNTRIES.length;i++)if(COUNTRIES[i].n===nm)return i.toString(36); return ''; }
+  return ix(REC.h)+'.'+REC.v.map(ix).filter(Boolean).join('.');
+}
+function recDecode(hash){
+  var m=/^#rec=([0-9a-z.]+)$/.exec(hash||''); if(!m)return null;
+  var parts=m[1].split('.'), h=COUNTRIES[parseInt(parts[0],36)];
+  if(!h)return null;
+  var v=[]; parts.slice(1).forEach(function(p){
+    var c=COUNTRIES[parseInt(p,36)];
+    if(c&&c.n!==h.n&&v.indexOf(c.n)<0)v.push(c.n);
+  });
+  return {h:h.n,v:v};
+}
+var RECOWN=null;   // while a shared record is on screen, the viewer's own stays safe here
 document.getElementById('tRecShare').onclick=function(){
   var n=REC.v.length; if(!n)return;
   var flags2=REC.v.map(function(nm){ var c=recAnchor(nm); return c?c.flag:''; }).join('');
   var txt='My travel record: '+n+' / '+COUNTRIES.length+' countries '+flags2+
-    '\nhttps://aalfadhala10.github.io/travel-itinerary-skill/demo/globe.html';
+    '\nhttps://aalfadhala10.github.io/travel-itinerary-skill/demo/globe.html#rec='+recEncode();
   if(navigator.share){ navigator.share({text:txt}).catch(function(){}); return; }
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt);
 };
 // come back a year and thirty countries later, and the record is exactly where it was left
 if(!REC.h&&HOME&&HOME.country)REC.h=HOME.country;
+// ...unless a friend's record arrived in the link — then show THEIRS, and keep yours untouched
+var SHAREDREC=recDecode(location.hash);
+if(SHAREDREC){
+  RECOWN=REC; REC=SHAREDREC;
+  var noteEl=document.createElement('div');
+  noteEl.className='empty'; noteEl.id='recShared'; noteEl.style.marginBottom='10px';
+  noteEl.innerHTML='A friend’s travel record, from '+esc(REC.h)+'. '
+    +'<button type="button" class="swap" id="recMine">Show mine instead</button>';
+  var recCard=document.getElementById('recCard');
+  recCard.insertBefore(noteEl,recCard.querySelector('.pick'));
+  document.getElementById('recMine').onclick=function(){
+    REC=RECOWN; RECOWN=null; SHAREDREC=null;
+    try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+    noteEl.remove(); recHomeIn.value=REC.h||''; renderRec();
+    if(REC.v.length)recOn(true); else { recOn(false); }
+  };
+}
 recHomeIn.value=REC.h||'';
 renderRec();
 if(REC.v.length)recOn(true);
