@@ -400,6 +400,7 @@ function generateGateway(name, country, apiKey) {
 // Needs env.GOOGLE_PLACES_KEY. Without it this quietly returns nothing and the app is unchanged.
 const PLACE_TTL_OPEN   = 60 * 60 * 24 * 90;
 const PLACE_TTL_CLOSED = 60 * 60 * 24 * 365;
+const PLACE_TTL_TEMP   = 60 * 60 * 24 * 14;   // "temporarily closed" un-happens — recheck in two weeks
 
 // Returns what Google knows about each place: whether it has shut, and how it's rated. Both come
 // from the same lookup, so asking for the rating costs nothing extra beyond the field mask.
@@ -421,10 +422,13 @@ async function placeFacts(names, city, env) {
       // so the names can be corrected instead of quietly shipping a dead link.
       if (!fact) { out.unknown.push(name); continue; }
       if (kv) await kv.put(k, JSON.stringify(fact),
-        { expirationTtl: fact.s === "CLOSED_PERMANENTLY" ? PLACE_TTL_CLOSED : PLACE_TTL_OPEN });
+        { expirationTtl: fact.s === "CLOSED_PERMANENTLY" ? PLACE_TTL_CLOSED
+          : fact.s === "CLOSED_TEMPORARILY" ? PLACE_TTL_TEMP : PLACE_TTL_OPEN });
       // fall through
     }
-    if (fact.s === "CLOSED_PERMANENTLY") out.closed.push(name);
+    // A traveller standing outside a shut door doesn't care which KIND of shut it is —
+    // temporarily closed places sit out of plans too, they just get rechecked sooner.
+    if (fact.s === "CLOSED_PERMANENTLY" || fact.s === "CLOSED_TEMPORARILY") out.closed.push(name);
     // Google knows this pin, so hand back the one thing that makes a link certain.
     if (fact.id) out.pins[name] = { id: fact.id, gn: fact.gn || "", lat: fact.lat || 0, lng: fact.lng || 0 };
     // A 5.0 from four people says less than a 4.3 from nine hundred — carry the count too.
