@@ -7,7 +7,53 @@ Real-user feedback lives in **`FEEDBACK.md`** (Friend 1, 2, 3 … — what they
 said, what changed, what's still open). Anything left open there is also listed
 below.
 
-Last updated: 2026-07-28.
+Last updated: 2026-08-01.
+
+## The track — where this is going
+
+The Gulf is the **beachhead, not the ceiling**. The destination, on a ~5-year
+horizon, is worldwide: *the world's travel memory and guide* — plan on it, book
+from it, carry your record on it. Endgame: valuable enough that a travel company
+comes asking. Every feature decision gets checked against this track.
+
+**Phase 0 — standing today.** Trilingual planner (EN / Khaleeji AR / ES), 738
+cities in 206 countries, community trips, favourites, the travel record,
+in-app price comparison, offline PWA. Everything on-device, guest-only, no
+scraped content, licensed photos only. Gulf-first strengths (prayer, halal,
+Khaleeji Arabic) are the wedge into an underserved market — they stay, as
+strengths, wherever the app goes.
+
+**Phase 1 — beta → paid launch (months).** A working money funnel and a visible
+numbers board: weekly return rate, trips planned, record shares, booking
+clicks. Credits move server-side (the blocker for real payments), payments
+connect, Travelpayouts token brings live prices, community gets seeded, and the
+shareable record card is the growth engine (WhatsApp / TikTok / Instagram).
+
+**Phase 2 — accounts, the Bosla way (6–18 months).** Guest mode is forever:
+planning a trip will NEVER require an account — that welcome-screen promise
+stays true. An account is what you *opt into* for the best features:
+- **Sync** — record, favourites, and trips on every device, safe if the phone dies.
+- **Identity** — publish trips under a profile, edit from anywhere, likes and
+  comments that belong to someone, a points/credits wallet that survives phone loss.
+- **Passwordless only** — Sign in with Apple / Google or email magic link; no
+  passwords stored, ever. The privacy promise evolves honestly: "on this device
+  only" for guests, "backed up to your account" only after you choose it.
+- Same rails: Cloudflare Workers + KV/D1. No new vendors without a reason that
+  survives being said out loud.
+
+**Phase 3 — worldwide (2–5 years).** More languages added the way Arabic was
+done (properly, not machine-dumped): FR, TR, ID, UR/HI, DE. City coverage keeps
+thickening through the add-poi pipeline. The record becomes the social spine —
+profiles, countries-in-common, tips from people who actually went. Regional
+booking partnerships replace one-size affiliates where numbers justify it.
+
+**What an acquirer buys (kept true from day one):** a niche audience that
+returns weekly and shares organically; a booking funnel with real conversion
+numbers; clean IP (no scraped content, licensed photos, one owner, all in this
+repo); a privacy story users trust.
+
+**The one metric per phase:** P1 weekly return rate · P2 accounts created per
+active guest · P3 non-Gulf share of weekly actives.
 
 ## How the app is wired (quick reference)
 
