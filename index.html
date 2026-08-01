@@ -923,6 +923,7 @@
   .cmcover .hero-art svg{width:100%;height:74px;display:block}
   .cmcover .hero-flag{position:absolute;bottom:6px;inset-inline-end:10px;font-size:20px}
   .cmmine{display:inline-block;vertical-align:2px;background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber);border-radius:999px;font-size:11px;font-weight:700;padding:1px 8px;margin-inline-start:6px}
+  .cmmine.cmnew{background:var(--teal);color:var(--paper);border-color:var(--teal)}
   .cmsearch{width:100%;padding:12px 14px;margin:0 0 12px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:15px}
   @keyframes heartpop{0%{transform:scale(1)}45%{transform:scale(1.45)}100%{transform:scale(1)}}
   .cmbtn.liked svg,.cmstat.liked svg{animation:heartpop .35s ease}
@@ -1114,7 +1115,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 01:58 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 03:14 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -6534,7 +6535,7 @@
       report:'Report this trip',reported:'Thank you — we will take a look.',
       cmtDone:'Comment added',photoDone:'Photos added — thank you for sharing',phTitle:'Your photos, before they go up',phSub:function(n){return n+' photo'+(n===1?'':'s')+' — write a line under each one if you like';},phCap:'Describe this photo, the place, the moment… (optional)',phGo:'Share the photos',phBusy:'Compressing…',phMax:'Five photos at a time',
       pts:function(n){return n+' points';},ptsNote:function(n){return n+' points to your next free trip credit';},
-      ptsCredit:'You earned a free trip credit!',mine:'Yours',visFeed:'Everyone',visLink:'Link only',noteLink:'Only people you send the link to can open it — it stays out of the public feed.',linkReady:'Published — link copied, send it to your friends',del:'Remove my trip',delAsk:'Remove this trip from the community? This cannot be undone.',deleted:'Your trip was removed',search:'Search a city or a name…',moreTo:function(c){return 'More trips to '+c;},lvls:['New traveller','Explorer','Wayfarer','Compass master']},
+      ptsCredit:'You earned a free trip credit!',mine:'Yours',fresh:'New',visFeed:'Everyone',visLink:'Link only',noteLink:'Only people you send the link to can open it — it stays out of the public feed.',linkReady:'Published — link copied, send it to your friends',del:'Remove my trip',delAsk:'Remove this trip from the community? This cannot be undone.',deleted:'Your trip was removed',search:'Search a city or a name…',moreTo:function(c){return 'More trips to '+c;},lvls:['New traveller','Explorer','Wayfarer','Compass master']},
     ar:{title:'رحلات المسافرين',sub:'خطط حقيقية شاركها ناس جرّبوها. افتح أي وحدة وخلها لك.',
       newest:'الأحدث',top:'الأكثر إعجاباً',days:'أيام',by:'من',use:'استخدم هذه الخطة',shareT:'مشاركة',like:'إعجاب',liked:'أعجبتني',
       photos:'صور',comments:'تعليقات',addPhoto:'أضف صورة',writeCmt:'اكتب تعليق…',send:'إرسال',
@@ -6548,7 +6549,7 @@
       report:'أبلغ عن هذه الرحلة',reported:'شكراً لك — بنراجعها.',
       cmtDone:'تم إضافة تعليقك',photoDone:'انضافت صورك — شكراً لمشاركتك',phTitle:'صورك قبل النشر',phSub:function(n){return n+' صور — اكتب سطر تحت كل وحدة إذا تبي';},phCap:'وصف الصورة، المكان، اللحظة… (اختياري)',phGo:'انشر الصور',phBusy:'جاري الضغط…',phMax:'خمس صور كحد أقصى بالمرة',
       pts:function(n){return n+' نقطة';},ptsNote:function(n){return 'باقي '+n+' نقطة على رصيد رحلة مجاني';},
-      ptsCredit:'حصلت على رصيد رحلة مجاني!',mine:'رحلتك',visFeed:'للجميع',visLink:'بالرابط فقط',noteLink:'ما يفتحها إلا اللي ترسل له الرابط — ما تظهر في الصفحة العامة.',linkReady:'تم النشر — انتسخ الرابط، أرسله لأصحابك',del:'احذف رحلتي',delAsk:'تحذف هذه الرحلة من رحلات المسافرين؟ ما تقدر ترجعها.',deleted:'انحذفت رحلتك',search:'ابحث عن مدينة أو اسم…',moreTo:function(c){return 'رحلات ثانية إلى '+c;},lvls:['مسافر جديد','مستكشف','رحّالة','خبير البوصلة']},
+      ptsCredit:'حصلت على رصيد رحلة مجاني!',mine:'رحلتك',fresh:'جديدة',visFeed:'للجميع',visLink:'بالرابط فقط',noteLink:'ما يفتحها إلا اللي ترسل له الرابط — ما تظهر في الصفحة العامة.',linkReady:'تم النشر — انتسخ الرابط، أرسله لأصحابك',del:'احذف رحلتي',delAsk:'تحذف هذه الرحلة من رحلات المسافرين؟ ما تقدر ترجعها.',deleted:'انحذفت رحلتك',search:'ابحث عن مدينة أو اسم…',moreTo:function(c){return 'رحلات ثانية إلى '+c;},lvls:['مسافر جديد','مستكشف','رحّالة','خبير البوصلة']},
     es:{title:'Viajes de viajeros',sub:'Planes reales compartidos por quienes los usaron. Abre uno y hazlo tuyo.',
       newest:'Más recientes',top:'Más gustados',days:'días',by:'por',use:'Usar este plan',shareT:'Compartir',like:'Me gusta',liked:'Te gusta',
       photos:'fotos',comments:'comentarios',addPhoto:'Añadir foto',writeCmt:'Escribe un comentario…',send:'Enviar',
@@ -6562,7 +6563,7 @@
       report:'Denunciar este viaje',reported:'Gracias — lo revisaremos.',
       cmtDone:'Comentario añadido',photoDone:'Fotos añadidas — gracias por compartir',phTitle:'Tus fotos, antes de publicar',phSub:function(n){return n+' foto'+(n===1?'':'s')+' — escribe una línea bajo cada una si quieres';},phCap:'Describe la foto, el lugar, el momento… (opcional)',phGo:'Publicar las fotos',phBusy:'Comprimiendo…',phMax:'Cinco fotos por vez',
       pts:function(n){return n+' puntos';},ptsNote:function(n){return n+' puntos para tu próximo crédito de viaje';},
-      ptsCredit:'¡Ganaste un crédito de viaje gratis!',mine:'Tuyo',visFeed:'Todos',visLink:'Solo con enlace',noteLink:'Solo quien reciba el enlace puede abrirlo — no aparece en el muro público.',linkReady:'Publicado — enlace copiado, envíalo a tus amigos',del:'Eliminar mi viaje',delAsk:'¿Eliminar este viaje de la comunidad? No se puede deshacer.',deleted:'Tu viaje fue eliminado',search:'Busca una ciudad o un nombre…',moreTo:function(c){return 'Más viajes a '+c;},lvls:['Viajero nuevo','Explorador','Trotamundos','Maestro de la brújula']}
+      ptsCredit:'¡Ganaste un crédito de viaje gratis!',mine:'Tuyo',fresh:'Nuevo',visFeed:'Todos',visLink:'Solo con enlace',noteLink:'Solo quien reciba el enlace puede abrirlo — no aparece en el muro público.',linkReady:'Publicado — enlace copiado, envíalo a tus amigos',del:'Eliminar mi viaje',delAsk:'¿Eliminar este viaje de la comunidad? No se puede deshacer.',deleted:'Tu viaje fue eliminado',search:'Busca una ciudad o un nombre…',moreTo:function(c){return 'Más viajes a '+c;},lvls:['Viajero nuevo','Explorador','Trotamundos','Maestro de la brújula']}
   };
   var SHARESVG='<svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.6"/><circle cx="17.5" cy="5.5" r="2.6"/><circle cx="17.5" cy="18.5" r="2.6"/><path d="M8.3 10.8l6.9-4M8.3 13.2l6.9 4"/></svg>';
   var HEARTSVG='<svg viewBox="0 0 24 24"><path d="M12 21C7 16.5 3 13 3 8.8 3 6 5.2 4 7.8 4c1.6 0 3.1.8 4.2 2.2C13.1 4.8 14.6 4 16.2 4 18.8 4 21 6 21 8.8c0 4.2-4 7.7-9 12.2z"/></svg>';
@@ -6734,7 +6735,7 @@
     if(!list.length)h+='<div class="cmempty">'+esc(c.empty)+'</div>';
     list.forEach(function(r){
       h+='<div class="cmcard" data-cmid="'+esc(r.id)+'">'+cmCover(r)
-        +'<div class="cmtitle" dir="auto">'+esc(r.title)+(mine[r.id]?' <span class="cmmine">'+esc(c.mine)+'</span>':'')+'</div>'
+        +'<div class="cmtitle" dir="auto">'+esc(r.title)+(mine[r.id]?' <span class="cmmine">'+esc(c.mine)+'</span>':'')+(Date.now()-(r.t||0)<172800000?' <span class="cmmine cmnew">'+esc(c.fresh)+'</span>':'')+'</div>'
         +'<div class="cmmeta"><span dir="auto">'+esc((r.cities||[]).join(' → '))+'</span><span dir="auto">'+r.days+' '+esc(c.days)+'</span>'
         +'<span>'+esc(c.by)+' '+esc(r.name)+'</span><span>'+esc(cmAgo(r.t))+'</span></div>'
         +'<div class="cmstats"><span class="cmstat'+(CMLIKED[r.id]?' liked':'')+'">'+HEARTSVG+' '+(r.likes||0)+'</span>'
