@@ -1008,6 +1008,8 @@ async function community(body, env, request, origin) {
     const raw = await kv.get("pub:" + id);
     if (!raw) return reply({ error: "not found" }, 404, origin);
     const r = JSON.parse(raw);
+    // the album belongs to the traveller who published the trip — same key that guards deletion
+    if (!r.k || r.k !== String(body.key || "")) return reply({ error: "owner only" }, 403, origin);
     if ((r.photos || []).length >= PUB.PHOTOS_PER_TRIP)
       return reply({ error: "photos full" }, 400, origin);
     const pid = id + "." + ((r.photos || []).length + 1) + "." + String(Date.now()).slice(-5);
@@ -1026,6 +1028,22 @@ async function community(body, env, request, origin) {
     const raw = await kv.get("pubphoto:" + pubClean(body.pid, 60));
     if (!raw) return reply({ error: "not found" }, 404, origin);
     return reply(JSON.parse(raw), 200, origin);
+  }
+
+  if (act === "pub_photo_del") {
+    const id = pubClean(body.id, 40);
+    const pid = pubClean(body.pid, 60);
+    const raw = await kv.get("pub:" + id);
+    if (!raw) return reply({ error: "not found" }, 404, origin);
+    const r = JSON.parse(raw);
+    if (!r.k || r.k !== String(body.key || "")) return reply({ error: "owner only" }, 403, origin);
+    const i = (r.photos || []).indexOf(pid);
+    if (i < 0) return reply({ photos: r.photos || [] }, 200, origin);   // already gone
+    r.photos.splice(i, 1);
+    try { await kv.delete("pubphoto:" + pid); } catch (e) {}
+    if (i === 0) delete r.th;   // the card face was this photo's thumb — never show a deleted picture
+    await pubTouch(kv, r);
+    return reply({ photos: r.photos }, 200, origin);
   }
 
   if (act === "pub_del") {
