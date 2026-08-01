@@ -475,6 +475,11 @@
   .picbtn svg{width:16px;height:16px}
   .picbtn.on{border-color:var(--teal);color:var(--teal);opacity:1}
   @media (hover:none){.picbtn{display:flex}}
+  /* the visited tick shows everywhere once the trip is live — desktop planners deserve it too */
+  .wentbtn{display:flex;border-radius:50%}
+  .wentbtn.on{background:var(--teal);border-color:var(--teal);color:#fff;opacity:1}
+  .slot.went .d{opacity:.5}
+  .slot.went .d>a:first-child{text-decoration:line-through;text-decoration-thickness:1px}
   .svbtn{display:flex}
   .svbtn.on{color:var(--amber);border-color:var(--amber);opacity:1}
   .svbtn.on svg path{fill:var(--amber)}
@@ -4721,17 +4726,27 @@
     return ' <a class="menulink" href="https://www.google.com/search?q='+
       encodeURIComponent(n+' '+city+' menu')+'" target="_blank" rel="noopener">'+esc(t)+'</a>';
   }
+  // Ticking places off as you go is what a plan is FOR once the trip starts — so the tick only
+  // appears while the trip is underway, and stays out of the way during planning.
+  function tripUnderway(){ try{ return tripTodayNum(parseInt($('days').value,10)||30)>0; }catch(e){ return false; } }
+  function wentKey(){ return 'bosla_went:'+(($('dest').value||'')+'|'+($('dest2').value||'')+'|'+($('days').value||'')).toLowerCase(); }
+  function wentMap(){ try{ return JSON.parse(localStorage.getItem(wentKey())||'{}'); }catch(e){ return {}; } }
+  function wentLbl(){ return LANG==='ar'?'زرته':(LANG==='es'?'Visitado':'Visited'); }
+  var WENTSVG='<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function eslot(tm,poi,city,sk,o,ck,food,hop){
     // print the local name, but search Maps for the English one — it resolves far more reliably
     var q=poi.n+' '+city;
+    var went=tripUnderway()&&wentMap()[q];
+    var wentBtn=tripUnderway()?'<button type="button" class="picbtn wentbtn'+(went?' on':'')+'" data-went="'+esc(q)+'" aria-label="'+esc(wentLbl())+'" title="'+esc(wentLbl())+'">'+WENTSVG+'</button>':'';
     // What this row IS, kept on the row itself. It used to be read off the photo attribute, which
     // worked right up until restaurants stopped having photos — and then the swap picker could no
     // longer tell which place you were replacing, so it offered you the same one back.
-    return '<div class="slot" data-sk="'+sk+'" data-q="'+esc(q)+'"><div class="t">'+tm+'</div>'
+    return '<div class="slot'+(went?' went':'')+'" data-sk="'+sk+'" data-q="'+esc(q)+'"><div class="t">'+tm+'</div>'
       +'<div class="d">'+link(locName(ck,poi.n),q,food?'':q,poi.n)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a),locName(ck,poi.n))+hopLabel(hop)+(food?menuLink(poi.n,city):'')+'</div>'
       +(food?'':'<button type="button" class="picbtn" data-pic="'+esc(q)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>')
       +'<button type="button" class="picbtn svbtn'+(isSaved(ck,poi.n)?' on':'')+'" data-sv="'+esc(ck)+'|'+esc(poi.n)+'|'+esc(poi.a||'')+'|'+svCatOf(poi,food)+'" aria-label="'+esc(svLbl())+'" title="'+esc(svLbl())+'">'+BKSVG+'</button>'
-      +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
+      +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button>'
+      +wentBtn+'</div>';
   }
   // Small stops the bot added on request ("put a coffee shop on day 2"), keyed by day number.
   // Cleared whenever the shape of the trip changes, since day numbers would no longer line up.
@@ -7566,6 +7581,16 @@
     if(sh){ var pr=sh.getAttribute('data-shuf').split('|'); shuffleDay(pr[0],pr[1]); return; }
     var dsh=e.target.closest('[data-dshare]');
     if(dsh){ e.preventDefault(); shareDay(+dsh.getAttribute('data-dshare')); return; }
+    var wb=e.target.closest('[data-went]');
+    if(wb){
+      e.preventDefault();
+      var wq=wb.getAttribute('data-went'), wm=wentMap(), on=!wm[wq];
+      if(on)wm[wq]=1; else delete wm[wq];
+      try{ localStorage.setItem(wentKey(),JSON.stringify(wm)); }catch(err){}
+      wb.classList.toggle('on',on);
+      var wsl=wb.closest('.slot'); if(wsl)wsl.classList.toggle('went',on);
+      return;
+    }
     var mf=e.target.closest('.spkfood');
     if(mf){ var fk=mf.getAttribute('data-food'); if(FOODGOT[fk])return; FOODGOT[fk]=1;
       mf.textContent='…'; mf.disabled=true;
