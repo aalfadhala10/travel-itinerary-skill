@@ -108,6 +108,18 @@
     border-radius:999px;background:var(--paper2);font-size:14.5px}
   .recchip .rd{border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 2px}
   .recchip .rd:hover{color:var(--clay)}
+  /* the passport look: a ribbon of round flags, then numbers big enough to be proud of */
+  .recflags{display:flex;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+  .recflags::-webkit-scrollbar{display:none}
+  .recflags span{flex:0 0 auto;width:34px;height:34px;border-radius:50%;background:var(--paper2);
+    border:2px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:19px;
+    margin-inline-end:-7px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+  .recstats{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin:10px 0 2px}
+  .rst .k{font-size:11.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .rst .v{font-size:27px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.25}
+  .rst .v small{font-size:14px;font-weight:600;color:var(--muted)}
+  .rst.wide{grid-column:1/-1}
+  .rst.wide .v{font-size:18px}
 </style>
 </head>
 <body>
@@ -158,10 +170,13 @@
       <div class="ac"><input id="recIn" type="text" autocomplete="off" placeholder="add a country">
         <div class="acmenu" id="recMenu"></div></div>
     </div>
+    <div class="recflags" id="recFlags"></div>
     <div class="recbar" id="recBar"></div>
+    <div class="recstats" id="recStats"></div>
     <div class="chips" id="recChips"></div>
     <div class="row">
       <button class="toggle" id="tRec">Show on the globe</button>
+      <button class="toggle" id="tRecShare">Share my record</button>
       <button class="toggle" id="tRecClear">Start over</button>
     </div>
   </div>
@@ -1030,13 +1045,36 @@ function recOn(on){
   RECON=on;
   document.getElementById('tRec').classList.toggle('on',on);
   recHot();
-  if(on){ fly=null; var h=recAnchor(REC.h); goTo(h?h.lng:0,h?h.lat:20,1); }
+  // the passport look is the flat world with the whole fan visible — switch to it,
+  // but never switch back on the user: the flat toggle stays theirs afterwards
+  if(on){
+    if(!flat){ flat=true; document.getElementById('tFlat').classList.add('on'); }
+    fly=null; var h=recAnchor(REC.h); goTo(h?h.lng:0,h?h.lat:20,1);
+  }
 }
 function renderRec(){
   var bar=document.getElementById('recBar'), chips=document.getElementById('recChips');
+  var flags=document.getElementById('recFlags'), stats=document.getElementById('recStats');
   var n=REC.v.length, total=COUNTRIES.length;
   bar.innerHTML='<b>'+n+'</b><span class="of">/ '+total+' countries</span>'
     +(n?'<span class="pct">'+Math.round(n*100/total)+'%</span>':'');
+  // the ribbon of round flags, one per conquest — the part people screenshot
+  flags.innerHTML=REC.v.map(function(nm){
+    var c=recAnchor(nm); return c?'<span title="'+esc(nm)+'">'+esc(c.flag)+'</span>':'';
+  }).join('');
+  // distance is the honest kind: the length of every line on the map, home to each country
+  var h=recAnchor(REC.h), dist=0, far=null, farKm=0;
+  if(h)REC.v.forEach(function(nm){
+    var c=recAnchor(nm); if(!c)return;
+    var k=km([h.lat,h.lng],[c.lat,c.lng]);
+    dist+=k; if(k>farKm){ farKm=k; far=c; }
+  });
+  stats.innerHTML=n?(
+    '<div class="rst"><div class="k">Lines from home</div><div class="v">'
+      +Math.round(dist).toLocaleString('en')+' <small>km</small></div></div>'
+    +'<div class="rst"><div class="k">Farthest</div><div class="v">'
+      +(far?esc(far.flag)+' <small>'+esc(far.n)+' · '+Math.round(farKm).toLocaleString('en')+' km</small>':'—')+'</div></div>'
+  ):'';
   chips.innerHTML=REC.v.map(function(nm,i){
     var c=recAnchor(nm);
     return '<span class="recchip">'+esc(c?c.flag:'')+' '+esc(nm)
@@ -1085,6 +1123,14 @@ document.getElementById('recChips').addEventListener('click',function(e){
 document.getElementById('tRec').onclick=function(){ recOn(!RECON); };
 document.getElementById('tRecClear').onclick=function(){
   REC={h:REC.h,v:[]}; recSave(); renderRec(); recHot();
+};
+document.getElementById('tRecShare').onclick=function(){
+  var n=REC.v.length; if(!n)return;
+  var flags2=REC.v.map(function(nm){ var c=recAnchor(nm); return c?c.flag:''; }).join('');
+  var txt='My travel record: '+n+' / '+COUNTRIES.length+' countries '+flags2+
+    '\nhttps://aalfadhala10.github.io/travel-itinerary-skill/demo/globe.html';
+  if(navigator.share){ navigator.share({text:txt}).catch(function(){}); return; }
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt);
 };
 // come back a year and thirty countries later, and the record is exactly where it was left
 if(!REC.h&&HOME&&HOME.country)REC.h=HOME.country;
