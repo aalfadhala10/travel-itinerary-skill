@@ -475,6 +475,11 @@
   .picbtn svg{width:16px;height:16px}
   .picbtn.on{border-color:var(--teal);color:var(--teal);opacity:1}
   @media (hover:none){.picbtn{display:flex}}
+  /* the visited tick shows everywhere once the trip is live — desktop planners deserve it too */
+  .wentbtn{display:flex;border-radius:50%}
+  .wentbtn.on{background:var(--teal);border-color:var(--teal);color:#fff;opacity:1}
+  .slot.went .d{opacity:.5}
+  .slot.went .d>a:first-child{text-decoration:line-through;text-decoration-thickness:1px}
   .svbtn{display:flex}
   .svbtn.on{color:var(--amber);border-color:var(--amber);opacity:1}
   .svbtn.on svg path{fill:var(--amber)}
@@ -1125,7 +1130,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 05:50 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 07:42 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -4318,6 +4323,7 @@
     var start=(PAGE!=null?PAGE:0);
     if(PGFRESH){ start=0; PGFRESH=false; }
     pgGo(Math.min(start,pages.length-1),true,true); // a fresh render lands, it doesn't slide
+    scheduleSaveHint();
   }
   var PGOBS=null;
   function pgWatchNav(){
@@ -4367,6 +4373,25 @@
   // Re-render without jumping to the top — and without throwing you back to page 1 while the
   // background updates (restaurants, closures, Arabic names) land under you.
   function rerenderKeep(){ var y=window.pageYOffset||document.documentElement.scrollTop||0; KEEPSCROLL=true; if(LASTPLAN)LASTPLAN(); window.scrollTo(0,y); }
+  // If a plan has held their attention for a while and isn't saved, say so once — gently.
+  // Never auto-saves: their trips list is theirs.
+  var SAVEHINT={};
+  function scheduleSaveHint(){
+    try{
+      var lbl=tripLabel(stateObj());
+      if(SAVEHINT[lbl])return; SAVEHINT[lbl]=1;
+      setTimeout(function(){
+        try{
+          if(!planLive())return;
+          if(tripLabel(stateObj())!==lbl)return;                  // they moved on to another trip
+          if(loadTrips().some(function(x){ return tripLabel(x.state)===lbl; }))return;
+          toast(LANG==='ar'?'عجبتك الخطة؟ احفظها في «رحلاتي» عشان ما تضيع.'
+            :(LANG==='es'?'¿Te gusta el plan? Guárdalo en Mis viajes para no perderlo.'
+            :'Like this plan? Save it to My trips so it does not get lost.'));
+        }catch(e){}
+      },45000);
+    }catch(e){}
+  }
   // A flick of the thumb turns the page — the way a phone wants to be read. Gestures that begin
   // inside anything that scrolls sideways (the day strip, chips) or a text field stay theirs,
   // and in Arabic the pages turn the other way, like the book does.
@@ -4721,17 +4746,27 @@
     return ' <a class="menulink" href="https://www.google.com/search?q='+
       encodeURIComponent(n+' '+city+' menu')+'" target="_blank" rel="noopener">'+esc(t)+'</a>';
   }
+  // Ticking places off as you go is what a plan is FOR once the trip starts — so the tick only
+  // appears while the trip is underway, and stays out of the way during planning.
+  function tripUnderway(){ try{ return tripTodayNum(parseInt($('days').value,10)||30)>0; }catch(e){ return false; } }
+  function wentKey(){ return 'bosla_went:'+(($('dest').value||'')+'|'+($('dest2').value||'')+'|'+($('days').value||'')).toLowerCase(); }
+  function wentMap(){ try{ return JSON.parse(localStorage.getItem(wentKey())||'{}'); }catch(e){ return {}; } }
+  function wentLbl(){ return LANG==='ar'?'زرته':(LANG==='es'?'Visitado':'Visited'); }
+  var WENTSVG='<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function eslot(tm,poi,city,sk,o,ck,food,hop){
     // print the local name, but search Maps for the English one — it resolves far more reliably
     var q=poi.n+' '+city;
+    var went=tripUnderway()&&wentMap()[q];
+    var wentBtn=tripUnderway()?'<button type="button" class="picbtn wentbtn'+(went?' on':'')+'" data-went="'+esc(q)+'" aria-label="'+esc(wentLbl())+'" title="'+esc(wentLbl())+'">'+WENTSVG+'</button>':'';
     // What this row IS, kept on the row itself. It used to be read off the photo attribute, which
     // worked right up until restaurants stopped having photos — and then the swap picker could no
     // longer tell which place you were replacing, so it offered you the same one back.
-    return '<div class="slot" data-sk="'+sk+'" data-q="'+esc(q)+'"><div class="t">'+tm+'</div>'
+    return '<div class="slot'+(went?' went':'')+'" data-sk="'+sk+'" data-q="'+esc(q)+'"><div class="t">'+tm+'</div>'
       +'<div class="d">'+link(locName(ck,poi.n),q,food?'':q,poi.n)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a),locName(ck,poi.n))+hopLabel(hop)+(food?menuLink(poi.n,city):'')+'</div>'
       +(food?'':'<button type="button" class="picbtn" data-pic="'+esc(q)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>')
       +'<button type="button" class="picbtn svbtn'+(isSaved(ck,poi.n)?' on':'')+'" data-sv="'+esc(ck)+'|'+esc(poi.n)+'|'+esc(poi.a||'')+'|'+svCatOf(poi,food)+'" aria-label="'+esc(svLbl())+'" title="'+esc(svLbl())+'">'+BKSVG+'</button>'
-      +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button></div>';
+      +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button>'
+      +wentBtn+'</div>';
   }
   // Small stops the bot added on request ("put a coffee shop on day 2"), keyed by day number.
   // Cleared whenever the shape of the trip changes, since day numbers would no longer line up.
@@ -7566,6 +7601,16 @@
     if(sh){ var pr=sh.getAttribute('data-shuf').split('|'); shuffleDay(pr[0],pr[1]); return; }
     var dsh=e.target.closest('[data-dshare]');
     if(dsh){ e.preventDefault(); shareDay(+dsh.getAttribute('data-dshare')); return; }
+    var wb=e.target.closest('[data-went]');
+    if(wb){
+      e.preventDefault();
+      var wq=wb.getAttribute('data-went'), wm=wentMap(), on=!wm[wq];
+      if(on)wm[wq]=1; else delete wm[wq];
+      try{ localStorage.setItem(wentKey(),JSON.stringify(wm)); }catch(err){}
+      wb.classList.toggle('on',on);
+      var wsl=wb.closest('.slot'); if(wsl)wsl.classList.toggle('went',on);
+      return;
+    }
     var mf=e.target.closest('.spkfood');
     if(mf){ var fk=mf.getAttribute('data-food'); if(FOODGOT[fk])return; FOODGOT[fk]=1;
       mf.textContent='…'; mf.disabled=true;
