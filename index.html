@@ -653,6 +653,7 @@
   .tripnotes{width:100%;min-height:96px;padding:12px;border:1px solid var(--line);border-radius:12px;
     background:var(--paper);color:var(--ink);font-size:14.5px;font-family:var(--ff-body);resize:vertical}
   .notehint{color:var(--muted);font-size:12px;margin-top:6px}
+  .ctlhint{color:var(--muted);font-size:12.5px;line-height:1.5;margin:6px 2px 0;min-height:1em}
   .mtwhen{padding:2px 9px;border:1px solid var(--line);border-radius:999px;font-size:12px;color:var(--muted)}
   .mtwhen.now{border-color:var(--amber);color:var(--amber);font-weight:700}
   .mtwhen.past{opacity:.75}
@@ -1093,6 +1094,7 @@
     <div class="is-hidden" id="moreOptions">
     <label for="pace" id="lblPace">Trip pace</label>
     <select id="pace"><option value="relaxed">Relaxed</option><option value="balanced" selected>Balanced</option><option value="packed">Packed</option></select>
+    <div class="ctlhint" id="paceHint"></div>
 
     <div class="row">
       <div><label for="adults" id="lblAdults">Adults</label>
@@ -1125,6 +1127,7 @@
       <div class="chip active" data-v="Mid-range"></div>
       <div class="chip" data-v="Luxury"></div>
     </div>
+    <div class="ctlhint" id="budHint"></div>
     <label for="budgetAmt" id="lblBudgetAmt">Your total budget (optional)</label>
     <div class="budgetamt">
       <input id="budgetAmt" type="number" min="0" inputmode="numeric" placeholder="e.g. 3000">
@@ -1177,7 +1180,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 11:33 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 14:19 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -4032,7 +4035,7 @@
     $('welDiv').textContent=u.nameLabel; $('welName').setAttribute('placeholder',u.namePh); $('welNote').textContent=u.welcomeNote;
     renderWelcome(); $('editFab').textContent=u.editTrip;
     $('drawerEdit').textContent=u.profileTitle; $('navHow').textContent=u.navHow; $('navTrips').textContent=u.myTrips; $('navInstall').textContent=u.navInstall; $('navShare').textContent=u.navShare; $('navFeedback').textContent=u.navFeedback; $('drawerAbout').textContent=u.menuAbout;
-    try{ var cx=CTXT[LANG]||CTXT.en; $('navCommunity').textContent=cx.title; $('navSaved').textContent=svTxt().t; $('navRecord').textContent=recTxt().t; if(document.body.classList.contains('recmode'))openRecView(RECSHARED?RECV:null); $('cmTeaserT').textContent=cx.title; $('cmTeaserS').textContent=cx.sub.split('.')[0]+'.'; drawPts(); }catch(e){}
+    try{ var cx=CTXT[LANG]||CTXT.en; $('navCommunity').textContent=cx.title; $('navSaved').textContent=svTxt().t; $('navRecord').textContent=recTxt().t; try{updCtlHints();}catch(e2){} if(document.body.classList.contains('recmode'))openRecView(RECSHARED?RECV:null); $('cmTeaserT').textContent=cx.title; $('cmTeaserS').textContent=cx.sub.split('.')[0]+'.'; drawPts(); }catch(e){}
     $('introTitle').textContent=u.introTitle; $('introS1').textContent=u.introS1; $('introS2').textContent=u.introS2; $('introS3').textContent=u.introS3; try{$('introS4').textContent=u.introS4;}catch(e){}
     try{ $('moreOptsLbl').textContent=(lang==='ar'?'خيارات أكثر':(lang==='es'?'Más opciones':'More options')); }catch(e){}
     try{ if(LASTSTATE&&!$('lastTrip').classList.contains('is-hidden'))showLastTrip(LASTSTATE); }catch(e){}
@@ -4055,6 +4058,45 @@
     try{ exitCm(); exitSv(); exitRec(); closeDrawer(); }catch(e){}
     window.scrollTo({top:0,behavior:'smooth'});
   });
+
+  // Controls that explain themselves — real beta feedback: "what IS balanced? who defines
+  // Luxury? if I typed my own budget, which one wins?" The pace line says how many places a
+  // day each setting means; the budget line names the tier's actual per-day figure for the
+  // chosen city, and says plainly that the typed amount only CHECKS the plan, never shapes it.
+  function updCtlHints(){
+    try{
+      var ar=LANG==='ar', es=LANG==='es', t=I18N[LANG];
+      var pv=($('pace')||{}).value||'balanced';
+      var ph=ar?{relaxed:'هادئ = مكانين تقريبًا في اليوم، ووجبات على راحتك ووقت فاضي العصر.',
+          balanced:'متوازن = ٣ أماكن تقريبًا في اليوم — يوم مليان وفيه مجال تتنفس.',
+          packed:'مكثّف = ٤ أماكن تقريبًا في اليوم — تبدأ بدري وتستغل كل ساعة.'}
+        :(es?{relaxed:'Relajado = unas 2 visitas al día, comidas sin prisa y tardes libres.',
+          balanced:'Equilibrado = unas 3 visitas al día — días llenos con espacio para respirar.',
+          packed:'Intenso = unas 4 visitas al día — madrugones y cada hora aprovechada.'}
+        :{relaxed:'Relaxed = about 2 places a day, unhurried meals, afternoons off.',
+          balanced:'Balanced = about 3 places a day — full, with room to breathe.',
+          packed:'Packed = about 4 places a day — early starts, every hour used.'});
+      var pe=$('paceHint'); if(pe)pe.textContent=ph[pv]||'';
+      var chip=document.querySelector('#budgetChips .chip.active');
+      var tier=chip?chip.getAttribute('data-v'):'Mid-range';
+      var line=ar?'الفئة تحدد مستوى الفندق وأسلوب الصرف. المبلغ اللي تكتبه تحت ما يغيّر الخطة — نقارنها فيه ونقول لك على قدها أو لا.'
+        :(es?'La categoría define el hotel y el gasto diario. Tu cifra de abajo no cambia el plan — solo comprobamos si encaja.'
+        :'The tier sets the hotel class and daily spending style. Your amount below never changes the plan — we only check the plan against it.');
+      var m=matchDest(($('dest')||{}).value||'');
+      if(m&&m.cost&&m.cost[tier]){
+        var per=money(t,m.cost[tier]), cn=cityName(keyOf(m),m.city);
+        line=(ar?('≈ '+per+' لليوم للشخص في '+cn+' على هذه الفئة. ')
+          :(es?('≈ '+per+'/día por persona en '+cn+' en esta categoría. ')
+          :('≈ '+per+'/day per person in '+cn+' at this tier. ')))+line;
+      }
+      var be=$('budHint'); if(be)be.textContent=line;
+    }catch(e){}
+  }
+  $('pace').addEventListener('change',updCtlHints);
+  $('budgetChips').addEventListener('click',function(){ setTimeout(updCtlHints,0); });
+  $('dest').addEventListener('input',function(){ clearTimeout(updCtlHints._t); updCtlHints._t=setTimeout(updCtlHints,250); });
+  $('dest').addEventListener('change',updCtlHints);
+  setTimeout(updCtlHints,300);
 
   function slot(ico,tm,d){return '<div class="slot"><div class="t">'+tm+'</div><div class="d">'+d+'</div></div>';}
   function timeLabels(o,n){var m=o.times; return n===2?[m.morning,m.evening]:n===4?[m.morning,m.midday,m.afternoon,m.evening]:[m.morning,m.afternoon,m.evening];}
@@ -4768,6 +4810,11 @@
     var menuTxt=ar?'المطاعم فيها رابط المنيو بدل الصورة'
       :(es?'Los restaurantes llevan un enlace a la carta en vez de una foto'
       :'Restaurants carry a link to the menu instead of a photo');
+    // Honest about what we don't know: we can't see today's opening hours, but the name link
+    // opens the one place that can. Said once per day, where the plan is read.
+    var hoursTxt=ar?'الأوقات اقتراح للإيقاع — اضغط اسم المكان تتأكد من ساعات اليوم قبل ما تروح'
+      :(es?'Los horarios son un ritmo sugerido — toca un lugar para ver su horario de hoy antes de ir'
+      :'Times are a suggested rhythm — tap any place to check today\'s opening hours before you go');
     var swapTxt=ar?'تبديل':(es?'Cambiar':'Swap');
     var picTxt=ar?'صورة':(es?'Foto':'Photo');
     var whenTxt=ar?'الوقت':(es?'Hora':'When');
@@ -4778,6 +4825,7 @@
       '<span class="dhhover">'+esc(hovName)+'</span></div>'+
       '<div class="dhint">'+esc(hopTxt)+'</div>'+
       '<div class="dhint">'+esc(menuTxt)+'</div>'+
+      '<div class="dhint">'+esc(hoursTxt)+'</div>'+
       '<div class="dcap"><span class="t">'+esc(whenTxt)+'</span><span class="d">'+esc(whereTxt)+'</span>'+
         '<span class="dcapw dcappic">'+esc(picTxt)+'</span>'+
         '<span class="dcapw">'+esc(swapTxt)+'</span></div>';
