@@ -235,7 +235,8 @@
   .day.dcol .dchev{transform:rotate(-45deg)}
   .day.dcol .dbody,.day.dcol .dayshuffle{display:none}
   .dayshare{padding:6px 9px}
-  .dayshare svg{width:15px;height:15px}
+  /* the icon is bare circles+lines — without an explicit stroke they fill black and vanish on dark */
+  .dayshare svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
   .day .dsum{display:none}
   .day.dcol .dsum{display:block;color:var(--muted);font-size:14.5px;margin:-4px 0 4px;line-height:1.45}
   .day.dcol .dsum .dsmore{color:var(--amber);font-weight:600}
@@ -1176,7 +1177,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 11:17 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-01 11:33 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
