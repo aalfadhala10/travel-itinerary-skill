@@ -996,6 +996,7 @@
   .sugn{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
   .sugn b{font-size:15.5px;font-weight:700}
   .sugn span{color:var(--muted);font-size:12.5px}
+  .sugx{flex:0 0 auto;border:none;background:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 2px;opacity:.65}
   .recswrow{display:flex;justify-content:flex-end;align-items:center;gap:9px;color:var(--muted);font-size:14px;margin-bottom:6px}
   .recsw{position:relative;width:46px;height:27px;border-radius:999px;border:1px solid var(--line);background:var(--paper);cursor:pointer;padding:0}
   .recsw i{position:absolute;top:2px;inset-inline-start:2px;width:21px;height:21px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
@@ -1319,7 +1320,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 07:20 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 07:36 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -7022,11 +7023,11 @@
   function rgCName(nm){ return (LANG==='ar'&&COUNTRY_AR[nm])?COUNTRY_AR[nm][0]:nm; }
   function rgAnchor(nm){ var C=rgCountries(); for(var i=0;i<C.length;i++)if(C[i].n===nm)return C[i]; return null; }
   function recLoad(){ try{ var r=JSON.parse(localStorage.getItem('bosla_beento')||'null'); if(r&&Array.isArray(r.v))return {h:r.h||null,v:r.v}; }catch(e){} return {h:null,v:[]}; }
-  function recStore(){ if(RECSHARED)return; try{ localStorage.setItem('bosla_beento',JSON.stringify(RECV)); }catch(e){} }
+  function recStore(){ SUGCUR=null; if(RECSHARED)return; try{ localStorage.setItem('bosla_beento',JSON.stringify(RECV)); }catch(e){} }
   function recTxt(){
-    return LANG==='ar'?{t:'سجل سفراتي',sub:'كل دولة وطئتها رجلك — خطوط ضوء من بيتك، والعدّاد يكبر معك. محفوظ على جهازك فقط.',home:'بلدك',homePh:'اكتب بلدك',been:'رحت لـ…',beenPh:'أضف دولة زرتها',of:'دولة',lines:'خطوط من بيتك',far:'الأبعد',share:'شارك سجلي',clear:'ابدأ من جديد',flat:'خريطة مسطحة',globe:'الكرة',empty:'اكتب دولة فوق — كل دولة تضيفها تصير خط ضوء من بيتك.',sharedBy:function(h){return 'سجل سفرات صديقك — من '+h;},mine:'ورّني سجلي',shareMsg:function(n,t){return 'سجل سفراتي: '+n+' / '+t+' دولة ';},back:'رجوع',goalT:'هدف السنة',goalAsk:'كم دولة جديدة تبي تزورها هالسنة؟',goalSet:'حدد الهدف',goalOf:function(a,b2,y){return a+' من '+b2+' دول جديدة في '+y;},goalDone:function(y){return 'مبروك! كملت هدفك لسنة '+y+' 🎉';},goalDoneSub:'تبي ترفع السقف؟ عدّل هدفك وكمّل.',goalEdit:'عدّل الهدف',goalShare:function(y){return ' · حققت هدفي لسنة '+y;},sugT:'وين بعد؟',sugSub:'مقترحات من سجلك — دول ما زرتها بعد.',sugPlan:'خطط رحلة',sugWhy:{near:'قريبة من دولة زرتها',region:'تشبه المنطقة الي تحبها',home:'قريبة من بيتك'}}
-    :(LANG==='es'?{t:'Mi historial de viajes',sub:'Cada país que has pisado — líneas de luz desde casa, y un contador que crece contigo. Guardado solo en este dispositivo.',home:'Tu país',homePh:'escribe tu país',been:'He estado en…',beenPh:'añade un país',of:'países',lines:'Líneas desde casa',far:'Más lejano',share:'Compartir mi historial',clear:'Empezar de nuevo',flat:'Mapa plano',globe:'Globo',empty:'Escribe un país arriba — cada uno se convierte en una línea de luz desde casa.',sharedBy:function(h){return 'El historial de viajes de un amigo — desde '+h;},mine:'Ver el mío',shareMsg:function(n,t){return 'Mi historial de viajes: '+n+' / '+t+' países ';},back:'Volver',goalT:'Meta del año',goalAsk:'¿Cuántos países nuevos quieres visitar este año?',goalSet:'Fijar meta',goalOf:function(a,b2,y){return a+' de '+b2+' países nuevos en '+y;},goalDone:function(y){return '¡Enhorabuena! Cumpliste tu meta de '+y+' 🎉';},goalDoneSub:'¿Subimos el listón? Edita tu meta y sigue.',goalEdit:'Editar meta',goalShare:function(y){return ' · meta de '+y+' cumplida';},sugT:'¿Y ahora?',sugSub:'Sugerencias desde tu historial — países que aún no pisaste.',sugPlan:'Planear',sugWhy:{near:'cerca de un país que visitaste',region:'como las regiones que te gustan',home:'cerca de casa'}}
-    :{t:'My travel record',sub:'Every country you have set foot in — lines of light from home, and a count that grows with you. Saved on this device only.',home:'Home',homePh:'type your country',been:'I have been to…',beenPh:'add a country',of:'countries',lines:'Lines from home',far:'Farthest',share:'Share my record',clear:'Start over',flat:'Flat map',globe:'Globe',empty:'Type a country above — each one becomes a line of light from home.',sharedBy:function(h){return 'A friend’s travel record — from '+h;},mine:'Show mine instead',shareMsg:function(n,t){return 'My travel record: '+n+' / '+t+' countries ';},back:'Back',goalT:'This year\u2019s goal',goalAsk:'How many new countries do you want this year?',goalSet:'Set the goal',goalOf:function(a,b2,y){return a+' of '+b2+' new countries in '+y;},goalDone:function(y){return 'You did it \u2014 your '+y+' goal is complete.';},goalDoneSub:'Raise the bar? Edit your goal and keep going.',goalEdit:'Edit goal',goalShare:function(y){return ' \u00b7 '+y+' goal reached';},sugT:'Where next?',sugSub:'Suggestions from your own record \u2014 countries you have not set foot in yet.',sugPlan:'Plan a trip',sugWhy:{near:'near a country you visited',region:'like the regions you favour',home:'close to home'}});
+    return LANG==='ar'?{t:'سجل سفراتي',sub:'كل دولة وطئتها رجلك — خطوط ضوء من بيتك، والعدّاد يكبر معك. محفوظ على جهازك فقط.',home:'بلدك',homePh:'اكتب بلدك',been:'رحت لـ…',beenPh:'أضف دولة زرتها',of:'دولة',lines:'خطوط من بيتك',far:'الأبعد',share:'شارك سجلي',clear:'ابدأ من جديد',flat:'خريطة مسطحة',globe:'الكرة',empty:'اكتب دولة فوق — كل دولة تضيفها تصير خط ضوء من بيتك.',sharedBy:function(h){return 'سجل سفرات صديقك — من '+h;},mine:'ورّني سجلي',shareMsg:function(n,t){return 'سجل سفراتي: '+n+' / '+t+' دولة ';},back:'رجوع',goalT:'هدف السنة',goalAsk:'كم دولة جديدة تبي تزورها هالسنة؟',goalSet:'حدد الهدف',goalOf:function(a,b2,y){return a+' من '+b2+' دول جديدة في '+y;},goalDone:function(y){return 'مبروك! كملت هدفك لسنة '+y+' 🎉';},goalDoneSub:'تبي ترفع السقف؟ عدّل هدفك وكمّل.',goalEdit:'عدّل الهدف',goalShare:function(y){return ' · حققت هدفي لسنة '+y;},sugT:'وين بعد؟',sugSub:'مقترحات من سجلك — دول ما زرتها بعد.',sugPlan:'خطط رحلة',sugNo:'مو مناسبة — اقترح غيرها',sugWhy:{near:'قريبة من دولة زرتها',region:'تشبه المنطقة الي تحبها',home:'قريبة من بيتك'}}
+    :(LANG==='es'?{t:'Mi historial de viajes',sub:'Cada país que has pisado — líneas de luz desde casa, y un contador que crece contigo. Guardado solo en este dispositivo.',home:'Tu país',homePh:'escribe tu país',been:'He estado en…',beenPh:'añade un país',of:'países',lines:'Líneas desde casa',far:'Más lejano',share:'Compartir mi historial',clear:'Empezar de nuevo',flat:'Mapa plano',globe:'Globo',empty:'Escribe un país arriba — cada uno se convierte en una línea de luz desde casa.',sharedBy:function(h){return 'El historial de viajes de un amigo — desde '+h;},mine:'Ver el mío',shareMsg:function(n,t){return 'Mi historial de viajes: '+n+' / '+t+' países ';},back:'Volver',goalT:'Meta del año',goalAsk:'¿Cuántos países nuevos quieres visitar este año?',goalSet:'Fijar meta',goalOf:function(a,b2,y){return a+' de '+b2+' países nuevos en '+y;},goalDone:function(y){return '¡Enhorabuena! Cumpliste tu meta de '+y+' 🎉';},goalDoneSub:'¿Subimos el listón? Edita tu meta y sigue.',goalEdit:'Editar meta',goalShare:function(y){return ' · meta de '+y+' cumplida';},sugT:'¿Y ahora?',sugSub:'Sugerencias desde tu historial — países que aún no pisaste.',sugPlan:'Planear',sugNo:'No me interesa — sugiere otro',sugWhy:{near:'cerca de un país que visitaste',region:'como las regiones que te gustan',home:'cerca de casa'}}
+    :{t:'My travel record',sub:'Every country you have set foot in — lines of light from home, and a count that grows with you. Saved on this device only.',home:'Home',homePh:'type your country',been:'I have been to…',beenPh:'add a country',of:'countries',lines:'Lines from home',far:'Farthest',share:'Share my record',clear:'Start over',flat:'Flat map',globe:'Globe',empty:'Type a country above — each one becomes a line of light from home.',sharedBy:function(h){return 'A friend’s travel record — from '+h;},mine:'Show mine instead',shareMsg:function(n,t){return 'My travel record: '+n+' / '+t+' countries ';},back:'Back',goalT:'This year\u2019s goal',goalAsk:'How many new countries do you want this year?',goalSet:'Set the goal',goalOf:function(a,b2,y){return a+' of '+b2+' new countries in '+y;},goalDone:function(y){return 'You did it \u2014 your '+y+' goal is complete.';},goalDoneSub:'Raise the bar? Edit your goal and keep going.',goalEdit:'Edit goal',goalShare:function(y){return ' \u00b7 '+y+' goal reached';},sugT:'Where next?',sugSub:'Suggestions from your own record \u2014 countries you have not set foot in yet.',sugPlan:'Plan a trip',sugNo:'Not for me — suggest another',sugWhy:{near:'near a country you visited',region:'like the regions you favour',home:'close to home'}});
   }
   function rgCol(n){ return getComputedStyle(document.body).getPropertyValue(n).trim(); }
   function rgCv(){ return document.getElementById('recCv'); }
@@ -7166,32 +7167,62 @@
   // No AI, no lookups — geography we already hold. One country near somewhere they have been,
   // one from the region they clearly favour, one within reach of home. Never repeats a country
   // they have visited, never suggests home.
-  function recSuggest(){
+  function sugDismissed(){ try{ var a=JSON.parse(localStorage.getItem('bosla_sugx')||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+  function sugDismiss(nm){
+    var a=sugDismissed(); if(a.indexOf(nm)<0)a.push(nm);
+    try{ localStorage.setItem('bosla_sugx',JSON.stringify(a.slice(-200))); }catch(e){}
+  }
+  // Three ranked pools — near somewhere they have been, from the region they favour, and within
+  // reach of home. Ranked, not picked: the picking happens above with a little randomness, so
+  // the card is not the same three countries every single time they open it.
+  function sugPools(){
     var C=rgCountries(), reg=rgRegions(), home=rgAnchor(RECV.h);
     var been={}; RECV.v.forEach(function(n){ been[n]=1; }); if(RECV.h)been[RECV.h]=1;
+    sugDismissed().forEach(function(n){ been[n]=1; });
     var seen=RECV.v.map(rgAnchor).filter(Boolean);
     if(!seen.length&&home)seen=[home];
-    if(!seen.length)return [];
-    // which region do they keep choosing?
+    if(!seen.length)return {near:[],region:[],home:[]};
     var tally={},top='',best=0;
     RECV.v.forEach(function(n){ var r=reg[n]; if(!r)return; tally[r]=(tally[r]||0)+1; if(tally[r]>best){ best=tally[r]; top=r; } });
     var cand=C.filter(function(x){ return !been[x.n]; }).map(function(x){
       var dn=Infinity;
       seen.forEach(function(v){ var k=kmDist([v.lat,v.lng],[x.lat,x.lng]); if(k<dn)dn=k; });
-      var dh=home?kmDist([home.lat,home.lng],[x.lat,x.lng]):Infinity;
-      return {c:x,dn:dn,dh:dh,r:reg[x.n]||''};
+      return {c:x,dn:dn,dh:home?kmDist([home.lat,home.lng],[x.lat,x.lng]):Infinity,r:reg[x.n]||''};
     });
-    if(!cand.length)return [];
-    var out=[],used={};
-    function take(list,why){
-      for(var i=0;i<list.length;i++){ if(used[list[i].c.n])continue; used[list[i].c.n]=1;
-        out.push({c:list[i].c,why:why}); return; }
-    }
-    take(cand.slice().sort(function(a2,b2){ return a2.dn-b2.dn; }),'near');
-    if(top)take(cand.filter(function(x){ return x.r===top; }).sort(function(a2,b2){ return a2.dn-b2.dn; }),'region');
-    take(cand.slice().sort(function(a2,b2){ return a2.dh-b2.dh; }),'home');
-    if(out.length<3)take(cand.slice().sort(function(a2,b2){ return a2.dn-b2.dn; }),'near');
-    return out.slice(0,3);
+    return {
+      near:cand.slice().sort(function(a,b){ return a.dn-b.dn; }),
+      region:top?cand.filter(function(x){ return x.r===top; }).sort(function(a,b){ return a.dn-b.dn; }):[],
+      home:cand.slice().sort(function(a,b){ return a.dh-b.dh; })
+    };
+  }
+  // Pick one for a reason, at random from the closest handful — near enough to make sense,
+  // varied enough that the card breathes.
+  function sugPick(pools,why,used){
+    var p=(pools[why]||[]).filter(function(x){ return !used[x.c.n]; }).slice(0,7);
+    if(!p.length)p=(pools.near||[]).filter(function(x){ return !used[x.c.n]; }).slice(0,7);
+    if(!p.length)return null;
+    var x=p[Math.floor(Math.random()*p.length)];
+    used[x.c.n]=1;
+    return {c:x.c,why:why};
+  }
+  var SUGCUR=null;   // what is on the card right now; null means "roll a fresh set"
+  function recSuggest(){
+    if(SUGCUR)return SUGCUR;
+    var pools=sugPools(), used={}, out=[];
+    ['near','region','home'].forEach(function(w){ var p=sugPick(pools,w,used); if(p)out.push(p); });
+    while(out.length<3){ var p2=sugPick(pools,'near',used); if(!p2)break; out.push(p2); }
+    SUGCUR=out;
+    return out;
+  }
+  // Not for me: remember that, and put someone else in its place rather than leaving a gap.
+  function sugDrop(nm){
+    sugDismiss(nm);
+    var pools=sugPools(), used={};
+    (SUGCUR||[]).forEach(function(x){ if(x.c.n!==nm)used[x.c.n]=1; });
+    var i=(SUGCUR||[]).findIndex(function(x){ return x.c.n===nm; });
+    if(i<0)return;
+    var repl=sugPick(pools,SUGCUR[i].why,used);
+    if(repl)SUGCUR[i]=repl; else SUGCUR.splice(i,1);
   }
   // one tap from "where next" into a real plan: open the planner on that country's first city
   function recPlanCountry(nm){
@@ -7230,7 +7261,8 @@
         +list.map(function(x){
           return '<div class="sugrow"><span class="sugf">'+esc(x.c.flag)+'</span>'
             +'<span class="sugn"><b dir="auto">'+esc(rgCName(x.c.n))+'</b><span>'+esc(c.sugWhy[x.why])+'</span></span>'
-            +'<button type="button" class="recbtn" data-sugplan="'+esc(x.c.n)+'">'+esc(c.sugPlan)+'</button></div>';
+            +'<button type="button" class="recbtn" data-sugplan="'+esc(x.c.n)+'">'+esc(c.sugPlan)+'</button>'
+            +'<button type="button" class="sugx" data-sugdrop="'+esc(x.c.n)+'" aria-label="✕" title="'+esc(c.sugNo)+'">✕</button></div>';
         }).join('')):'';
     }
   }
@@ -7260,6 +7292,7 @@
   function openRecView(shared){
     var c=recTxt(),box=$('recscr');
     enterRec(); box.classList.remove('is-hidden');
+    SUGCUR=null;                       // a new visit deserves new ideas
     if(shared){ RECOWNV=recLoad(); RECV={h:shared.h,v:shared.v.slice()}; RECSHARED=true; }
     else if(!RECSHARED||!RECV){ RECV=recLoad(); RECSHARED=false; RECOWNV=null; }
     if(!RECV.h){
@@ -7352,6 +7385,11 @@
       if((t2=e.target.closest('#goalEdit'))){
         try{ localStorage.removeItem('bosla_goal'); }catch(e2){}
         renderGoalSug(); return;
+      }
+      if((t2=e.target.closest('[data-sugdrop]'))){
+        sugDrop(t2.getAttribute('data-sugdrop')); renderGoalSug();
+        try{track('rec_sug_drop',{});}catch(e2){}
+        return;
       }
       if((t2=e.target.closest('[data-sugplan]'))){
         recPlanCountry(t2.getAttribute('data-sugplan'));
