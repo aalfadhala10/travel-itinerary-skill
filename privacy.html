@@ -28,6 +28,11 @@
   .rtl ul{padding-left:0;padding-right:20px}
   .foot{text-align:center;color:var(--muted);font-size:13px;margin-top:28px}
   hr{border:none;border-top:1px solid var(--line);margin:34px 0}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  .rtl th,.rtl td{text-align:right}
+  th{color:var(--muted);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.4px}
+  .tw{overflow-x:auto}
 </style>
 </head>
 <body>
@@ -36,83 +41,237 @@
     <div class="badge" aria-hidden="true"></div>
     <h1>Privacy Policy</h1>
     <div class="sub">بوصلة · Bosla — Your compass to the world</div>
-    <div class="eff" style="margin-top:8px">Effective 25 July 2026</div>
+    <div class="eff" style="margin-top:8px">Effective 2 August 2026</div>
   </div>
 
   <div class="card">
     <h2>The short version</h2>
-    <p>Bosla is a travel planner you can use <strong>without an account</strong>. We don't run ads, we don't use trackers or analytics, and we never sell your data. Almost everything stays <strong>on your own device</strong>.</p>
+    <p>You can use Bosla <strong>without an account</strong>, and if you do, your trips never leave your device. Three things are optional, and each one only happens because you chose it: <strong>signing in</strong> (so your travel record survives a lost phone), <strong>publishing a trip</strong> (which makes it public), and <strong>asking the AI planner</strong> for a city we don't already have. We don't run ads, we don't sell data, and we don't build profiles on you.</p>
+    <p>We do count anonymous usage — how many people planned a trip today, and which languages they used — with no cookies and nothing that identifies you.</p>
 
-    <h2>What's stored on your device</h2>
-    <p>The following are saved only in your browser/device storage, so your plans are there when you come back. They are never sent to us:</p>
+    <h2>What stays on your device</h2>
+    <p>Saved in your browser's storage, so your plans are there when you come back:</p>
     <ul>
       <li>Trips you save, and your last plan</li>
-      <li>Your first name, if you choose to enter it</li>
-      <li>Your language, theme, and packing checkmarks</li>
+      <li>Your travel record — the countries you've been to and your home country</li>
+      <li>Saved places, trip notes and checklists, packing checkmarks</li>
+      <li>Your first name if you enter one, your language, and your theme</li>
+      <li>Your points and trip credits</li>
+      <li>If you sign in: a sign-in token for this device</li>
     </ul>
-    <p>You can clear all of it any time by clearing your browser's website data.</p>
+    <p>Clearing your browser's website data removes all of it.</p>
 
-    <h2>Information that leaves your device</h2>
+    <h2>If you create an account (optional)</h2>
+    <p>An account exists for one reason: so a lost or replaced phone doesn't cost you your travel record. Planning works fully without one.</p>
+    <p><strong>What we store when you sign in:</strong></p>
     <ul>
-      <li><strong>Prayer times.</strong> When a plan shows prayer times, the app asks a public service (Aladhan API) for the times of the city you chose. Only the city name is sent — no personal information.</li>
-      <li><strong>Booking &amp; travel links.</strong> Tapping Flights, Hotels, Tours, or eSIM opens a partner site (such as Google Flights, Booking.com, Klook, or Airalo). Bosla may earn a commission from these partners. Those sites have their own privacy policies.</li>
-      <li><strong>Feedback.</strong> If you send feedback, your message — and your email address if you provide one — is sent to us so we can read and reply. That's the only reason we'd receive it.</li>
-      <li><strong>Sharing a trip.</strong> When you share a trip, the link you send contains your trip choices so the recipient can open the same plan. You control who you send it to.</li>
+      <li>Your email address, and your first name if Google gives it to us or you typed one</li>
+      <li>Which method you used (Google or email code), and when the account was made and last used</li>
+      <li>A copy of the data listed under "What stays on your device" above — your record, trips, saved places, notes, goal and points — so another device can pick it up</li>
+    </ul>
+    <p><strong>What we never store:</strong> no password (there isn't one), no Google contacts, calendar, or Drive access — we ask Google for your email address, name and profile picture only.</p>
+    <p><strong>Where it lives:</strong> in Cloudflare's key-value storage, reachable only by our server code and by the person holding the account's Cloudflare login (the app's creator).</p>
+    <p><strong>How long:</strong> until you delete the account. Your sign-in on a device expires after 180 days of not being used.</p>
+    <p><strong>Deleting it:</strong> open the app → menu → Account → <em>Delete my account</em>. That erases your email, your name and the synced copy from our side immediately. What's on your phone stays on your phone until you clear it. Trips you published to the community are <em>not</em> deleted by this — ask us and we'll remove those too.</p>
+
+    <h2>Community trips are public</h2>
+    <p>Nothing is published until you press Publish, and the app says so plainly before you do. Once published, your trip, your first name, your photos and your comments are visible to everyone using Bosla, and other travellers can copy the plan. Deleting the app — or your account — does not unpublish them; email us and we'll take them down.</p>
+
+    <h2>What leaves your device, and when</h2>
+    <div class="tw"><table>
+      <tr><th>When</th><th>What is sent</th><th>To whom</th></tr>
+      <tr><td>You ask the AI to build a city we don't have, or you chat with the planner</td><td>The city name or the words you typed</td><td>Our server, then Anthropic (Claude)</td></tr>
+      <tr><td>A plan shows real places</td><td>The place and city names, to check they're still open</td><td>Our server, then Google Places</td></tr>
+      <tr><td>A plan shows prayer times</td><td>The city name only</td><td>Aladhan (public API)</td></tr>
+      <tr><td>A plan converts currency</td><td>Nothing personal — a public rates file is fetched</td><td>open.er-api.com</td></tr>
+      <tr><td>A city photo is shown</td><td>The city name</td><td>Our server, then Wikipedia / Wikimedia Commons</td></tr>
+      <tr><td>You sign in</td><td>Your email address; with Google, the sign-in happens on Google's own page</td><td>Google, or Resend (which sends the code email)</td></tr>
+      <tr><td>You publish, comment, like or report</td><td>What you published, and your first name</td><td>Our server — and then everyone</td></tr>
+      <tr><td>You send feedback</td><td>Your message, and your email if you typed one</td><td>Our Google Apps Script inbox</td></tr>
+      <tr><td>You share a link</td><td>The link itself, to be shortened</td><td>cleanuri.com</td></tr>
+      <tr><td>Any visit</td><td>An anonymous count — see below</td><td>Our Google Apps Script sheet</td></tr>
+    </table></div>
+
+    <h2>The anonymous counting</h2>
+    <p>To know whether anyone is using this, we record events like "a trip was planned" with: a random id that lives only until you close the tab, your language, your time zone, the destination and number of days, and the page that referred you. No cookies, no advertising id, no account link, no precise location — a time zone tells us roughly which country, nothing more. It cannot be traced back to you, and we cannot connect it to your account.</p>
+
+    <h2>What we never do</h2>
+    <ul>
+      <li>No advertising, no ad networks, no advertising identifiers</li>
+      <li>No selling or renting of anyone's data, ever</li>
+      <li>No location tracking — the app never asks for your GPS</li>
+      <li>No passwords to store, lose, or leak</li>
+      <li>No reading of your email, contacts, photos or calendar</li>
     </ul>
 
-    <h2>What we do NOT collect</h2>
+    <h2>Who handles data for us</h2>
     <ul>
-      <li>No accounts, passwords, or logins</li>
-      <li>No location tracking, no advertising IDs</li>
-      <li>No analytics or behaviour tracking</li>
-      <li>No payment information (Bosla takes no payments directly)</li>
+      <li><strong>Cloudflare</strong> — runs our server code and stores accounts and published trips</li>
+      <li><strong>GitHub Pages</strong> — serves the app itself</li>
+      <li><strong>Anthropic</strong> — the AI that builds cities and answers planning questions</li>
+      <li><strong>Google</strong> — sign-in, Places data, and the Apps Script sheet holding feedback and anonymous counts</li>
+      <li><strong>Resend</strong> — sends the six-digit sign-in emails</li>
+      <li><strong>Wikimedia</strong> — the openly licensed city photos, always shown with their credit</li>
+      <li><strong>Booking.com, Klook, Airalo, Travelpayouts and airlines</strong> — only when you tap through to them. Then you're on their site under their policy, and we may earn a commission.</li>
     </ul>
+
+    <h2>Your rights</h2>
+    <p>You can see everything we hold about you inside the app, take it with you (it's on your device), and delete it — account included — without asking anyone. If you'd rather we did it, or you want published trips removed, email the address below and we'll do it. If you're in the UK, EU, or somewhere with similar law, those are your access, portability, erasure and objection rights; this is how you use them.</p>
 
     <h2>Children</h2>
-    <p>Bosla is a general-audience travel app and is not directed at children under 13. We do not knowingly collect personal information from children.</p>
+    <p>Bosla is a general-audience travel app, not directed at children under 13, and we don't knowingly hold their information. If a child has signed in, email us and we'll delete the account.</p>
 
-    <h2>Changes to this policy</h2>
-    <p>If this policy changes, we'll update this page and the effective date above.</p>
+    <h2>Changes</h2>
+    <p>When this changes, this page and the date at the top change with it. The last substantial change added optional accounts, and said so here on the same day it shipped.</p>
 
     <h2>Contact</h2>
-    <p>Questions about privacy? Email <a href="mailto:ahmed.alfadala@gmail.com">ahmed.alfadala@gmail.com</a>.</p>
+    <p>Privacy questions, deletion or takedown requests: <a href="mailto:ahmed.alfadala@gmail.com">ahmed.alfadala@gmail.com</a>.</p>
   </div>
 
   <hr>
 
-  <div class="card rtl">
+  <div class="card rtl" lang="ar" dir="rtl">
     <h2>النسخة المختصرة</h2>
-    <p>بوصلة تطبيق لتخطيط السفر تقدر تستخدمه <strong>بدون حساب</strong>. ما فيه إعلانات، ولا تتبّع، ولا تحليلات، ولا نبيع بياناتك. تقريبًا كل شيء يبقى <strong>على جهازك أنت</strong>.</p>
+    <p>تقدر تستخدم بوصلة <strong>بدون حساب</strong>، وحينها رحلاتك ما تطلع من جهازك أبداً. في ثلاث أشياء اختيارية، وكل وحدة ما تصير إلا إذا أنت اخترتها: <strong>تسجيل الدخول</strong> (عشان سجلك ما يضيع لو ضاع جوالك)، و<strong>نشر رحلة</strong> (وهذا يخليها عامة)، و<strong>طلب مدينة جديدة من الذكاء الاصطناعي</strong>. ما فيه إعلانات، وما نبيع بيانات، وما نبني ملفات عن أحد.</p>
+    <p>نعد استخدام مجهول — كم واحد خطط رحلة اليوم وبأي لغة — بدون كوكيز وبدون أي شي يعرّفك.</p>
 
-    <h2>ما يُحفَظ على جهازك</h2>
-    <p>التالي محفوظ فقط في متصفحك/جهازك عشان رحلاتك تكون موجودة لما ترجع، ولا يُرسَل لنا أبدًا:</p>
+    <h2>الي يبقى على جهازك</h2>
     <ul>
-      <li>الرحلات اللي تحفظها، وآخر خطة</li>
-      <li>اسمك الأول، إذا اخترت تكتبه</li>
-      <li>لغتك، والوضع (فاتح/داكن)، وعلامات قائمة التحزيم</li>
+      <li>الرحلات الي تحفظها، وآخر خطة</li>
+      <li>سجل سفرك — الدول الي زرتها ودولتك</li>
+      <li>الأماكن المحفوظة، وملاحظات الرحلة وقوائمها، وعلامات التحزيم</li>
+      <li>اسمك الأول إذا كتبته، ولغتك، والوضع (فاتح/داكن)</li>
+      <li>نقاطك وأرصدة رحلاتك</li>
+      <li>وإذا سجّلت دخول: رمز جلسة لهذا الجهاز</li>
+    </ul>
+    <p>مسح بيانات المتصفح يشيلها كلها.</p>
+
+    <h2>إذا سويت حساب (اختياري)</h2>
+    <p>الحساب موجود لسبب واحد: إن ضياع جوالك ما يضيّع سجل سفرك. والتخطيط يشتغل كامل بدونه.</p>
+    <p><strong>الي نحفظه لما تسجّل:</strong></p>
+    <ul>
+      <li>بريدك الإلكتروني، واسمك الأول إذا قوقل عطانا إياه أو كتبته أنت</li>
+      <li>الطريقة الي دخلت فيها (قوقل أو رمز بريد)، ومتى انفتح الحساب وآخر مرة استخدمته</li>
+      <li>نسخة من الي فوق تحت «الي يبقى على جهازك» — سجلك ورحلاتك وأماكنك وملاحظاتك وهدفك ونقاطك — عشان جهاز ثاني يقدر يكملها</li>
+    </ul>
+    <p><strong>الي ما نحفظه:</strong> ما فيه كلمة سر أصلاً، ولا وصول لجهات اتصالك ولا تقويمك ولا ملفاتك — نطلب من قوقل بريدك واسمك وصورتك فقط.</p>
+    <p><strong>وين تنحفظ:</strong> في تخزين Cloudflare، ما يوصلها إلا كود سيرفرنا ومن يملك حساب Cloudflare (صاحب التطبيق).</p>
+    <p><strong>كم تبقى:</strong> لين تحذف حسابك. وتسجيل الدخول على الجهاز ينتهي بعد ١٨٠ يوم بدون استخدام.</p>
+    <p><strong>كيف تحذفه:</strong> التطبيق ← القائمة ← الحساب ← <em>احذف حسابي</em>. ينمسح بريدك واسمك والنسخة المحفوظة عندنا فوراً. والي على جوالك يبقى عندك لين تمسحه أنت. الرحلات الي نشرتها للمجتمع <em>ما</em> تنحذف بهذا — راسلنا ونشيلها.</p>
+
+    <h2>رحلات المجتمع عامة</h2>
+    <p>ما ينشر شي إلا لما تضغط «انشر»، والتطبيق يقولك بصراحة قبلها. وبعد النشر، رحلتك واسمك الأول وصورك وتعليقاتك يشوفها كل مستخدمي بوصلة ويقدرون ينسخون الخطة. حذف التطبيق — أو حسابك — ما يلغي النشر؛ راسلنا ونشيلها.</p>
+
+    <h2>الي يطلع من جهازك، ومتى</h2>
+    <div class="tw"><table>
+      <tr><th>متى</th><th>وش يُرسل</th><th>لمين</th></tr>
+      <tr><td>تطلب مدينة ما عندنا، أو تكلّم المخطط</td><td>اسم المدينة أو كلامك</td><td>سيرفرنا، ثم Anthropic (كلود)</td></tr>
+      <tr><td>الخطة تعرض أماكن حقيقية</td><td>أسماء الأماكن والمدينة، للتأكد إنها شغالة</td><td>سيرفرنا، ثم Google Places</td></tr>
+      <tr><td>الخطة تعرض أوقات صلاة</td><td>اسم المدينة فقط</td><td>Aladhan (خدمة عامة)</td></tr>
+      <tr><td>تحويل العملة</td><td>لا شي شخصي — ملف أسعار عام</td><td>open.er-api.com</td></tr>
+      <tr><td>عرض صورة المدينة</td><td>اسم المدينة</td><td>سيرفرنا، ثم ويكيبيديا / ويكيميديا كومنز</td></tr>
+      <tr><td>تسجيل الدخول</td><td>بريدك؛ ومع قوقل يصير الدخول على صفحة قوقل نفسها</td><td>قوقل، أو Resend (ترسل رمز البريد)</td></tr>
+      <tr><td>تنشر أو تعلّق أو تعجب أو تبلّغ</td><td>الي نشرته، واسمك الأول</td><td>سيرفرنا — وبعدها الكل</td></tr>
+      <tr><td>ترسل ملاحظة</td><td>رسالتك، وبريدك إن كتبته</td><td>صندوق Apps Script عندنا</td></tr>
+      <tr><td>تشارك رابط</td><td>الرابط نفسه، عشان يتقصّر</td><td>cleanuri.com</td></tr>
+      <tr><td>أي زيارة</td><td>عدّ مجهول — شوف تحت</td><td>جدول Apps Script عندنا</td></tr>
+    </table></div>
+
+    <h2>العدّ المجهول</h2>
+    <p>عشان نعرف إذا في أحد يستخدم التطبيق، نسجل أحداث مثل «انبنت خطة» ومعها: رقم عشوائي يعيش لين تسكّر التبويب، ولغتك، ومنطقتك الزمنية، والوجهة وعدد الأيام، والصفحة الي جبتك. بدون كوكيز، وبدون معرّف إعلاني، وبدون ربط بحسابك، وبدون موقع دقيق — المنطقة الزمنية تعطينا الدولة تقريباً وبس. ما يمكن ترجيعه لك، ولا نقدر نربطه بحسابك.</p>
+
+    <h2>الي ما نسويه أبداً</h2>
+    <ul>
+      <li>لا إعلانات ولا شبكات إعلانية ولا معرّفات إعلانية</li>
+      <li>لا بيع ولا تأجير لبيانات أي أحد، أبداً</li>
+      <li>لا تتبّع موقع — التطبيق ما يطلب موقعك أصلاً</li>
+      <li>لا كلمات سر نحفظها أو نضيّعها أو تتسرّب</li>
+      <li>لا قراءة لبريدك ولا جهات اتصالك ولا صورك ولا تقويمك</li>
     </ul>
 
-    <h2>معلومات تغادر جهازك</h2>
+    <h2>مين يعالج البيانات معنا</h2>
     <ul>
-      <li><strong>أوقات الصلاة:</strong> عند عرضها، يطلب التطبيق الأوقات من خدمة عامة (Aladhan) باسم المدينة فقط — بدون أي معلومات شخصية.</li>
-      <li><strong>روابط الحجز والسفر:</strong> الضغط على الطيران أو الفنادق أو الجولات أو الشريحة يفتح موقع شريك (مثل Google Flights أو Booking أو Klook أو Airalo)، وقد تحصل بوصلة على عمولة. لهذه المواقع سياسات خصوصية خاصة بها.</li>
-      <li><strong>الملاحظات:</strong> إذا أرسلت ملاحظة، تصلنا رسالتك — وبريدك إن كتبته — عشان نقرأها ونرد عليك.</li>
-      <li><strong>مشاركة رحلة:</strong> الرابط الذي ترسله يحتوي على اختياراتك حتى يفتح المستلم نفس الخطة. أنت تتحكم بمن ترسله له.</li>
+      <li><strong>Cloudflare</strong> — يشغّل كود سيرفرنا ويخزّن الحسابات والرحلات المنشورة</li>
+      <li><strong>GitHub Pages</strong> — يقدّم التطبيق نفسه</li>
+      <li><strong>Anthropic</strong> — الذكاء الاصطناعي الي يبني المدن ويجاوب أسئلة التخطيط</li>
+      <li><strong>قوقل</strong> — تسجيل الدخول، وبيانات الأماكن، وجدول Apps Script الي فيه الملاحظات والعدّ المجهول</li>
+      <li><strong>Resend</strong> — ترسل رسائل رمز الدخول</li>
+      <li><strong>ويكيميديا</strong> — صور المدن المرخّصة، وتنعرض دايم مع نسبتها لصاحبها</li>
+      <li><strong>Booking.com وKlook وAiralo وTravelpayouts وشركات الطيران</strong> — بس لما تضغط وتروح لهم. حينها أنت في موقعهم تحت سياستهم، وممكن نحصل عمولة.</li>
     </ul>
 
-    <h2>ما لا نجمعه</h2>
-    <ul>
-      <li>لا حسابات ولا كلمات مرور</li>
-      <li>لا تتبّع موقع ولا معرّفات إعلانية</li>
-      <li>لا تحليلات ولا تتبّع سلوك</li>
-      <li>لا معلومات دفع (بوصلة لا تستقبل مدفوعات مباشرة)</li>
-    </ul>
+    <h2>حقوقك</h2>
+    <p>تقدر تشوف كل الي عندنا عنك داخل التطبيق، وتاخذه معك (هو على جهازك أصلاً)، وتحذفه — الحساب وكل شي — بدون ما تستأذن أحد. وإذا تبينا نسويها عنك، أو تبي نشيل رحلات نشرتها، راسلنا على العنوان تحت ونسويها.</p>
+
+    <h2>الأطفال</h2>
+    <p>بوصلة تطبيق سفر للجمهور العام، مو موجّه لمن هم دون ١٣ سنة، وما نحفظ معلوماتهم عن قصد. وإذا سجّل طفل، راسلنا ونحذف الحساب.</p>
+
+    <h2>التغييرات</h2>
+    <p>لما تتغير هذي السياسة، تتغير الصفحة والتاريخ فوق معها. آخر تغيير كبير كان إضافة الحسابات الاختيارية، وانكتب هنا نفس اليوم الي نزل فيه.</p>
 
     <h2>التواصل</h2>
-    <p>لأي استفسار عن الخصوصية: <a href="mailto:ahmed.alfadala@gmail.com">ahmed.alfadala@gmail.com</a></p>
+    <p>لأي استفسار عن الخصوصية أو طلب حذف: <a href="mailto:ahmed.alfadala@gmail.com">ahmed.alfadala@gmail.com</a></p>
   </div>
 
-  <div class="foot"><a href="./">← Back to بوصلة</a></div>
+  <hr>
+
+  <div class="card" lang="es">
+    <h2>La versión corta</h2>
+    <p>Puedes usar Bosla <strong>sin cuenta</strong>, y entonces tus viajes nunca salen de tu dispositivo. Hay tres cosas opcionales, y cada una ocurre solo porque tú la eliges: <strong>iniciar sesión</strong> (para que tu historial sobreviva a un móvil perdido), <strong>publicar un viaje</strong> (lo que lo hace público) y <strong>pedirle a la IA</strong> una ciudad que aún no tenemos. No hay publicidad, no vendemos datos y no creamos perfiles sobre ti.</p>
+
+    <h2>Lo que se queda en tu dispositivo</h2>
+    <ul>
+      <li>Los viajes que guardas y tu último plan</li>
+      <li>Tu historial de viaje — los países que has pisado y tu país de origen</li>
+      <li>Lugares guardados, notas y listas del viaje, y el equipaje marcado</li>
+      <li>Tu nombre si lo escribes, tu idioma y tu tema</li>
+      <li>Tus puntos y créditos de viaje</li>
+      <li>Si inicias sesión: un token de sesión para este dispositivo</li>
+    </ul>
+
+    <h2>Si creas una cuenta (opcional)</h2>
+    <p>La cuenta existe por un motivo: que perder el móvil no te cueste tu historial. Planear funciona sin ella.</p>
+    <p><strong>Lo que guardamos:</strong> tu correo, tu nombre si Google nos lo da o tú lo escribes, el método que usaste, cuándo se creó la cuenta y cuándo se usó por última vez, y una copia de lo que aparece arriba para que otro dispositivo pueda continuar.</p>
+    <p><strong>Lo que nunca guardamos:</strong> ninguna contraseña (no existe), ni acceso a tus contactos, calendario o archivos — a Google solo le pedimos tu correo, tu nombre y tu foto de perfil.</p>
+    <p><strong>Dónde vive:</strong> en el almacenamiento de Cloudflare, accesible solo por el código de nuestro servidor y por quien tenga la cuenta de Cloudflare (el creador de la app).</p>
+    <p><strong>Cuánto dura:</strong> hasta que borres la cuenta. La sesión de un dispositivo caduca a los 180 días sin usarse.</p>
+    <p><strong>Cómo borrarla:</strong> app → menú → Cuenta → <em>Borrar mi cuenta</em>. Se elimina de inmediato tu correo, tu nombre y la copia sincronizada. Lo que está en tu móvil sigue ahí hasta que tú lo borres. Los viajes publicados <em>no</em> se borran así — escríbenos y los quitamos.</p>
+
+    <h2>Los viajes de la comunidad son públicos</h2>
+    <p>Nada se publica hasta que pulsas Publicar, y la app te lo dice antes. Una vez publicado, tu viaje, tu nombre, tus fotos y tus comentarios los ve cualquiera que use Bosla. Borrar la app o la cuenta no los despublica — escríbenos y los retiramos.</p>
+
+    <h2>Lo que sale de tu dispositivo</h2>
+    <ul>
+      <li><strong>IA:</strong> el nombre de la ciudad o lo que escribes → nuestro servidor y Anthropic (Claude).</li>
+      <li><strong>Lugares reales:</strong> nombres de sitios y ciudad, para comprobar si siguen abiertos → Google Places.</li>
+      <li><strong>Horarios de oración:</strong> solo el nombre de la ciudad → Aladhan.</li>
+      <li><strong>Cambio de moneda:</strong> nada personal, se descarga un fichero público de tasas → open.er-api.com.</li>
+      <li><strong>Fotos de ciudad:</strong> el nombre de la ciudad → Wikipedia / Wikimedia Commons.</li>
+      <li><strong>Inicio de sesión:</strong> tu correo → Google, o Resend (que envía el código).</li>
+      <li><strong>Publicar, comentar, dar like o reportar:</strong> lo que publicas y tu nombre → nuestro servidor, y después todo el mundo.</li>
+      <li><strong>Comentarios y sugerencias:</strong> tu mensaje y tu correo si lo escribes → nuestra hoja de Apps Script.</li>
+      <li><strong>Recuento anónimo:</strong> un id aleatorio que muere al cerrar la pestaña, tu idioma, tu zona horaria, el destino y los días. Sin cookies, sin id publicitario, sin ubicación precisa, y sin vínculo con tu cuenta.</li>
+    </ul>
+
+    <h2>Lo que nunca hacemos</h2>
+    <ul>
+      <li>Nada de publicidad ni identificadores publicitarios</li>
+      <li>Nunca vendemos ni alquilamos datos de nadie</li>
+      <li>Nada de seguimiento de ubicación — la app jamás pide tu GPS</li>
+      <li>Ninguna contraseña que guardar, perder o filtrar</li>
+    </ul>
+
+    <h2>Tus derechos</h2>
+    <p>Puedes ver todo lo que tenemos sobre ti dentro de la app, llevártelo (está en tu dispositivo) y borrarlo — cuenta incluida — sin pedir permiso a nadie. Si prefieres que lo hagamos nosotros, o quieres retirar viajes publicados, escríbenos.</p>
+
+    <h2>Menores y cambios</h2>
+    <p>Bosla no está dirigida a menores de 13 años. Cuando esta política cambie, cambiarán esta página y la fecha de arriba.</p>
+
+    <h2>Contacto</h2>
+    <p><a href="mailto:ahmed.alfadala@gmail.com">ahmed.alfadala@gmail.com</a></p>
+  </div>
+
+  <div class="foot"><a href="./">← Back to بوصلة</a> · <a href="terms.html">Terms of Use</a></div>
 </div>
 </body>
 </html>
