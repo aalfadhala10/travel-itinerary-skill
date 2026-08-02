@@ -73,6 +73,11 @@ function doGet(e) {
   var total = eRows.length;
   var pageViews = 0, plans = 0, saves = 0, shares = 0, outbound = 0;
   var sessions = {}, dests = {}, countries = {}, hosts = {}, langs = {}, byDay = {}, misses = {}, missTotal = 0;
+  // A funnel has to count PEOPLE, not events. Counting events gave "made a plan 219%", which is
+  // not a drop-off — it is one visitor planning four times. These sets hold the sessions that
+  // reached each step, so every step is a subset of the one above it and the percentages mean
+  // what they say.
+  var sPlan = {}, sChat = {}, sOut = {}, sKeep = {};
   var sessCountry = {}; // one visitor-country per session (from their timezone)
   var chatMsgTotal = 0, chatPlanTotal = 0, chatDests = {}, chatMsgList = [];
   var chatErrTotal = 0, chatErrs = {}, closedList = {}, foodErrs = {}; // replies that never arrived; places found shut
@@ -83,6 +88,12 @@ function doGet(e) {
     var received = r[0], ev = r[2], sid = r[3], lang = r[4], dest = r[6], country = r[7], host = r[10], tz = r[12], msg = r[13];
     if (sid) sessions[sid] = 1;
     if (sid && tz && !sessCountry[sid]) sessCountry[sid] = tzCountry_(tz);
+    if (sid) {
+      if (ev === 'plan' || ev === 'chat_plan') sPlan[sid] = 1;
+      else if (ev === 'chat_msg') sChat[sid] = 1;
+      else if (ev === 'outbound') sOut[sid] = 1;
+      else if (ev === 'save' || ev === 'share' || ev === 'wa') sKeep[sid] = 1;
+    }
     if (ev === 'chat_msg') { chatMsgTotal++; if (msg) chatMsgList.push([received, msg]); }
     else if (ev === 'chat_plan') { chatPlanTotal++; if (dest) chatDests[dest] = (chatDests[dest] || 0) + 1; }
     if (lang) langs[lang] = (langs[lang] || 0) + 1;
@@ -119,6 +130,11 @@ function doGet(e) {
   }
 
   var uniqueSessions = Object.keys(sessions).length;
+  var nPlan = Object.keys(sPlan).length, nChat = Object.keys(sChat).length;
+  var nOut = Object.keys(sOut).length, nKeep = Object.keys(sKeep).length;
+  // how hard people work the planner — 4 plans a visit is a different story from 1
+  var perVisit = uniqueSessions ? (plans / uniqueSessions) : 0;
+  perVisit = Math.round(perVisit * 10) / 10;
   var geo = {}; // visitors per country
   Object.keys(sessCountry).forEach(function (s) { var c = sessCountry[s]; if (c) geo[c] = (geo[c] || 0) + 1; });
   var chart = dayChart_(byDay, 14);
@@ -191,13 +207,16 @@ function doGet(e) {
     card_(outbound, 'outbound clicks') + card_(fRows.length, 'feedback') + card_(avg, 'avg rating') +
     card_(missTotal, 'searches w/ no result') +
     card_(chatMsgTotal, 'chat messages') + card_(chatPlanTotal, 'chat trips built') +
-    card_(chatErrTotal, 'replies that failed') +
+    card_(chatErrTotal, 'replies that failed') + card_(perVisit, 'plans per visit') +
     '</div>' +
     '<h3>Events per day (last 14)</h3>' + chart +
     '<h3>How far people get</h3>' +
+    '<div class="sub" style="margin:-14px 0 10px">Share of the ' + uniqueSessions +
+      ' visits that reached each step — one visit is one browser tab, counted once however many ' +
+      'plans it made.</div>' +
     funnel_([
-      ['Visited', pageViews], ['Made a plan', plans], ['Chatted', chatMsgTotal],
-      ['Clicked out', outbound], ['Saved or shared', saves + shares]
+      ['Visited', uniqueSessions], ['Made a plan', nPlan], ['Chatted', nChat],
+      ['Clicked out', nOut], ['Saved or shared', nKeep]
     ]) +
     '<h3>Replies that never reached anyone (the chat failing on a real person)</h3>' +
     '<table><tr><th>What went wrong</th><th class="n">Times</th></tr>' + rowsHtml(topList(chatErrs, 20)) + '</table>' +
