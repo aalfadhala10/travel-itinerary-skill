@@ -995,7 +995,48 @@ async function community(body, env, request, origin) {
     const r = JSON.parse(raw);
     if ((r.comments || []).length >= PUB.COMMENTS_PER_TRIP)
       return reply({ error: "comments full" }, 400, origin);
-    r.comments.push({ n: name, x: txt, t: Date.now() });
+    // Every comment gets an id, and its author gets a secret key — the same trick that lets a
+    // traveller delete their own trip without an account. The key never rides inside the
+    // comment record (everyone can read those); it lives in its own KV slot.
+    const cid = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    const ck = crypto.randomUUID().replace(/-/g, "");
+    r.comments.push({ n: name, x: txt, t: Date.now(), cid });
+    await kv.put("cmtk:" + id + ":" + cid, ck, { expirationTtl: 31536000 });
+    await pubTouch(kv, r);
+    return reply({ comments: r.comments, cid, ck }, 200, origin);
+  }
+
+  if (act === "pub_cmt_del") {
+    const id = pubClean(body.id, 40), cid = pubClean(body.cid, 24);
+    const raw = await kv.get("pub:" + id);
+    if (!raw) return reply({ error: "not found" }, 404, origin);
+    const r = JSON.parse(raw);
+    const i = (r.comments || []).findIndex((c) => c.cid === cid);
+    if (i < 0) return reply({ comments: r.comments || [] }, 200, origin);
+    // the trip's owner can remove any comment on their trip; the author can remove their own
+    const isOwner = r.k && r.k === String(body.key || "");
+    const stored = await kv.get("cmtk:" + id + ":" + cid);
+    const isAuthor = stored && stored === String(body.ck || "");
+    if (!isOwner && !isAuthor) return reply({ error: "not yours" }, 403, origin);
+    r.comments.splice(i, 1);
+    try { await kv.delete("cmtk:" + id + ":" + cid); } catch (e) {}
+    await pubTouch(kv, r);
+    return reply({ comments: r.comments }, 200, origin);
+  }
+
+  if (act === "pub_cmt_edit") {
+    const id = pubClean(body.id, 40), cid = pubClean(body.cid, 24);
+    const txt = pubClean(body.txt, PUB.COMMENT);
+    if (!txt) return reply({ error: "empty" }, 400, origin);
+    const raw = await kv.get("pub:" + id);
+    if (!raw) return reply({ error: "not found" }, 404, origin);
+    const r = JSON.parse(raw);
+    const c = (r.comments || []).find((x) => x.cid === cid);
+    if (!c) return reply({ error: "not found" }, 404, origin);
+    // only the author edits — the owner may remove words, never rewrite them
+    const stored = await kv.get("cmtk:" + id + ":" + cid);
+    if (!stored || stored !== String(body.ck || "")) return reply({ error: "not yours" }, 403, origin);
+    c.x = txt;
     await pubTouch(kv, r);
     return reply({ comments: r.comments }, 200, origin);
   }
