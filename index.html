@@ -1415,7 +1415,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 17:00 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 18:15 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -3536,8 +3536,15 @@
     var xa=a.d.city.toLowerCase(), xb=b.d.city.toLowerCase();
     return xa<xb?-1:xa>xb?1:0;
   }
+  // Málaga, São Paulo, Zürich, Kraków, Reykjavík — an accent used to mean no match, which sent
+  // people to the "build this with AI" door for a city already in the data, and charged for it.
+  function fold(x){
+    x=String(x||'').toLowerCase().trim();
+    try{ x=x.normalize('NFD').replace(/[\u0300-\u036f]/g,''); }catch(e){}
+    return x;
+  }
   function destOptions(query){
-    var s=(query||'').toLowerCase().trim();
+    var s=fold(query);
     // empty box → browsable list of countries (tap one to see its cities), not 735 raw cities
     if(!s){
       var seen={}, out=[];
@@ -3548,15 +3555,15 @@
     var arr=Object.keys(DEST).map(function(k){return {k:k,d:DEST[k]};});
     // rank: city starts-with (0) → country starts-with (1) → alias starts-with (2) → any contains (3)
     arr=arr.map(function(x){
-      var city=x.d.city.toLowerCase(), country=x.d.country.toLowerCase(), sc=99;
+      var city=fold(x.d.city), country=fold(x.d.country), sc=99;
       if(city.indexOf(s)===0) sc=0;
       else if(country.indexOf(s)===0) sc=1;
-      else if(x.d.alias.some(function(a){return a.indexOf(s)===0;})) sc=2;
-      else if(city.indexOf(s)>=0||country.indexOf(s)>=0||x.d.alias.some(function(a){return a.indexOf(s)>=0;})) sc=3;
+      else if(x.d.alias.some(function(a){return fold(a).indexOf(s)===0;})) sc=2;
+      else if(city.indexOf(s)>=0||country.indexOf(s)>=0||x.d.alias.some(function(a){return fold(a).indexOf(s)>=0;})) sc=3;
       x._sc=sc; return x;
     }).filter(function(x){return x._sc<99;});
     arr.sort(function(a,b){ return a._sc!==b._sc ? a._sc-b._sc : byCountryCity(a,b); });
-    var seenCC={}; arr=arr.filter(function(x){ var cc=x.d.city.toLowerCase()+'|'+x.d.country.toLowerCase(); if(seenCC[cc])return false; seenCC[cc]=1; return true; }); // never show the same city+country twice
+    var seenCC={}; arr=arr.filter(function(x){ var cc=fold(x.d.city)+'|'+fold(x.d.country); if(seenCC[cc])return false; seenCC[cc]=1; return true; }); // never show the same city+country twice
     return arr;
   }
   function renderComboList(list, query){
@@ -3610,6 +3617,7 @@
     list.addEventListener('mousedown', function(e){ var it=e.target.closest('.comboitem'); if(!it)return; e.preventDefault(); pick(it); });
     if(clr){ clr.addEventListener('mousedown', function(e){ e.preventDefault(); inp.value=''; toggleClear(); open(); inp.focus(); }); }
   }
+  try{ aiCityHydrate(); }catch(e){}   // cities built on this device are in the search from the first keystroke
   makeCombo('dest','destList');
   makeCombo('dest2','destList2');
   makeCombo('dest3','destList3');
@@ -3699,14 +3707,14 @@
   // Da Nang claims "hoi an" — and whichever sat earlier in the data used to win, so asking for
   // Zurich handed you Interlaken. A destination's OWN name always beats somebody else's alias.
   function matchDest(input){
-    var s=(input||'').toLowerCase().trim(); if(!s)return null;
+    var s=fold(input); if(!s)return null;              // accents folded: Reykjavík IS Reykjavik
     var keys=Object.keys(DEST), i, j, al, a, best=null, bestRank=99;
     for(i=0;i<keys.length;i++){
-      var k=keys[i], own=String(DEST[k].city||'').toLowerCase(), rank=99;
+      var k=keys[i], own=fold(DEST[k].city||''), rank=99;
       if(s===own) rank=0;                                                    // its own name, exactly
       else if(s.length>=2 && own.length>=4 && own.indexOf(s)===0) rank=2;    // its own name, typed partly
       al=DEST[k].alias;
-      for(j=0;j<al.length&&rank>1;j++){ a=al[j];
+      for(j=0;j<al.length&&rank>1;j++){ a=fold(al[j]);
         if(s===a){ rank=1; break; }                                          // exact alias — "uk", "uae"
         if(a.length<4) continue;                                             // so "uk" can't match inside "phuket"
         if(s.length>=2 && a.indexOf(s)===0 && rank>3) rank=3;                // alias starts with what they typed
@@ -3721,6 +3729,31 @@
   // into the running app (DEST/CO/CUR/POI_CO/HOTELS_X) so the trip can be planned immediately.
   var AISUMEMO={alpine:'⛅',mild:'⛅',warm:'⛅',tropical:'🌴',hothumid:'🌴',hotdry:'☀️',veryhot:'☀️'};
   function aiKey(name){ var b=String(name||'').toLowerCase().replace(/[^a-z0-9]/g,''); if(!b)b='city'; var k=b,i=2; while(DEST[k]){k=b+i;i++;} return k; }
+  /* A city built by the AI used to live in this tab and nowhere else: reload the page and it was
+     gone from the search, so the same city got built — and paid for — again and again. The five
+     tables that make a destination are written to the device together, and read back before the
+     first search. Signed-in travellers carry them between phones with everything else. */
+  function aiCitySave(key){
+    try{
+      var all=aiCityLoad();
+      all[key]={d:DEST[key],c:CO[key],u:CUR[key],p:POI_CO[key],h:HOTELS_X[key]};
+      var ks=Object.keys(all);
+      if(ks.length>60)delete all[ks[0]];                 // a sane ceiling on device storage
+      localStorage.setItem('bosla_aicities',JSON.stringify(all));
+    }catch(e){}
+  }
+  function aiCityLoad(){
+    try{ var o=JSON.parse(localStorage.getItem('bosla_aicities')||'{}'); return (o&&typeof o==='object')?o:{}; }catch(e){ return {}; }
+  }
+  function aiCityHydrate(){
+    var all=aiCityLoad(),n=0;
+    Object.keys(all).forEach(function(k){
+      var v=all[k]; if(!v||!v.d||!v.d.city||DEST[k])return;      // never shadow a city we ship
+      DEST[k]=v.d; if(v.c)CO[k]=v.c; if(v.u)CUR[k]=v.u;
+      if(v.p)POI_CO[k]=v.p; if(v.h)HOTELS_X[k]=v.h; n++;
+    });
+    return n;
+  }
   function aiCity(name){
     return new Promise(function(resolve){
       if(!CONFIG.aiEndpoint){ resolve(null); return; }
@@ -3730,7 +3763,7 @@
         .then(function(d){
           var c=d&&d.city;
           if(!c||!c.valid||!c.city||!Array.isArray(c.poi)||c.poi.length<3){ resolve(null); return; }
-          for(var dk in DEST){ if(DEST[dk].city===c.city&&(DEST[dk].country||'')===(c.country||'')){ resolve(dk); return; } } // already built this city — reuse it, don't duplicate
+          for(var dk in DEST){ if(fold(DEST[dk].city)===fold(c.city)&&fold(DEST[dk].country||'')===fold(c.country||'')){ resolve(dk); return; } } // already built this city — reuse it, don't duplicate
           var key=aiKey(c.city);
           var enArea=function(v){ v=v||''; return /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/.test(v)?'':v; }; // area labels sit next to English POI names — drop any stray Arabic the model emits
           DEST[key]={city:c.city,country:c.country||'',flag:c.flag||'🏳️',region:c.region||'eu',
@@ -3767,6 +3800,7 @@
           if(bad)try{ track('ai_badcoord',{dest:c.city,dropped:bad,of:c.poi.length}); }catch(e){}
           HOTELS_X[key]={Budget:c.hotelsBudget||[],'Mid-range':c.hotelsMid||[],Luxury:c.hotelsLux||[]};
           try{ track('ai_city',{dest:c.city,country:c.country}); }catch(e){}
+          aiCitySave(key);                    // keep it — a built city used to die with the tab
           resolve(key);
         })
         .catch(function(){ resolve(null); });
@@ -6802,7 +6836,42 @@
       rt:(ROUTE&&ROUTE.length>=2?ROUTE:null), dr:ROUTEDRIVE, seed:SEED, edits:DAYEDITS, rot:DAYROT};
   }
   function saveState(){try{localStorage.setItem('rihla_v1',JSON.stringify(stateObj()));}catch(e){}}
-  function buildTripLink(){return location.href.split('#')[0]+'#trip='+encodeURIComponent(JSON.stringify(stateObj()));}
+  /* A shared trip used to ride in the URL's #fragment. A fragment is never sent to a server, so
+     anything that re-navigates on the way — a chat app's preview, an in-app browser handing over
+     to the real one, a redirect — can drop it, and the friend lands on an empty planner being
+     told to plan a trip themselves. It rides in the ?t= query now, which survives all of that.
+     Old #trip= links still open: both are read at startup.
+     Packed, too: only what differs from the defaults travels, under one-letter keys, which takes
+     a typical trip from ~550 characters to under 150 — short enough that no chat app mangles it. */
+  var SDEF={d2:'',d3:'',d4:'',days:'5',pace:'balanced',adults:'2',kids:'0',sd:'',cur:'USD',
+    budget:'Mid-range',ba:'',bc:'USD',dr:false,seed:0};
+  var SKEY={d:'a',d2:'b',d3:'c',d4:'e',days:'n',pace:'p',adults:'u',kids:'k',sd:'s',cur:'m',
+    budget:'g',vibes:'v',lang:'l',ba:'x',bc:'y',mh:'h',rt:'r',dr:'w',seed:'z',edits:'q',rot:'o'};
+  function packState(st){
+    var out={};
+    Object.keys(SKEY).forEach(function(k){
+      var v=st[k];
+      if(v===undefined||v===null)return;
+      if(SDEF.hasOwnProperty(k)&&String(v)===String(SDEF[k]))return;              // same as default
+      if((k==='vibes')&&Array.isArray(v)&&v.length===1&&v[0]==='Culture')return;
+      if((k==='mh'||k==='edits'||k==='rot')&&!Object.keys(v||{}).length)return;   // nothing to say
+      if(k==='lang'&&v===LANG)return;                                             // reader's own language wins anyway
+      out[SKEY[k]]=v;
+    });
+    return out;
+  }
+  function unpackState(o){
+    if(!o||typeof o!=='object')return null;
+    if(o.d!==undefined||o.days!==undefined)return o;        // an old, unpacked link
+    var st={},inv={};
+    Object.keys(SKEY).forEach(function(k){ inv[SKEY[k]]=k; });
+    Object.keys(o).forEach(function(sk){ if(inv[sk])st[inv[sk]]=o[sk]; });
+    Object.keys(SDEF).forEach(function(k){ if(st[k]===undefined)st[k]=SDEF[k]; });
+    if(!st.vibes)st.vibes=['Culture'];
+    return st;
+  }
+  function tripPayload(){ return encodeURIComponent(JSON.stringify(packState(stateObj()))); }
+  function buildTripLink(){ return location.href.split('#')[0].split('?')[0]+'?t='+tripPayload(); }
   // Shorten a trip link (cached). Pre-called on plan render so share buttons stay instant.
   // Tries several free CORS shorteners in turn; resolves null if all fail.
   var SHORTCACHE={};
@@ -6832,7 +6901,7 @@
   // each share (it strips the #trip fragment, so without this it caches one stale preview).
   function shareLink(){
     var base=location.href.split('#')[0].split('?')[0];
-    return base+'?p='+Date.now().toString(36)+'#trip='+encodeURIComponent(JSON.stringify(stateObj()));
+    return base+'?t='+tripPayload();
   }
 
   /* My trips — save & reopen */
@@ -7482,7 +7551,7 @@
       days:Math.max(1,Math.min(30,o.d|0))||1,rows:(o.r&&typeof o.r==='object')?o.r:{},t:Date.now()};
   }
   function mkLink(tr){
-    return location.href.split('#')[0].split('?')[0]+'#made='+encodeURIComponent(JSON.stringify(mkPack(tr)));
+    return location.href.split('#')[0].split('?')[0]+'?made='+encodeURIComponent(JSON.stringify(mkPack(tr)));
   }
   function mkText(tr,c){
     var out=[(tr.city||c.none)+' · '+c.dcount(tr.days)];
@@ -8032,7 +8101,8 @@
   }
   // Everything a person would hate to lose, and nothing else.
   var SYNCKEYS=['bosla_beento','rihla_trips','bosla_saved','bosla_pts','bosla_pts_life',
-    'bosla_pub_mine','bosla_cmtkeys','bosla_goal','bosla_sugx','rihla_v1','bosla_lang','bosla_made'];
+    'bosla_pub_mine','bosla_cmtkeys','bosla_goal','bosla_sugx','rihla_v1','bosla_lang','bosla_made',
+    'bosla_aicities'];
   var SYNCPRE=['bosla_notes2:','bosla_went:','rihla_pack_'];
   function syncGather(){
     var o={};
@@ -9615,16 +9685,20 @@
   (function(){
     try{
       var s=null, h=location.hash||'', shared=(h.indexOf('#trip=')===0);
+      // the query carries it now; the fragment is still read so links already sent keep working
+      var qs=null; try{ qs=new URLSearchParams(location.search||'').get('t'); }catch(e){}
+      if(qs){ try{ s=unpackState(JSON.parse(decodeURIComponent(qs))); shared=!!s; }catch(e){} }
       // a friend sent a published trip: open the app straight onto it
       // a hand-built trip arrives whole, inside its own link
-      if(h.indexOf('#made=')===0){
+      var qmade=null; try{ qmade=new URLSearchParams(location.search||'').get('made'); }catch(e){}
+      if(qmade||h.indexOf('#made=')===0){
         try{
-          var mt=mkUnpack(JSON.parse(decodeURIComponent(h.slice(6))));
+          var mt=mkUnpack(JSON.parse(decodeURIComponent(qmade||h.slice(6))));
           if(mt&&mt.city){ MKSHARED=mt; setTimeout(function(){ try{ openMake(); }catch(e){} },300); return; }
         }catch(e){}
       }
       if(h.indexOf('#pub=')===0){ var pid=h.slice(5); setTimeout(function(){ try{ enterCm(); $('community').classList.remove('is-hidden'); openPubTrip(pid); $('community').scrollIntoView(); }catch(e){} },400); }
-      if(shared){ s=JSON.parse(decodeURIComponent(h.slice(6))); }
+      if(!s&&h.indexOf('#trip=')===0){ s=unpackState(JSON.parse(decodeURIComponent(h.slice(6)))); shared=!!s; }
       if(!s){ s=JSON.parse(localStorage.getItem('rihla_v1')||'null'); shared=false; }
       if(s&&shared){ applyState(s,true); }            // someone opened a shared trip — show it
       else if(s){ applyState(s,false); showLastTrip(s); } // your own last trip — offer it, don't force it
@@ -9635,9 +9709,15 @@
   })();
 
   // first-time welcome (skipped when opening a shared trip link)
-  (function(){ try{ if(!isWelcomed() && (location.hash||'').indexOf('#trip=')!==0 && (location.hash||'').indexOf('#pub=')!==0 && (location.hash||'').indexOf('#made=')!==0){ showWelcome(); } }catch(e){} })();
+  function arrivedOnSomething(){
+    var h=location.hash||'';
+    if(h.indexOf('#trip=')===0||h.indexOf('#pub=')===0||h.indexOf('#made=')===0)return true;
+    try{ var p=new URLSearchParams(location.search||''); if(p.get('t')||p.get('made'))return true; }catch(e){}
+    return false;
+  }
+  (function(){ try{ if(!isWelcomed() && !arrivedOnSomething()){ showWelcome(); } }catch(e){} })();
   // first-time "how it works" intro (skipped when opening a shared trip link)
-  (function(){ try{ if(localStorage.getItem('rihla_introseen')!=='1' && (location.hash||'').indexOf('#trip=')!==0 && (location.hash||'').indexOf('#pub=')!==0 && (location.hash||'').indexOf('#made=')!==0){ showIntro(); } }catch(e){} })();
+  (function(){ try{ if(localStorage.getItem('rihla_introseen')!=='1' && !arrivedOnSomething()){ showIntro(); } }catch(e){} })();
 
   // usage tracking: one page view, and outbound clicks (booking / maps / tours / flights) to gauge intent
   track('page_view',{});
