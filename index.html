@@ -955,6 +955,41 @@
   body.recmode #out,body.recmode #community,body.recmode #saved,body.recmode .intro,
   body.recmode .editfab,body.recmode .chatfab{display:none!important}
   body.cmmode #recscr,body.svmode #recscr{display:none!important}
+  /* ---- Build it yourself ---------------------------------------------------------------------
+     A blank itinerary for a traveller who already knows where they went: the same day cards as a
+     generated plan, with every line typed by hand. Deliberately reuses .day / .slot so a hand-made
+     trip and a generated one look like the same app. */
+  body.mkmode .card,body.mkmode #cmTeaser,body.mkmode #mytrips,body.mkmode #lastTrip,
+  body.mkmode #out,body.mkmode #community,body.mkmode #saved,body.mkmode #recscr,
+  body.mkmode .intro,body.mkmode .editfab,body.mkmode .chatfab{display:none!important}
+  body.cmmode #mkscr,body.svmode #mkscr,body.recmode #mkscr{display:none!important}
+  .mktrip{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:14px}
+  .mkfield{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .mkfield:last-child{margin-bottom:0}
+  .mkfield label{flex:0 0 auto;font-size:12.5px;color:var(--muted);min-width:74px}
+  .mkfield input{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:10px;
+    background:var(--paper);color:var(--ink);font-size:14.5px;font-family:var(--ff-body)}
+  .mkday{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+  .mkday .dlabel{font-family:var(--ff-data);font-size:11.5px;letter-spacing:1px;color:var(--amber);text-transform:uppercase}
+  .mkrow{display:flex;gap:7px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+  .mkrow:last-of-type{border-bottom:none}
+  .mkrow select{flex:0 0 auto;width:31%;max-width:118px;padding:8px 6px;border:1px solid var(--line);border-radius:9px;
+    background:var(--paper);color:var(--muted);font-size:12.5px;font-family:var(--ff-body)}
+  .mkrow input{flex:1;min-width:0;padding:8px 9px;border:1px solid var(--line);border-radius:9px;
+    background:var(--paper);color:var(--ink);font-size:14px;font-family:var(--ff-body)}
+  .mkrow .mkgo,.mkrow .mkx{flex:0 0 auto;border:none;background:none;cursor:pointer;padding:3px 5px;font-size:14px}
+  .mkrow .mkgo{color:var(--teal)}
+  .mkrow .mkx{color:var(--muted);opacity:.7}
+  .mkadd{margin-top:9px;width:100%;padding:9px;border:1px dashed var(--line);border-radius:11px;
+    background:none;color:var(--muted);font-size:13.5px;font-family:var(--ff-body);cursor:pointer}
+  .mkadd:hover{border-color:var(--amber);color:var(--amber)}
+  .mkacts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .mklist{margin-top:10px}
+  .mkitem{display:flex;align-items:center;gap:10px;width:100%;text-align:start;padding:12px;margin-bottom:8px;
+    background:var(--card);border:1px solid var(--line);border-radius:13px;cursor:pointer;font-family:var(--ff-body)}
+  .mkitem b{font-size:15px;color:var(--ink)}
+  .mkitem span{font-size:12.5px;color:var(--muted)}
+  .mkitem .mkgrow{flex:1;min-width:0}
   /* the bottom tab bar from Ahmed's mockups: four rooms, one hallway */
   .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:8;display:flex;justify-content:space-around;
     padding:7px 8px calc(9px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line)}
@@ -1019,6 +1054,7 @@
   .authrow .recbtn{flex:1}
   .recbtn.authdel{border-color:var(--clay);color:var(--clay)}
   .drawitem[data-nav="account"]{--di:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='8.5' r='3.6'/><path d='M4.8 19.5a7.2 7.2 0 0 1 14.4 0'/></svg>")}
+  .drawitem[data-nav="make"]{--di:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 5.5h11M4 12h9M4 18.5h7'/><path d='M17.5 15v6M14.5 18h6'/></svg>")}
   .recswrow{display:flex;justify-content:flex-end;align-items:center;gap:9px;color:var(--muted);font-size:14px;margin-bottom:6px}
   .recsw{position:relative;width:46px;height:27px;border-radius:999px;border:1px solid var(--line);background:var(--paper);cursor:pointer;padding:0}
   .recsw i{position:absolute;top:2px;inset-inline-start:2px;width:21px;height:21px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
@@ -1320,6 +1356,7 @@
   <div id="community" class="cmwrap is-hidden"></div>
   <div id="saved" class="cmwrap is-hidden"></div>
   <div id="recscr" class="cmwrap is-hidden"></div>
+  <div id="mkscr" class="cmwrap is-hidden"></div>
   <div class="lasttrip is-hidden" id="lastTrip"></div>
   <div class="out" id="out" aria-live="polite"></div>
   <p class="foot" id="foot"></p>
@@ -1337,13 +1374,14 @@
         <button type="button" class="drawitem" data-nav="community" id="navCommunity">Traveller trips</button>
         <button type="button" class="drawitem" data-nav="saved" id="navSaved">Saved places</button>
         <button type="button" class="drawitem" data-nav="record" id="navRecord">My travel record</button>
+        <button type="button" class="drawitem" data-nav="make" id="navMake">Build it yourself</button>
         <button type="button" class="drawitem" data-nav="account" id="navAccount">Your account</button>
         <button type="button" class="drawitem" data-nav="install" id="navInstall">Add to Home Screen</button>
         <button type="button" class="drawitem" data-nav="share" id="navShare">Share بوصلة</button>
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 11:15 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 12:05 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -4245,7 +4283,7 @@
     $('welDiv').textContent=u.nameLabel; $('welName').setAttribute('placeholder',u.namePh); $('welNote').textContent=u.welcomeNote||''; $('welNote').style.display=u.welcomeNote?'':'none';
     renderWelcome(); try{syncEditFab();}catch(e){}
     $('drawerEdit').textContent=u.profileTitle; $('navHow').textContent=u.navHow; $('navTrips').textContent=u.myTrips; $('navInstall').textContent=u.navInstall; $('navShare').textContent=u.navShare; $('navFeedback').textContent=u.navFeedback; $('drawerAbout').textContent=u.menuAbout;
-    try{ var cx=CTXT[LANG]||CTXT.en; $('navCommunity').textContent=cx.title; $('navSaved').textContent=svTxt().t; $('navRecord').textContent=recTxt().t; $('navAccount').textContent=authTxt().t; try{updCtlHints();}catch(e2){} try{
+    try{ var cx=CTXT[LANG]||CTXT.en; $('navCommunity').textContent=cx.title; $('navSaved').textContent=svTxt().t; $('navRecord').textContent=recTxt().t; $('navAccount').textContent=authTxt().t; $('navMake').textContent=mkTxt().t; if(document.body.classList.contains('mkmode'))renderMake(); try{updCtlHints();}catch(e2){} try{
       var ar2=LANG==='ar', es2=LANG==='es';
       $('tabHome').textContent=ar2?'الرئيسية':(es2?'Inicio':'Home');
       $('tabTrips').textContent=ar2?'رحلات الناس':(es2?'Viajes':'Trips');
@@ -6865,6 +6903,7 @@
     else if(nav==='saved'){ closeDrawer(); openSavedView(); }
     else if(nav==='record'){ closeDrawer(); openRecView(); }
     else if(nav==='account'){ closeDrawer(); openAuth(); }
+    else if(nav==='make'){ closeDrawer(); openMake(); }
     else if(nav==='install'){ closeDrawer(); doInstall(); }
     else if(nav==='share'){ closeDrawer(); shareApp(); }
     else if(nav==='feedback'){ closeDrawer(); openFeedback(); }
@@ -7241,6 +7280,180 @@
     RGRAF=requestAnimationFrame(rgLoop);
   }
   function enterRec(){ document.body.classList.add('recmode'); exitCm(); exitSv();  document.body.classList.remove('planmode'); try{syncEditFab();}catch(e){} }
+  /* ---- Build it yourself --------------------------------------------------------------------
+     Some travellers already know their trip — they have lived it, or it is sitting in a Google
+     Maps list. Generating a plan for them is the wrong tool: they do not want suggestions, they
+     want their own stops written down in the app's shape so it can be read, shared and reused.
+     So: a blank itinerary. Same day cards, same slots, every line typed by hand. A stop is a
+     label, a name, and a way to open it on a map — paste a link and we keep the link, type a
+     name and we search for it near the city. Nothing is generated and nothing is guessed. */
+  function mkTxt(){
+    // its own labels, not the itinerary's: "Where you stay" is a heading for a card and gets cut
+    // off inside a picker this narrow. One or two words each, in the order a day happens.
+    var labels=LANG==='ar'?['الإقامة','الفطور','الصباح','الظهر','الغداء','بعد الظهر','العشاء','المساء']
+      :(LANG==='es'?['Hotel','Desayuno','Mañana','Mediodía','Almuerzo','Tarde','Cena','Noche']
+      :['Stay','Breakfast','Morning','Midday','Lunch','Afternoon','Dinner','Evening']);
+    if(LANG==='ar')return {t:'سوّها بنفسك',sub:'رحلة فاضية تعبّيها بنفسك — الفندق اللي نزلت فيه، مطعم الفطور، وش سويت كل يوم. تكتب الاسم أو تلصق رابط قوقل مابس.',
+      back:'رجوع',newT:'رحلة جديدة',city:'الوجهة',cityPh:'مثال: روما',days:'الأيام',day:'اليوم',
+      addRow:'+ أضف محطة',namePh:'اسم المكان، أو الصق رابط',open:'افتح',del:'احذف الرحلة',
+      delSure:'تنحذف هذي الرحلة من هذا الجهاز. متأكد؟',copy:'انسخ كنص',copied:'تم النسخ',
+      empty:'ما سويت ولا رحلة بيدك بعد.',none:'بدون عنوان',dcount:function(n){return n+' يوم';},
+      stops:function(n){return n+' محطة';},labels:labels};
+    if(LANG==='es')return {t:'Créalo tú mismo',sub:'Un viaje en blanco que rellenas tú — el hotel donde dormiste, dónde desayunaste, qué hiciste cada día. Escribe el nombre o pega un enlace de Google Maps.',
+      back:'Atrás',newT:'Nuevo viaje',city:'Destino',cityPh:'ej. Roma',days:'Días',day:'Día',
+      addRow:'+ Añadir parada',namePh:'Nombre del sitio, o pega un enlace',open:'Abrir',del:'Borrar viaje',
+      delSure:'Se borra este viaje de este dispositivo. ¿Seguro?',copy:'Copiar como texto',copied:'Copiado',
+      empty:'Aún no has creado ningún viaje a mano.',none:'Sin título',dcount:function(n){return n+' días';},
+      stops:function(n){return n+' paradas';},labels:labels};
+    return {t:'Build it yourself',sub:'A blank trip you fill in — the hotel you stayed at, where you had breakfast, what you did each day. Type a name, or paste a Google Maps link.',
+      back:'Back',newT:'New trip',city:'Destination',cityPh:'e.g. Rome',days:'Days',day:'Day',
+      addRow:'+ Add a stop',namePh:'Place name, or paste a link',open:'Open',del:'Delete trip',
+      delSure:'This deletes the trip from this device. Sure?',copy:'Copy as text',copied:'Copied',
+      empty:'You have not built a trip by hand yet.',none:'Untitled',dcount:function(n){return n+(n===1?' day':' days');},
+      stops:function(n){return n+(n===1?' stop':' stops');},labels:labels};
+  }
+  function mkLoad(){ try{ var a=JSON.parse(localStorage.getItem('bosla_made')||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+  function mkSave(list){ try{ localStorage.setItem('bosla_made',JSON.stringify(list.slice(0,40))); }catch(e){} }
+  var MKID=null;                                  // which hand-made trip is open, null = the list
+  function mkGet(){ var l=mkLoad(),i=l.findIndex(function(x){ return x.id===MKID; }); return i<0?null:l[i]; }
+  function mkPut(tr){
+    var l=mkLoad(),i=l.findIndex(function(x){ return x.id===tr.id; });
+    tr.t=Date.now(); if(i<0)l.unshift(tr); else l[i]=tr; mkSave(l);
+  }
+  function mkNew(){
+    var tr={id:'m'+Date.now().toString(36),city:'',days:3,rows:{},t:Date.now()};
+    tr.rows['1']=[{l:0,n:''},{l:1,n:''},{l:2,n:''}];   // a first day with a shape to copy
+    mkPut(tr); MKID=tr.id; return tr;
+  }
+  function mkStops(tr){
+    return Object.keys(tr.rows||{}).reduce(function(a,k){
+      return a+(tr.rows[k]||[]).filter(function(r){ return (r.n||'').trim(); }).length; },0);
+  }
+  // A stop opens wherever it can be opened: a pasted link is followed as-is, a typed name is
+  // searched near the city — which is what a Maps list gives you anyway.
+  function mkUrl(tr,r){
+    var n=(r.n||'').trim(); if(!n)return '';
+    if(/^https?:\/\//i.test(n))return n;
+    return mapUrl(n+' '+(tr.city||''));
+  }
+  function mkRowHtml(c,day,i,r){
+    var opts=c.labels.map(function(x,j){ return '<option value="'+j+'"'+(j===(r.l|0)?' selected':'')+'>'+esc(x)+'</option>'; }).join('');
+    return '<div class="mkrow"><select data-mkl="'+day+'|'+i+'">'+opts+'</select>'
+      +'<input type="text" dir="auto" maxlength="120" placeholder="'+esc(c.namePh)+'" value="'+esc(r.n||'')+'" data-mkn="'+day+'|'+i+'">'
+      +'<button type="button" class="mkgo" data-mkgo="'+day+'|'+i+'" aria-label="'+esc(c.open)+'" title="'+esc(c.open)+'">↗</button>'
+      +'<button type="button" class="mkx" data-mkx="'+day+'|'+i+'" aria-label="✕">✕</button></div>';
+  }
+  function mkText(tr,c){
+    var out=[(tr.city||c.none)+' · '+c.dcount(tr.days)];
+    for(var d=1;d<=tr.days;d++){
+      var rows=(tr.rows[String(d)]||[]).filter(function(r){ return (r.n||'').trim(); });
+      if(!rows.length)continue;
+      out.push(''); out.push(c.day+' '+d);
+      rows.forEach(function(r){ out.push('  '+c.labels[r.l|0]+': '+r.n); });
+    }
+    out.push(''); out.push(shareLink());
+    return out.join('\n');
+  }
+  function renderMake(){
+    var c=mkTxt(),box=$('mkscr'),tr=mkGet();
+    var head='<button type="button" class="cmback" data-mkexit="1"><span class="cmbkch">‹</span> '+esc(c.back)+'</button>'
+      +'<div class="cmhead"><h2>'+esc(c.t)+'</h2></div><div class="cmsub">'+esc(c.sub)+'</div>';
+    if(!tr){                                        // the list of everything built by hand so far
+      var list=mkLoad();
+      var h=head+'<button type="button" class="recbtn main" id="mkNew" style="width:100%">'+esc(c.newT)+'</button>';
+      h+='<div class="mklist">';
+      if(!list.length)h+='<div class="recempty">'+esc(c.empty)+'</div>';
+      list.forEach(function(x){
+        h+='<button type="button" class="mkitem" data-mkopen="'+esc(x.id)+'"><span class="mkgrow">'
+          +'<b dir="auto">'+esc(x.city||c.none)+'</b><br><span>'+esc(c.dcount(x.days)+' · '+c.stops(mkStops(x)))+'</span>'
+          +'</span><span>›</span></button>';
+      });
+      box.innerHTML=h+'</div>';
+      return;
+    }
+    var h=head+'<div class="mktrip">'
+      +'<div class="mkfield"><label for="mkCity">'+esc(c.city)+'</label>'
+      +'<input type="text" id="mkCity" dir="auto" maxlength="60" placeholder="'+esc(c.cityPh)+'" value="'+esc(tr.city||'')+'"></div>'
+      +'<div class="mkfield"><label for="mkDays">'+esc(c.days)+'</label>'
+      +'<input type="number" id="mkDays" min="1" max="30" inputmode="numeric" value="'+(tr.days|0)+'"></div></div>';
+    for(var d=1;d<=tr.days;d++){
+      var rows=tr.rows[String(d)]||[];
+      h+='<div class="mkday"><div class="dlabel">'+esc(c.day+' '+d)+'</div>';
+      h+=rows.map(function(r,i){ return mkRowHtml(c,d,i,r); }).join('');
+      h+='<button type="button" class="mkadd" data-mkadd="'+d+'">'+esc(c.addRow)+'</button></div>';
+    }
+    h+='<div class="mkacts"><button type="button" class="recbtn main" id="mkCopy">'+esc(c.copy)+'</button>'
+      +'<button type="button" class="recbtn authdel" id="mkDel">'+esc(c.del)+'</button></div>';
+    box.innerHTML=h;
+  }
+  function openMake(){
+    document.body.classList.add('mkmode');
+    exitCm(); exitSv(); exitRec();
+    $('mkscr').classList.remove('is-hidden');
+    renderMake();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function exitMake(){
+    document.body.classList.remove('mkmode');
+    var el=$('mkscr'); if(el)el.classList.add('is-hidden');
+    MKID=null;
+  }
+  (function(){
+    var box=$('mkscr'); if(!box)return;
+    function pair(a){ var p=String(a||'').split('|'); return {d:String(p[0]),i:+p[1]}; }
+    // every edit is written straight to the device — a half-typed trip that vanishes on a reload
+    // is worse than no builder at all
+    box.addEventListener('input',function(e){
+      var tr=mkGet(); if(!tr)return; var t=e.target,a;
+      if(t.id==='mkCity'){ tr.city=t.value.slice(0,60); mkPut(tr); return; }
+      if(t.id==='mkDays'){
+        var n=Math.max(1,Math.min(30,parseInt(t.value,10)||1));
+        tr.days=n; mkPut(tr); if(String(n)===t.value)renderMake(); return;
+      }
+      if((a=t.getAttribute('data-mkn'))){
+        var q=pair(a); (tr.rows[q.d]=tr.rows[q.d]||[])[q.i].n=t.value.slice(0,120); mkPut(tr); return;
+      }
+    });
+    box.addEventListener('change',function(e){
+      var tr=mkGet(); if(!tr)return; var a=e.target.getAttribute('data-mkl'); if(!a)return;
+      var q=pair(a); (tr.rows[q.d]=tr.rows[q.d]||[])[q.i].l=+e.target.value||0; mkPut(tr);
+    });
+    box.addEventListener('click',function(e){
+      var c=mkTxt(),t,a,q,tr;
+      if(e.target.closest('[data-mkexit]')){ exitMake(); window.scrollTo({top:0,behavior:'smooth'}); return; }
+      if((t=e.target.closest('[data-mkopen]'))){ MKID=t.getAttribute('data-mkopen'); renderMake(); return; }
+      if(e.target.closest('#mkNew')){ mkNew(); renderMake(); return; }
+      tr=mkGet(); if(!tr)return;
+      if((t=e.target.closest('[data-mkadd]'))){
+        var d=t.getAttribute('data-mkadd'), arr=(tr.rows[d]=tr.rows[d]||[]);
+        if(arr.length>=14)return;
+        arr.push({l:Math.min(arr.length,c.labels.length-1),n:''}); mkPut(tr); renderMake();
+        var ins=box.querySelectorAll('[data-mkn="'+d+'|'+(arr.length-1)+'"]'); if(ins[0])ins[0].focus();
+        return;
+      }
+      if((t=e.target.closest('[data-mkx]'))){
+        q=pair(t.getAttribute('data-mkx')); (tr.rows[q.d]||[]).splice(q.i,1); mkPut(tr); renderMake(); return;
+      }
+      if((t=e.target.closest('[data-mkgo]'))){
+        q=pair(t.getAttribute('data-mkgo'));
+        var u=mkUrl(tr,(tr.rows[q.d]||[])[q.i]||{});
+        if(u)window.open(u,'_blank','noopener');
+        return;
+      }
+      if(e.target.closest('#mkCopy')){
+        var txt=mkText(tr,c);
+        if(navigator.share){ navigator.share({title:tr.city||c.t,text:txt}).catch(function(){}); return; }
+        if(navigator.clipboard&&navigator.clipboard.writeText)
+          navigator.clipboard.writeText(txt).then(function(){ toast(c.copied); },function(){ toast(c.copied); });
+        return;
+      }
+      if(e.target.closest('#mkDel')){
+        if(!confirm(c.delSure))return;
+        mkSave(mkLoad().filter(function(x){ return x.id!==tr.id; }));
+        MKID=null; renderMake(); return;
+      }
+    });
+  })();
   function exitRec(){
     RECCMP=null;
     document.body.classList.remove('recmode');
