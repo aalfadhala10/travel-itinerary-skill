@@ -980,15 +980,22 @@
     background:var(--paper);color:var(--ink);font-size:14.5px;font-family:var(--ff-body)}
   .mkday{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
   .mkday .dlabel{font-family:var(--ff-data);font-size:11.5px;letter-spacing:1px;color:var(--amber);text-transform:uppercase}
+  /* a filled row borrows the itinerary's own slot — same icon, same amber label, same weight —
+     so a hand-built day and a generated one read as the same document */
+  .mkslot{padding:22px 2px 11px}
+  .mkslot .mksub{display:block;font-size:12px;color:var(--muted);opacity:.75;margin-top:1px}
+  /* .picbtn is hidden until a touch device asks for it; the builder's edit button is the only way
+     back into a finished row, so it is always shown */
+  .mkslot .mkedit{display:flex;color:var(--muted)}
   .mkrow{display:flex;gap:7px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
   .mkrow:last-of-type{border-bottom:none}
-  .mkrow select{flex:0 0 auto;width:31%;max-width:118px;padding:8px 6px;border:1px solid var(--line);border-radius:9px;
+  .mkrow select{flex:0 0 auto;width:34%;max-width:132px;padding:8px 6px;border:1px solid var(--line);border-radius:9px;
     background:var(--paper);color:var(--muted);font-size:12.5px;font-family:var(--ff-body)}
   .mkrow input{flex:1;min-width:0;padding:8px 9px;border:1px solid var(--line);border-radius:9px;
     background:var(--paper);color:var(--ink);font-size:14px;font-family:var(--ff-body)}
-  .mkrow .mkgo,.mkrow .mkx{flex:0 0 auto;border:none;background:none;cursor:pointer;padding:3px 5px;font-size:14px}
-  .mkrow .mkgo{color:var(--teal)}
-  .mkrow .mkx{color:var(--muted);opacity:.7}
+  .mkgo,.mkx{flex:0 0 auto;border:none;background:none;cursor:pointer;padding:3px 5px;font-size:14px;font-family:inherit}
+  .mkgo{color:var(--teal)}
+  .mkx{color:var(--muted);opacity:.7}
   .mkadd{margin-top:9px;width:100%;padding:9px;border:1px dashed var(--line);border-radius:11px;
     background:none;color:var(--muted);font-size:13.5px;font-family:var(--ff-body);cursor:pointer}
   .mkadd:hover{border-color:var(--amber);color:var(--amber)}
@@ -1390,7 +1397,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 14:00 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 14:45 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -7299,31 +7306,47 @@
   function mkTxt(){
     // its own labels, not the itinerary's: "Where you stay" is a heading for a card and gets cut
     // off inside a picker this narrow. One or two words each, in the order a day happens.
-    var labels=LANG==='ar'?['الإقامة','الفطور','الصباح','الظهر','الغداء','بعد الظهر','العشاء','المساء']
-      :(LANG==='es'?['Hotel','Desayuno','Mañana','Mediodía','Almuerzo','Tarde','Cena','Noche']
-      :['Stay','Breakfast','Morning','Midday','Lunch','Afternoon','Dinner','Evening']);
+    // Stored by KEY, never by position. The first version stored the picker's index, so inserting
+    // "Brunch" in the middle would have quietly turned every saved "Morning" into a brunch.
+    var names=LANG==='ar'?['الإقامة','الفطور','برانش','كافيه','الصباح','الظهر','الغداء','بعد الظهر','مول','مكان طبيعي','العشاء','المساء']
+      :(LANG==='es'?['Hotel','Desayuno','Brunch','Cafetería','Mañana','Mediodía','Almuerzo','Tarde','Compras','Naturaleza','Cena','Noche']
+      :['Stay','Breakfast','Brunch','Coffee shop','Morning','Midday','Lunch','Afternoon','Mall','Nature site','Dinner','Evening']);
+    var labels=MKKEYS.map(function(k,i){ return {k:k,t:names[i]}; });
     if(LANG==='ar')return {t:'سوّها بنفسك',sub:'رحلة فاضية تعبّيها بنفسك — الفندق اللي نزلت فيه، مطعم الفطور، وش سويت كل يوم. تكتب الاسم أو تلصق رابط قوقل مابس.',
-      back:'رجوع',newT:'رحلة جديدة',city:'الوجهة',cityPh:'مثال: روما',days:'الأيام',day:'اليوم',
+      back:'رجوع',newT:'رحلة جديدة',city:'الوجهة',cityPh:'مثال: روما',days:'الأيام',day:'اليوم',edit:'عدّل',done:'تم',linkOnly:'موقع على قوقل مابس',linkKept:'رابط محفوظ',
       addRow:'+ أضف محطة',namePh:'اسم المكان، أو الصق رابط',open:'افتح',del:'احذف الرحلة',
       delSure:'تنحذف هذي الرحلة من هذا الجهاز. متأكد؟',copy:'انسخ كنص',copied:'تم النسخ',
       empty:'ما سويت ولا رحلة بيدك بعد.',none:'بدون عنوان',dcount:function(n){return n+' يوم';},
       stops:function(n){return n+' محطة';},labels:labels};
     if(LANG==='es')return {t:'Créalo tú mismo',sub:'Un viaje en blanco que rellenas tú — el hotel donde dormiste, dónde desayunaste, qué hiciste cada día. Escribe el nombre o pega un enlace de Google Maps.',
-      back:'Atrás',newT:'Nuevo viaje',city:'Destino',cityPh:'ej. Roma',days:'Días',day:'Día',
+      back:'Atrás',newT:'Nuevo viaje',city:'Destino',cityPh:'ej. Roma',days:'Días',day:'Día',edit:'Editar',done:'Listo',linkOnly:'Ubicación de Google Maps',linkKept:'enlace guardado',
       addRow:'+ Añadir parada',namePh:'Nombre del sitio, o pega un enlace',open:'Abrir',del:'Borrar viaje',
       delSure:'Se borra este viaje de este dispositivo. ¿Seguro?',copy:'Copiar como texto',copied:'Copiado',
       empty:'Aún no has creado ningún viaje a mano.',none:'Sin título',dcount:function(n){return n+' días';},
       stops:function(n){return n+' paradas';},labels:labels};
     return {t:'Build it yourself',sub:'A blank trip you fill in — the hotel you stayed at, where you had breakfast, what you did each day. Type a name, or paste a Google Maps link.',
-      back:'Back',newT:'New trip',city:'Destination',cityPh:'e.g. Rome',days:'Days',day:'Day',
+      back:'Back',newT:'New trip',city:'Destination',cityPh:'e.g. Rome',days:'Days',day:'Day',edit:'Edit',done:'Done',linkOnly:'Google Maps location',linkKept:'link saved',
       addRow:'+ Add a stop',namePh:'Place name, or paste a link',open:'Open',del:'Delete trip',
       delSure:'This deletes the trip from this device. Sure?',copy:'Copy as text',copied:'Copied',
       empty:'You have not built a trip by hand yet.',none:'Untitled',dcount:function(n){return n+(n===1?' day':' days');},
       stops:function(n){return n+(n===1?' stop':' stops');},labels:labels};
   }
+  // in the order a day tends to happen; append to the end, never insert, and the keys stay honest
+  var MKKEYS=['stay','breakfast','brunch','coffee','morning','midday','lunch','afternoon','mall','nature','dinner','evening'];
+  var MKOLD=['stay','breakfast','morning','midday','lunch','afternoon','dinner','evening'];  // v1 stored this index
+  function mkKey(r){
+    if(r&&r.k&&MKKEYS.indexOf(r.k)>=0)return r.k;
+    return MKOLD[(r&&r.l)|0]||'stay';                  // a row saved before keys existed
+  }
+  function mkLabel(c,r){
+    var k=mkKey(r), f=c.labels.filter(function(x){ return x.k===k; })[0];
+    return f?f.t:c.labels[0].t;
+  }
   function mkLoad(){ try{ var a=JSON.parse(localStorage.getItem('bosla_made')||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
   function mkSave(list){ try{ localStorage.setItem('bosla_made',JSON.stringify(list.slice(0,40))); }catch(e){} }
   var MKID=null;                                  // which hand-made trip is open, null = the list
+  var MKEDIT=null;                                // "day|index" of the row being typed into
+  var MKPEN='<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14.5 5.5l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function mkGet(){ var l=mkLoad(),i=l.findIndex(function(x){ return x.id===MKID; }); return i<0?null:l[i]; }
   function mkPut(tr){
     var l=mkLoad(),i=l.findIndex(function(x){ return x.id===tr.id; });
@@ -7331,7 +7354,7 @@
   }
   function mkNew(){
     var tr={id:'m'+Date.now().toString(36),city:'',days:3,rows:{},t:Date.now()};
-    tr.rows['1']=[{l:0,n:''},{l:1,n:''},{l:2,n:''}];   // a first day with a shape to copy
+    tr.rows['1']=[{k:'stay',n:''},{k:'breakfast',n:''},{k:'morning',n:''}];   // a shape to copy
     mkPut(tr); MKID=tr.id; return tr;
   }
   function mkStops(tr){
@@ -7341,18 +7364,50 @@
   // A stop opens wherever it can be opened: a pasted link is followed as-is, a typed name is
   // searched near the city — which is what a Maps list gives you anyway.
   function mkUrl(tr,r){
-    var n=(r.n||'').trim(); if(!n)return '';
+    if(r&&r.u)return r.u;                                       // they pasted a link — honour it
+    var n=(r&&r.n||'').trim(); if(!n)return '';
     if(/^https?:\/\//i.test(n))return n;
     var where=tr.city||'';
     var d=tr.ck&&DEST[tr.ck]; if(d)where=d.city+', '+d.country;   // the country disambiguates every same-named city
     return mapUrl(n+' '+where, n);
   }
-  function mkRowHtml(c,day,i,r){
-    var opts=c.labels.map(function(x,j){ return '<option value="'+j+'"'+(j===(r.l|0)?' selected':'')+'>'+esc(x)+'</option>'; }).join('');
-    return '<div class="mkrow"><select data-mkl="'+day+'|'+i+'">'+opts+'</select>'
-      +'<input type="text" dir="auto" maxlength="120" placeholder="'+esc(c.namePh)+'" value="'+esc(r.n||'')+'" data-mkn="'+day+'|'+i+'">'
-      +'<button type="button" class="mkgo" data-mkgo="'+day+'|'+i+'" aria-label="'+esc(c.open)+'" title="'+esc(c.open)+'">↗</button>'
-      +'<button type="button" class="mkx" data-mkx="'+day+'|'+i+'" aria-label="✕">✕</button></div>';
+  // Which of the itinerary's icons belongs to this kind of stop, so a hand-built day is drawn
+  // with the same alphabet as a generated one.
+  var MKICON={stay:'bld',breakfast:'cup',brunch:'cup',coffee:'cup',morning:'sun',midday:'clk',
+    lunch:'frk',afternoon:'shp',mall:'shp',nature:'pin',dinner:'frk',evening:'eve'};
+  /* A Google Maps link carries the place's name inside it — /maps/place/La+Central+Burgers/@… —
+     so there is no reason to make somebody stare at 200 characters of URL. Pull the name out,
+     show that, and keep the link underneath. Short links (maps.app.goo.gl) hide it behind a
+     redirect we cannot follow from the page, so those keep the link and wait for a name. */
+  function mkFromUrl(u){
+    u=String(u||'').trim(); if(!/^https?:\/\//i.test(u))return null;
+    var name='';
+    try{
+      var m=/\/maps\/place\/([^\/@?]+)/.exec(u)||/\/maps\/search\/([^\/@?]+)/.exec(u);
+      if(m)name=decodeURIComponent(m[1].replace(/\+/g,' '));
+      if(!name){
+        var q=/[?&](?:q|query)=([^&]+)/.exec(u);
+        if(q&&!/^-?[\d.]+,-?[\d.]+$/.test(decodeURIComponent(q[1])))name=decodeURIComponent(q[1].replace(/\+/g,' '));
+      }
+    }catch(e){}
+    name=name.replace(/\s+/g,' ').trim().slice(0,120);
+    return {n:name,u:u};
+  }
+  function mkRowHtml(c,day,i,r,editing){
+    var cur=mkKey(r), at=day+'|'+i, lbl=mkLabel(c,r);
+    if(!editing&&(r.n||r.u)){                       // filled in — draw it the way a plan draws it
+      var url=mkUrl(mkGet()||{},r), title=r.n||c.linkOnly;
+      return '<div class="slot mkslot" data-ic="'+esc(MKICON[cur]||'pin')+'"><div class="t">'+esc(lbl)+'</div>'
+        +'<div class="d"><a href="'+esc(url||'#')+'" target="_blank" rel="noopener" dir="auto">'+esc(title)+'</a>'
+        +(r.u?'<span class="mksub">'+esc(c.linkKept)+'</span>':'')+'</div>'
+        +'<button type="button" class="picbtn mkedit" data-mked="'+at+'" aria-label="'+esc(c.edit)+'" title="'+esc(c.edit)+'">'+MKPEN+'</button>'
+        +'<button type="button" class="mkx" data-mkx="'+at+'" aria-label="✕">✕</button></div>';
+    }
+    var opts=c.labels.map(function(x){ return '<option value="'+esc(x.k)+'"'+(x.k===cur?' selected':'')+'>'+esc(x.t)+'</option>'; }).join('');
+    return '<div class="mkrow"><select data-mkl="'+at+'">'+opts+'</select>'
+      +'<input type="text" dir="auto" maxlength="240" placeholder="'+esc(c.namePh)+'" value="'+esc(r.n||r.u||'')+'" data-mkn="'+at+'">'
+      +'<button type="button" class="mkgo" data-mkdone="'+at+'" aria-label="'+esc(c.done)+'" title="'+esc(c.done)+'">✓</button>'
+      +'<button type="button" class="mkx" data-mkx="'+at+'" aria-label="✕">✕</button></div>';
   }
   function mkText(tr,c){
     var out=[(tr.city||c.none)+' · '+c.dcount(tr.days)];
@@ -7360,7 +7415,7 @@
       var rows=(tr.rows[String(d)]||[]).filter(function(r){ return (r.n||'').trim(); });
       if(!rows.length)continue;
       out.push(''); out.push(c.day+' '+d);
-      rows.forEach(function(r){ out.push('  '+c.labels[r.l|0]+': '+r.n); });
+      rows.forEach(function(r){ out.push('  '+mkLabel(c,r)+': '+r.n); });
     }
     out.push(''); out.push(shareLink());
     return out.join('\n');
@@ -7392,7 +7447,7 @@
     for(var d=1;d<=tr.days;d++){
       var rows=tr.rows[String(d)]||[];
       h+='<div class="mkday"><div class="dlabel">'+esc(c.day+' '+d)+'</div>';
-      h+=rows.map(function(r,i){ return mkRowHtml(c,d,i,r); }).join('');
+      h+=rows.map(function(r,i){ return mkRowHtml(c,d,i,r,MKEDIT===(d+'|'+i)); }).join('');
       h+='<button type="button" class="mkadd" data-mkadd="'+d+'">'+esc(c.addRow)+'</button></div>';
     }
     h+='<div class="mkacts"><button type="button" class="recbtn main" id="mkCopy">'+esc(c.copy)+'</button>'
@@ -7437,12 +7492,30 @@
         tr.days=n; mkPut(tr); if(String(n)===t.value)renderMake(); return;
       }
       if((a=t.getAttribute('data-mkn'))){
-        var q=pair(a); (tr.rows[q.d]=tr.rows[q.d]||[])[q.i].n=t.value.slice(0,120); mkPut(tr); return;
+        var q=pair(a), row=(tr.rows[q.d]=tr.rows[q.d]||[])[q.i]; if(!row)return;
+        var v=t.value.slice(0,240), got=mkFromUrl(v);
+        if(got){ row.u=got.u; if(got.n){ row.n=got.n; t.value=got.n; } }   // the link's own name wins
+        else { row.n=v; if(row.u&&!/^https?:/i.test(v))delete row.u; }     // retyped by hand — drop the stale link
+        mkPut(tr); return;
       }
+    });
+    box.addEventListener('keydown',function(e){
+      if(e.key!=='Enter'||!e.target.getAttribute('data-mkn'))return;
+      e.preventDefault(); e.target.blur(); MKEDIT=null; renderMake();
+    });
+    box.addEventListener('focusout',function(e){
+      if(!e.target.getAttribute||!e.target.getAttribute('data-mkn'))return;
+      var at=e.target.getAttribute('data-mkn');
+      setTimeout(function(){                                   // a tap on ✕ or the picker must win
+        if(MKEDIT!==at||box.contains(document.activeElement))return;
+        var tr2=mkGet(); if(!tr2)return; var q2=at.split('|'), r2=(tr2.rows[q2[0]]||[])[+q2[1]];
+        if(r2&&(r2.n||r2.u)){ MKEDIT=null; renderMake(); }
+      },140);
     });
     box.addEventListener('change',function(e){
       var tr=mkGet(); if(!tr)return; var a=e.target.getAttribute('data-mkl'); if(!a)return;
-      var q=pair(a); (tr.rows[q.d]=tr.rows[q.d]||[])[q.i].l=+e.target.value||0; mkPut(tr);
+      var q=pair(a), row=(tr.rows[q.d]=tr.rows[q.d]||[])[q.i];
+      if(!row)return; row.k=e.target.value; delete row.l; mkPut(tr);
     });
     box.addEventListener('click',function(e){
       var c=mkTxt(),t,a,q,tr;
@@ -7453,12 +7526,16 @@
       if((t=e.target.closest('[data-mkadd]'))){
         var d=t.getAttribute('data-mkadd'), arr=(tr.rows[d]=tr.rows[d]||[]);
         if(arr.length>=14)return;
-        arr.push({l:Math.min(arr.length,c.labels.length-1),n:''}); mkPut(tr); renderMake();
-        var ins=box.querySelectorAll('[data-mkn="'+d+'|'+(arr.length-1)+'"]'); if(ins[0])ins[0].focus();
+        arr.push({k:MKKEYS[Math.min(arr.length,MKKEYS.length-1)],n:''});
+        MKEDIT=d+'|'+(arr.length-1); mkPut(tr); renderMake();
+        var ins=box.querySelectorAll('[data-mkn="'+MKEDIT+'"]'); if(ins[0])ins[0].focus();
         return;
       }
+      if((t=e.target.closest('[data-mked]'))){ MKEDIT=t.getAttribute('data-mked'); renderMake();
+        var ie=box.querySelectorAll('[data-mkn="'+MKEDIT+'"]'); if(ie[0]){ ie[0].focus(); ie[0].select(); } return; }
+      if(e.target.closest('[data-mkdone]')){ MKEDIT=null; renderMake(); return; }
       if((t=e.target.closest('[data-mkx]'))){
-        q=pair(t.getAttribute('data-mkx')); (tr.rows[q.d]||[]).splice(q.i,1); mkPut(tr); renderMake(); return;
+        q=pair(t.getAttribute('data-mkx')); (tr.rows[q.d]||[]).splice(q.i,1); MKEDIT=null; mkPut(tr); renderMake(); return;
       }
       if((t=e.target.closest('[data-mkgo]'))){
         q=pair(t.getAttribute('data-mkgo'));
