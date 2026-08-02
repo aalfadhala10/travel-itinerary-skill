@@ -1415,7 +1415,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 15:30 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 16:20 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -7351,19 +7351,19 @@
       :['Stay','Breakfast','Brunch','Coffee shop','Morning','Midday','Lunch','Afternoon','Mall','Nature site','Dinner','Evening']);
     var labels=MKKEYS.map(function(k,i){ return {k:k,t:names[i]}; });
     if(LANG==='ar')return {t:'سوّها بنفسك',sub:'رحلة فاضية تعبّيها بنفسك — الفندق اللي نزلت فيه، مطعم الفطور، وش سويت كل يوم. تكتب الاسم أو تلصق رابط قوقل مابس.',
-      back:'رجوع',newT:'رحلة جديدة',city:'الوجهة',cityPh:'مثال: روما',days:'الأيام',day:'اليوم',edit:'عدّل',done:'تم',linkOnly:'موقع على قوقل مابس',linkKept:'رابط محفوظ',
+      back:'رجوع',newT:'رحلة جديدة',city:'الوجهة',cityPh:'مثال: روما',days:'الأيام',day:'اليوم',edit:'عدّل',done:'تم',linkOnly:'موقع على قوقل مابس',linkKept:'رابط محفوظ',fromFriend:'رحلة وصلتك من صديق — سوّاها بنفسه.',keep:'احفظها عندي',mineT:'رحلاتي',kept:'تم الحفظ في رحلاتك',
       addRow:'+ أضف محطة',namePh:'اسم المكان، أو الصق رابط',open:'افتح',del:'احذف الرحلة',
       delSure:'تنحذف هذي الرحلة من هذا الجهاز. متأكد؟',copy:'انسخ كنص',copied:'تم النسخ',
       empty:'ما سويت ولا رحلة بيدك بعد.',none:'بدون عنوان',dcount:function(n){return n+' يوم';},
       stops:function(n){return n+' محطة';},labels:labels};
     if(LANG==='es')return {t:'Créalo tú mismo',sub:'Un viaje en blanco que rellenas tú — el hotel donde dormiste, dónde desayunaste, qué hiciste cada día. Escribe el nombre o pega un enlace de Google Maps.',
-      back:'Atrás',newT:'Nuevo viaje',city:'Destino',cityPh:'ej. Roma',days:'Días',day:'Día',edit:'Editar',done:'Listo',linkOnly:'Ubicación de Google Maps',linkKept:'enlace guardado',
+      back:'Atrás',newT:'Nuevo viaje',city:'Destino',cityPh:'ej. Roma',days:'Días',day:'Día',edit:'Editar',done:'Listo',linkOnly:'Ubicación de Google Maps',linkKept:'enlace guardado',fromFriend:'Un viaje que te envió un amigo — hecho a mano por él.',keep:'Guardar una copia',mineT:'Los míos',kept:'Guardado en tus viajes',
       addRow:'+ Añadir parada',namePh:'Nombre del sitio, o pega un enlace',open:'Abrir',del:'Borrar viaje',
       delSure:'Se borra este viaje de este dispositivo. ¿Seguro?',copy:'Copiar como texto',copied:'Copiado',
       empty:'Aún no has creado ningún viaje a mano.',none:'Sin título',dcount:function(n){return n+' días';},
       stops:function(n){return n+' paradas';},labels:labels};
     return {t:'Build it yourself',sub:'A blank trip you fill in — the hotel you stayed at, where you had breakfast, what you did each day. Type a name, or paste a Google Maps link.',
-      back:'Back',newT:'New trip',city:'Destination',cityPh:'e.g. Rome',days:'Days',day:'Day',edit:'Edit',done:'Done',linkOnly:'Google Maps location',linkKept:'link saved',
+      back:'Back',newT:'New trip',city:'Destination',cityPh:'e.g. Rome',days:'Days',day:'Day',edit:'Edit',done:'Done',linkOnly:'Google Maps location',linkKept:'link saved',fromFriend:'A trip a friend sent you — built by hand.',keep:'Save a copy',mineT:'My trips',kept:'Saved to your trips',
       addRow:'+ Add a stop',namePh:'Place name, or paste a link',open:'Open',del:'Delete trip',
       delSure:'This deletes the trip from this device. Sure?',copy:'Copy as text',copied:'Copied',
       empty:'You have not built a trip by hand yet.',none:'Untitled',dcount:function(n){return n+(n===1?' day':' days');},
@@ -7384,9 +7384,14 @@
   function mkSave(list){ try{ localStorage.setItem('bosla_made',JSON.stringify(list.slice(0,40))); }catch(e){} }
   var MKID=null;                                  // which hand-made trip is open, null = the list
   var MKEDIT=null;                                // "day|index" of the row being typed into
+  var MKSHARED=null;                              // a trip that arrived by link — theirs to keep or leave
   var MKPEN='<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14.5 5.5l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  function mkGet(){ var l=mkLoad(),i=l.findIndex(function(x){ return x.id===MKID; }); return i<0?null:l[i]; }
+  function mkGet(){
+    if(MKSHARED)return MKSHARED;
+    var l=mkLoad(),i=l.findIndex(function(x){ return x.id===MKID; }); return i<0?null:l[i];
+  }
   function mkPut(tr){
+    if(MKSHARED)return;                           // somebody else's trip is not ours to edit
     var l=mkLoad(),i=l.findIndex(function(x){ return x.id===tr.id; });
     tr.t=Date.now(); if(i<0)l.unshift(tr); else l[i]=tr; mkSave(l);
   }
@@ -7431,21 +7436,44 @@
     name=name.replace(/\s+/g,' ').trim().slice(0,120);
     return {n:name,u:u};
   }
-  function mkRowHtml(c,day,i,r,editing){
+  function mkRowHtml(c,day,i,r,editing,readOnly){
     var cur=mkKey(r), at=day+'|'+i, lbl=mkLabel(c,r);
     if(!editing&&(r.n||r.u)){                       // filled in — draw it the way a plan draws it
       var url=mkUrl(mkGet()||{},r), title=r.n||c.linkOnly;
       return '<div class="slot mkslot" data-ic="'+esc(MKICON[cur]||'pin')+'"><div class="t">'+esc(lbl)+'</div>'
         +'<div class="d"><a href="'+esc(url||'#')+'" target="_blank" rel="noopener" dir="auto">'+esc(title)+'</a>'
         +(r.u?'<span class="mksub">'+esc(c.linkKept)+'</span>':'')+'</div>'
-        +'<button type="button" class="picbtn mkedit" data-mked="'+at+'" aria-label="'+esc(c.edit)+'" title="'+esc(c.edit)+'">'+MKPEN+'</button>'
-        +'<button type="button" class="mkx" data-mkx="'+at+'" aria-label="✕">✕</button></div>';
+        +(readOnly?'':'<button type="button" class="picbtn mkedit" data-mked="'+at+'" aria-label="'+esc(c.edit)+'" title="'+esc(c.edit)+'">'+MKPEN+'</button>'
+        +'<button type="button" class="mkx" data-mkx="'+at+'" aria-label="✕">✕</button>')+'</div>';
     }
     var opts=c.labels.map(function(x){ return '<option value="'+esc(x.k)+'"'+(x.k===cur?' selected':'')+'>'+esc(x.t)+'</option>'; }).join('');
     return '<div class="mkrow"><select data-mkl="'+at+'">'+opts+'</select>'
       +'<input type="text" dir="auto" maxlength="240" placeholder="'+esc(c.namePh)+'" value="'+esc(r.n||r.u||'')+'" data-mkn="'+at+'">'
       +'<button type="button" class="mkgo" data-mkdone="'+at+'" aria-label="'+esc(c.done)+'" title="'+esc(c.done)+'">✓</button>'
       +'<button type="button" class="mkx" data-mkx="'+at+'" aria-label="✕">✕</button></div>';
+  }
+  /* A hand-built trip needs its own link. It was appending shareLink(), which serialises the
+     PLANNER's form — empty for somebody who only ever built by hand — so a friend opened a blank
+     plan and saw nothing. The trip travels in the link itself, like a planned one does.
+     A stop that has a name drops its map URL on the way out: the name is searchable and those
+     URLs are 200 characters each, which is the difference between a link that survives a chat
+     app and one that does not. */
+  function mkPack(tr){
+    var r={};
+    Object.keys(tr.rows||{}).forEach(function(d){
+      var arr=(tr.rows[d]||[]).filter(function(x){ return (x.n||'').trim()||x.u; })
+        .map(function(x){ var o={k:mkKey(x)}; if(x.n)o.n=x.n; if(x.u&&!x.n)o.u=x.u; return o; });
+      if(arr.length)r[d]=arr;
+    });
+    return {c:tr.city||'',k:tr.ck||'',d:tr.days|0,r:r};
+  }
+  function mkUnpack(o){
+    if(!o||typeof o!=='object')return null;
+    return {id:'m'+Date.now().toString(36),city:String(o.c||'').slice(0,60),ck:String(o.k||''),
+      days:Math.max(1,Math.min(30,o.d|0))||1,rows:(o.r&&typeof o.r==='object')?o.r:{},t:Date.now()};
+  }
+  function mkLink(tr){
+    return location.href.split('#')[0].split('?')[0]+'#made='+encodeURIComponent(JSON.stringify(mkPack(tr)));
   }
   function mkText(tr,c){
     var out=[(tr.city||c.none)+' · '+c.dcount(tr.days)];
@@ -7455,7 +7483,7 @@
       out.push(''); out.push(c.day+' '+d);
       rows.forEach(function(r){ out.push('  '+mkLabel(c,r)+': '+r.n); });
     }
-    out.push(''); out.push(shareLink());
+    out.push(''); out.push(mkLink(tr));
     return out.join('\n');
   }
   function renderMake(){
@@ -7473,6 +7501,22 @@
           +'</span><span>›</span></button>';
       });
       box.innerHTML=h+'</div>';
+      return;
+    }
+    if(MKSHARED){
+      var hs=head+'<div class="recempty" style="margin:0 0 12px">'+esc(c.fromFriend)+'</div>'
+        +'<div class="mktrip"><div class="mkfield"><label>'+esc(c.city)+'</label>'
+        +'<div class="mkcombo" style="padding:9px 10px;font-size:14.5px" dir="auto">'+esc(tr.city||c.none)+'</div></div>'
+        +'<div class="mkfield"><label>'+esc(c.days)+'</label>'
+        +'<div class="mkcombo" style="padding:9px 10px;font-size:14.5px">'+(tr.days|0)+'</div></div></div>';
+      for(var ds=1;ds<=tr.days;ds++){
+        var rs=tr.rows[String(ds)]||[]; if(!rs.length)continue;
+        hs+='<div class="mkday"><div class="dlabel">'+esc(c.day+' '+ds)+'</div>'
+          +rs.map(function(r,i){ return mkRowHtml(c,ds,i,r,false,true); }).join('')+'</div>';
+      }
+      hs+='<div class="mkacts"><button type="button" class="recbtn main" id="mkKeep">'+esc(c.keep)+'</button>'
+        +'<button type="button" class="recbtn" id="mkMine">'+esc(c.mineT)+'</button></div>';
+      box.innerHTML=hs;
       return;
     }
     var h=head+'<div class="mktrip">'
@@ -7511,7 +7555,7 @@
   function exitMake(){
     document.body.classList.remove('mkmode');
     var el=$('mkscr'); if(el)el.classList.add('is-hidden');
-    MKID=null;
+    MKID=null; MKSHARED=null; MKEDIT=null;
   }
   (function(){
     var box=$('mkscr'); if(!box)return;
@@ -7559,7 +7603,12 @@
       var c=mkTxt(),t,a,q,tr;
       if(e.target.closest('[data-mkexit]')){ exitMake(); window.scrollTo({top:0,behavior:'smooth'}); return; }
       if((t=e.target.closest('[data-mkopen]'))){ MKID=t.getAttribute('data-mkopen'); renderMake(); return; }
-      if(e.target.closest('#mkNew')){ mkNew(); renderMake(); return; }
+      if(e.target.closest('#mkNew')){ MKSHARED=null; mkNew(); renderMake(); return; }
+      if(e.target.closest('#mkKeep')){                       // a copy of theirs, now ours to edit
+        var got=MKSHARED; MKSHARED=null; got.id='m'+Date.now().toString(36);
+        mkPut(got); MKID=got.id; renderMake(); toast(c.kept); return;
+      }
+      if(e.target.closest('#mkMine')){ MKSHARED=null; MKID=null; renderMake(); return; }
       tr=mkGet(); if(!tr)return;
       if((t=e.target.closest('[data-mkadd]'))){
         var d=t.getAttribute('data-mkadd'), arr=(tr.rows[d]=tr.rows[d]||[]);
@@ -9558,6 +9607,13 @@
     try{
       var s=null, h=location.hash||'', shared=(h.indexOf('#trip=')===0);
       // a friend sent a published trip: open the app straight onto it
+      // a hand-built trip arrives whole, inside its own link
+      if(h.indexOf('#made=')===0){
+        try{
+          var mt=mkUnpack(JSON.parse(decodeURIComponent(h.slice(6))));
+          if(mt&&mt.city){ MKSHARED=mt; setTimeout(function(){ try{ openMake(); }catch(e){} },300); return; }
+        }catch(e){}
+      }
       if(h.indexOf('#pub=')===0){ var pid=h.slice(5); setTimeout(function(){ try{ enterCm(); $('community').classList.remove('is-hidden'); openPubTrip(pid); $('community').scrollIntoView(); }catch(e){} },400); }
       if(shared){ s=JSON.parse(decodeURIComponent(h.slice(6))); }
       if(!s){ s=JSON.parse(localStorage.getItem('rihla_v1')||'null'); shared=false; }
@@ -9570,9 +9626,9 @@
   })();
 
   // first-time welcome (skipped when opening a shared trip link)
-  (function(){ try{ if(!isWelcomed() && (location.hash||'').indexOf('#trip=')!==0 && (location.hash||'').indexOf('#pub=')!==0){ showWelcome(); } }catch(e){} })();
+  (function(){ try{ if(!isWelcomed() && (location.hash||'').indexOf('#trip=')!==0 && (location.hash||'').indexOf('#pub=')!==0 && (location.hash||'').indexOf('#made=')!==0){ showWelcome(); } }catch(e){} })();
   // first-time "how it works" intro (skipped when opening a shared trip link)
-  (function(){ try{ if(localStorage.getItem('rihla_introseen')!=='1' && (location.hash||'').indexOf('#trip=')!==0 && (location.hash||'').indexOf('#pub=')!==0){ showIntro(); } }catch(e){} })();
+  (function(){ try{ if(localStorage.getItem('rihla_introseen')!=='1' && (location.hash||'').indexOf('#trip=')!==0 && (location.hash||'').indexOf('#pub=')!==0 && (location.hash||'').indexOf('#made=')!==0){ showIntro(); } }catch(e){} })();
 
   // usage tracking: one page view, and outbound clicks (booking / maps / tours / flights) to gauge intent
   track('page_view',{});
