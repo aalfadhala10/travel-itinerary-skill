@@ -1063,7 +1063,10 @@
   .cmcover.cmtall{height:180px}
   .cmdetail .cmcover{margin:10px 0 14px;border-radius:16px}
   .cmcover.cmflag .bg{position:absolute;inset:-50px;display:flex;align-items:center;justify-content:center;font-size:280px;line-height:1;filter:blur(26px) saturate(1.35);opacity:.85;pointer-events:none}
-  .cmcover.cmflag .fg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:56px;line-height:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.35))}
+  /* the emoji flag is a ~160px bitmap in the phone's font — 118px is the biggest it can be
+     drawn and stay sharp. The real full-bleed banner is the city photograph, which replaces
+     this whole cover the moment the worker's cityphoto pipeline answers. */
+  .cmcover.cmflag .fg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:118px;line-height:1;filter:drop-shadow(0 6px 18px rgba(0,0,0,.45))}
   .cmcover .cph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   .cmattr{position:absolute;bottom:4px;inset-inline-end:6px;z-index:2;font-size:9.5px;line-height:1;color:#fff;background:rgba(0,0,0,.45);border-radius:999px;padding:3px 7px;text-decoration:none;max-width:70%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
   .cmattr:hover{background:rgba(0,0,0,.65)}
@@ -1271,7 +1274,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 02:11 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 04:28 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
