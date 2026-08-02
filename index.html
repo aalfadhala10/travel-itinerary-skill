@@ -997,6 +997,17 @@
   .sugn b{font-size:15.5px;font-weight:700}
   .sugn span{color:var(--muted);font-size:12.5px}
   .sugx{flex:0 0 auto;border:none;background:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 2px;opacity:.65}
+  .cmpscore{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0 12px;text-align:center}
+  .cmpscore span{display:flex;flex-direction:column;gap:1px;font-size:11px;color:var(--muted);line-height:1.3}
+  .cmpscore b{font-size:20px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .cmpsec{margin-top:11px}
+  .cmphead{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:6px}
+  .cmphead .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .dot.both{background:var(--amber)} .dot.me{background:var(--teal)} .dot.them{background:var(--clay)}
+  .cmpchips{display:flex;flex-wrap:wrap;gap:6px}
+  .cmpchip{font-size:12.5px;padding:4px 9px;border-radius:999px;border:1px solid var(--line);background:var(--paper)}
+  .cmpchip.both{border-color:var(--amber)} .cmpchip.me{border-color:var(--teal)} .cmpchip.them{border-color:var(--clay)}
+  .cmpnone{color:var(--muted);font-size:12.5px}
   .recswrow{display:flex;justify-content:flex-end;align-items:center;gap:9px;color:var(--muted);font-size:14px;margin-bottom:6px}
   .recsw{position:relative;width:46px;height:27px;border-radius:999px;border:1px solid var(--line);background:var(--paper);cursor:pointer;padding:0}
   .recsw i{position:absolute;top:2px;inset-inline-start:2px;width:21px;height:21px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
@@ -1320,7 +1331,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 07:44 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 07:52 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -7027,9 +7038,9 @@
   function recLoad(){ try{ var r=JSON.parse(localStorage.getItem('bosla_beento')||'null'); if(r&&Array.isArray(r.v))return {h:r.h||null,v:r.v}; }catch(e){} return {h:null,v:[]}; }
   function recStore(){ SUGCUR=null; if(RECSHARED)return; try{ localStorage.setItem('bosla_beento',JSON.stringify(RECV)); }catch(e){} }
   function recTxt(){
-    return LANG==='ar'?{t:'سجل سفراتي',sub:'كل دولة وطئتها رجلك — خطوط ضوء من بيتك، والعدّاد يكبر معك. محفوظ على جهازك فقط.',home:'بلدك',homePh:'اكتب بلدك',been:'رحت لـ…',beenPh:'أضف دولة زرتها',of:'دولة',lines:'خطوط من بيتك',far:'الأبعد',share:'شارك سجلي',clear:'ابدأ من جديد',flat:'خريطة مسطحة',globe:'الكرة',empty:'اكتب دولة فوق — كل دولة تضيفها تصير خط ضوء من بيتك.',sharedBy:function(h){return 'سجل سفرات صديقك — من '+h;},mine:'ورّني سجلي',shareMsg:function(n,t){return 'سجل سفراتي: '+n+' / '+t+' دولة ';},back:'رجوع',goalT:'هدف السنة',goalAsk:'كم دولة جديدة تبي تزورها هالسنة؟',goalSet:'حدد الهدف',goalOf:function(a,b2,y){return a+' من '+b2+' دول جديدة في '+y;},goalDone:function(y){return 'مبروك! كملت هدفك لسنة '+y+' 🎉';},goalDoneSub:'تبي ترفع السقف؟ عدّل هدفك وكمّل.',goalEdit:'عدّل الهدف',goalShare:function(y){return ' · حققت هدفي لسنة '+y;},sugT:'وين بعد؟',sugSub:'مقترحات من سجلك — دول ما زرتها بعد.',sugPlan:'خطط رحلة',sugNo:'مو مناسبة — اقترح غيرها',sugWhy:{near:'قريبة من دولة زرتها',region:'تشبه المنطقة الي تحبها',home:'قريبة من بيتك'}}
-    :(LANG==='es'?{t:'Mi historial de viajes',sub:'Cada país que has pisado — líneas de luz desde casa, y un contador que crece contigo. Guardado solo en este dispositivo.',home:'Tu país',homePh:'escribe tu país',been:'He estado en…',beenPh:'añade un país',of:'países',lines:'Líneas desde casa',far:'Más lejano',share:'Compartir mi historial',clear:'Empezar de nuevo',flat:'Mapa plano',globe:'Globo',empty:'Escribe un país arriba — cada uno se convierte en una línea de luz desde casa.',sharedBy:function(h){return 'El historial de viajes de un amigo — desde '+h;},mine:'Ver el mío',shareMsg:function(n,t){return 'Mi historial de viajes: '+n+' / '+t+' países ';},back:'Volver',goalT:'Meta del año',goalAsk:'¿Cuántos países nuevos quieres visitar este año?',goalSet:'Fijar meta',goalOf:function(a,b2,y){return a+' de '+b2+' países nuevos en '+y;},goalDone:function(y){return '¡Enhorabuena! Cumpliste tu meta de '+y+' 🎉';},goalDoneSub:'¿Subimos el listón? Edita tu meta y sigue.',goalEdit:'Editar meta',goalShare:function(y){return ' · meta de '+y+' cumplida';},sugT:'¿Y ahora?',sugSub:'Sugerencias desde tu historial — países que aún no pisaste.',sugPlan:'Planear',sugNo:'No me interesa — sugiere otro',sugWhy:{near:'cerca de un país que visitaste',region:'como las regiones que te gustan',home:'cerca de casa'}}
-    :{t:'My travel record',sub:'Every country you have set foot in — lines of light from home, and a count that grows with you. Saved on this device only.',home:'Home',homePh:'type your country',been:'I have been to…',beenPh:'add a country',of:'countries',lines:'Lines from home',far:'Farthest',share:'Share my record',clear:'Start over',flat:'Flat map',globe:'Globe',empty:'Type a country above — each one becomes a line of light from home.',sharedBy:function(h){return 'A friend’s travel record — from '+h;},mine:'Show mine instead',shareMsg:function(n,t){return 'My travel record: '+n+' / '+t+' countries ';},back:'Back',goalT:'This year\u2019s goal',goalAsk:'How many new countries do you want this year?',goalSet:'Set the goal',goalOf:function(a,b2,y){return a+' of '+b2+' new countries in '+y;},goalDone:function(y){return 'You did it \u2014 your '+y+' goal is complete.';},goalDoneSub:'Raise the bar? Edit your goal and keep going.',goalEdit:'Edit goal',goalShare:function(y){return ' \u00b7 '+y+' goal reached';},sugT:'Where next?',sugSub:'Suggestions from your own record \u2014 countries you have not set foot in yet.',sugPlan:'Plan a trip',sugNo:'Not for me — suggest another',sugWhy:{near:'near a country you visited',region:'like the regions you favour',home:'close to home'}});
+    return LANG==='ar'?{t:'سجل سفراتي',sub:'كل دولة وطئتها رجلك — خطوط ضوء من بيتك، والعدّاد يكبر معك. محفوظ على جهازك فقط.',home:'بلدك',homePh:'اكتب بلدك',been:'رحت لـ…',beenPh:'أضف دولة زرتها',of:'دولة',lines:'خطوط من بيتك',far:'الأبعد',share:'شارك سجلي',clear:'ابدأ من جديد',flat:'خريطة مسطحة',globe:'الكرة',empty:'اكتب دولة فوق — كل دولة تضيفها تصير خط ضوء من بيتك.',sharedBy:function(h){return 'سجل سفرات صديقك — من '+h;},mine:'ورّني سجلي',shareMsg:function(n,t){return 'سجل سفراتي: '+n+' / '+t+' دولة ';},back:'رجوع',goalT:'هدف السنة',goalAsk:'كم دولة جديدة تبي تزورها هالسنة؟',goalSet:'حدد الهدف',goalOf:function(a,b2,y){return a+' من '+b2+' دول جديدة في '+y;},goalDone:function(y){return 'مبروك! كملت هدفك لسنة '+y+' 🎉';},goalDoneSub:'تبي ترفع السقف؟ عدّل هدفك وكمّل.',goalEdit:'عدّل الهدف',goalShare:function(y){return ' · حققت هدفي لسنة '+y;},sugT:'وين بعد؟',sugSub:'مقترحات من سجلك — دول ما زرتها بعد.',sugPlan:'خطط رحلة',sugNo:'مو مناسبة — اقترح غيرها',cmpT:'قارن مع صديق',cmpSub:'الصق رابط سجل صديقك — نشوف وين تلاقيتوا ووين سبقكم.',cmpPh:'الصق الرابط هنا',cmpGo:'قارن',cmpBad:'الرابط ما فيه سجل — تأكد إنك نسخت الرابط كامل.',cmpOff:'أنهِ المقارنة',cmpYou:'أنت',cmpThem:'صديقك',cmpTogether:'سوا',cmpBoth:'زرتوها الاثنين',cmpOnlyMe:'أنت بس',cmpOnlyThem:'هو بس',cmpNone:'ما في ولا دولة مشتركة بعد',cmpDo:'قارنه بسجلي',sugWhy:{near:'قريبة من دولة زرتها',region:'تشبه المنطقة الي تحبها',home:'قريبة من بيتك'}}
+    :(LANG==='es'?{t:'Mi historial de viajes',sub:'Cada país que has pisado — líneas de luz desde casa, y un contador que crece contigo. Guardado solo en este dispositivo.',home:'Tu país',homePh:'escribe tu país',been:'He estado en…',beenPh:'añade un país',of:'países',lines:'Líneas desde casa',far:'Más lejano',share:'Compartir mi historial',clear:'Empezar de nuevo',flat:'Mapa plano',globe:'Globo',empty:'Escribe un país arriba — cada uno se convierte en una línea de luz desde casa.',sharedBy:function(h){return 'El historial de viajes de un amigo — desde '+h;},mine:'Ver el mío',shareMsg:function(n,t){return 'Mi historial de viajes: '+n+' / '+t+' países ';},back:'Volver',goalT:'Meta del año',goalAsk:'¿Cuántos países nuevos quieres visitar este año?',goalSet:'Fijar meta',goalOf:function(a,b2,y){return a+' de '+b2+' países nuevos en '+y;},goalDone:function(y){return '¡Enhorabuena! Cumpliste tu meta de '+y+' 🎉';},goalDoneSub:'¿Subimos el listón? Edita tu meta y sigue.',goalEdit:'Editar meta',goalShare:function(y){return ' · meta de '+y+' cumplida';},sugT:'¿Y ahora?',sugSub:'Sugerencias desde tu historial — países que aún no pisaste.',sugPlan:'Planear',sugNo:'No me interesa — sugiere otro',cmpT:'Comparar con un amigo',cmpSub:'Pega el enlace del historial de tu amigo — mira dónde coincidís y dónde te lleva ventaja.',cmpPh:'Pega el enlace aquí',cmpGo:'Comparar',cmpBad:'Ese enlace no lleva un historial — copia el enlace completo.',cmpOff:'Terminar comparación',cmpYou:'Tú',cmpThem:'Tu amigo',cmpTogether:'Juntos',cmpBoth:'Los dos',cmpOnlyMe:'Solo tú',cmpOnlyThem:'Solo él',cmpNone:'Aún ningún país en común',cmpDo:'Comparar con el mío',sugWhy:{near:'cerca de un país que visitaste',region:'como las regiones que te gustan',home:'cerca de casa'}}
+    :{t:'My travel record',sub:'Every country you have set foot in — lines of light from home, and a count that grows with you. Saved on this device only.',home:'Home',homePh:'type your country',been:'I have been to…',beenPh:'add a country',of:'countries',lines:'Lines from home',far:'Farthest',share:'Share my record',clear:'Start over',flat:'Flat map',globe:'Globe',empty:'Type a country above — each one becomes a line of light from home.',sharedBy:function(h){return 'A friend’s travel record — from '+h;},mine:'Show mine instead',shareMsg:function(n,t){return 'My travel record: '+n+' / '+t+' countries ';},back:'Back',goalT:'This year\u2019s goal',goalAsk:'How many new countries do you want this year?',goalSet:'Set the goal',goalOf:function(a,b2,y){return a+' of '+b2+' new countries in '+y;},goalDone:function(y){return 'You did it \u2014 your '+y+' goal is complete.';},goalDoneSub:'Raise the bar? Edit your goal and keep going.',goalEdit:'Edit goal',goalShare:function(y){return ' \u00b7 '+y+' goal reached';},sugT:'Where next?',sugSub:'Suggestions from your own record \u2014 countries you have not set foot in yet.',sugPlan:'Plan a trip',sugNo:'Not for me — suggest another',cmpT:'Compare with a friend',cmpSub:'Paste your friend\u2019s record link — see where you have both stood, and where they are ahead.',cmpPh:'Paste the link here',cmpGo:'Compare',cmpBad:'That link carries no record — copy the whole link.',cmpOff:'End comparison',cmpYou:'You',cmpThem:'Your friend',cmpTogether:'Together',cmpBoth:'Both of you',cmpOnlyMe:'Only you',cmpOnlyThem:'Only them',cmpNone:'No countries in common yet',cmpDo:'Compare with mine',sugWhy:{near:'near a country you visited',region:'like the regions you favour',home:'close to home'}});
   }
   function rgCol(n){ return getComputedStyle(document.body).getPropertyValue(n).trim(); }
   function rgCv(){ return document.getElementById('recCv'); }
@@ -7066,10 +7077,33 @@
     var z=A*Math.sin(la1)+B*Math.sin(la2);
     return [Math.atan2(z,Math.sqrt(x*x+y*y))/r,Math.atan2(y,x)/r];
   }
+  var RECCMP=null;   // a friend's record, held beside mine
   function rgHotSet(){
     var hot={};
     if(RECV){ if(RECV.h)hot[RECV.h]=1; RECV.v.forEach(function(nm){ hot[nm]=1; }); }
+    if(RECCMP){ if(RECCMP.h)hot[RECCMP.h]=1; RECCMP.v.forEach(function(nm){ hot[nm]=1; }); }
     return hot;
+  }
+  // Two lives on one planet: gold where both have stood, teal where only I have, clay where
+  // only they have. The maths is a set comparison, nothing more.
+  function cmpSets(){
+    var mine={},theirs={};
+    if(RECV){ RECV.v.forEach(function(n){ mine[n]=1; }); if(RECV.h)mine[RECV.h]=1; }
+    if(RECCMP){ RECCMP.v.forEach(function(n){ theirs[n]=1; }); if(RECCMP.h)theirs[RECCMP.h]=1; }
+    var both=[],onlyMe=[],onlyThem=[];
+    Object.keys(mine).forEach(function(n){ (theirs[n]?both:onlyMe).push(n); });
+    Object.keys(theirs).forEach(function(n){ if(!mine[n])onlyThem.push(n); });
+    function sort(a2){ return a2.sort(function(x,y){ return rgCName(x)<rgCName(y)?-1:1; }); }
+    return {both:sort(both),onlyMe:sort(onlyMe),onlyThem:sort(onlyThem),
+      mine:Object.keys(mine).length,theirs:Object.keys(theirs).length,
+      together:Object.keys(mine).length+onlyThem.length};
+  }
+  function cmpClass(nm){
+    if(!RECCMP)return 'me';
+    var s2=cmpSets();
+    if(s2.both.indexOf(nm)>=0)return 'both';
+    if(s2.onlyThem.indexOf(nm)>=0)return 'them';
+    return 'me';
   }
   function rgDraw(){
     var cv=rgCv(); if(!cv)return;
@@ -7103,15 +7137,25 @@
       ctx.fillStyle=rgCol('--land'); ctx.fill();
       ctx.strokeStyle=rgCol('--landline'); ctx.lineWidth=.7; ctx.stroke();
     });
+    var cls=RECCMP?cmpSets():null;
+    function tone(n){
+      if(!cls)return {c:rgCol('--teal'),f:rgCol('--teal-soft')};
+      if(cls.both.indexOf(n)>=0)return {c:rgCol('--amber'),f:rgCol('--amber-soft')};
+      if(cls.onlyThem.indexOf(n)>=0)return {c:rgCol('--clay'),f:rgCol('--clay')+'2e'};
+      return {c:rgCol('--teal'),f:rgCol('--teal-soft')};
+    }
     LAND.forEach(function(c){
       if(!hot[c.n]||!facing(c))return;
+      var t2=tone(c.n);
       ctx.save();
       ctx.beginPath(); c.r.forEach(function(r2){ rgRing(ctx,cv,r2,true); });
-      ctx.shadowColor=rgCol('--teal'); ctx.shadowBlur=16;
-      ctx.fillStyle=rgCol('--teal-soft'); ctx.fill();
-      ctx.shadowBlur=9; ctx.strokeStyle=rgCol('--teal'); ctx.lineWidth=1.6; ctx.stroke();
+      ctx.shadowColor=t2.c; ctx.shadowBlur=16;
+      ctx.fillStyle=t2.f; ctx.fill();
+      ctx.shadowBlur=9; ctx.strokeStyle=t2.c; ctx.lineWidth=1.6; ctx.stroke();
       ctx.restore();
     });
+    // while comparing, the countries carry the story — a double fan of lines would only blur it
+    if(RECCMP)return;
     if(!RECV||!RECV.h)return;
     var h=rgAnchor(RECV.h); if(!h)return;
     var A=[h.lat,h.lng];
@@ -7149,6 +7193,7 @@
   }
   function enterRec(){ document.body.classList.add('recmode'); exitCm(); exitSv();  document.body.classList.remove('planmode'); try{syncEditFab();}catch(e){} }
   function exitRec(){
+    RECCMP=null;
     document.body.classList.remove('recmode');
     var el=$('recscr'); if(el)el.classList.add('is-hidden');
     if(RGRAF){ cancelAnimationFrame(RGRAF); RGRAF=0; }
@@ -7268,6 +7313,44 @@
         }).join('')):'';
     }
   }
+  // Decode a record out of anything they paste: a full share link, or just the code.
+  function cmpParse(txt){
+    var m=/#rec=([0-9a-z.]+)/.exec(String(txt||''))||/^\s*([0-9a-z]+(?:\.[0-9a-z]+)+)\s*$/.exec(String(txt||''));
+    if(!m)return null;
+    var C=rgCountries(), parts=m[1].split('.'), h=C[parseInt(parts[0],36)];
+    if(!h)return null;
+    var v=[]; parts.slice(1).forEach(function(pp){ var x=C[parseInt(pp,36)];
+      if(x&&x.n!==h.n&&v.indexOf(x.n)<0)v.push(x.n); });
+    return {h:h.n,v:v};
+  }
+  function renderCmp(){
+    var host=$('recCmp'); if(!host)return;
+    var c=recTxt();
+    if(!RECCMP){
+      host.innerHTML='<div class="reclbl" style="margin-top:0">'+esc(c.cmpT)+'</div>'
+        +'<div class="goalask">'+esc(c.cmpSub)+'</div>'
+        +'<div class="goalrow"><input type="text" id="cmpIn" dir="ltr" placeholder="'+esc(c.cmpPh)+'" style="flex:1;width:auto;text-align:start;font-size:14px;font-weight:400">'
+        +'<button type="button" class="recbtn main" id="cmpGo" style="flex:0 0 auto">'+esc(c.cmpGo)+'</button></div>';
+      return;
+    }
+    var t=cmpSets();
+    function chips(list,kind){
+      if(!list.length)return '<div class="cmpnone">'+esc(c.cmpNone)+'</div>';
+      return '<div class="cmpchips">'+list.map(function(n){
+        var a3=rgAnchor(n);
+        return '<span class="cmpchip '+kind+'">'+esc(a3?a3.flag:'')+' '+esc(rgCName(n))+'</span>';
+      }).join('')+'</div>';
+    }
+    host.innerHTML='<div class="reclbl" style="margin-top:0">'+esc(c.cmpT)+'</div>'
+      +'<div class="cmpscore"><span><b>'+t.mine+'</b>'+esc(c.cmpYou)+'</span>'
+      +'<span><b>'+t.both.length+'</b>'+esc(c.cmpBoth)+'</span>'
+      +'<span><b>'+t.theirs+'</b>'+esc(c.cmpThem)+'</span>'
+      +'<span><b>'+t.together+'</b>'+esc(c.cmpTogether)+'</span></div>'
+      +'<div class="cmpsec"><div class="cmphead"><i class="dot both"></i>'+esc(c.cmpBoth)+' ('+t.both.length+')</div>'+chips(t.both,'both')+'</div>'
+      +'<div class="cmpsec"><div class="cmphead"><i class="dot them"></i>'+esc(c.cmpOnlyThem)+' ('+t.onlyThem.length+')</div>'+chips(t.onlyThem,'them')+'</div>'
+      +'<div class="cmpsec"><div class="cmphead"><i class="dot me"></i>'+esc(c.cmpOnlyMe)+' ('+t.onlyMe.length+')</div>'+chips(t.onlyMe,'me')+'</div>'
+      +'<button type="button" class="recbtn" id="cmpOff" style="margin-top:12px">'+esc(c.cmpOff)+'</button>';
+  }
   function recRenderBits(){
     var c=recTxt(),n=RECV.v.length,total=rgCountries().length;
     $('recBar').innerHTML='<b>'+n+'</b><span class="of">/ '+total+' '+esc(c.of)+'</span>'
@@ -7289,6 +7372,7 @@
         +'<button type="button" class="rd" data-rd="'+i+'" aria-label="✕">✕</button></span>';
     }).join('')||'<span class="recempty">'+esc(c.empty)+'</span>';
     try{ renderGoalSug(); }catch(e){}
+    try{ renderCmp(); }catch(e){}
     rgDraw();
   }
   function openRecView(shared){
@@ -7305,13 +7389,15 @@
     box.innerHTML='<button type="button" class="cmback" data-recexit="1"><span class="cmbkch">‹</span> '+esc(back)+'</button>'
       +'<div class="cmhead"><h2>'+esc(c.t)+'</h2></div><div class="cmsub">'+esc(c.sub)+'</div>'
       +(RECSHARED?'<div class="recempty" style="margin:0 0 10px">'+esc(c.sharedBy(rgCName(RECV.h||'')))
-        +' <button type="button" class="recbtn" id="recMine" style="margin-inline-start:8px">'+esc(c.mine)+'</button></div>':'')
+        +' <button type="button" class="recbtn" id="recMine" style="margin-inline-start:8px">'+esc(c.mine)+'</button>'
+        +' <button type="button" class="recbtn main" id="cmpMine" style="margin-inline-start:6px">'+esc(c.cmpDo)+'</button></div>':'')
       +'<div class="reccard"><div class="recswrow"><span>'+esc(c.flat)+'</span>'
       +'<button type="button" id="recFlatT" role="switch" aria-checked="'+(RGFLAT?'true':'false')+'" class="recsw'+(RGFLAT?' on':'')+'"><i></i></button></div>'
       +'<canvas id="recCv" width="760" height="760"></canvas>'
       +'<div class="recbar reccnt" id="recBar"></div></div>'
       +'<div class="reccard" id="recGoal"></div>'
       +'<div class="reccard" id="recSug" style="padding-bottom:6px"></div>'
+      +'<div class="reccard" id="recCmp"></div>'
       +'<div class="reccard">'
       +'<div class="reclbl">'+esc(c.home)+'</div><div class="racw"><input type="text" id="recHomeIn" dir="auto" autocomplete="off" placeholder="'+esc(c.homePh)+'"><div class="racm" id="recHomeM"></div></div>'
       +'<div class="reclbl">'+esc(c.been)+'</div><div class="racw"><input type="text" id="recIn" dir="auto" autocomplete="off" placeholder="'+esc(c.beenPh)+'"><div class="racm" id="recM"></div></div>'
@@ -7387,6 +7473,20 @@
       if((t2=e.target.closest('#goalEdit'))){
         try{ localStorage.removeItem('bosla_goal'); }catch(e2){}
         renderGoalSug(); return;
+      }
+      if((t2=e.target.closest('#cmpGo'))){
+        var parsed=cmpParse(($('cmpIn')||{}).value||'');
+        if(!parsed){ toast(recTxt().cmpBad); return; }
+        RECCMP=parsed; renderCmp(); rgDraw();
+        try{track('rec_compare',{});}catch(e2){}
+        return;
+      }
+      if((t2=e.target.closest('#cmpOff'))){ RECCMP=null; renderCmp(); rgDraw(); return; }
+      if((t2=e.target.closest('#cmpMine'))){
+        RECCMP={h:RECV.h,v:RECV.v.slice()};          // the record on screen is theirs; compare it to mine
+        RECSHARED=false; RECV=RECOWNV||recLoad(); RECOWNV=null;
+        try{ history.replaceState(null,'',location.pathname+location.search); }catch(e2){}
+        openRecView(); return;
       }
       if((t2=e.target.closest('[data-sugdrop]'))){
         sugDrop(t2.getAttribute('data-sugdrop')); renderGoalSug();
