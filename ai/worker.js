@@ -113,11 +113,16 @@ const SESS_TTL = 60 * 60 * 24 * 180;
 const STATE_TTL = 600;
 const CODE_TTL = 600;
 
-function authOn(env) { return !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET); }
-function mailOn(env) { return !!(env.RESEND_KEY && env.MAIL_FROM); }
-function appUrl(env) { return env.APP_URL || "https://aalfadhala10.github.io/travel-itinerary-skill/"; }
+// Secrets are pasted by hand into a dashboard and can never be read back, so a stray space or
+// newline riding along would be invisible forever. Trim once, here, and use only these.
+function ev(v) { return String(v == null ? "" : v).trim(); }
+function gid(env) { return ev(env.GOOGLE_CLIENT_ID); }
+function gsec(env) { return ev(env.GOOGLE_CLIENT_SECRET); }
+function authOn(env) { return !!(gid(env) && gsec(env)); }
+function mailOn(env) { return !!(ev(env.RESEND_KEY) && ev(env.MAIL_FROM)); }
+function appUrl(env) { return ev(env.APP_URL) || "https://aalfadhala10.github.io/travel-itinerary-skill/"; }
 function workerUrl(env, request) {
-  if (env.WORKER_URL) return env.WORKER_URL;
+  if (ev(env.WORKER_URL)) return ev(env.WORKER_URL).replace(/\/+$/, "");
   const u = new URL(request.url);
   return u.origin;
 }
@@ -179,7 +184,7 @@ async function auth(body, env, request, origin) {
     const state = rnd(16);
     await kv.put("astate:" + state, "1", { expirationTtl: STATE_TTL });
     const u = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-    u.searchParams.set("client_id", env.GOOGLE_CLIENT_ID);
+    u.searchParams.set("client_id", gid(env));
     u.searchParams.set("redirect_uri", workerUrl(env, request) + "/auth/google/cb");
     u.searchParams.set("response_type", "code");
     u.searchParams.set("scope", "openid email profile");
@@ -200,9 +205,9 @@ async function auth(body, env, request, origin) {
     await kv.put("acode:" + h, JSON.stringify({ c: code, n: 0 }), { expirationTtl: CODE_TTL });
     const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + env.RESEND_KEY },
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + ev(env.RESEND_KEY) },
       body: JSON.stringify({
-        from: env.MAIL_FROM, to: [email],
+        from: ev(env.MAIL_FROM), to: [email],
         subject: "بوصلة · Bosla — " + code,
         text: "Your Bosla sign-in code is " + code + "\nIt expires in ten minutes. If this was not you, ignore this message.",
       }),
@@ -288,7 +293,7 @@ async function googleCallback(request, env) {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      code, client_id: env.GOOGLE_CLIENT_ID, client_secret: env.GOOGLE_CLIENT_SECRET,
+      code, client_id: gid(env), client_secret: gsec(env),
       redirect_uri: workerUrl(env, request) + "/auth/google/cb", grant_type: "authorization_code",
     }),
   });
@@ -315,6 +320,22 @@ export default {
     // Google returns the traveller here by redirecting their browser: a GET, no Origin header.
     if (request.method === "GET" && new URL(request.url).pathname === "/auth/google/cb")
       return googleCallback(request, env);
+    // Setup check, openable in a phone browser. Says what shape the stored values have and what
+    // redirect_uri Google will be handed — the two things that break sign-in and the two things
+    // a dashboard can never show you back. No secret is echoed: a client id is public by design
+    // (it rides in the consent URL), and the secret is reported only as yes/no plus its shape.
+    if (request.method === "GET" && new URL(request.url).pathname === "/auth/check") {
+      const id = gid(env), sec = gsec(env);
+      return reply({
+        workerCodeVersion: "auth-1",
+        googleReady: authOn(env), emailReady: mailOn(env),
+        clientIdSet: !!id, clientIdEndsRight: /\.apps\.googleusercontent\.com$/.test(id),
+        clientSecretSet: !!sec, clientSecretLooksLikeSecret: /^GOCSPX-/.test(sec),
+        looksSwapped: /^GOCSPX-/.test(id) || /\.apps\.googleusercontent\.com$/.test(sec),
+        redirectUriSent: workerUrl(env, request) + "/auth/google/cb",
+        appUrl: appUrl(env),
+      }, 200, origin);
+    }
     if (request.method !== "POST") return reply({ error: "POST only" }, 405, origin);
 
     // The allow-list above only ever set a CORS header, and a CORS header is an instruction to a
