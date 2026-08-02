@@ -1280,7 +1280,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 05:36 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 06:08 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -7741,6 +7741,16 @@
           inp.value='';
           if(d.cid&&d.ck){ try{ var mk=cmtKeys(); mk[d.cid]=d.ck; localStorage.setItem('bosla_cmtkeys',JSON.stringify(mk)); }catch(err){} }
           renderCmts(d.comments||[]); toast(c.cmtDone); addPts(2);
+          // A server that hasn't learned comment identities yet can't hand one back — say so
+          // once, plainly, instead of leaving someone hunting for buttons that cannot appear.
+          if(!d.cid){
+            try{ if(!localStorage.getItem('bosla_cmtnote')){
+              localStorage.setItem('bosla_cmtnote','1');
+              setTimeout(function(){ toast(LANG==='ar'?'تعديل وحذف التعليقات يحتاج تحديث السيرفر'
+                :(LANG==='es'?'Editar o borrar comentarios requiere actualizar el servidor'
+                :'Editing and deleting comments needs the server update')); },2600);
+            } }catch(err2){}
+          }
         })
         .catch(function(){ toast(c.offline); });
       return;
