@@ -957,6 +957,24 @@
   .racm.on{display:block}
   .racm button{display:flex;align-items:center;gap:9px;width:100%;padding:11px 13px;border:none;background:none;color:var(--ink);font-size:15px;text-align:start;cursor:pointer;font-family:inherit}
   .racm button:hover{background:var(--amber-soft)}
+  .goalask{color:var(--muted);font-size:13.5px;line-height:1.5;margin-bottom:10px}
+  .goalrow{display:flex;gap:8px;align-items:center}
+  .goalrow input{width:84px;padding:11px;border:1px solid var(--line);border-radius:11px;background:var(--paper);
+    color:var(--ink);font-size:17px;font-weight:700;font-family:inherit;text-align:center}
+  .goalrow .recbtn{flex:1}
+  .goalof{font-size:17px;font-weight:700;margin-bottom:9px}
+  .goalbar{height:10px;border-radius:999px;background:var(--paper);border:1px solid var(--line);overflow:hidden}
+  .goalbar i{display:block;height:100%;border-radius:999px;
+    background:linear-gradient(100deg,var(--amber) 0%,#f0d489 50%,var(--amber) 100%);transition:width .5s}
+  .goaldone{border:1px solid var(--amber);background:var(--amber-soft);border-radius:13px;padding:12px 13px;margin-bottom:12px}
+  .goaldone b{display:block;color:var(--amber);font-size:15.5px;margin-bottom:3px}
+  .goaldone span{color:var(--muted);font-size:13px}
+  .sugrow{display:flex;align-items:center;gap:11px;padding:10px 0;border-top:1px solid var(--line)}
+  .sugrow:first-of-type{border-top:none}
+  .sugf{flex:0 0 auto;font-size:26px;line-height:1}
+  .sugn{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .sugn b{font-size:15.5px;font-weight:700}
+  .sugn span{color:var(--muted);font-size:12.5px}
   .recswrow{display:flex;justify-content:flex-end;align-items:center;gap:9px;color:var(--muted);font-size:14px;margin-bottom:6px}
   .recsw{position:relative;width:46px;height:27px;border-radius:999px;border:1px solid var(--line);background:var(--paper);cursor:pointer;padding:0}
   .recsw i{position:absolute;top:2px;inset-inline-start:2px;width:21px;height:21px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
@@ -1280,7 +1298,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 06:08 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 06:21 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -6889,14 +6907,25 @@
     out.sort(function(a,b){ return a.n<b.n?-1:1; });
     rgCountries.c=out; return out;
   }
+  function rgRegions(){
+    if(rgRegions.c)return rgRegions.c;
+    var m={};
+    Object.keys(DEST).forEach(function(ck){ var d=DEST[ck]; if(d&&d.country&&!m[d.country])m[d.country]=d.region||''; });
+    rgRegions.c=m; return m;
+  }
+  // ---- the year's goal, kept on the device ------------------------------------------------
+  function goalLoad(){ try{ var g=JSON.parse(localStorage.getItem('bosla_goal')||'null');
+    if(g&&g.y===new Date().getFullYear())return g; }catch(e){} return null; }
+  function goalSave(g){ try{ localStorage.setItem('bosla_goal',JSON.stringify(g)); }catch(e){} }
+  function goalProgress(g){ return Math.max(0,RECV.v.length-(g.base||0)); }
   function rgCName(nm){ return (LANG==='ar'&&COUNTRY_AR[nm])?COUNTRY_AR[nm][0]:nm; }
   function rgAnchor(nm){ var C=rgCountries(); for(var i=0;i<C.length;i++)if(C[i].n===nm)return C[i]; return null; }
   function recLoad(){ try{ var r=JSON.parse(localStorage.getItem('bosla_beento')||'null'); if(r&&Array.isArray(r.v))return {h:r.h||null,v:r.v}; }catch(e){} return {h:null,v:[]}; }
   function recStore(){ if(RECSHARED)return; try{ localStorage.setItem('bosla_beento',JSON.stringify(RECV)); }catch(e){} }
   function recTxt(){
-    return LANG==='ar'?{t:'سجل سفراتي',sub:'كل دولة وطئتها رجلك — خطوط ضوء من بيتك، والعدّاد يكبر معك. محفوظ على جهازك فقط.',home:'بلدك',homePh:'اكتب بلدك',been:'رحت لـ…',beenPh:'أضف دولة زرتها',of:'دولة',lines:'خطوط من بيتك',far:'الأبعد',share:'شارك سجلي',clear:'ابدأ من جديد',flat:'خريطة مسطحة',globe:'الكرة',empty:'اكتب دولة فوق — كل دولة تضيفها تصير خط ضوء من بيتك.',sharedBy:function(h){return 'سجل سفرات صديقك — من '+h;},mine:'ورّني سجلي',shareMsg:function(n,t){return 'سجل سفراتي: '+n+' / '+t+' دولة ';},back:'رجوع'}
-    :(LANG==='es'?{t:'Mi historial de viajes',sub:'Cada país que has pisado — líneas de luz desde casa, y un contador que crece contigo. Guardado solo en este dispositivo.',home:'Tu país',homePh:'escribe tu país',been:'He estado en…',beenPh:'añade un país',of:'países',lines:'Líneas desde casa',far:'Más lejano',share:'Compartir mi historial',clear:'Empezar de nuevo',flat:'Mapa plano',globe:'Globo',empty:'Escribe un país arriba — cada uno se convierte en una línea de luz desde casa.',sharedBy:function(h){return 'El historial de viajes de un amigo — desde '+h;},mine:'Ver el mío',shareMsg:function(n,t){return 'Mi historial de viajes: '+n+' / '+t+' países ';},back:'Volver'}
-    :{t:'My travel record',sub:'Every country you have set foot in — lines of light from home, and a count that grows with you. Saved on this device only.',home:'Home',homePh:'type your country',been:'I have been to…',beenPh:'add a country',of:'countries',lines:'Lines from home',far:'Farthest',share:'Share my record',clear:'Start over',flat:'Flat map',globe:'Globe',empty:'Type a country above — each one becomes a line of light from home.',sharedBy:function(h){return 'A friend’s travel record — from '+h;},mine:'Show mine instead',shareMsg:function(n,t){return 'My travel record: '+n+' / '+t+' countries ';},back:'Back'});
+    return LANG==='ar'?{t:'سجل سفراتي',sub:'كل دولة وطئتها رجلك — خطوط ضوء من بيتك، والعدّاد يكبر معك. محفوظ على جهازك فقط.',home:'بلدك',homePh:'اكتب بلدك',been:'رحت لـ…',beenPh:'أضف دولة زرتها',of:'دولة',lines:'خطوط من بيتك',far:'الأبعد',share:'شارك سجلي',clear:'ابدأ من جديد',flat:'خريطة مسطحة',globe:'الكرة',empty:'اكتب دولة فوق — كل دولة تضيفها تصير خط ضوء من بيتك.',sharedBy:function(h){return 'سجل سفرات صديقك — من '+h;},mine:'ورّني سجلي',shareMsg:function(n,t){return 'سجل سفراتي: '+n+' / '+t+' دولة ';},back:'رجوع',goalT:'هدف السنة',goalAsk:'كم دولة جديدة تبي تزورها هالسنة؟',goalSet:'حدد الهدف',goalOf:function(a,b2,y){return a+' من '+b2+' دول جديدة في '+y;},goalDone:function(y){return 'مبروك! كملت هدفك لسنة '+y+' 🎉';},goalDoneSub:'تبي ترفع السقف؟ عدّل هدفك وكمّل.',goalEdit:'عدّل الهدف',goalShare:function(y){return ' · حققت هدفي لسنة '+y;},sugT:'وين بعد؟',sugSub:'مقترحات من سجلك — دول ما زرتها بعد.',sugPlan:'خطط رحلة',sugWhy:{near:'قريبة من دولة زرتها',region:'تشبه المنطقة الي تحبها',home:'قريبة من بيتك'}}
+    :(LANG==='es'?{t:'Mi historial de viajes',sub:'Cada país que has pisado — líneas de luz desde casa, y un contador que crece contigo. Guardado solo en este dispositivo.',home:'Tu país',homePh:'escribe tu país',been:'He estado en…',beenPh:'añade un país',of:'países',lines:'Líneas desde casa',far:'Más lejano',share:'Compartir mi historial',clear:'Empezar de nuevo',flat:'Mapa plano',globe:'Globo',empty:'Escribe un país arriba — cada uno se convierte en una línea de luz desde casa.',sharedBy:function(h){return 'El historial de viajes de un amigo — desde '+h;},mine:'Ver el mío',shareMsg:function(n,t){return 'Mi historial de viajes: '+n+' / '+t+' países ';},back:'Volver',goalT:'Meta del año',goalAsk:'¿Cuántos países nuevos quieres visitar este año?',goalSet:'Fijar meta',goalOf:function(a,b2,y){return a+' de '+b2+' países nuevos en '+y;},goalDone:function(y){return '¡Enhorabuena! Cumpliste tu meta de '+y+' 🎉';},goalDoneSub:'¿Subimos el listón? Edita tu meta y sigue.',goalEdit:'Editar meta',goalShare:function(y){return ' · meta de '+y+' cumplida';},sugT:'¿Y ahora?',sugSub:'Sugerencias desde tu historial — países que aún no pisaste.',sugPlan:'Planear',sugWhy:{near:'cerca de un país que visitaste',region:'como las regiones que te gustan',home:'cerca de casa'}}
+    :{t:'My travel record',sub:'Every country you have set foot in — lines of light from home, and a count that grows with you. Saved on this device only.',home:'Home',homePh:'type your country',been:'I have been to…',beenPh:'add a country',of:'countries',lines:'Lines from home',far:'Farthest',share:'Share my record',clear:'Start over',flat:'Flat map',globe:'Globe',empty:'Type a country above — each one becomes a line of light from home.',sharedBy:function(h){return 'A friend’s travel record — from '+h;},mine:'Show mine instead',shareMsg:function(n,t){return 'My travel record: '+n+' / '+t+' countries ';},back:'Back',goalT:'This year\u2019s goal',goalAsk:'How many new countries do you want this year?',goalSet:'Set the goal',goalOf:function(a,b2,y){return a+' of '+b2+' new countries in '+y;},goalDone:function(y){return 'You did it \u2014 your '+y+' goal is complete.';},goalDoneSub:'Raise the bar? Edit your goal and keep going.',goalEdit:'Edit goal',goalShare:function(y){return ' \u00b7 '+y+' goal reached';},sugT:'Where next?',sugSub:'Suggestions from your own record \u2014 countries you have not set foot in yet.',sugPlan:'Plan a trip',sugWhy:{near:'near a country you visited',region:'like the regions you favour',home:'close to home'}});
   }
   function rgCol(n){ return getComputedStyle(document.body).getPropertyValue(n).trim(); }
   function rgCv(){ return document.getElementById('recCv'); }
@@ -7032,6 +7061,78 @@
     for(i=0;i<C.length&&out.length<7;i++)if(out.indexOf(C[i])<0&&m(C[i],false))out.push(C[i]);
     return out;
   }
+  // ---- where next: three honest suggestions drawn from their own record ---------------------
+  // No AI, no lookups — geography we already hold. One country near somewhere they have been,
+  // one from the region they clearly favour, one within reach of home. Never repeats a country
+  // they have visited, never suggests home.
+  function recSuggest(){
+    var C=rgCountries(), reg=rgRegions(), home=rgAnchor(RECV.h);
+    var been={}; RECV.v.forEach(function(n){ been[n]=1; }); if(RECV.h)been[RECV.h]=1;
+    var seen=RECV.v.map(rgAnchor).filter(Boolean);
+    if(!seen.length&&home)seen=[home];
+    if(!seen.length)return [];
+    // which region do they keep choosing?
+    var tally={},top='',best=0;
+    RECV.v.forEach(function(n){ var r=reg[n]; if(!r)return; tally[r]=(tally[r]||0)+1; if(tally[r]>best){ best=tally[r]; top=r; } });
+    var cand=C.filter(function(x){ return !been[x.n]; }).map(function(x){
+      var dn=Infinity;
+      seen.forEach(function(v){ var k=kmDist([v.lat,v.lng],[x.lat,x.lng]); if(k<dn)dn=k; });
+      var dh=home?kmDist([home.lat,home.lng],[x.lat,x.lng]):Infinity;
+      return {c:x,dn:dn,dh:dh,r:reg[x.n]||''};
+    });
+    if(!cand.length)return [];
+    var out=[],used={};
+    function take(list,why){
+      for(var i=0;i<list.length;i++){ if(used[list[i].c.n])continue; used[list[i].c.n]=1;
+        out.push({c:list[i].c,why:why}); return; }
+    }
+    take(cand.slice().sort(function(a2,b2){ return a2.dn-b2.dn; }),'near');
+    if(top)take(cand.filter(function(x){ return x.r===top; }).sort(function(a2,b2){ return a2.dn-b2.dn; }),'region');
+    take(cand.slice().sort(function(a2,b2){ return a2.dh-b2.dh; }),'home');
+    if(out.length<3)take(cand.slice().sort(function(a2,b2){ return a2.dn-b2.dn; }),'near');
+    return out.slice(0,3);
+  }
+  // one tap from "where next" into a real plan: open the planner on that country's first city
+  function recPlanCountry(nm){
+    var city='';
+    for(var ck in DEST){ if(DEST[ck]&&DEST[ck].country===nm){ city=DEST[ck].city; break; } }
+    if(!city)return;
+    exitRec();
+    $('dest').value=city; $('dest2').value='';
+    newSeed(); DAYEDITS={}; DAYROT={}; ROUTE=null;
+    $('planBtn').click();
+  }
+  function renderGoalSug(){
+    var c=recTxt(), y=new Date().getFullYear(), g=goalLoad(), host=$('recGoal');
+    if(host){
+      if(!g){
+        host.innerHTML='<div class="reclbl" style="margin-top:0">'+esc(c.goalT)+'</div>'
+          +'<div class="goalask">'+esc(c.goalAsk)+'</div>'
+          +'<div class="goalrow"><input type="number" id="goalN" min="1" max="20" value="3" inputmode="numeric">'
+          +'<button type="button" class="recbtn main" id="goalSet">'+esc(c.goalSet)+'</button></div>';
+      } else {
+        var done=goalProgress(g)>=g.n, pct=Math.min(100,Math.round(goalProgress(g)*100/Math.max(1,g.n)));
+        host.innerHTML=(done?'<div class="goaldone"><b>'+esc(c.goalDone(y))+'</b><span>'+esc(c.goalDoneSub)+'</span></div>':'')
+          +'<div class="reclbl" style="margin-top:0">'+esc(c.goalT)+'</div>'
+          +'<div class="goalof">'+esc(c.goalOf(goalProgress(g),g.n,y))+'</div>'
+          +'<div class="goalbar"><i style="width:'+pct+'%"></i></div>'
+          +'<button type="button" class="recbtn" id="goalEdit" style="margin-top:10px">'+esc(c.goalEdit)+'</button>';
+        // the moment it completes, say so once — never on every render
+        if(done&&!g.done){ g.done=1; goalSave(g); try{ toast(c.goalDone(y)); }catch(e){} try{track('rec_goal_done',{});}catch(e){} }
+      }
+    }
+    var sh=$('recSug');
+    if(sh){
+      var list=RECV.v.length?recSuggest():[];
+      sh.innerHTML=list.length?('<div class="reclbl" style="margin-top:0">'+esc(c.sugT)+'</div>'
+        +'<div class="goalask">'+esc(c.sugSub)+'</div>'
+        +list.map(function(x){
+          return '<div class="sugrow"><span class="sugf">'+esc(x.c.flag)+'</span>'
+            +'<span class="sugn"><b dir="auto">'+esc(rgCName(x.c.n))+'</b><span>'+esc(c.sugWhy[x.why])+'</span></span>'
+            +'<button type="button" class="recbtn" data-sugplan="'+esc(x.c.n)+'">'+esc(c.sugPlan)+'</button></div>';
+        }).join('')):'';
+    }
+  }
   function recRenderBits(){
     var c=recTxt(),n=RECV.v.length,total=rgCountries().length;
     $('recBar').innerHTML='<b>'+n+'</b><span class="of">/ '+total+' '+esc(c.of)+'</span>'
@@ -7052,6 +7153,7 @@
       return '<span class="recchip">'+esc(a?a.flag:'')+' '+esc(rgCName(nm))
         +'<button type="button" class="rd" data-rd="'+i+'" aria-label="✕">✕</button></span>';
     }).join('')||'<span class="recempty">'+esc(c.empty)+'</span>';
+    try{ renderGoalSug(); }catch(e){}
     rgDraw();
   }
   function openRecView(shared){
@@ -7072,6 +7174,8 @@
       +'<button type="button" id="recFlatT" role="switch" aria-checked="'+(RGFLAT?'true':'false')+'" class="recsw'+(RGFLAT?' on':'')+'"><i></i></button></div>'
       +'<canvas id="recCv" width="760" height="760"></canvas>'
       +'<div class="recbar reccnt" id="recBar"></div></div>'
+      +'<div class="reccard" id="recGoal"></div>'
+      +'<div class="reccard" id="recSug" style="padding-bottom:6px"></div>'
       +'<div class="reccard">'
       +'<div class="reclbl">'+esc(c.home)+'</div><div class="racw"><input type="text" id="recHomeIn" dir="auto" autocomplete="off" placeholder="'+esc(c.homePh)+'"><div class="racm" id="recHomeM"></div></div>'
       +'<div class="reclbl">'+esc(c.been)+'</div><div class="racw"><input type="text" id="recIn" dir="auto" autocomplete="off" placeholder="'+esc(c.beenPh)+'"><div class="racm" id="recM"></div></div>'
@@ -7121,7 +7225,8 @@
       var C=rgCountries();
       function ix(nm){ for(var i=0;i<C.length;i++)if(C[i].n===nm)return i.toString(36); return ''; }
       var flags=RECV.v.map(function(nm){ var a=rgAnchor(nm); return a?a.flag:''; }).join('');
-      var txt=c2.shareMsg(n,C.length)+flags
+      var g4=goalLoad(), gline=(g4&&goalProgress(g4)>=g4.n)?c2.goalShare(new Date().getFullYear()):'';
+      var txt=c2.shareMsg(n,C.length)+flags+gline
         +'\nhttps://aalfadhala10.github.io/travel-itinerary-skill/#rec='+ix(RECV.h)+'.'+RECV.v.map(ix).filter(Boolean).join('.');
       if(navigator.share){ navigator.share({text:txt}).catch(function(){}); return; }
       if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){ toast(I18N[LANG].out.copied); },function(){});
@@ -7137,6 +7242,21 @@
       var t2;
       if((t2=e.target.closest('[data-recexit]'))){ exitRec(); window.scrollTo({top:0,behavior:'smooth'}); return; }
       if((t2=e.target.closest('[data-rd]'))){ RECV.v.splice(+t2.getAttribute('data-rd'),1); recStore(); recRenderBits(); return; }
+      if((t2=e.target.closest('#goalSet'))){
+        var n3=Math.max(1,Math.min(20,parseInt(($('goalN')||{}).value,10)||3));
+        goalSave({y:new Date().getFullYear(),n:n3,base:RECV.v.length,done:0});
+        renderGoalSug(); try{track('rec_goal_set',{n:n3});}catch(e2){}
+        return;
+      }
+      if((t2=e.target.closest('#goalEdit'))){
+        try{ localStorage.removeItem('bosla_goal'); }catch(e2){}
+        renderGoalSug(); return;
+      }
+      if((t2=e.target.closest('[data-sugplan]'))){
+        recPlanCountry(t2.getAttribute('data-sugplan'));
+        try{track('rec_sug_plan',{});}catch(e2){}
+        return;
+      }
     };
     // drag to spin the sphere
     var cv=rgCv(),dx0=0,dy0=0;
