@@ -1320,7 +1320,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 07:36 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 07:44 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -6980,7 +6980,9 @@
      arcs, no trip machinery: this screen has exactly one job. The record itself lives in
      bosla_beento, the same key the demo pages write, so a record built on either side of the
      house is already waiting on the other. Everything here is prefixed rg/REC. */
-  var RGLAND=null,RGV={lon:51,lat:24},RGFLAT=true,RGRAF=0,RGDRAGGING=false;
+  // The globe is the default: it is the thing worth looking at, and the flat map is the switch
+  // you reach for when you want the whole fan at once.
+  var RGLAND=null,RGV={lon:51,lat:24},RGFLAT=false,RGRAF=0,RGDRAGGING=false;
   var RECV=null,RECOWNV=null,RECSHARED=false;
   function rgDecode(){
     if(RGLAND)return RGLAND;
@@ -7410,6 +7412,7 @@
       dx0=e.clientX; dy0=e.clientY; rgDraw();
     });
     ['pointerup','pointercancel'].forEach(function(ev){ cv.addEventListener(ev,function(){ RGDRAGGING=false; }); });
+    try{ var h0=rgAnchor(RECV.h); if(h0&&!RGFLAT){ RGV.lon=h0.lng; RGV.lat=Math.max(-60,Math.min(60,h0.lat)); } }catch(e){}
     recRenderBits();
     if(!RGFLAT&&!RGRAF)RGRAF=requestAnimationFrame(rgLoop);
     try{ box.scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){}
