@@ -963,6 +963,9 @@
   body.mkmode #out,body.mkmode #community,body.mkmode #saved,body.mkmode #recscr,
   body.mkmode .intro,body.mkmode .editfab,body.mkmode .chatfab{display:none!important}
   body.cmmode #mkscr,body.svmode #mkscr,body.recmode #mkscr{display:none!important}
+  /* the picker's dropdown is absolutely positioned, so its input needs to be the anchor */
+  .mkcombo{position:relative;flex:1;min-width:0}
+  .mkcombo input{width:100%}
   .prefbox{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
   .prefrow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
   .prefrow:last-child{border-bottom:none}
@@ -1387,7 +1390,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 13:05 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 14:00 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -3536,7 +3539,7 @@
     var items=destOptions(query).slice(0, q?60:260); // show all countries when browsing empty
     if(!items.length){
       if(q.length>=2 && CONFIG.aiEndpoint){ // nothing in our data — offer to build it with AI
-        list.innerHTML='<div class="comboitem aibuild" data-ai="'+esc(q)+'"><span class="cflag">✨</span><span class="ccity">'+(I18N[LANG].ui.aiBuild||'Build')+' “'+esc(q)+'”</span><span class="ccountry">AI ›</span></div>';
+        list.innerHTML='<div class="comboitem aibuild" data-ai="'+esc(q)+'"><span class="cflag">+</span><span class="ccity">'+(I18N[LANG].ui.aiBuild||'Build')+' “'+esc(q)+'”</span><span class="ccountry">AI ›</span></div>';
         list.classList.remove('is-hidden'); return;
       }
       list.innerHTML=''; list.classList.add('is-hidden'); return;
@@ -3558,10 +3561,10 @@
     function pick(it){
       var ai=it.getAttribute('data-ai');
       if(ai){ // build this place with AI, then select it
-        it.innerHTML='<span class="cflag">⏳</span><span class="ccity">'+(I18N[LANG].ui.aiBuilding||'Building…')+'</span>';
+        it.innerHTML='<span class="cflag">·</span><span class="ccity">'+(I18N[LANG].ui.aiBuilding||'Building…')+'</span>';
         aiCity(ai).then(function(key){
           if(key){ inp.value=DEST[key].city; toggleClear(); close(); if(onPick)onPick(key,inp); }
-          else { it.innerHTML='<span class="cflag">🚫</span><span class="ccity">'+(I18N[LANG].ui.aiFail||'Couldn’t build that one — try another')+'</span>'; }
+          else { it.innerHTML='<span class="cflag">✕</span><span class="ccity">'+(I18N[LANG].ui.aiFail||'Couldn’t build that one — try another')+'</span>'; }
         });
         return;
       }
@@ -7340,7 +7343,9 @@
   function mkUrl(tr,r){
     var n=(r.n||'').trim(); if(!n)return '';
     if(/^https?:\/\//i.test(n))return n;
-    return mapUrl(n+' '+(tr.city||''));
+    var where=tr.city||'';
+    var d=tr.ck&&DEST[tr.ck]; if(d)where=d.city+', '+d.country;   // the country disambiguates every same-named city
+    return mapUrl(n+' '+where, n);
   }
   function mkRowHtml(c,day,i,r){
     var opts=c.labels.map(function(x,j){ return '<option value="'+j+'"'+(j===(r.l|0)?' selected':'')+'>'+esc(x)+'</option>'; }).join('');
@@ -7379,7 +7384,9 @@
     }
     var h=head+'<div class="mktrip">'
       +'<div class="mkfield"><label for="mkCity">'+esc(c.city)+'</label>'
-      +'<input type="text" id="mkCity" dir="auto" maxlength="60" placeholder="'+esc(c.cityPh)+'" value="'+esc(tr.city||'')+'"></div>'
+      +'<div class="mkcombo"><input type="text" id="mkCity" dir="auto" maxlength="60" autocomplete="off"'
+      +' placeholder="'+esc(c.cityPh)+'" value="'+esc(tr.city||'')+'">'
+      +'<div class="combolist is-hidden" id="mkCityList"></div></div></div>'
       +'<div class="mkfield"><label for="mkDays">'+esc(c.days)+'</label>'
       +'<input type="number" id="mkDays" min="1" max="30" inputmode="numeric" value="'+(tr.days|0)+'"></div></div>';
     for(var d=1;d<=tr.days;d++){
@@ -7391,6 +7398,15 @@
     h+='<div class="mkacts"><button type="button" class="recbtn main" id="mkCopy">'+esc(c.copy)+'</button>'
       +'<button type="button" class="recbtn authdel" id="mkDel">'+esc(c.del)+'</button></div>';
     box.innerHTML=h;
+    // the same picker the planner uses — browse by country, search cities and aliases in any of
+    // the three languages, and offer to build a city we do not have yet with the AI. Rewired on
+    // every render because the input is a new element each time.
+    try{
+      makeCombo('mkCity','mkCityList',function(key,inp){
+        var t2=mkGet(); if(!t2)return;
+        t2.city=DEST[key]?DEST[key].city:inp.value; t2.ck=key; mkPut(t2);
+      });
+    }catch(e){}
   }
   function openMake(){
     document.body.classList.add('mkmode');
@@ -7411,7 +7427,11 @@
     // is worse than no builder at all
     box.addEventListener('input',function(e){
       var tr=mkGet(); if(!tr)return; var t=e.target,a;
-      if(t.id==='mkCity'){ tr.city=t.value.slice(0,60); mkPut(tr); return; }
+      if(t.id==='mkCity'){
+        tr.city=t.value.slice(0,60);
+        var m=matchDest(tr.city); tr.ck=m?keyOf(m):'';   // typed by hand? match it if we can, forget the old one if not
+        mkPut(tr); return;
+      }
       if(t.id==='mkDays'){
         var n=Math.max(1,Math.min(30,parseInt(t.value,10)||1));
         tr.days=n; mkPut(tr); if(String(n)===t.value)renderMake(); return;
