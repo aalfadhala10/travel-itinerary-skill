@@ -979,6 +979,14 @@
   body.cmmode .chatfab,body.svmode .chatfab{display:none!important}
   /* explore cards: the photograph is the card, the title lives on it */
   .cmcard.cmfeed{padding:0;overflow:hidden}
+  .cmcard.cmfeed .cmpad{padding:14px 14px 0}
+  .cmcard.cmfeed .cmstats{display:flex;align-items:center;gap:12px}
+  #app[dir="rtl"] .cmcard.cmfeed .cmstats [data-del]{margin:0 auto 0 0!important}
+  .svgroup .cmcovw.svcov{position:relative;margin:-16px -16px 12px;overflow:hidden;border-radius:16px 16px 0 0}
+  .svgroup .cmcovw.svcov .cmcover{margin:0;border-radius:0}
+  .svgroup .cmcovw.svcov .cmov{position:absolute;inset-inline:0;bottom:0;padding:36px 14px 8px;
+    background:linear-gradient(180deg,rgba(6,12,26,0) 0%,rgba(6,12,26,.88) 80%)}
+  .svgroup .cmcovw.svcov .cmtitle{color:#fff;font-size:19px;font-weight:800;margin:0;text-shadow:0 1px 6px rgba(0,0,0,.5)}
   .cmcard.cmfeed .cmcovw{position:relative}
   .cmcard.cmfeed .cmcover{margin:0;height:190px;border-radius:0}
   .cmcard.cmfeed .cmov{position:absolute;inset-inline:0;bottom:0;padding:40px 14px 10px;
@@ -1251,7 +1259,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-01 23:50 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 01:00 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -6553,9 +6561,12 @@
           }
         }
       }catch(e){}
-      return '<div class="cmcard" data-trip="'+i+'">'+cover+'<div class="cmtitle" dir="auto">'+esc(tripLabel(tr.state))+
-        '</div><div class="cmmeta"><span>'+esc(tr.state.days||'')+' '+esc(u.days||'')+'</span>'+when+
-        '<button type="button" class="cmreport" data-del="'+i+'" style="margin:0;display:inline">✕</button></div></div>';
+      var face=cover
+        ?'<div class="cmcovw">'+cover+'<div class="cmov"><div class="cmtitle" dir="auto">'+esc(tripLabel(tr.state))+'</div></div></div>'
+        :'<div class="cmpad"><div class="cmtitle" dir="auto">'+esc(tripLabel(tr.state))+'</div></div>';
+      return '<div class="cmcard cmfeed" data-trip="'+i+'">'+face
+        +'<div class="cmstats"><span>'+esc(tr.state.days||'')+' '+esc(u.days||'')+'</span>'+when+
+        '<button type="button" class="cmreport" data-del="'+i+'" style="margin:0 0 0 auto;display:inline">✕</button></div></div>';
     }).join('');
     box.innerHTML='<div class="mytrips"><div class="maphdr">'+u.myTrips+'</div>'+cards+'</div>';
     try{ upgradeCovers(box); }catch(e){}
@@ -6745,7 +6756,9 @@
       var city=d?cityName(ck,d.city):(g.slice(1)||'—'), cover='';
       try{ if(d)cover=flagCover(d.flag,ck); }catch(e){}
       var fits=ck&&onTrip.indexOf(ck)>=0;
-      h+='<div class="cmcard svgroup" data-noopen="1">'+cover+'<div class="cmtitle">'+esc(city)+'</div>'
+      h+='<div class="cmcard svgroup" data-noopen="1">'
+        +(cover?'<div class="cmcovw svcov">'+cover+'<div class="cmov"><div class="cmtitle">'+esc(city)+'</div></div></div>'
+               :'<div class="cmtitle">'+esc(city)+'</div>')
         +byCity[g].map(function(x){
           var cat=x.cat||'other';
           return '<div class="svrow"><span class="svcatic" title="'+esc(c.cats[cat])+'">'+SVICON[cat]+'</span>'
