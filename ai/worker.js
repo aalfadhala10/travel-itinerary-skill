@@ -126,6 +126,15 @@ function workerUrl(env, request) {
   const u = new URL(request.url);
   return u.origin;
 }
+// The sign-in code is the whole password, so it must come from the same generator as the session
+// tokens. Math.random() is a predictable PRNG: somebody who asks for enough codes to their own
+// address can work out its state and then predict the code emailed to somebody else's. The reject
+// loop keeps every one of the 900,000 codes equally likely rather than favouring the low ones.
+function code6() {
+  const span = 900000, lim = Math.floor(4294967296 / span) * span, a = new Uint32Array(1);
+  for (let i = 0; i < 24; i++) { crypto.getRandomValues(a); if (a[0] < lim) break; }
+  return String(100000 + (a[0] % span));
+}
 function rnd(n) {
   const a = new Uint8Array(n); crypto.getRandomValues(a);
   return [...a].map((x) => x.toString(16).padStart(2, "0")).join("");
@@ -201,7 +210,7 @@ async function auth(body, env, request, origin) {
     // codes are cheap to ask for and expensive to send: three an hour per address
     const n = await bump(env.CITIES, "acount:" + h, 3600);
     if (n > 3) return reply({ error: "too many codes", retry: 3600 }, 429, origin);
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code = code6();
     await kv.put("acode:" + h, JSON.stringify({ c: code, n: 0 }), { expirationTtl: CODE_TTL });
     const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -1180,10 +1189,10 @@ async function community(body, env, request, origin) {
     const sig = await pubSha([cities.join("|").toLowerCase(), days, name.toLowerCase()].join("#"));
     const prior = await kv.get("pubsig:" + ip0 + ":" + sig);
     if (prior && await kv.get("pub:" + prior)) return reply({ id: prior, dupe: 1 }, 200, origin);
-    const id = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)).replace(/-/g, "").slice(0, 16);
+    const id = rnd(8);
     // the deletion key: proof-of-publisher without an account. It goes back to the publishing
     // device once, lives in that device's localStorage, and never appears in pub_get or the feed.
-    const delkey = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)).replace(/-/g, "");
+    const delkey = rnd(16);
     const r = { id, t: Date.now(), title, name, lang, cities, days, k: delkey,
       state: JSON.parse(state), likes: 0, comments: [], photos: [] };
     if (body.vis === "link") r.unlisted = 1;   // reachable by its link, absent from the feed
@@ -1290,7 +1299,7 @@ async function community(body, env, request, origin) {
     const id = pubClean(body.id, 40);
     const name = pubClean(body.name, PUB.NAME) || "Traveller";
     const data = String(body.data || "");
-    if (data.indexOf("data:image/jpeg;base64,") !== 0 && data.indexOf("data:image/webp;base64,") !== 0)
+    if (!/^data:image\/(jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(data))
       return reply({ error: "jpeg or webp only" }, 400, origin);
     if (data.length > PUB.PHOTO) return reply({ error: "photo too large" }, 400, origin);
     const raw = await kv.get("pub:" + id);
@@ -1306,8 +1315,10 @@ async function community(body, env, request, origin) {
     r.photos.push(pid);
     // a matchbox-sized thumb rides along in the feed row so cards can show a real photo without
     // fetching every full image. First photo only, hard-capped tiny.
+    // Checked as a whole, not by its prefix: the feed renders this inside an img src, and a
+    // prefix test happily passed a string whose tail was `" onerror=...`. Base64 only, or nothing.
     const th = String(body.thumb || "");
-    if (!r.th && th.indexOf("data:image/jpeg;base64,") === 0 && th.length <= 17000) r.th = th;
+    if (!r.th && th.length <= 17000 && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(th)) r.th = th;
     await pubTouch(kv, r);
     return reply({ pid, photos: r.photos }, 200, origin);
   }
