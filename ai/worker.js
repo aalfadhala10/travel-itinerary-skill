@@ -148,17 +148,26 @@ function cleanEmail(e) {
   return /^[^\s@]{1,64}@[^\s@]{1,190}\.[a-z]{2,}$/i.test(e) ? e : "";
 }
 // A session token is a bearer key: whoever holds it is the person. Nothing else is needed.
+/* "Sign out everywhere": a session records the GENERATION it was minted under, and the user
+   record carries the current one. Bump the generation and every session everywhere is dead at
+   its next use — no token list to maintain, no KV scan. Sessions minted before generations
+   existed carry none and are treated as generation 0. */
 async function sessionUser(kv, token) {
   token = String(token || "").replace(/[^a-f0-9]/g, "").slice(0, 64);
   if (token.length < 32) return null;
-  const uid = await kv.get("sess:" + token);
-  if (!uid) return null;
+  const raw0 = await kv.get("sess:" + token);
+  if (!raw0) return null;
+  let uid = raw0, gen = 0;
+  if (raw0[0] === "{") { try { const o = JSON.parse(raw0); uid = o.u; gen = o.g | 0; } catch (e) {} }
   const raw = await kv.get("u:" + uid);
-  return raw ? JSON.parse(raw) : null;
+  if (!raw) return null;
+  const u = JSON.parse(raw);
+  if ((u.gen | 0) !== gen) return null;                 // signed out everywhere since this was minted
+  return u;
 }
-async function makeSession(kv, uid) {
+async function makeSession(kv, uid, gen) {
   const token = rnd(32);
-  await kv.put("sess:" + token, uid, { expirationTtl: SESS_TTL });
+  await kv.put("sess:" + token, JSON.stringify({ u: uid, g: gen | 0 }), { expirationTtl: SESS_TTL });
   return token;
 }
 // One person per email address, whichever door they came through.
@@ -239,13 +248,24 @@ async function auth(body, env, request, origin) {
     }
     await kv.delete("acode:" + h);
     const uid = await upsertUser(kv, email, "", "email");
-    return reply({ token: await makeSession(kv, uid), email }, 200, origin);
+    const ur = JSON.parse((await kv.get("u:" + uid)) || "{}");
+    return reply({ token: await makeSession(kv, uid, ur.gen), email }, 200, origin);
   }
 
   if (act === "auth_me") {
     const u = await sessionUser(kv, body.token);
     if (!u) return reply({ signedIn: 0 }, 200, origin);
     return reply({ signedIn: 1, email: u.email, name: u.name || "", prov: u.prov || "" }, 200, origin);
+  }
+
+  if (act === "auth_logout_all") {
+    const u = await sessionUser(kv, body.token);
+    if (!u) return reply({ error: "not signed in" }, 403, origin);
+    u.gen = (u.gen | 0) + 1;
+    await kv.put("u:" + u.id, JSON.stringify(u));
+    const t = String(body.token || "").replace(/[^a-f0-9]/g, "").slice(0, 64);
+    if (t) await kv.delete("sess:" + t);
+    return reply({ ok: 1 }, 200, origin);
   }
 
   if (act === "auth_logout") {
@@ -276,6 +296,11 @@ async function auth(body, env, request, origin) {
   if (act === "sync_put") {
     const u = await sessionUser(kv, body.token);
     if (!u) return reply({ error: "not signed in" }, 403, origin);
+    // A signed-in device syncs on open and after each change — call it dozens a day. Four hundred
+    // is somebody's script, and 400KB a write makes that real KV money; the shared per-IP cap
+    // does not protect against one authenticated account looping.
+    if ((await bump(kv, "synrl:" + u.id + ":" + today(), 172800)) > 400)
+      return reply({ error: "too many syncs today", retry: 3600 }, 429, origin);
     const d = body.data;
     if (!d || typeof d !== "object") return reply({ error: "bad data" }, 400, origin);
     const s = JSON.stringify(d);
@@ -318,7 +343,8 @@ async function googleCallback(request, env) {
   const email = cleanEmail(claims.email);
   if (!email || claims.email_verified === false) return back("#auth=failed");
   const uid = await upsertUser(kv, email, claims.given_name || claims.name || "", "google");
-  const token = await makeSession(kv, uid);
+  const ur = JSON.parse((await kv.get("u:" + uid)) || "{}");
+  const token = await makeSession(kv, uid, ur.gen);
   return back("#auth=" + token);
 }
 
