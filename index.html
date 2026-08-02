@@ -144,6 +144,11 @@
      button that waits. Out of sight until the controls are gone. */
   .editfab,.chatfab{transition:opacity .18s,transform .18s,bottom .25s}
   body.pgnav-vis .editfab,body.pgnav-vis .chatfab{opacity:0;transform:translateY(10px);pointer-events:none}
+  /* The one button the whole form leads to must never have something floating over it. The Ask
+     pill sits 76px off the bottom, which is exactly where "Plan my trip" lands once the form is
+     tall — four cities and it was covering it. While that button is on screen the pill steps
+     aside; scroll it away and the pill comes back. */
+  body.planbtn-vis .chatfab,body.planbtn-vis .editfab{opacity:0;transform:translateY(10px);pointer-events:none}
   /* the "how was your plan?" card lands there too — it can wait until they're not mid-navigation */
   body.pgnav-vis .fbnudge.show{opacity:0;transform:translateX(-50%) translateY(30px);pointer-events:none}
   /* No RTL flip: the Ask pill sits outside #app so it stays on the right in Arabic too, and these
@@ -1415,7 +1420,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 18:15 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 19:10 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -3588,7 +3593,13 @@
     function its(){ return [].slice.call(list.querySelectorAll('.comboitem')); }
     function toggleClear(){ if(clr) clr.classList.toggle('is-hidden', !inp.value); }
     function setActive(i){ var a=its(); active=i; a.forEach(function(el,idx){el.classList.toggle('active',idx===active);}); if(a[active])a[active].scrollIntoView({block:'nearest'}); }
-    function open(){ renderComboList(list, inp.value); active=-1; inp.setAttribute('aria-expanded','true'); toggleClear(); }
+    function open(){
+      // Revealing a city box focuses it so the keyboard is ready, but an unrequested browse-all
+      // list is 300px of countries dropped over the rest of the form — including Plan my trip.
+      // One tap on the box, or one keystroke, and it opens as it always did.
+      if(inp.dataset.quiet){ delete inp.dataset.quiet; toggleClear(); return; }
+      renderComboList(list, inp.value); active=-1; inp.setAttribute('aria-expanded','true'); toggleClear();
+    }
     function close(){ var _v=(inp.value||'').trim(); if(_v.length>=3 && !destOptions(_v).length){ try{track('miss',{dest:_v.slice(0,60),src:'search'});}catch(e){} } list.classList.add('is-hidden'); inp.setAttribute('aria-expanded','false'); active=-1; }
     function pick(it){
       var ai=it.getAttribute('data-ai');
@@ -3614,6 +3625,20 @@
       else if(e.key==='Escape'){ close(); }
     });
     inp.addEventListener('blur', function(){ setTimeout(close, 160); });
+    // A tap aimed at something underneath the open list used to land ON the list — which picks a
+    // city — or be swallowed while the list closed on its own 160ms later. Either way the button
+    // you pressed did nothing, which is indistinguishable from a broken button. Closing on
+    // pointerdown, before the tap resolves, lets that first press reach what it was aimed at.
+    document.addEventListener('pointerdown', function(e){
+      if(list.classList.contains('is-hidden'))return;
+      if(e.target.closest&&e.target.closest('.combo')===inp.closest('.combo'))return;
+      close();
+    }, true);
+    // Scrolling is how somebody says "not this, I'm going somewhere else" — the list should not
+    // ride along over the form while they do it.
+    window.addEventListener('scroll', function(){
+      if(!list.classList.contains('is-hidden')&&document.activeElement!==inp)close();
+    }, {passive:true});
     list.addEventListener('mousedown', function(e){ var it=e.target.closest('.comboitem'); if(!it)return; e.preventDefault(); pick(it); });
     if(clr){ clr.addEventListener('mousedown', function(e){ e.preventDefault(); inp.value=''; toggleClear(); open(); inp.focus(); }); }
   }
@@ -3630,7 +3655,7 @@
       var b=$(x[0]); if(!b)return;
       b.addEventListener('click',function(){
         $(x[1]).classList.remove('is-hidden'); this.classList.add('is-hidden');
-        try{$(x[2]).focus();}catch(e){}
+        try{ var inp=$(x[2]); inp.dataset.quiet='1'; inp.focus(); }catch(e){}
       });
     });
   $('surprise').addEventListener('click',function(){
@@ -4485,6 +4510,14 @@
     });
     new MutationObserver(tabSync).observe(document.body,{attributes:true,attributeFilter:['class']});
     tabSync();
+  })();
+  // Watch the primary button, not the scroll position: the form's height changes with every city
+  // added, so where it sits is not something a fixed number can predict.
+  (function(){
+    var b=$('planBtn'); if(!b||!('IntersectionObserver' in window))return;
+    new IntersectionObserver(function(es){
+      document.body.classList.toggle('planbtn-vis',!!(es[0]&&es[0].isIntersecting));
+    },{threshold:0.35}).observe(b);
   })();
   // The lift home: appears once you're two screens deep, one tap back to the top.
   (function(){
