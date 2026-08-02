@@ -302,3 +302,43 @@ key-value store; today it would only add setup.
 
 **Still to do before charging money**: move trip credits to the account record (`sync:<uid>` is
 the wrong place — credits must live where the phone cannot edit them), then connect payments.
+
+## Security posture after accounts (2026-08-02)
+
+Done in this pass:
+
+- **Sign-in codes** come from `crypto.getRandomValues` with rejection sampling, not
+  `Math.random()`. The old generator was predictable: enough codes requested to your own address
+  recovers the PRNG state, which then predicts the code emailed to somebody else.
+- **`esc()` escapes quotes.** It only handled `< > &`, while roughly half its call sites write
+  into an attribute — where a lone `"` starts a new attribute and `onerror=` needs no tag at all.
+- **Stored XSS in the community feed, closed.** A published trip's thumbnail was written raw into
+  `img src="…"` and only prefix-checked server-side, so
+  `data:image/jpeg;base64,AAA" onerror=…` executed on every phone that opened the feed — and
+  would have taken the session token. Image data-urls are now validated as a whole (base64
+  charset, nothing else) on the client *and* in the worker, for the thumbnail and the full photo.
+- **Policy and terms** rewritten to match what the app does; the in-app promises follow sign-in
+  state.
+- **`GET /auth/check`** on the worker reports setup state without echoing a secret.
+
+Known and deliberately not done yet, roughly in the order they'll matter:
+
+1. **Sign out everywhere.** `auth_logout` kills only the calling device's token. A lost phone
+   keeps its session for up to 180 days. Needs a token list per user, or a `gen` counter on the
+   user record that sessions carry and validate against.
+2. **A Content-Security-Policy header.** GitHub Pages can't set headers, and the `<meta>` form
+   can't carry `frame-ancestors`. The app is inline-script-heavy, so a real CSP means either
+   moving the JS out or hashing it. Worth doing before any paid launch — it turns the next
+   escaping mistake into a blocked request rather than a stolen session.
+3. **Rate-limit `sync_put` per user.** Only the shared per-IP-per-minute cap applies today; a
+   signed-in device could write 400KB in a loop and run up KV cost.
+4. **Trip credits still live on the phone** (unchanged from before): they must move to the
+   account record before real payments connect.
+5. **The token lives in `localStorage`**, readable by any script on the page. An httpOnly cookie
+   would be stronger but needs a same-origin path between Pages and the worker (a custom domain
+   for both), which is a bigger change than it looks.
+
+The test that guards all of this is `xss.cjs` in the scratchpad: it publishes hostile titles,
+names, comments, captions and thumbnails and asserts nothing executes, no `on*` attribute is
+created, and the session token stays put. It scored 20/20 after these fixes and 10 failures
+against the commit before them.
