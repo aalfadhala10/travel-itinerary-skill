@@ -1420,7 +1420,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 20:55 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 21:30 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -9294,6 +9294,15 @@
   }
   $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYADD={}; ROUTEDC=null; STAYAREA=''; PGFRESH=true;
     try{ $('lastTrip').classList.add('is-hidden'); }catch(e){} plan(); });
+  // Currency is a display setting, not a reason to re-plan — but a plan already on screen was
+  // frozen in the old currency until the traveller planned again, so the budget "stayed on the
+  // previous". Changing it now re-renders the shown plan in place (same trip, new currency), and
+  // it is what the account's currency setting fires through, so that path updates a live plan too.
+  $('homeCur').addEventListener('change',function(){
+    HOME=this.value||'USD';
+    try{ saveState(); }catch(e){}
+    if($('out').classList.contains('show')){ try{ rerenderKeep(); }catch(e){} }
+  });
 
   function toast(msg){var el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove('show');},1800);}
   // Print/save-as-PDF: name the file after the destination, and print only the itinerary (see @media print).
