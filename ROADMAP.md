@@ -323,15 +323,15 @@ Done in this pass:
 
 Known and deliberately not done yet, roughly in the order they'll matter:
 
-1. **Sign out everywhere.** `auth_logout` kills only the calling device's token. A lost phone
-   keeps its session for up to 180 days. Needs a token list per user, or a `gen` counter on the
-   user record that sessions carry and validate against.
+1. ~~Sign out everywhere~~ — done 2026-08-02: sessions carry the generation they were minted
+   under, `auth_logout_all` bumps the user's `gen`, and every session dies at its next use.
+   Needs the worker re-paste to go live.
 2. **A Content-Security-Policy header.** GitHub Pages can't set headers, and the `<meta>` form
    can't carry `frame-ancestors`. The app is inline-script-heavy, so a real CSP means either
    moving the JS out or hashing it. Worth doing before any paid launch — it turns the next
    escaping mistake into a blocked request rather than a stolen session.
-3. **Rate-limit `sync_put` per user.** Only the shared per-IP-per-minute cap applies today; a
-   signed-in device could write 400KB in a loop and run up KV cost.
+3. ~~Rate-limit `sync_put` per user~~ — done 2026-08-02: 400 writes per account per day,
+   429 beyond. Same worker re-paste.
 4. **Trip credits still live on the phone** (unchanged from before): they must move to the
    account record before real payments connect.
 5. **The token lives in `localStorage`**, readable by any script on the page. An httpOnly cookie

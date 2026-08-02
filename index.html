@@ -1420,7 +1420,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 19:10 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 20:20 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -8112,21 +8112,21 @@
   function authTxt(){
     return LANG==='ar'?{t:'حسابك',sub:'الحساب اختياري — التخطيط يشتغل بدونه. تسجّل عشان سجلك ورحلاتك ما تضيع لو ضاع جوالك.',
       g:'كمّل بحساب قوقل',em:'بريدك الإلكتروني',send:'أرسل رمز',code:'الرمز اللي وصلك',verify:'تأكيد',
-      inAs:function(e){return 'مسجّل باسم '+e;},sync:'زامن الآن',out:'خروج',del:'احذف حسابي',
+      inAs:function(e){return 'مسجّل باسم '+e;},sync:'زامن الآن',out:'خروج',outAll:'خروج من كل الأجهزة',outAllDone:'تم — انقفلت الجلسات على كل الأجهزة.',del:'احذف حسابي',
       delSure:'يُحذف حسابك وكل الي عندنا. الي على جوالك يبقى. متأكد؟',
       done:'تم — بياناتك محفوظة في حسابك',outDone:'خرجت. كل شي باقٍ على جهازك.',
       delDone:'انحذف حسابك.',bad:'الرمز غلط',sent:'أرسلنا لك رمز — شيك بريدك',
       off:'تسجيل الدخول ما هو جاهز بعد على السيرفر.',priv:'نحفظ بريدك ونسخة من رحلاتك. لا شي غير كذا.',privL:'الخصوصية',termL:'الشروط',syncWhat:'يرفع اللي على هذا الجهاز وينزّل اللي ناقص — ويصير لحاله كل ما تفتح التطبيق.',prefT:'تفضيلاتك',prefLang:'اللغة',prefHome:'بلدك',prefCur:'عملتك',prefNone:'— اختر —',prefNote:'تنطبق على كل التطبيق — التسعير، وخطوط سجلك من بيتك.',prefSync:'محفوظة في حسابك، فتلقاها على أي جهاز.'}
     :(LANG==='es'?{t:'Tu cuenta',sub:'La cuenta es opcional — planear funciona sin ella. Entra para que tu historial y tus viajes sobrevivan a un móvil perdido.',
       g:'Continuar con Google',em:'Tu correo',send:'Enviar código',code:'El código',verify:'Confirmar',
-      inAs:function(e){return 'Conectado como '+e;},sync:'Sincronizar',out:'Salir',del:'Borrar mi cuenta',
+      inAs:function(e){return 'Conectado como '+e;},sync:'Sincronizar',out:'Salir',outAll:'Salir en todos los dispositivos',outAllDone:'Listo — todas las sesiones quedaron cerradas.',del:'Borrar mi cuenta',
       delSure:'Se borra tu cuenta y lo que guardamos. Lo del móvil se queda. ¿Seguro?',
       done:'Listo — guardado en tu cuenta',outDone:'Saliste. Todo sigue en este dispositivo.',
       delDone:'Cuenta borrada.',bad:'Código incorrecto',sent:'Te enviamos un código — mira tu correo',
       off:'El inicio de sesión aún no está configurado en el servidor.',priv:'Guardamos tu correo y una copia de tus viajes. Nada más.',privL:'Privacidad',termL:'Términos',syncWhat:'Sube lo de este dispositivo y baja lo que falte — también ocurre solo al abrir la app.',prefT:'Tus preferencias',prefLang:'Idioma',prefHome:'Tu país',prefCur:'Tu moneda',prefNone:'— elige —',prefNote:'Se aplican a toda la app — a los precios y a las líneas desde casa de tu historial.',prefSync:'Guardadas en tu cuenta, así las tienes en cualquier dispositivo.'}
     :{t:'Your account',sub:'An account is optional — planning works without one. Sign in so your record and trips survive a lost phone.',
       g:'Continue with Google',em:'Your email',send:'Send a code',code:'The code',verify:'Confirm',
-      inAs:function(e){return 'Signed in as '+e;},sync:'Sync now',out:'Sign out',del:'Delete my account',
+      inAs:function(e){return 'Signed in as '+e;},sync:'Sync now',out:'Sign out',outAll:'Sign out everywhere',outAllDone:'Done — every device\'s session is closed.',del:'Delete my account',
       delSure:'This deletes your account and what we hold. What is on this phone stays. Sure?',
       done:'Done — saved to your account',outDone:'Signed out. Everything stays on this device.',
       delDone:'Account deleted.',bad:'Wrong code',sent:'We sent you a code — check your email',
@@ -8229,6 +8229,8 @@
         +'<div class="notehint" style="margin:-2px 0 10px">'+esc(c.syncWhat)+'</div>'
         +'<div class="authrow"><button type="button" class="recbtn" id="authOut">'+esc(c.out)+'</button>'
         +'<button type="button" class="recbtn authdel" id="authDel">'+esc(c.del)+'</button></div>'
+        // the lost-phone button: kills the session on every device, including this one
+        +'<button type="button" class="recbtn" id="authOutAll" style="width:100%;margin-top:8px">'+esc(c.outAll)+'</button>'
         +authPrefs(c)+authPriv(c);
       return;
     }
@@ -8318,6 +8320,13 @@
       }
       if((t=e.target.closest('#authSync'))){ syncNow(); return; }
       if(e.target.closest('#prefHome')||e.target.closest('#prefLang')||e.target.closest('#prefCur'))return;
+      if((t=e.target.closest('#authOutAll'))){
+        authApi('auth_logout_all',{}).then(function(d){
+          if(d&&d.ok){ authSet(''); AUTHME=null; renderAuth(); toast(c.outAllDone); }
+          else toast(c.off);
+        }).catch(function(){ toast((CTXT[LANG]||CTXT.en).offline); });
+        return;
+      }
       if((t=e.target.closest('#authOut'))){
         authApi('auth_logout',{}).catch(function(){});
         authSet(''); AUTHME=null; renderAuth(); toast(c.outDone); return;
