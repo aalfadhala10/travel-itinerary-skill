@@ -963,6 +963,12 @@
   body.mkmode #out,body.mkmode #community,body.mkmode #saved,body.mkmode #recscr,
   body.mkmode .intro,body.mkmode .editfab,body.mkmode .chatfab{display:none!important}
   body.cmmode #mkscr,body.svmode #mkscr,body.recmode #mkscr{display:none!important}
+  .prefbox{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+  .prefrow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+  .prefrow:last-child{border-bottom:none}
+  .prefrow label{flex:0 0 auto;min-width:88px;font-size:13.5px;color:var(--muted)}
+  .prefrow select{flex:1;min-width:0;padding:9px 8px;border:1px solid var(--line);border-radius:10px;
+    background:var(--paper);color:var(--ink);font-size:14px;font-family:var(--ff-body)}
   .mktrip{background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:14px}
   .mkfield{display:flex;gap:8px;align-items:center;margin-bottom:8px}
   .mkfield:last-child{margin-bottom:0}
@@ -1381,7 +1387,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 12:05 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 13:05 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -7126,8 +7132,8 @@
   function recLoad(){ try{ var r=JSON.parse(localStorage.getItem('bosla_beento')||'null'); if(r&&Array.isArray(r.v))return {h:r.h||null,v:r.v}; }catch(e){} return {h:null,v:[]}; }
   function recStore(){ SUGCUR=null; if(RECSHARED)return; try{ localStorage.setItem('bosla_beento',JSON.stringify(RECV)); }catch(e){} }
   function recTxt(){
-    return LANG==='ar'?{t:'سجل سفراتي',sub:'كل دولة وطئتها رجلك — خطوط ضوء من بيتك، والعدّاد يكبر معك.',home:'بلدك',homePh:'اكتب بلدك',been:'رحت لـ…',beenPh:'أضف دولة زرتها',of:'دولة',lines:'خطوط من بيتك',far:'الأبعد',share:'شارك سجلي',clear:'ابدأ من جديد',flat:'خريطة مسطحة',globe:'الكرة',empty:'اكتب دولة فوق — كل دولة تضيفها تصير خط ضوء من بيتك.',sharedBy:function(h){return 'سجل سفرات صديقك — من '+h;},mine:'ورّني سجلي',shareMsg:function(n,t){return 'سجل سفراتي: '+n+' / '+t+' دولة ';},back:'رجوع',goalT:'هدف السنة',goalAsk:'كم دولة جديدة تبي تزورها هالسنة؟',goalSet:'حدد الهدف',goalOf:function(a,b2,y){return a+' من '+b2+' دول جديدة في '+y;},goalDone:function(y){return 'مبروك! كملت هدفك لسنة '+y+' 🎉';},goalDoneSub:'تبي ترفع السقف؟ عدّل هدفك وكمّل.',goalEdit:'عدّل الهدف',goalShare:function(y){return ' · حققت هدفي لسنة '+y;},sugT:'وين بعد؟',sugSub:'مقترحات من سجلك — دول ما زرتها بعد.',sugPlan:'خطط رحلة',sugNo:'مو مناسبة — اقترح غيرها',cmpT:'قارن مع صديق',cmpSub:'الصق رابط سجل صديقك — نشوف وين تلاقيتوا ووين سبقكم.',cmpPh:'الصق الرابط هنا',cmpGo:'قارن',cmpBad:'الرابط ما فيه سجل — تأكد إنك نسخت الرابط كامل.',cmpOff:'أنهِ المقارنة',cmpYou:'أنت',cmpThem:'صديقك',cmpTogether:'سوا',cmpBoth:'زرتوها الاثنين',cmpOnlyMe:'أنت بس',cmpOnlyThem:'هو بس',cmpNone:'ما في ولا دولة مشتركة بعد',cmpDo:'قارنه بسجلي',sugWhy:{near:'قريبة من دولة زرتها',region:'تشبه المنطقة الي تحبها',home:'قريبة من بيتك'}}
-    :(LANG==='es'?{t:'Mi historial de viajes',sub:'Cada país que has pisado — líneas de luz desde casa, y un contador que crece contigo.',home:'Tu país',homePh:'escribe tu país',been:'He estado en…',beenPh:'añade un país',of:'países',lines:'Líneas desde casa',far:'Más lejano',share:'Compartir mi historial',clear:'Empezar de nuevo',flat:'Mapa plano',globe:'Globo',empty:'Escribe un país arriba — cada uno se convierte en una línea de luz desde casa.',sharedBy:function(h){return 'El historial de viajes de un amigo — desde '+h;},mine:'Ver el mío',shareMsg:function(n,t){return 'Mi historial de viajes: '+n+' / '+t+' países ';},back:'Volver',goalT:'Meta del año',goalAsk:'¿Cuántos países nuevos quieres visitar este año?',goalSet:'Fijar meta',goalOf:function(a,b2,y){return a+' de '+b2+' países nuevos en '+y;},goalDone:function(y){return '¡Enhorabuena! Cumpliste tu meta de '+y+' 🎉';},goalDoneSub:'¿Subimos el listón? Edita tu meta y sigue.',goalEdit:'Editar meta',goalShare:function(y){return ' · meta de '+y+' cumplida';},sugT:'¿Y ahora?',sugSub:'Sugerencias desde tu historial — países que aún no pisaste.',sugPlan:'Planear',sugNo:'No me interesa — sugiere otro',cmpT:'Comparar con un amigo',cmpSub:'Pega el enlace del historial de tu amigo — mira dónde coincidís y dónde te lleva ventaja.',cmpPh:'Pega el enlace aquí',cmpGo:'Comparar',cmpBad:'Ese enlace no lleva un historial — copia el enlace completo.',cmpOff:'Terminar comparación',cmpYou:'Tú',cmpThem:'Tu amigo',cmpTogether:'Juntos',cmpBoth:'Los dos',cmpOnlyMe:'Solo tú',cmpOnlyThem:'Solo él',cmpNone:'Aún ningún país en común',cmpDo:'Comparar con el mío',sugWhy:{near:'cerca de un país que visitaste',region:'como las regiones que te gustan',home:'cerca de casa'}}
+    return LANG==='ar'?{t:'سجل سفراتي',sub:'كل دولة وطئتها رجلك — خطوط ضوء من بيتك، والعدّاد يكبر معك.',home:'بلدك',homePh:'اكتب بلدك',been:'رحت لـ…',beenPh:'أضف دولة زرتها',of:'دولة',lines:'خطوط من بيتك',far:'الأبعد',share:'شارك سجلي',clear:'ابدأ من جديد',flat:'خريطة مسطحة',globe:'الكرة',empty:'اكتب دولة فوق — كل دولة تضيفها تصير خط ضوء من بيتك.',sharedBy:function(h){return 'سجل سفرات صديقك — من '+h;},mine:'ورّني سجلي',shareMsg:function(n,t){return 'سجل سفراتي: '+n+' / '+t+' دولة ';},back:'رجوع',goalT:'هدف السنة',goalAsk:'كم دولة جديدة تبي تزورها هالسنة؟',goalSet:'حدد الهدف',goalOf:function(a,b2,y){return a+' من '+b2+' دول جديدة في '+y;},goalDone:function(y){return 'مبروك! كملت هدفك لسنة '+y+'.';},goalDoneSub:'تبي ترفع السقف؟ عدّل هدفك وكمّل.',goalEdit:'عدّل الهدف',goalShare:function(y){return ' · حققت هدفي لسنة '+y;},sugT:'وين بعد؟',sugSub:'مقترحات من سجلك — دول ما زرتها بعد.',sugPlan:'خطط رحلة',sugNo:'مو مناسبة — اقترح غيرها',cmpT:'قارن مع صديق',cmpSub:'الصق رابط سجل صديقك — نشوف وين تلاقيتوا ووين سبقكم.',cmpPh:'الصق الرابط هنا',cmpGo:'قارن',cmpBad:'الرابط ما فيه سجل — تأكد إنك نسخت الرابط كامل.',cmpOff:'أنهِ المقارنة',cmpYou:'أنت',cmpThem:'صديقك',cmpTogether:'سوا',cmpBoth:'زرتوها الاثنين',cmpOnlyMe:'أنت بس',cmpOnlyThem:'هو بس',cmpNone:'ما في ولا دولة مشتركة بعد',cmpDo:'قارنه بسجلي',sugWhy:{near:'قريبة من دولة زرتها',region:'تشبه المنطقة الي تحبها',home:'قريبة من بيتك'}}
+    :(LANG==='es'?{t:'Mi historial de viajes',sub:'Cada país que has pisado — líneas de luz desde casa, y un contador que crece contigo.',home:'Tu país',homePh:'escribe tu país',been:'He estado en…',beenPh:'añade un país',of:'países',lines:'Líneas desde casa',far:'Más lejano',share:'Compartir mi historial',clear:'Empezar de nuevo',flat:'Mapa plano',globe:'Globo',empty:'Escribe un país arriba — cada uno se convierte en una línea de luz desde casa.',sharedBy:function(h){return 'El historial de viajes de un amigo — desde '+h;},mine:'Ver el mío',shareMsg:function(n,t){return 'Mi historial de viajes: '+n+' / '+t+' países ';},back:'Volver',goalT:'Meta del año',goalAsk:'¿Cuántos países nuevos quieres visitar este año?',goalSet:'Fijar meta',goalOf:function(a,b2,y){return a+' de '+b2+' países nuevos en '+y;},goalDone:function(y){return '¡Enhorabuena! Cumpliste tu meta de '+y+'.';},goalDoneSub:'¿Subimos el listón? Edita tu meta y sigue.',goalEdit:'Editar meta',goalShare:function(y){return ' · meta de '+y+' cumplida';},sugT:'¿Y ahora?',sugSub:'Sugerencias desde tu historial — países que aún no pisaste.',sugPlan:'Planear',sugNo:'No me interesa — sugiere otro',cmpT:'Comparar con un amigo',cmpSub:'Pega el enlace del historial de tu amigo — mira dónde coincidís y dónde te lleva ventaja.',cmpPh:'Pega el enlace aquí',cmpGo:'Comparar',cmpBad:'Ese enlace no lleva un historial — copia el enlace completo.',cmpOff:'Terminar comparación',cmpYou:'Tú',cmpThem:'Tu amigo',cmpTogether:'Juntos',cmpBoth:'Los dos',cmpOnlyMe:'Solo tú',cmpOnlyThem:'Solo él',cmpNone:'Aún ningún país en común',cmpDo:'Comparar con el mío',sugWhy:{near:'cerca de un país que visitaste',region:'como las regiones que te gustan',home:'cerca de casa'}}
     :{t:'My travel record',sub:'Every country you have set foot in — lines of light from home, and a count that grows with you.',home:'Home',homePh:'type your country',been:'I have been to…',beenPh:'add a country',of:'countries',lines:'Lines from home',far:'Farthest',share:'Share my record',clear:'Start over',flat:'Flat map',globe:'Globe',empty:'Type a country above — each one becomes a line of light from home.',sharedBy:function(h){return 'A friend’s travel record — from '+h;},mine:'Show mine instead',shareMsg:function(n,t){return 'My travel record: '+n+' / '+t+' countries ';},back:'Back',goalT:'This year\u2019s goal',goalAsk:'How many new countries do you want this year?',goalSet:'Set the goal',goalOf:function(a,b2,y){return a+' of '+b2+' new countries in '+y;},goalDone:function(y){return 'You did it \u2014 your '+y+' goal is complete.';},goalDoneSub:'Raise the bar? Edit your goal and keep going.',goalEdit:'Edit goal',goalShare:function(y){return ' \u00b7 '+y+' goal reached';},sugT:'Where next?',sugSub:'Suggestions from your own record \u2014 countries you have not set foot in yet.',sugPlan:'Plan a trip',sugNo:'Not for me — suggest another',cmpT:'Compare with a friend',cmpSub:'Paste your friend\u2019s record link — see where you have both stood, and where they are ahead.',cmpPh:'Paste the link here',cmpGo:'Compare',cmpBad:'That link carries no record — copy the whole link.',cmpOff:'End comparison',cmpYou:'You',cmpThem:'Your friend',cmpTogether:'Together',cmpBoth:'Both of you',cmpOnlyMe:'Only you',cmpOnlyThem:'Only them',cmpNone:'No countries in common yet',cmpDo:'Compare with mine',sugWhy:{near:'near a country you visited',region:'like the regions you favour',home:'close to home'}});
   }
   function rgCol(n){ return getComputedStyle(document.body).getPropertyValue(n).trim(); }
@@ -7815,25 +7821,25 @@
       delSure:'يُحذف حسابك وكل الي عندنا. الي على جوالك يبقى. متأكد؟',
       done:'تم — بياناتك محفوظة في حسابك',outDone:'خرجت. كل شي باقٍ على جهازك.',
       delDone:'انحذف حسابك.',bad:'الرمز غلط',sent:'أرسلنا لك رمز — شيك بريدك',
-      off:'تسجيل الدخول ما هو جاهز بعد على السيرفر.',priv:'نحفظ بريدك ونسخة من رحلاتك. لا شي غير كذا.',privL:'الخصوصية',termL:'الشروط'}
+      off:'تسجيل الدخول ما هو جاهز بعد على السيرفر.',priv:'نحفظ بريدك ونسخة من رحلاتك. لا شي غير كذا.',privL:'الخصوصية',termL:'الشروط',syncWhat:'يرفع اللي على هذا الجهاز وينزّل اللي ناقص — ويصير لحاله كل ما تفتح التطبيق.',prefT:'تفضيلاتك',prefLang:'اللغة',prefHome:'بلدك',prefCur:'عملتك',prefNone:'— اختر —',prefNote:'تنطبق على كل التطبيق — التسعير، وخطوط سجلك من بيتك.',prefSync:'محفوظة في حسابك، فتلقاها على أي جهاز.'}
     :(LANG==='es'?{t:'Tu cuenta',sub:'La cuenta es opcional — planear funciona sin ella. Entra para que tu historial y tus viajes sobrevivan a un móvil perdido.',
       g:'Continuar con Google',em:'Tu correo',send:'Enviar código',code:'El código',verify:'Confirmar',
       inAs:function(e){return 'Conectado como '+e;},sync:'Sincronizar',out:'Salir',del:'Borrar mi cuenta',
       delSure:'Se borra tu cuenta y lo que guardamos. Lo del móvil se queda. ¿Seguro?',
       done:'Listo — guardado en tu cuenta',outDone:'Saliste. Todo sigue en este dispositivo.',
       delDone:'Cuenta borrada.',bad:'Código incorrecto',sent:'Te enviamos un código — mira tu correo',
-      off:'El inicio de sesión aún no está configurado en el servidor.',priv:'Guardamos tu correo y una copia de tus viajes. Nada más.',privL:'Privacidad',termL:'Términos'}
+      off:'El inicio de sesión aún no está configurado en el servidor.',priv:'Guardamos tu correo y una copia de tus viajes. Nada más.',privL:'Privacidad',termL:'Términos',syncWhat:'Sube lo de este dispositivo y baja lo que falte — también ocurre solo al abrir la app.',prefT:'Tus preferencias',prefLang:'Idioma',prefHome:'Tu país',prefCur:'Tu moneda',prefNone:'— elige —',prefNote:'Se aplican a toda la app — a los precios y a las líneas desde casa de tu historial.',prefSync:'Guardadas en tu cuenta, así las tienes en cualquier dispositivo.'}
     :{t:'Your account',sub:'An account is optional — planning works without one. Sign in so your record and trips survive a lost phone.',
       g:'Continue with Google',em:'Your email',send:'Send a code',code:'The code',verify:'Confirm',
       inAs:function(e){return 'Signed in as '+e;},sync:'Sync now',out:'Sign out',del:'Delete my account',
       delSure:'This deletes your account and what we hold. What is on this phone stays. Sure?',
       done:'Done — saved to your account',outDone:'Signed out. Everything stays on this device.',
       delDone:'Account deleted.',bad:'Wrong code',sent:'We sent you a code — check your email',
-      off:'Sign-in is not set up on the server yet.',priv:'We store your email and a copy of your trips. Nothing else.',privL:'Privacy',termL:'Terms'});
+      off:'Sign-in is not set up on the server yet.',priv:'We store your email and a copy of your trips. Nothing else.',privL:'Privacy',termL:'Terms',syncWhat:'Sends up what is on this device and brings down anything missing — it also happens on its own each time you open the app.',prefT:'Your preferences',prefLang:'Language',prefHome:'Your country',prefCur:'Your currency',prefNone:'— choose —',prefNote:'Used across the app — for pricing, and for the lines from home on your record.',prefSync:'Kept in your account, so they follow you to any device.'});
   }
   // Everything a person would hate to lose, and nothing else.
   var SYNCKEYS=['bosla_beento','rihla_trips','bosla_saved','bosla_pts','bosla_pts_life',
-    'bosla_pub_mine','bosla_cmtkeys','bosla_goal','bosla_sugx','rihla_v1'];
+    'bosla_pub_mine','bosla_cmtkeys','bosla_goal','bosla_sugx','rihla_v1','bosla_lang','bosla_made'];
   var SYNCPRE=['bosla_notes2:','bosla_went:','rihla_pack_'];
   function syncGather(){
     var o={};
@@ -7924,9 +7930,10 @@
     if(AUTHME&&AUTHME.signedIn){
       host.innerHTML='<div class="authin">'+esc(c.inAs(AUTHME.email||''))+'</div>'
         +'<button type="button" class="recbtn main" id="authSync" style="width:100%;margin-bottom:8px">'+esc(c.sync)+'</button>'
+        +'<div class="notehint" style="margin:-2px 0 10px">'+esc(c.syncWhat)+'</div>'
         +'<div class="authrow"><button type="button" class="recbtn" id="authOut">'+esc(c.out)+'</button>'
         +'<button type="button" class="recbtn authdel" id="authDel">'+esc(c.del)+'</button></div>'
-        +authPriv(c);
+        +authPrefs(c)+authPriv(c);
       return;
     }
     var h='<div class="goalask">'+esc(c.sub)+'</div>';
@@ -7938,11 +7945,37 @@
         +'<button type="button" class="recbtn main" id="authVerify" style="flex:0 0 auto">'+esc(c.verify)+'</button></div>';
     }
     if(!AUTHOK||(!AUTHOK.google&&!AUTHOK.email))h+='<div class="recempty">'+esc(c.off)+'</div>';
-    h+=authPriv(c);
+    h+=authPriv(c)+authPrefs(c);
     host.innerHTML=h;
   }
   // The moment somebody is deciding whether to hand over an email is the moment to say what
   // happens to it — in one sentence, with the long version a tap away.
+  /* Language, home country and currency are settings people look for in an account screen, so
+     they live here too. Each one writes to the field that already owns it — the language bar, the
+     record's home, the planner's currency — rather than inventing a second copy that could
+     disagree with the first. */
+  function authPrefs(c){
+    var langs=[['ar','العربية'],['en','English'],['es','Español']];
+    var h='<div class="reclbl" style="margin-top:16px">'+esc(c.prefT)+'</div><div class="prefbox">';
+    h+='<div class="prefrow"><label for="prefLang">'+esc(c.prefLang)+'</label><select id="prefLang">'
+      +langs.map(function(l){ return '<option value="'+l[0]+'"'+(LANG===l[0]?' selected':'')+'>'+esc(l[1])+'</option>'; }).join('')
+      +'</select></div>';
+    var home=''; try{ home=(recLoad()||{}).h||''; }catch(e){}
+    var cos=[]; try{ cos=rgCountries().slice().sort(function(a,b){ return a.n<b.n?-1:1; }); }catch(e){}
+    h+='<div class="prefrow"><label for="prefHome">'+esc(c.prefHome)+'</label><select id="prefHome">'
+      +'<option value="">'+esc(c.prefNone)+'</option>'
+      +cos.map(function(x){ return '<option value="'+esc(x.n)+'"'+(x.n===home?' selected':'')+'>'+x.flag+' '+esc(rgCName(x.n))+'</option>'; }).join('')
+      +'</select></div>';
+    var cur=($('homeCur')||{}).value||'USD';
+    var opts=[]; try{ opts=[].slice.call($('homeCur').options).map(function(o){ return [o.value,o.textContent]; }); }catch(e){}
+    h+='<div class="prefrow"><label for="prefCur">'+esc(c.prefCur)+'</label><select id="prefCur">'
+      +opts.map(function(o){ return '<option value="'+esc(o[0])+'"'+(o[0]===cur?' selected':'')+'>'+esc(o[1])+'</option>'; }).join('')
+      +'</select></div></div>';
+    h+='<div class="notehint" style="margin-top:6px">'+esc(c.prefNote)
+      +(signedIn()?' '+esc(c.prefSync):'')+'</div>';
+    return h;
+  }
+  function signedIn(){ return !!(AUTHME&&AUTHME.signedIn); }
   function authPriv(c){
     return '<div class="notehint" style="margin-top:8px">'+esc(c.priv)
       +' <a href="privacy.html" target="_blank" rel="noopener">'+esc(c.privL)+'</a>'
@@ -7988,6 +8021,7 @@
         return;
       }
       if((t=e.target.closest('#authSync'))){ syncNow(); return; }
+      if(e.target.closest('#prefHome')||e.target.closest('#prefLang')||e.target.closest('#prefCur'))return;
       if((t=e.target.closest('#authOut'))){
         authApi('auth_logout',{}).catch(function(){});
         authSet(''); AUTHME=null; renderAuth(); toast(c.outDone); return;
@@ -7997,6 +8031,29 @@
         authApi('auth_delete',{}).then(function(){
           authSet(''); AUTHME=null; renderAuth(); toast(c.delDone);
         }).catch(function(){ toast((CTXT[LANG]||CTXT.en).offline); });
+        return;
+      }
+    });
+    sh.addEventListener('change',function(e){
+      var t=e.target;
+      if(t.id==='prefLang'){
+        try{ localStorage.setItem('bosla_lang',t.value); }catch(err){}
+        try{ var ls=$('langSel'); if(ls)ls.value=t.value; }catch(err){}
+        applyLang(t.value); renderAuth();                    // the sheet itself changes language
+        if(signedIn())syncNow(true);
+        return;
+      }
+      if(t.id==='prefHome'){
+        var r=recLoad(); r.h=t.value||null;
+        try{ localStorage.setItem('bosla_beento',JSON.stringify(r)); }catch(err){}
+        if(!RECSHARED)RECV=r;                                 // the globe draws its lines from here
+        if(signedIn())syncNow(true);
+        return;
+      }
+      if(t.id==='prefCur'){
+        var hc=$('homeCur'); if(hc){ hc.value=t.value; try{ hc.dispatchEvent(new Event('change',{bubbles:true})); }catch(err){} }
+        try{ saveState(); }catch(err){}
+        if(signedIn())syncNow(true);
         return;
       }
     });
