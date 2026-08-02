@@ -1037,7 +1037,16 @@
   .cmrow .cmbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
   .cmbtn.liked{color:#e05d6f;border-color:#e05d6f}
   .cmbtn.liked svg{fill:#e05d6f;stroke:#e05d6f}
-  .cmphotos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+  .cmphotos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 8px;margin:12px 0;align-items:start}
+  .cmpcap{font-size:11.5px;line-height:1.4;color:var(--muted);margin-top:4px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .cmtctl{float:inline-end;display:inline-flex;gap:6px}
+  .cmtbtn{border:1px solid var(--line);background:none;color:var(--muted);font-size:11.5px;
+    border-radius:8px;padding:3px 8px;cursor:pointer;font-family:inherit}
+  .cmtbtn.save{border-color:var(--amber);color:var(--amber);font-weight:700}
+  .cmtedit{margin-top:8px}
+  .cmtedit textarea{width:100%;min-height:56px;padding:9px;border:1px solid var(--line);border-radius:10px;
+    background:var(--paper);color:var(--ink);font-size:14px;font-family:inherit;margin-bottom:6px}
   .cmphotos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;border:1px solid var(--line);display:block}
   .cmpcell{position:relative}
   .cmpcell .cmpx{position:absolute;top:5px;inset-inline-end:5px;width:24px;height:24px;border:none;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -1271,7 +1280,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 05:14 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 05:24 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -7516,9 +7525,21 @@
     });
     return h;
   }
+  function cmtKeys(){ try{ return JSON.parse(localStorage.getItem('bosla_cmtkeys')||'{}'); }catch(e){ return {}; } }
   function renderCmts(list){
     var host=$('cmCmts'); if(!host)return;
-    host.innerHTML=list.map(function(x){ return '<div class="cmcmt"><b>'+esc(x.n)+'</b>'+esc(x.x)+'</div>'; }).join('');
+    var mk=cmtKeys(), ownTrip=CMTRIP&&cmMine()[CMTRIP.id];
+    var ar=LANG==='ar', es=LANG==='es';
+    var editT=ar?'عدّل':(es?'Editar':'Edit');
+    host.innerHTML=list.map(function(x){
+      var mine=x.cid&&mk[x.cid];
+      // no cid = a comment from before comments had identities — it has no controls
+      var ctl=(x.cid&&(mine||ownTrip))
+        ?'<span class="cmtctl">'+(mine?'<button type="button" class="cmtbtn" data-cmtedit="'+esc(x.cid)+'">'+editT+'</button>':'')
+          +'<button type="button" class="cmtbtn" data-cmtdel="'+esc(x.cid)+'" aria-label="✕">✕</button></span>'
+        :'';
+      return '<div class="cmcmt" data-cid="'+esc(x.cid||'')+'"><b>'+esc(x.n)+ctl+'</b><span class="cmtx" dir="auto">'+esc(x.x)+'</span></div>';
+    }).join('');
   }
   function loadPhotos(pids){
     var host=$('cmPhotos'); if(!host)return;
@@ -7531,6 +7552,7 @@
         var img=document.createElement('img'); img.src=d.d; img.alt=d.c||d.n||''; img.loading='lazy';
         img.addEventListener('click',function(ev){ ev.stopPropagation(); cmLightbox(d.d,d.n||'',d.c||''); });
         cell.appendChild(img);
+        if(d.c){ var cap=document.createElement('div'); cap.className='cmpcap'; cap.dir='auto'; cap.textContent=d.c; cell.appendChild(cap); }
         if(ownKey){                                           // the album's owner can take a photo down
           var x=document.createElement('button'); x.type='button'; x.className='cmpx';
           x.setAttribute('aria-label','✕'); x.textContent='✕';
@@ -7715,8 +7737,41 @@
     if((t=e.target.closest('[data-cmcmt]'))){
       var inp=$('cmCmtIn'), txt=(inp.value||'').trim(); if(!txt)return;
       pubApi('pub_comment',{id:t.getAttribute('data-cmcmt'),name:getName()||'',txt:txt})
-        .then(function(d){ inp.value=''; renderCmts(d.comments||[]); toast(c.cmtDone); addPts(2); })
+        .then(function(d){
+          inp.value='';
+          if(d.cid&&d.ck){ try{ var mk=cmtKeys(); mk[d.cid]=d.ck; localStorage.setItem('bosla_cmtkeys',JSON.stringify(mk)); }catch(err){} }
+          renderCmts(d.comments||[]); toast(c.cmtDone); addPts(2);
+        })
         .catch(function(){ toast(c.offline); });
+      return;
+    }
+    if((t=e.target.closest('[data-cmtdel]'))){
+      var dcid=t.getAttribute('data-cmtdel');
+      if(!CMTRIP)return;
+      pubApi('pub_cmt_del',{id:CMTRIP.id,cid:dcid,key:cmMine()[CMTRIP.id]||'',ck:cmtKeys()[dcid]||''})
+        .then(function(d){ renderCmts(d.comments||[]); })
+        .catch(function(){ toast(c.offline); });
+      return;
+    }
+    if((t=e.target.closest('[data-cmtedit]'))){
+      var ecid=t.getAttribute('data-cmtedit'), box2=t.closest('.cmcmt');
+      if(!box2||box2.querySelector('textarea'))return;
+      var ar2=LANG==='ar', es2=LANG==='es';
+      var old=(box2.querySelector('.cmtx')||{}).textContent||'';
+      var ed=document.createElement('div'); ed.className='cmtedit';
+      ed.innerHTML='<textarea maxlength="240" dir="auto"></textarea>'
+        +'<button type="button" class="cmtbtn save">'+(ar2?'احفظ':(es2?'Guardar':'Save'))+'</button>'
+        +'<button type="button" class="cmtbtn">'+(ar2?'إلغاء':(es2?'Cancelar':'Cancel'))+'</button>';
+      var tx=box2.querySelector('.cmtx'); tx.style.display='none';
+      box2.appendChild(ed);
+      var ta2=ed.querySelector('textarea'); ta2.value=old; ta2.focus();
+      ed.lastChild.onclick=function(){ ed.remove(); tx.style.display=''; };
+      ed.querySelector('.save').onclick=function(){
+        var nv=(ta2.value||'').trim().slice(0,240); if(!nv){ ed.remove(); tx.style.display=''; return; }
+        pubApi('pub_cmt_edit',{id:CMTRIP.id,cid:ecid,ck:cmtKeys()[ecid]||'',txt:nv})
+          .then(function(d){ renderCmts(d.comments||[]); })
+          .catch(function(){ toast(c.offline); });
+      };
       return;
     }
     if((t=e.target.closest('[data-cmphoto]'))){
