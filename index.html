@@ -356,7 +356,17 @@
   .drawerhead{padding:8px 8px 16px;border-bottom:1px solid var(--line);margin:8px 0 8px;cursor:pointer}
   .dpname{font-family:var(--ff-display);font-size:21px;font-weight:600}
   .dpedit{color:var(--muted);font-size:14.5px;margin-top:2px}
-  .drawitem{display:block;width:100%;text-align:left;padding:13px 8px;border:none;background:none;color:var(--ink);font-size:15.5px;font-weight:600;font-family:var(--ff-body);cursor:pointer;border-radius:9px;text-decoration:none}
+  .drawitem{display:block;width:100%;text-align:left;padding:13px 8px;padding-inline-start:40px;position:relative;border:none;background:none;color:var(--ink);font-size:15.5px;font-weight:600;font-family:var(--ff-body);cursor:pointer;border-radius:9px;text-decoration:none}
+  .drawitem::before{content:'';position:absolute;inset-inline-start:10px;top:50%;transform:translateY(-50%);width:18px;height:18px;background:var(--amber);opacity:.9;
+    -webkit-mask:var(--di,none) center/contain no-repeat;mask:var(--di,none) center/contain no-repeat}
+  .drawitem[data-nav="how"]{--di:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'><circle cx='12' cy='12' r='8.6'/><path d='M9.6 9.3a2.5 2.5 0 1 1 3.4 3c-.8.5-1 1-1 1.9M12 17.2v.2'/></svg>")}
+  .drawitem[data-nav="trips"]{--di:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='8' width='16' height='11' rx='2'/><path d='M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M9 8v11M15 8v11'/></svg>")}
+  .drawitem[data-nav="community"]{--di:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='8.4'/><path d='M3.6 12h16.8M12 3.6c2.6 2.2 3.9 5 3.9 8.4s-1.3 6.2-3.9 8.4c-2.6-2.2-3.9-5-3.9-8.4s1.3-6.2 3.9-8.4z'/></svg>")}
+  .drawitem[data-nav="saved"]{--di:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M7 4.5h10a1 1 0 0 1 1 1V20l-6-3.4L6 20V5.5a1 1 0 0 1 1-1z'/></svg>")}
+  .drawitem[data-nav="record"]{--di:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M12 21s-6.5-5.6-6.5-10.4a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z'/><path d='M9.6 10.4l1.8 1.8 3.4-3.4'/></svg>")}
+  .drawitem[data-nav="install"]{--di:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M12 4v11M7.5 11l4.5 4.5L16.5 11M5 19.5h14'/></svg>")}
+  .drawitem[data-nav="share"]{--di:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='6' cy='12' r='2.4'/><circle cx='17.5' cy='5.8' r='2.4'/><circle cx='17.5' cy='18.2' r='2.4'/><path d='M8.2 10.9l7-4M8.2 13.1l7 4'/></svg>")}
+  .drawitem[data-nav="feedback"]{--di:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M21 12a8 8 0 0 1-8 8H4l2.5-2.7A8 8 0 1 1 21 12z'/></svg>")}
   .drawitem:hover{background:var(--teal-soft)}
   #app[dir="rtl"] .drawerhead,#app[dir="rtl"] .drawitem{text-align:right}
   .drawerabout{color:var(--muted);font-size:14.5px;margin-top:16px;padding:14px 8px 0;border-top:1px solid var(--line);line-height:1.6;text-wrap:balance}
@@ -384,7 +394,9 @@
   .wellang{padding:9px 16px;border:1px solid var(--line);border-radius:999px;background:var(--paper2);color:var(--ink);font-size:14px;font-weight:600;font-family:var(--ff-body);cursor:pointer;transition:all .15s}
   .wellang:hover{border-color:var(--teal)}
   .wellang.active{background:var(--ink);border-color:var(--ink);color:var(--paper)}
-  .welbtn,.pubgo{width:100%;padding:15px;border:none;border-radius:12px;background:var(--amber);color:#231a0a;font-size:16px;font-weight:700;font-family:var(--ff-body);cursor:pointer;box-shadow:var(--shadow);transition:filter .15s}
+  .welbtn,.pubgo{width:100%;padding:15px;border:none;border-radius:12px;
+    background:linear-gradient(100deg,var(--amber) 0%,#f0d489 50%,var(--amber) 100%);color:#241a06;
+    font-size:16px;font-weight:800;font-family:var(--ff-body);cursor:pointer;box-shadow:var(--shadow);transition:filter .15s}
   .welbtn:hover,.pubgo:hover{filter:brightness(1.05)}
   .welbtn:active,.pubgo:active{transform:translateY(1px)}
   .weldiv{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px;margin:16px 0;font-family:var(--ff-data);letter-spacing:1.5px;text-transform:uppercase}
@@ -1259,7 +1271,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 01:00 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 02:11 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
