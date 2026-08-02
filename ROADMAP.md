@@ -342,3 +342,18 @@ The test that guards all of this is `xss.cjs` in the scratchpad: it publishes ho
 names, comments, captions and thumbnails and asserts nothing executes, no `on*` attribute is
 created, and the session token stays put. It scored 20/20 after these fixes and 10 failures
 against the commit before them.
+
+## City expansion log (session 2026-08-02, autonomous loop)
+
+Hand-curated, verified batches — real coords/attractions/hotels only, all five tables in sync,
+each city audited (bounding box, cost tiers, hotels, currency) and plan-rendered in EN/AR/ES.
+
+- **Iceland (10)**: Keflavík, Selfoss, Höfn, Húsavík, Egilsstaðir, Ísafjörður, Vestmannaeyjar,
+  Stykkishólmur, Mývatn, Borgarnes. — 738 → 748 cities.
+- **Norway/Switzerland/Croatia/Greece/Japan/Portugal (12)**: Ålesund, Flåm, Svolvær, Grindelwald,
+  Lauterbrunnen, Zadar, Hvar, Plitvice, Milos, Hakone, Takayama, Albufeira. — 748 → 760.
+
+Method preserved in scratchpad gen_iceland.cjs / gen_batch2.cjs and the batch verifiers
+(iceland.cjs, batch2.cjs). Next candidates when the loop resumes: more Japan (Nikko exists;
+add Kamakura, Hiroshima?), Italy hill/coast towns, Turkey (Pamukkale, Göreme exists?), Spain
+(Granada?, San Sebastián, Ronda), Morocco (Chefchaouen, Essaouira). Only add what's verifiable.
