@@ -1008,6 +1008,11 @@
   .cmpchip{font-size:12.5px;padding:4px 9px;border-radius:999px;border:1px solid var(--line);background:var(--paper)}
   .cmpchip.both{border-color:var(--amber)} .cmpchip.me{border-color:var(--teal)} .cmpchip.them{border-color:var(--clay)}
   .cmpnone{color:var(--muted);font-size:12.5px}
+  .authin{font-size:15px;font-weight:600;margin-bottom:12px;word-break:break-all}
+  .authrow{display:flex;gap:8px}
+  .authrow .recbtn{flex:1}
+  .recbtn.authdel{border-color:var(--clay);color:var(--clay)}
+  .drawitem[data-nav="account"]{--di:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='8.5' r='3.6'/><path d='M4.8 19.5a7.2 7.2 0 0 1 14.4 0'/></svg>")}
   .recswrow{display:flex;justify-content:flex-end;align-items:center;gap:9px;color:var(--muted);font-size:14px;margin-bottom:6px}
   .recsw{position:relative;width:46px;height:27px;border-radius:999px;border:1px solid var(--line);background:var(--paper);cursor:pointer;padding:0}
   .recsw i{position:absolute;top:2px;inset-inline-start:2px;width:21px;height:21px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
@@ -1326,12 +1331,13 @@
         <button type="button" class="drawitem" data-nav="community" id="navCommunity">Traveller trips</button>
         <button type="button" class="drawitem" data-nav="saved" id="navSaved">Saved places</button>
         <button type="button" class="drawitem" data-nav="record" id="navRecord">My travel record</button>
+        <button type="button" class="drawitem" data-nav="account" id="navAccount">Your account</button>
         <button type="button" class="drawitem" data-nav="install" id="navInstall">Add to Home Screen</button>
         <button type="button" class="drawitem" data-nav="share" id="navShare">Share بوصلة</button>
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 07:52 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 08:00 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -1348,7 +1354,14 @@
   </div>
 
   <input type="file" id="cmPhotoInput" accept="image/*" multiple hidden>
-  <div class="cmpsheet" id="phSheet" aria-hidden="true">
+  <div class="cmpsheet" id="authSheet" aria-hidden="true">
+  <div class="cmppanel">
+    <div class="cmpgrab" aria-hidden="true"></div>
+    <div class="cmptitle" id="authTitle">Your account</div>
+    <div id="authBody"></div>
+  </div>
+</div>
+<div class="cmpsheet" id="phSheet" aria-hidden="true">
     <div class="cmppanel">
       <div class="cmpgrab" aria-hidden="true"></div>
       <div class="cmptitle" id="phTitle"></div>
@@ -4217,7 +4230,7 @@
     $('welDiv').textContent=u.nameLabel; $('welName').setAttribute('placeholder',u.namePh); $('welNote').textContent=u.welcomeNote;
     renderWelcome(); try{syncEditFab();}catch(e){}
     $('drawerEdit').textContent=u.profileTitle; $('navHow').textContent=u.navHow; $('navTrips').textContent=u.myTrips; $('navInstall').textContent=u.navInstall; $('navShare').textContent=u.navShare; $('navFeedback').textContent=u.navFeedback; $('drawerAbout').textContent=u.menuAbout;
-    try{ var cx=CTXT[LANG]||CTXT.en; $('navCommunity').textContent=cx.title; $('navSaved').textContent=svTxt().t; $('navRecord').textContent=recTxt().t; try{updCtlHints();}catch(e2){} try{
+    try{ var cx=CTXT[LANG]||CTXT.en; $('navCommunity').textContent=cx.title; $('navSaved').textContent=svTxt().t; $('navRecord').textContent=recTxt().t; $('navAccount').textContent=authTxt().t; try{updCtlHints();}catch(e2){} try{
       var ar2=LANG==='ar', es2=LANG==='es';
       $('tabHome').textContent=ar2?'الرئيسية':(es2?'Inicio':'Home');
       $('tabTrips').textContent=ar2?'رحلات الناس':(es2?'Viajes':'Trips');
@@ -6816,6 +6829,7 @@
     else if(nav==='community'){ closeDrawer(); openCommunity(); }
     else if(nav==='saved'){ closeDrawer(); openSavedView(); }
     else if(nav==='record'){ closeDrawer(); openRecView(); }
+    else if(nav==='account'){ closeDrawer(); openAuth(); }
     else if(nav==='install'){ closeDrawer(); doInstall(); }
     else if(nav==='share'){ closeDrawer(); shareApp(); }
     else if(nav==='feedback'){ closeDrawer(); openFeedback(); }
@@ -7535,6 +7549,218 @@
   }
   try{ if(/^#rec=/.test(location.hash||''))setTimeout(rgParseHash,600); }catch(e){}
   window.addEventListener('hashchange',function(){ if(/^#rec=/.test(location.hash||''))rgParseHash(); });
+
+
+  /* ---- An account, only if you want one ------------------------------------------------------
+     Planning never asks for one. An account exists so a record survives a lost phone, so trips
+     open on more than one device, and so credits can live somewhere a phone cannot edit. No
+     password is ever asked for, so none is ever stored. Signing out leaves everything on the
+     device exactly as it was; deleting the account removes what the server holds. */
+  var AUTHOK=null;                                   // which doors the worker actually has keys for
+  function authTok(){ try{ return localStorage.getItem('bosla_auth')||''; }catch(e){ return ''; } }
+  function authSet(t){ try{ t?localStorage.setItem('bosla_auth',t):localStorage.removeItem('bosla_auth'); }catch(e){} }
+  var AUTHME=null;                                   // {email,name,prov} once known
+  function authTxt(){
+    return LANG==='ar'?{t:'حسابك',sub:'الحساب اختياري — التخطيط يشتغل بدونه. تسجّل عشان سجلك ورحلاتك ما تضيع لو ضاع جوالك.',
+      g:'كمّل بحساب قوقل',em:'بريدك الإلكتروني',send:'أرسل رمز',code:'الرمز اللي وصلك',verify:'تأكيد',
+      inAs:function(e){return 'مسجّل باسم '+e;},sync:'زامن الآن',out:'خروج',del:'احذف حسابي',
+      delSure:'يُحذف حسابك وكل الي عندنا. الي على جوالك يبقى. متأكد؟',
+      done:'تم — بياناتك محفوظة في حسابك',outDone:'خرجت. كل شي باقٍ على جهازك.',
+      delDone:'انحذف حسابك.',bad:'الرمز غلط',sent:'أرسلنا لك رمز — شيك بريدك',
+      guest:'كضيف: كل شي على هذا الجهاز فقط.',off:'تسجيل الدخول ما هو جاهز بعد على السيرفر.'}
+    :(LANG==='es'?{t:'Tu cuenta',sub:'La cuenta es opcional — planear funciona sin ella. Entra para que tu historial y tus viajes sobrevivan a un móvil perdido.',
+      g:'Continuar con Google',em:'Tu correo',send:'Enviar código',code:'El código',verify:'Confirmar',
+      inAs:function(e){return 'Conectado como '+e;},sync:'Sincronizar',out:'Salir',del:'Borrar mi cuenta',
+      delSure:'Se borra tu cuenta y lo que guardamos. Lo del móvil se queda. ¿Seguro?',
+      done:'Listo — guardado en tu cuenta',outDone:'Saliste. Todo sigue en este dispositivo.',
+      delDone:'Cuenta borrada.',bad:'Código incorrecto',sent:'Te enviamos un código — mira tu correo',
+      guest:'Como invitado: todo solo en este dispositivo.',off:'El inicio de sesión aún no está configurado en el servidor.'}
+    :{t:'Your account',sub:'An account is optional — planning works without one. Sign in so your record and trips survive a lost phone.',
+      g:'Continue with Google',em:'Your email',send:'Send a code',code:'The code',verify:'Confirm',
+      inAs:function(e){return 'Signed in as '+e;},sync:'Sync now',out:'Sign out',del:'Delete my account',
+      delSure:'This deletes your account and what we hold. What is on this phone stays. Sure?',
+      done:'Done — saved to your account',outDone:'Signed out. Everything stays on this device.',
+      delDone:'Account deleted.',bad:'Wrong code',sent:'We sent you a code — check your email',
+      guest:'As a guest: everything stays on this device only.',off:'Sign-in is not set up on the server yet.'});
+  }
+  // Everything a person would hate to lose, and nothing else.
+  var SYNCKEYS=['bosla_beento','rihla_trips','bosla_saved','bosla_pts','bosla_pts_life',
+    'bosla_pub_mine','bosla_cmtkeys','bosla_goal','bosla_sugx','rihla_v1'];
+  var SYNCPRE=['bosla_notes2:','bosla_went:','rihla_pack_'];
+  function syncGather(){
+    var o={};
+    try{
+      SYNCKEYS.forEach(function(k){ var v=localStorage.getItem(k); if(v!==null)o[k]=v; });
+      for(var i=0;i<localStorage.length;i++){
+        var k2=localStorage.key(i);
+        if(SYNCPRE.some(function(p){ return k2.indexOf(p)===0; }))o[k2]=localStorage.getItem(k2);
+      }
+    }catch(e){}
+    return o;
+  }
+  function jparse(v,d){ try{ var x=JSON.parse(v); return x==null?d:x; }catch(e){ return d; } }
+  // Merging beats overwriting: a phone that has been offline for a week still knows things the
+  // server does not. Countries and places are unions; points take the higher number; anything
+  // else the device holds wins, because that is where it was last touched.
+  function syncMerge(local,remote){
+    var out={},k;
+    for(k in remote)out[k]=remote[k];
+    for(k in local)out[k]=local[k];
+    // the record: one union of countries, home from whoever has one
+    var lr=jparse(local['bosla_beento'],null), rr=jparse(remote['bosla_beento'],null);
+    if(lr||rr){
+      var v=((lr&&lr.v)||[]).slice();
+      ((rr&&rr.v)||[]).forEach(function(n){ if(v.indexOf(n)<0)v.push(n); });
+      out['bosla_beento']=JSON.stringify({h:(lr&&lr.h)||(rr&&rr.h)||null,v:v});
+    }
+    // saved places: union on city+name
+    var ls=jparse(local['bosla_saved'],[]), rs=jparse(remote['bosla_saved'],[]);
+    if(ls.length||rs.length){
+      var seen={},all=[];
+      ls.concat(rs).forEach(function(x){
+        var id=(x.ck||x.city||'')+'|'+x.n; if(seen[id])return; seen[id]=1; all.push(x);
+      });
+      out['bosla_saved']=JSON.stringify(all.slice(0,200));
+    }
+    // saved trips: union on their label
+    var lt=jparse(local['rihla_trips'],[]), rt=jparse(remote['rihla_trips'],[]);
+    if(lt.length||rt.length){
+      var seen2={},trips=[];
+      lt.concat(rt).forEach(function(x){
+        var id2='';
+        try{ id2=tripLabel(x.state); }catch(e){ id2=JSON.stringify(x).slice(0,60); }
+        if(seen2[id2])return; seen2[id2]=1; trips.push(x);
+      });
+      out['rihla_trips']=JSON.stringify(trips.slice(0,12));
+    }
+    // points: whichever ledger got further
+    ['bosla_pts','bosla_pts_life'].forEach(function(pk){
+      var a=parseInt(local[pk],10)||0, b=parseInt(remote[pk],10)||0;
+      if(a||b)out[pk]=String(Math.max(a,b));
+    });
+    // published-trip keys and comment keys: both devices' keys are worth keeping
+    ['bosla_pub_mine','bosla_cmtkeys'].forEach(function(ok){
+      var a2=jparse(local[ok],{}), b2=jparse(remote[ok],{}), m={};
+      Object.keys(b2).forEach(function(x){ m[x]=b2[x]; });
+      Object.keys(a2).forEach(function(x){ m[x]=a2[x]; });
+      if(Object.keys(m).length)out[ok]=JSON.stringify(m);
+    });
+    return out;
+  }
+  function syncApply(o){
+    try{ Object.keys(o).forEach(function(k){ if(typeof o[k]==='string')localStorage.setItem(k,o[k]); }); }catch(e){}
+  }
+  function authApi(action,extra){
+    var b={action:action,token:authTok()};
+    if(extra)Object.keys(extra).forEach(function(k){ b[k]=extra[k]; });
+    return pubApi(action,b);
+  }
+  // Pull, merge, push, redraw — the whole of syncing.
+  function syncNow(quiet){
+    var c=authTxt();
+    if(!authTok())return Promise.resolve();
+    return authApi('sync_get',{}).then(function(d){
+      var merged=syncMerge(syncGather(),(d&&d.data)||{});
+      syncApply(merged);
+      return authApi('sync_put',{data:merged});
+    }).then(function(){
+      try{ renderMyTrips(); }catch(e){}
+      try{ if(document.body.classList.contains('recmode'))openRecView(); }catch(e){}
+      try{ drawPts(); }catch(e){}
+      if(!quiet)toast(c.done);
+    }).catch(function(){ if(!quiet)toast((CTXT[LANG]||CTXT.en).offline); });
+  }
+  function renderAuth(){
+    var c=authTxt(), host=$('authBody'); if(!host)return;
+    $('authTitle').textContent=c.t;
+    if(AUTHME&&AUTHME.signedIn){
+      host.innerHTML='<div class="authin">'+esc(c.inAs(AUTHME.email||''))+'</div>'
+        +'<button type="button" class="recbtn main" id="authSync" style="width:100%;margin-bottom:8px">'+esc(c.sync)+'</button>'
+        +'<div class="authrow"><button type="button" class="recbtn" id="authOut">'+esc(c.out)+'</button>'
+        +'<button type="button" class="recbtn authdel" id="authDel">'+esc(c.del)+'</button></div>';
+      return;
+    }
+    var h='<div class="goalask">'+esc(c.sub)+'</div>';
+    if(AUTHOK&&AUTHOK.google)h+='<button type="button" class="recbtn main" id="authG" style="width:100%;margin-bottom:10px">'+esc(c.g)+'</button>';
+    if(AUTHOK&&AUTHOK.email){
+      h+='<div class="goalrow"><input type="email" id="authEm" dir="ltr" placeholder="'+esc(c.em)+'" style="flex:1;width:auto;text-align:start;font-size:14px;font-weight:400">'
+        +'<button type="button" class="recbtn" id="authSend" style="flex:0 0 auto">'+esc(c.send)+'</button></div>'
+        +'<div class="goalrow is-hidden" id="authCodeRow" style="margin-top:8px"><input type="text" id="authCode" inputmode="numeric" maxlength="6" dir="ltr" placeholder="'+esc(c.code)+'" style="flex:1;width:auto;text-align:start;font-size:15px">'
+        +'<button type="button" class="recbtn main" id="authVerify" style="flex:0 0 auto">'+esc(c.verify)+'</button></div>';
+    }
+    if(!AUTHOK||(!AUTHOK.google&&!AUTHOK.email))h+='<div class="recempty">'+esc(c.off)+'</div>';
+    h+='<div class="notehint" style="margin-top:12px">'+esc(c.guest)+'</div>';
+    host.innerHTML=h;
+  }
+  function openAuth(){
+    var sh=$('authSheet');
+    sh.classList.add('show'); sh.setAttribute('aria-hidden','false');
+    document.body.classList.add('welopen');
+    renderAuth();
+    pubApi('auth_ready',{action:'auth_ready'}).then(function(d){ AUTHOK=d||{}; renderAuth(); }).catch(function(){});
+    if(authTok())authApi('auth_me',{}).then(function(d){ AUTHME=d; renderAuth(); }).catch(function(){});
+  }
+  function closeAuth(){
+    var sh=$('authSheet'); sh.classList.remove('show'); sh.setAttribute('aria-hidden','true');
+    document.body.classList.remove('welopen');
+  }
+  (function(){
+    var sh=$('authSheet'); if(!sh)return;
+    sh.addEventListener('click',function(e){
+      if(!e.target.closest('.cmppanel')){ closeAuth(); return; }
+      var c=authTxt(),t;
+      if((t=e.target.closest('#authG'))){
+        authApi('auth_google_start',{}).then(function(d){
+          if(d&&d.url)location.href=d.url; else toast(c.off);
+        }).catch(function(){ toast((CTXT[LANG]||CTXT.en).offline); });
+        return;
+      }
+      if((t=e.target.closest('#authSend'))){
+        var em=($('authEm')||{}).value||'';
+        authApi('auth_email_start',{email:em}).then(function(d){
+          if(d&&d.sent){ $('authCodeRow').classList.remove('is-hidden'); toast(c.sent); }
+          else toast(c.off);
+        }).catch(function(){ toast((CTXT[LANG]||CTXT.en).offline); });
+        return;
+      }
+      if((t=e.target.closest('#authVerify'))){
+        authApi('auth_email_verify',{email:($('authEm')||{}).value||'',code:($('authCode')||{}).value||''})
+          .then(function(d){
+            if(d&&d.token){ authSet(d.token); AUTHME={signedIn:1,email:d.email}; renderAuth(); syncNow(); }
+            else toast(c.bad);
+          }).catch(function(){ toast(c.bad); });
+        return;
+      }
+      if((t=e.target.closest('#authSync'))){ syncNow(); return; }
+      if((t=e.target.closest('#authOut'))){
+        authApi('auth_logout',{}).catch(function(){});
+        authSet(''); AUTHME=null; renderAuth(); toast(c.outDone); return;
+      }
+      if((t=e.target.closest('#authDel'))){
+        if(!confirm(c.delSure))return;
+        authApi('auth_delete',{}).then(function(){
+          authSet(''); AUTHME=null; renderAuth(); toast(c.delDone);
+        }).catch(function(){ toast((CTXT[LANG]||CTXT.en).offline); });
+        return;
+      }
+    });
+    // coming back from Google, the session token rides in the hash
+    try{
+      var m=/^#auth=([a-f0-9]{32,64})$/.exec(location.hash||'');
+      if(m){
+        authSet(m[1]);
+        try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+        setTimeout(function(){
+          authApi('auth_me',{}).then(function(d){ AUTHME=d; if(d&&d.signedIn)syncNow(); }).catch(function(){});
+        },400);
+      } else if(/^#auth=/.test(location.hash||'')){
+        try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+        setTimeout(function(){ toast(authTxt().off); },600);
+      }
+    }catch(e){}
+    // a signed-in device keeps itself current, quietly
+    if(authTok())setTimeout(function(){ authApi('auth_me',{}).then(function(d){ AUTHME=d; if(d&&d.signedIn)syncNow(true); }).catch(function(){}); },1500);
+  })();
 
   /* ---- Compare stay prices, inside the app --------------------------------------------------
      One tap on the hotel opens a sheet listing the big booking sites, each deep-linked to THIS

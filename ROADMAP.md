@@ -269,3 +269,36 @@ When a user searches a city we don't have:
 
 Guardrails: structural validation before showing; only plausible place names;
 cache by name; flag AI cities for review before baking permanently into the app.
+
+## Accounts — what Ahmed must set up (Phase 2, built 2026-08-02)
+
+The code is in and degrades to nothing when the keys are absent: with no secrets set, the
+account sheet says sign-in is not configured and guests are unaffected. To switch it on:
+
+**Google (free)**
+1. console.cloud.google.com → new project → APIs & Services → OAuth consent screen
+   (External, app name "بوصلة · Bosla", your email, publish it).
+2. Credentials → Create credentials → OAuth client ID → Web application.
+3. Authorised redirect URI — exactly: `https://<your-worker>.workers.dev/auth/google/cb`
+4. Copy the client ID and secret. In Cloudflare → your Worker → Settings → Variables:
+   - `GOOGLE_CLIENT_ID` (secret)
+   - `GOOGLE_CLIENT_SECRET` (secret)
+   - `APP_URL` = `https://aalfadhala10.github.io/travel-itinerary-skill/`
+   - `WORKER_URL` = `https://<your-worker>.workers.dev` (only if the worker sits behind a
+     custom domain; otherwise it works this out itself)
+
+**Email codes (free tier)**
+1. resend.com → sign up → verify a domain you own, or use their test sender to start.
+2. Cloudflare Worker variables:
+   - `RESEND_KEY` (secret)
+   - `MAIL_FROM` = e.g. `Bosla <hello@yourdomain.com>`
+
+**Apple** — deliberately not built: it needs the $99/year Apple Developer account. It becomes
+mandatory only if Bosla ships on the iOS App Store while offering Google sign-in.
+
+**Storage** — users, sessions and synced data live in the KV namespace already bound (`u:`,
+`uemail:`, `sess:`, `astate:`, `acode:`, `sync:`). D1 is the upgrade when this outgrows a
+key-value store; today it would only add setup.
+
+**Still to do before charging money**: move trip credits to the account record (`sync:<uid>` is
+the wrong place — credits must live where the phone cannot edit them), then connect payments.

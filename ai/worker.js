@@ -95,10 +95,226 @@ async function tooFast(env, request) {
   return (await bump(env.CITIES, key, 120)) > RL_PER_MIN;
 }
 
+
+/* ---- Accounts: Google, or a code by email -------------------------------------------------
+   Guests never meet this. An account exists so a record survives a lost phone and so credits
+   can live somewhere a phone cannot edit — nothing more. No passwords are ever stored, because
+   none are ever asked for.
+
+   Storage rides the KV namespace already bound, so there is no new binding to create:
+     u:<uid>        the person            {id,email,name,prov,t}
+     uemail:<hash>  email -> uid          (the address is hashed in the key, kept in the record)
+     sess:<token>   session -> uid        180 days
+     astate:<state> one OAuth handshake   10 minutes
+     acode:<hash>   an emailed code       10 minutes, five attempts
+     sync:<uid>     that person's data
+   D1 is the upgrade when this outgrows a key-value store; today it would only add setup. */
+const SESS_TTL = 60 * 60 * 24 * 180;
+const STATE_TTL = 600;
+const CODE_TTL = 600;
+
+function authOn(env) { return !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET); }
+function mailOn(env) { return !!(env.RESEND_KEY && env.MAIL_FROM); }
+function appUrl(env) { return env.APP_URL || "https://aalfadhala10.github.io/travel-itinerary-skill/"; }
+function workerUrl(env, request) {
+  if (env.WORKER_URL) return env.WORKER_URL;
+  const u = new URL(request.url);
+  return u.origin;
+}
+function rnd(n) {
+  const a = new Uint8Array(n); crypto.getRandomValues(a);
+  return [...a].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+async function sha(txt) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(txt)));
+  return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+function cleanEmail(e) {
+  e = String(e || "").trim().toLowerCase();
+  return /^[^\s@]{1,64}@[^\s@]{1,190}\.[a-z]{2,}$/i.test(e) ? e : "";
+}
+// A session token is a bearer key: whoever holds it is the person. Nothing else is needed.
+async function sessionUser(kv, token) {
+  token = String(token || "").replace(/[^a-f0-9]/g, "").slice(0, 64);
+  if (token.length < 32) return null;
+  const uid = await kv.get("sess:" + token);
+  if (!uid) return null;
+  const raw = await kv.get("u:" + uid);
+  return raw ? JSON.parse(raw) : null;
+}
+async function makeSession(kv, uid) {
+  const token = rnd(32);
+  await kv.put("sess:" + token, uid, { expirationTtl: SESS_TTL });
+  return token;
+}
+// One person per email address, whichever door they came through.
+async function upsertUser(kv, email, name, prov) {
+  const h = await sha(email);
+  let uid = await kv.get("uemail:" + h);
+  if (!uid) {
+    uid = rnd(12);
+    await kv.put("uemail:" + h, uid);
+    await kv.put("u:" + uid, JSON.stringify({ id: uid, email, name: name || "", prov, t: Date.now() }));
+  } else {
+    const raw = await kv.get("u:" + uid);
+    const u = raw ? JSON.parse(raw) : { id: uid, email, t: Date.now() };
+    if (name && !u.name) u.name = name;
+    u.seen = Date.now();
+    await kv.put("u:" + uid, JSON.stringify(u));
+  }
+  return uid;
+}
+
+async function auth(body, env, request, origin) {
+  const kv = env.CITIES, act = body.action;
+
+  if (act === "auth_ready") {
+    return reply({ google: authOn(env), email: mailOn(env) }, 200, origin);
+  }
+
+  // Step one of Google's dance: we hand back the consent URL, having remembered the state we
+  // expect to see again. The client secret never leaves the worker.
+  if (act === "auth_google_start") {
+    if (!authOn(env)) return reply({ needsKey: 1 }, 200, origin);
+    const state = rnd(16);
+    await kv.put("astate:" + state, "1", { expirationTtl: STATE_TTL });
+    const u = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    u.searchParams.set("client_id", env.GOOGLE_CLIENT_ID);
+    u.searchParams.set("redirect_uri", workerUrl(env, request) + "/auth/google/cb");
+    u.searchParams.set("response_type", "code");
+    u.searchParams.set("scope", "openid email profile");
+    u.searchParams.set("state", state);
+    u.searchParams.set("prompt", "select_account");
+    return reply({ url: u.toString() }, 200, origin);
+  }
+
+  if (act === "auth_email_start") {
+    if (!mailOn(env)) return reply({ needsKey: 1 }, 200, origin);
+    const email = cleanEmail(body.email);
+    if (!email) return reply({ error: "bad email" }, 400, origin);
+    const h = await sha(email);
+    // codes are cheap to ask for and expensive to send: three an hour per address
+    const n = await bump(env.CITIES, "acount:" + h, 3600);
+    if (n > 3) return reply({ error: "too many codes", retry: 3600 }, 429, origin);
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    await kv.put("acode:" + h, JSON.stringify({ c: code, n: 0 }), { expirationTtl: CODE_TTL });
+    const r = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + env.RESEND_KEY },
+      body: JSON.stringify({
+        from: env.MAIL_FROM, to: [email],
+        subject: "بوصلة · Bosla — " + code,
+        text: "Your Bosla sign-in code is " + code + "\nIt expires in ten minutes. If this was not you, ignore this message.",
+      }),
+    });
+    if (!r.ok) return reply({ error: "mail failed" }, 502, origin);
+    return reply({ sent: 1 }, 200, origin);
+  }
+
+  if (act === "auth_email_verify") {
+    const email = cleanEmail(body.email);
+    if (!email) return reply({ error: "bad email" }, 400, origin);
+    const h = await sha(email), raw = await kv.get("acode:" + h);
+    if (!raw) return reply({ error: "expired" }, 400, origin);
+    const rec = JSON.parse(raw);
+    if ((rec.n || 0) >= 5) { await kv.delete("acode:" + h); return reply({ error: "expired" }, 400, origin); }
+    if (String(body.code || "").trim() !== rec.c) {
+      rec.n = (rec.n || 0) + 1;
+      await kv.put("acode:" + h, JSON.stringify(rec), { expirationTtl: CODE_TTL });
+      return reply({ error: "wrong code" }, 403, origin);
+    }
+    await kv.delete("acode:" + h);
+    const uid = await upsertUser(kv, email, "", "email");
+    return reply({ token: await makeSession(kv, uid), email }, 200, origin);
+  }
+
+  if (act === "auth_me") {
+    const u = await sessionUser(kv, body.token);
+    if (!u) return reply({ signedIn: 0 }, 200, origin);
+    return reply({ signedIn: 1, email: u.email, name: u.name || "", prov: u.prov || "" }, 200, origin);
+  }
+
+  if (act === "auth_logout") {
+    const t = String(body.token || "").replace(/[^a-f0-9]/g, "").slice(0, 64);
+    if (t) await kv.delete("sess:" + t);
+    return reply({ ok: 1 }, 200, origin);
+  }
+
+  // Leaving must be as easy as arriving, and must actually remove things.
+  if (act === "auth_delete") {
+    const u = await sessionUser(kv, body.token);
+    if (!u) return reply({ error: "not signed in" }, 403, origin);
+    try { await kv.delete("sync:" + u.id); } catch (e) {}
+    try { await kv.delete("u:" + u.id); } catch (e) {}
+    try { await kv.delete("uemail:" + (await sha(u.email))); } catch (e) {}
+    const t = String(body.token || "").replace(/[^a-f0-9]/g, "").slice(0, 64);
+    if (t) await kv.delete("sess:" + t);
+    return reply({ ok: 1 }, 200, origin);
+  }
+
+  if (act === "sync_get") {
+    const u = await sessionUser(kv, body.token);
+    if (!u) return reply({ error: "not signed in" }, 403, origin);
+    const raw = await kv.get("sync:" + u.id);
+    return reply({ data: raw ? JSON.parse(raw) : null }, 200, origin);
+  }
+
+  if (act === "sync_put") {
+    const u = await sessionUser(kv, body.token);
+    if (!u) return reply({ error: "not signed in" }, 403, origin);
+    const d = body.data;
+    if (!d || typeof d !== "object") return reply({ error: "bad data" }, 400, origin);
+    const s = JSON.stringify(d);
+    if (s.length > 400000) return reply({ error: "too big" }, 400, origin);
+    await kv.put("sync:" + u.id, s);
+    return reply({ ok: 1, t: Date.now() }, 200, origin);
+  }
+
+  return null;   // not an auth action
+}
+
+// Google sends the browser back here, so this one is a GET and carries no Origin header.
+async function googleCallback(request, env) {
+  const kv = env.CITIES, u = new URL(request.url);
+  const code = u.searchParams.get("code") || "", state = u.searchParams.get("state") || "";
+  const back = (q) => Response.redirect(appUrl(env) + q, 302);
+  if (!authOn(env)) return back("#auth=off");
+  const ok = state && (await kv.get("astate:" + state));
+  if (!ok) return back("#auth=bad");
+  await kv.delete("astate:" + state);
+  if (!code) return back("#auth=denied");
+  // The code is exchanged over HTTPS with our own secret, so what comes back came from Google.
+  const r = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code, client_id: env.GOOGLE_CLIENT_ID, client_secret: env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: workerUrl(env, request) + "/auth/google/cb", grant_type: "authorization_code",
+    }),
+  });
+  if (!r.ok) return back("#auth=failed");
+  const tok = await r.json();
+  const idt = String(tok.id_token || "").split(".");
+  if (idt.length !== 3) return back("#auth=failed");
+  let claims = {};
+  try {
+    const b = idt[1].replace(/-/g, "+").replace(/_/g, "/");
+    claims = JSON.parse(atob(b + "=".repeat((4 - (b.length % 4)) % 4)));
+  } catch (e) { return back("#auth=failed"); }
+  const email = cleanEmail(claims.email);
+  if (!email || claims.email_verified === false) return back("#auth=failed");
+  const uid = await upsertUser(kv, email, claims.given_name || claims.name || "", "google");
+  const token = await makeSession(kv, uid);
+  return back("#auth=" + token);
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
     if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders(origin) });
+    // Google returns the traveller here by redirecting their browser: a GET, no Origin header.
+    if (request.method === "GET" && new URL(request.url).pathname === "/auth/google/cb")
+      return googleCallback(request, env);
     if (request.method !== "POST") return reply({ error: "POST only" }, 405, origin);
 
     // The allow-list above only ever set a CORS header, and a CORS header is an instruction to a
@@ -207,6 +423,12 @@ export default {
       if (body.action && body.action.indexOf("pub_") === 0) {
         if (!env.CITIES) return reply({ error: "no storage bound" }, 500, origin);
         return await community(body, env, request, origin);
+      }
+      // Accounts and the data they carry. Guests never reach any of this.
+      if (body.action && (body.action.indexOf("auth_") === 0 || body.action.indexOf("sync_") === 0)) {
+        if (!env.CITIES) return reply({ error: "no storage bound" }, 500, origin);
+        const r = await auth(body, env, request, origin);
+        if (r) return r;
       }
       // These two hand over every city we have ever built. They're yours, not the public's.
       // Set an ADMIN_KEY secret in Cloudflare and they lock; leave it unset and nothing changes.
