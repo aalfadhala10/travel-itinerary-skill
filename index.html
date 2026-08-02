@@ -1415,7 +1415,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-02 16:20 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-02 17:00 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -4356,7 +4356,7 @@
   });
   // the compass takes you home from anywhere: community, favourites, or halfway down a plan
   $('homeBtn').addEventListener('click',function(){
-    try{ exitCm(); exitSv(); exitRec(); closeDrawer(); }catch(e){}
+    goHome(); try{ closeDrawer(); }catch(e){}
     window.scrollTo({top:0,behavior:'smooth'});
   });
 
@@ -4421,6 +4421,15 @@
   function seasonLine(dest,t,label){var s=dest.summer;return (label||t.out.summer)+' · '+t.cond[s.cond]+' · ~'+s.temp+'°C';}
   // The tab bar: one tap to any room, and the lit tab always tells the truth about where
   // you are — synced from the body's mode classes so every path in and out counts.
+  /* Home means the planner. Arriving on a shared trip — or a hand-built one — leaves the body in
+     planmode/mkmode, which hides the form, and neither the compass nor the Home tab took it off
+     again: the trip owned the screen with no way back to planning. The trip is not lost, the FAB
+     turns into "My trip" and brings it straight back. */
+  function goHome(){
+    try{ exitCm(); exitSv(); exitRec(); exitMake(); }catch(e){}
+    document.body.classList.remove('planmode');
+    try{ syncEditFab(); }catch(e){}
+  }
   function tabSync(){
     var m=document.body.classList.contains('cmmode')?'trips'
       :document.body.classList.contains('recmode')?'record'
@@ -4434,7 +4443,7 @@
     bar.addEventListener('click',function(e){
       var t=e.target.closest('.tab'); if(!t)return;
       var k=t.getAttribute('data-tab');
-      if(k==='home'){ try{ exitCm(); exitSv(); exitRec(); }catch(err){} window.scrollTo({top:0,behavior:'smooth'}); }
+      if(k==='home'){ goHome(); window.scrollTo({top:0,behavior:'smooth'}); }
       else if(k==='trips')openCommunity();
       else if(k==='record')openRecView();
       else if(k==='saved')openSavedView();
@@ -7333,7 +7342,7 @@
     if(!RGFLAT&&!RGDRAGGING){ RGV.lon+=0.06; rgDraw(); }
     RGRAF=requestAnimationFrame(rgLoop);
   }
-  function enterRec(){ document.body.classList.add('recmode'); exitCm(); exitSv();  document.body.classList.remove('planmode'); try{syncEditFab();}catch(e){} }
+  function enterRec(){ document.body.classList.add('recmode'); exitCm(); exitSv(); try{exitMake();}catch(e){}  document.body.classList.remove('planmode'); try{syncEditFab();}catch(e){} }
   /* ---- Build it yourself --------------------------------------------------------------------
      Some travellers already know their trip — they have lived it, or it is sitting in a Google
      Maps list. Generating a plan for them is the wrong tool: they do not want suggestions, they
@@ -8435,12 +8444,12 @@
     if(LANG==='es')return day<1?'hoy':(day===1?'ayer':('hace '+day+' días'));
     return day<1?'today':(day===1?'yesterday':(day+' days ago'));
   }
-  function enterCm(){ document.body.classList.add('cmmode'); document.body.classList.remove('svmode'); try{exitRec();}catch(e){}  document.body.classList.remove('planmode'); try{syncEditFab();}catch(e){} }
+  function enterCm(){ document.body.classList.add('cmmode'); document.body.classList.remove('svmode'); try{exitRec();exitMake();}catch(e){}  document.body.classList.remove('planmode'); try{syncEditFab();}catch(e){} }
   function exitCm(){
     document.body.classList.remove('cmmode');
     $('community').classList.add('is-hidden');
   }
-  function enterSv(){ document.body.classList.add('svmode'); exitCm(); try{exitRec();}catch(e){}  document.body.classList.remove('planmode'); try{syncEditFab();}catch(e){} }
+  function enterSv(){ document.body.classList.add('svmode'); exitCm(); try{exitRec();exitMake();}catch(e){}  document.body.classList.remove('planmode'); try{syncEditFab();}catch(e){} }
   function exitSv(){
     document.body.classList.remove('svmode');
     $('saved').classList.add('is-hidden');
