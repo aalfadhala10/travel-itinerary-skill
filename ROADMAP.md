@@ -425,6 +425,17 @@ high-contrast in both themes — navy `#173a5c` on cream (9.1:1) and bright blue
 `:focus-visible` *styling* (it reports `matches(':focus-visible')` true but doesn't paint the
 ring), so this rule is verified by construction + screenshot, not by the tab-through audit.
 
+### Escape closes modals (commit follows)
+
+There was no global Escape handler — none of the dialogs/sheets closed on Esc (only the autocomplete
+dropdown and inline editors did). Added one document-level `keydown` that closes the top-most open
+overlay in priority order: photo lightbox → photo sheet → chat panel → publish modal → compare sheet
+→ auth sheet → drawer → how-it-works. Focus safety: if focus sat inside the closed overlay it's
+blurred so it never lands on a hidden node; closing the drawer returns focus to the menu button.
+The **welcome** gate is deliberately excluded — dismissing it is a real guest-vs-sign-in choice, not
+an accidental keystroke. Verifier `esctest.cjs` 7/7 (each overlay closes; welcome stays open; no
+errors). Only added behaviour — no existing handler touched.
+
 **DECISION FOR AHMED (left unchanged on purpose):** the brand gold `--amber #ac7f22` used as
 *text* on the cream light-theme backgrounds is 2.82:1 — below AA (4.5) and even below the 3:1
 large-text bar. It's uniform across ~15 spots (`.eyebrow`, `.weleyebrow`, `.dlabel`, `.surprise`,

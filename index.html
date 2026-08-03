@@ -1424,7 +1424,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-03 03:35 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-03 04:20 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -7170,6 +7170,32 @@
   document.addEventListener('click',function(e){ if(e.target.closest&&e.target.closest('#menuBtn')){ e.preventDefault(); openDrawer(); } });
   $('drawerClose').addEventListener('click',closeDrawer);
   $('drawer').addEventListener('click',function(e){ if(e.target===this)closeDrawer(); });
+  // Escape closes the top-most open overlay (dialogs, sheets, drawer) and never leaves focus on a
+  // now-hidden element. Keyboard/AT users expect Esc to dismiss. The welcome gate is left out on
+  // purpose — dismissing it is a real choice (guest vs sign in), not an accidental keystroke.
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Escape'&&e.key!=='Esc')return;
+    var order=[
+      {sel:'#cmLight',  close:function(){ var l=$('cmLight'); l.classList.remove('show'); l.setAttribute('aria-hidden','true'); var im=$('cmLightImg'); if(im)im.src=''; document.body.classList.remove('lbopen'); }},
+      {sel:'#phSheet',  close:function(){ try{phClose();}catch(x){} }},
+      {sel:'#chatPanel',close:function(){ try{chatClose();}catch(x){} }},
+      {sel:'#pubModal', close:function(){ try{closePublish();}catch(x){} }},
+      {sel:'#cmpSheet', close:function(){ var s=$('cmpSheet'); s.classList.remove('show'); s.setAttribute('aria-hidden','true'); }},
+      {sel:'#authSheet',close:function(){ try{closeAuth();}catch(x){} }},
+      {sel:'#drawer',   close:function(){ try{closeDrawer();}catch(x){} var m=$('menuBtn'); if(m)try{m.focus();}catch(x){} }},
+      {sel:'#intro',    close:function(){ try{hideIntro();}catch(x){} }}
+    ];
+    for(var i=0;i<order.length;i++){
+      var el=document.querySelector(order[i].sel); if(!el)continue;
+      var open=order[i].sel==='#intro'?!el.classList.contains('is-hidden'):el.classList.contains('show');
+      if(!open)continue;
+      var act=document.activeElement;
+      order[i].close();
+      if(order[i].sel!=='#drawer'&&act&&el.contains(act)){ try{act.blur();}catch(x){} }
+      e.preventDefault();
+      return;
+    }
+  });
   $('drawerProfile').addEventListener('click',function(){ closeDrawer(); showWelcome('edit'); });
   $('drawer').addEventListener('click',function(e){
     var it=e.target.closest('.drawitem'); if(!it)return;
