@@ -913,3 +913,13 @@ every API answering, then enumerates the whole Cache Storage: seven entries, all
 response, and no cached body containing the session token. The token stays in localStorage — which
 is the right trade for an app whose Worker is cross-origin, and the reason `connect-src` earns its
 place.
+
+**Confirmed live (2026-08-03).** Ahmed deployed both backends and verified them from a browser:
+the Worker's admin route answers `403` to an unkeyed `{action:'list'}`, and the analytics `/exec`
+answers "Not found." without `?k=`. The deployment ID did not change, so `CONFIG.analyticsEndpoint`
+and `CONFIG.feedbackEndpoint` still point at the right place and events are recording again.
+
+One thing that cost a round trip and is worth remembering: pasting `DASH_KEY` without quotes threw
+a `ReferenceError` on line 21 — a top-level statement, so the *whole file* failed to load and
+`doPost` died with it. Analytics stopped recording entirely, not just the dashboard. A config
+constant at file scope has no blast radius smaller than "everything".
