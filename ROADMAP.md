@@ -352,8 +352,17 @@ each city audited (bounding box, cost tiers, hotels, currency) and plan-rendered
   Stykkishólmur, Mývatn, Borgarnes. — 738 → 748 cities.
 - **Norway/Switzerland/Croatia/Greece/Japan/Portugal (12)**: Ålesund, Flåm, Svolvær, Grindelwald,
   Lauterbrunnen, Zadar, Hvar, Plitvice, Milos, Hakone, Takayama, Albufeira. — 748 → 760.
+- **Japan/Spain/Morocco/Italy/Austria/Portugal/Mexico (11)**: Kamakura, Ronda, Córdoba, Toledo,
+  Segovia, Essaouira, Positano, Siena, Hallstatt, Nazaré, Guanajuato. — 760 → 771.
 
-Method preserved in scratchpad gen_iceland.cjs / gen_batch2.cjs and the batch verifiers
-(iceland.cjs, batch2.cjs). Next candidates when the loop resumes: more Japan (Nikko exists;
-add Kamakura, Hiroshima?), Italy hill/coast towns, Turkey (Pamukkale, Göreme exists?), Spain
-(Granada?, San Sebastián, Ronda), Morocco (Chefchaouen, Essaouira). Only add what's verifiable.
+  Lesson from this batch: the pre-flight "is it already there?" check must fold ø/å/æ the same
+  way the app's keys do. Tromsø was already present but a naive NFD fold read it as missing;
+  the generator silently overwrote it (760 → 771, not 772). Caught by the +1 count mismatch,
+  restored, and dropped from the batch. `checkmissing.cjs` now folds ø→o etc. before comparing.
+
+Method preserved in scratchpad gen_iceland.cjs / gen_batch2.cjs / gen_batch3.cjs and the batch
+verifiers (iceland.cjs, batch2.cjs, batch3render.cjs). Verified-present so far (skip): Nara,
+Hiroshima, Granada, San Sebastián, Chefchaouen, Göreme, Pamukkale, Amalfi, Verona, Salzburg,
+Sintra, Mérida, Oaxaca, Galle, Zanzibar, Hoi An, Luang Prabang, Bruges, Ghent, Bergen, Antigua
+Guatemala, Tromsø. Next candidates: more Turkey/Balkans, Peru (Cusco?), Sri Lanka, India hill
+stations — only what's verifiable. Cities are near saturation; prefer real bug/a11y work next.
