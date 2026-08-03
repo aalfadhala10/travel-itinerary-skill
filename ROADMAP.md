@@ -1020,3 +1020,22 @@ and out again. But it reads as the app giving up, and it now sits under a welcom
 real places checked by hand. Left alone pending a decision, because the options are a product call:
 raise the threshold, resolve a real nearby restaurant through the Worker's existing Places
 integration, or curate food for the popular day-trip anchors.
+
+### Say what's true instead of what sounds good
+
+Ahmed, on the pulled provenance line: the site runs on AI, so don't claim hand-picking. Say the
+prices and places are estimates worth checking, which is both honest and the thing that actually
+protects the business.
+
+So the plan footer now carries, in all three languages: *"Prices, times and opening hours are
+estimates — check them before you book or set off."* It sits under every itinerary in the same
+muted style as the existing "Approximate rate — check your bank", which was already the right model
+and had been in the app all along.
+
+Also dropped the one place that literally claimed hand curation: `notCurated` said "we don't have a
+hand-made guide for X yet" in EN and "una guía hecha a mano" in ES — now "a full guide" / "una guía
+completa". The Arabic already said "دليل جاهز" (a ready guide) and needed nothing.
+
+`disclaim.cjs` plans a real trip in each language and asserts the disclaimer is present *and
+visible* under the plan, and that nothing anywhere on screen claims hand curation. A disclaimer
+that renders off-screen protects nobody.
