@@ -366,3 +366,28 @@ Hiroshima, Granada, San Sebastián, Chefchaouen, Göreme, Pamukkale, Amalfi, Ver
 Sintra, Mérida, Oaxaca, Galle, Zanzibar, Hoi An, Luang Prabang, Bruges, Ghent, Bergen, Antigua
 Guatemala, Tromsø. Next candidates: more Turkey/Balkans, Peru (Cusco?), Sri Lanka, India hill
 stations — only what's verifiable. Cities are near saturation; prefer real bug/a11y work next.
+
+## Accessibility pass (session 2026-08-03, autonomous loop)
+
+An audit (`a11yaudit.cjs` / `a11yall.cjs` in scratchpad) walked every screen looking for
+interactive elements with no accessible name, unlabelled inputs, and canvases with no text
+alternative. Real gaps found and fixed (commit 5b8f995):
+
+- **`<html>` never followed the language.** `applyLang` set `dir` only on `#app`, so the root
+  stayed `lang="en"` in Arabic and Spanish — a screen reader announced the whole page with an
+  English voice, and root direction was wrong. Now `applyLang` sets `lang` **and** `dir` on
+  `document.documentElement`. Safe because every RTL rule is scoped to `#app[dir="rtl"]`, so the
+  root attribute changes nothing visually (verified: matrix + navaudit still green).
+- **Record globe/flat switch** (`#recFlatT`, a `role="switch"`) had no accessible name → added a
+  localized `aria-label` (c.flat).
+- **Record canvas** (`#recCv`) was an unlabelled `<canvas>` → now `role="img"` with a label that
+  updates to the live country count ("My travel record — 12 countries", localized).
+- **Publish modal** title/name inputs relied on a placeholder alone (vanishes on typing) → added
+  `aria-label` alongside.
+
+Non-issues confirmed (left alone): `#topo` background canvas is already `aria-hidden`; the
+feedback-nudge dismiss button reads empty only while its container is `opacity:0; aria-hidden`
+and gains text the moment it's shown.
+
+Verifier: `a11yverify.cjs` (8/8). Next a11y candidates if the loop revisits: focus-visible rings
+audit, tab-order through the plan pager, and an axe-core-style contrast sweep on secondary text.
