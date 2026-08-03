@@ -23,8 +23,14 @@ const ALLOWED_ORIGINS = [
   "http://localhost",
   "http://127.0.0.1",
 ];
+// startsWith() let "http://localhost.evil.com" match the "http://localhost" entry, handing a
+// hostile page the CORS grant. Match the origin exactly, or only where the next character is a
+// port separator, so localhost:3000 still works during development and lookalike hosts do not.
+// (This is a courtesy check, not a security boundary — an Origin header is whatever a non-browser
+// client says it is. Nothing sensitive may rely on it alone.)
 function originOk(origin) {
-  return ALLOWED_ORIGINS.some((o) => origin && origin.startsWith(o));
+  if (!origin) return false;
+  return ALLOWED_ORIGINS.some((o) => origin === o || origin.startsWith(o + ":"));
 }
 
 const TAGS  = ["Culture", "Food", "Nature", "Adventure", "Shopping", "Relax"];
@@ -90,7 +96,7 @@ function spend(env, kind, n) {
 }
 // A minute-stamped key, so yesterday's counters expire themselves and nothing has to be cleaned up.
 async function tooFast(env, request) {
-  const ip = request.headers.get("CF-Connecting-IP") || "anon";
+  const ip = await ipTag(env, request);
   const key = "rl:" + ip + ":" + Math.floor(Date.now() / 60000);
   return (await bump(env.CITIES, key, 120)) > RL_PER_MIN;
 }
@@ -487,15 +493,32 @@ export default {
         if (r) return r;
       }
       // These two hand over every city we have ever built. They're yours, not the public's.
-      // Set an ADMIN_KEY secret in Cloudflare and they lock; leave it unset and nothing changes.
+      //
+      // They used to be locked ONLY if ADMIN_KEY happened to be set, which meant an unset secret
+      // left them wide open — and the Origin header they sit behind is trivially forged by
+      // anything that isn't a browser. That mattered far more than "some city JSON leaks":
+      // this KV also holds sess:<token> (the key name IS the session token), u:/uemail: (account
+      // emails), acode: (live sign-in codes), sync: (people's saved trips), pub: (whose records
+      // carry the publisher's delete key) and pubsig:/publike:/pubrep:/rl: (whose key names carry
+      // raw IP addresses). One unauthenticated POST could have walked all of it.
+      //
+      // Now: no ADMIN_KEY configured means no admin endpoint at all, and even with the key the
+      // response is restricted to city entries. City keys are [a-z0-9] only (see cityKey), so any
+      // key containing ":" belongs to another namespace and is never returned.
       if (body.action === "list" || body.action === "dump") {
-        if (env.ADMIN_KEY && body.admin !== env.ADMIN_KEY) return reply({ error: "not allowed" }, 403, origin);
+        if (!env.ADMIN_KEY) return reply({ error: "not allowed" }, 403, origin);
+        if (!safeEqual(String(body.admin || ""), String(env.ADMIN_KEY))) return reply({ error: "not allowed" }, 403, origin);
         if (body.action === "list") return reply({ cities: await listNames(env) }, 200, origin);
         return reply({ cities: await dumpAll(env) }, 200, origin);
       }
       return reply({ error: "unknown action" }, 400, origin);
     } catch (e) {
-      return reply({ error: String(e && e.message ? e.message : e) }, 500, origin);
+      // The raw message used to go straight to the browser, and some of these carry internals —
+      // claude() throws with a slice of the upstream body, others with storage detail. Log it
+      // where only the operator can read it (wrangler tail) and hand the caller a flat message.
+      // The app only ever tests for truthiness here, so nothing user-facing changes.
+      try { console.error("bosla worker:", body && body.action, e && e.stack ? e.stack : e); } catch (_) {}
+      return reply({ error: "server error" }, 500, origin);
     }
   },
 };
@@ -748,12 +771,26 @@ async function placeLookup(name, city, key) {
   }
 }
 
+// Constant-time string compare, so a wrong admin key can't be found one character at a time.
+function safeEqual(a, b) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+// City entries ONLY. cityKey() reduces a name to [a-z0-9], so a key containing ":" is by
+// definition something else — a session, an account, a published trip, a rate-limit counter —
+// and must never appear in an admin listing or dump.
+function isCityKey(name) {
+  return typeof name === "string" && name.length > 0 && name.indexOf(":") === -1;
+}
 async function listNames(env) {
   if (!env.CITIES) return [];
   const names = []; let cursor, done = false;
   while (!done) {
     const res = await env.CITIES.list(cursor ? { cursor } : {});
-    res.keys.forEach((x) => names.push(x.name));
+    res.keys.forEach((x) => { if (isCityKey(x.name)) names.push(x.name); });
     done = res.list_complete; cursor = res.cursor;
   }
   return names;
@@ -1148,12 +1185,24 @@ async function pubSha(str) {
   const b = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(str));
   return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("").slice(0, 20);
 }
+// A client IP identifies a person, and IPs were going into KV KEY NAMES —
+// "publike:<id>:<ip>" kept for a year, "pubrep:", "pubsig:", "pubrl:", "rl:" — so anything able
+// to read this namespace could read who did what, from where. None of that machinery needs the
+// address: rate limits and "already liked this" only need a STABLE token per caller. Hashing is
+// deterministic, so the same address yields the same token and every cap and dedupe check behaves
+// exactly as before. Set IP_SALT (a Cloudflare secret) to make the hash non-enumerable; without it
+// this still keeps plaintext addresses out of storage, which is the exposure that matters.
+async function ipTag(env, request) {
+  const ip = request.headers.get("CF-Connecting-IP") || "";
+  if (!ip) return "anon";
+  return await pubSha("ip1|" + (env && env.IP_SALT ? env.IP_SALT : "bosla") + "|" + ip);
+}
 function pubClean(s, max) {
   // control chars out, angle brackets out (the app escapes too — belt and braces), length capped
   return String(s || "").replace(/[\u0000-\u001F<>]/g, "").trim().slice(0, max);
 }
 async function pubDayCap(env, request, what, cap) {
-  const ip = request.headers.get("CF-Connecting-IP") || "anon";
+  const ip = await ipTag(env, request);
   return (await bump(env.CITIES, "pubrl:" + what + ":" + ip + ":" + today(), 172800)) > cap;
 }
 async function pubIdx(kv) {
@@ -1211,7 +1260,7 @@ async function community(body, env, request, origin) {
     // The same person publishing the same trip again is a double-tap or an edit — never a new
     // card. Fingerprint what the feed actually shows (cities, days, name) per address; a repeat
     // hands back the existing trip so the app can update it in place instead of duplicating it.
-    const ip0 = request.headers.get("CF-Connecting-IP") || "anon";
+    const ip0 = await ipTag(env, request);
     const sig = await pubSha([cities.join("|").toLowerCase(), days, name.toLowerCase()].join("#"));
     const prior = await kv.get("pubsig:" + ip0 + ":" + sig);
     if (prior && await kv.get("pub:" + prior)) return reply({ id: prior, dupe: 1 }, 200, origin);
@@ -1248,7 +1297,7 @@ async function community(body, env, request, origin) {
   if (act === "pub_like") {
     const id = pubClean(body.id, 40);
     // one like per address per trip, forever-ish; the client also remembers its own likes
-    const ip = request.headers.get("CF-Connecting-IP") || "anon";
+    const ip = await ipTag(env, request);
     const seen = await kv.get("publike:" + id + ":" + ip);
     const raw = await kv.get("pub:" + id);
     if (!raw) return reply({ error: "not found" }, 404, origin);
@@ -1387,7 +1436,7 @@ async function community(body, env, request, origin) {
 
   if (act === "pub_report") {
     const id = pubClean(body.id, 40);
-    const ip = request.headers.get("CF-Connecting-IP") || "anon";
+    const ip = await ipTag(env, request);
     const seen = await kv.get("pubrep:" + id + ":" + ip);
     if (seen) return reply({ ok: 1 }, 200, origin);
     await kv.put("pubrep:" + id + ":" + ip, "1", { expirationTtl: 31536000 });

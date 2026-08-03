@@ -472,6 +472,59 @@ chains to the body. `.intro` is inline content, not an overlay, so it's excluded
 used elsewhere in the app, so support is fine. Verifier `scrolllock.cjs` 11/11 (each overlay freezes
 the body on open and restores scroll on close, both themes); matrix 90/90, qa 0, esctest 7/7.
 
+### Security review (session 2026-08-03) — production readiness
+
+**CRITICAL — admin endpoints failed open (worker, needs re-paste).** `list`/`dump` were guarded by
+`if (env.ADMIN_KEY && body.admin !== env.ADMIN_KEY)`, so with the secret unset the guard was skipped
+entirely — by design ("leave it unset and nothing changes"). The only thing in front of them was the
+Origin header, which any non-browser client forges. And `listNames()` had no prefix filter over a KV
+that holds far more than cities: `sess:<token>` (the key name **is** the session token), `u:`/`uemail:`
+(account emails), `acode:` (live sign-in codes), `sync:` (people's saved trips), `pub:` (records
+carrying the publisher's delete key) and `pubsig:`/`publike:`/`pubrep:`/`rl:` (raw IPs in key names).
+One unauthenticated POST could have walked all of it. Now: no ADMIN_KEY → endpoint disabled; key
+compared with `safeEqual` (constant time); and `isCityKey()` restricts results to keys with no ":",
+which city keys can never contain (`cityKey` reduces to `[a-z0-9]`). Defence in depth — even a
+correct admin key cannot surface a session or an email.
+
+**MEDIUM — CORS lookalike bypass.** `originOk` used `startsWith`, so `http://localhost.evil.com`
+matched the `http://localhost` entry. Now exact match, or the entry followed by ":" so `localhost:3000`
+still works for development. Documented in-file as a courtesy check, not a boundary.
+
+**MEDIUM — internal errors returned to the browser.** The top-level catch returned
+`String(e.message)`; some throws carry a slice of the upstream Claude body or storage internals.
+Now logged operator-side (`console.error`, visible via `wrangler tail`) and the caller gets a flat
+"server error". The app only tests `d.error` for truthiness, so nothing user-facing changed.
+
+**MEDIUM — raw IPs in KV key names.** `publike:<id>:<ip>` was kept for a year, plus `pubrep:`,
+`pubsig:`, `pubrl:`, `rl:`. Rate limiting and "already liked this" only need a stable per-caller
+token, never the address, so all five sites now use `ipTag()` (SHA-1, salted by an optional `IP_SALT`
+secret). Deterministic, so every cap and dedupe check behaves exactly as before.
+
+**MEDIUM — chat messages were sent to analytics (app).** `track('chat_msg',{msg:text.slice(0,200)})`
+shipped whatever the traveller typed — people describe trips in the first person (partners, children's
+ages, an anniversary) — to the Apps Script sheet. The welcome screen's "no account, no email" promise
+does not leave room for that. Now only the event and a coarse length bucket go; the message still
+reaches the AI worker, so the feature is untouched. Verified by `privacy.cjs`.
+
+**LOW — headers (app).** Added `referrer: strict-origin-when-cross-origin` — a shared trip rides in
+the URL (`?t=…`), so the full itinerary was leaking as the Referer on every outbound affiliate tap
+(commission is carried by the marker in the link, so it is unaffected). Added a deliberately narrow
+CSP: `object-src 'none'; base-uri 'none'; form-action 'none'` — the app has no form/object/embed/base
+anywhere, so these cost nothing and remove three real primitives. `script-src`/`connect-src` were left
+out on purpose: the app is one file of inline script and style, and a wrong host list silently breaks
+weather/prayer/rates in production.
+
+Audited and found already sound: XSS (`esc()` covers all five chars, xss.cjs 20/20, no eval /
+document.write / insertAdjacentHTML / srcdoc / outerHTML); auth (crypto.getRandomValues for codes and
+tokens, 5-attempt cap on email codes, hashed email as the code key, 10-min code/state TTL, OAuth state,
+generation-based sign-out-everywhere); upload validation (strict jpeg|webp data-URL regex, size cap,
+owner key, per-trip and per-day caps); ownership checks on every mutating community action; zero npm
+dependencies; no secrets in the working tree or anywhere in git history; all 30 `target="_blank"` carry
+`rel="noopener"`.
+
+Verifiers: `workersec.cjs` 12/12 (safeEqual, isCityKey blocks all 14 sensitive namespaces, lookalike
+origins rejected), `privacy.cjs` 6/6, plus xss 20/20, matrix 90/90 and all 15 suites green.
+
 ### Performance audit (session 2026-08-03) — measured, not guessed
 
 Profiled first (Playwright + CDP, 1x and 4x CPU throttle, medians of 7–11 runs). Baseline: FCP was

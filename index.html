@@ -9,6 +9,18 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="description" content="بوصلتك نحو العالم — plan a complete trip in seconds: 771 real destinations across 206 countries, halal-friendly guides, prayer times, a smart packing list, maps, budgets in your currency, and family sharing. English, العربية, Español.">
 <meta name="theme-color" content="#173a5c">
+<!-- A shared trip travels in the URL (?t=…), so the full address used to ride along as the
+     Referer on every outbound tap — handing Booking, Klook and the rest somebody's itinerary.
+     Cross-origin now sends only the origin. Affiliate credit is carried by the marker inside the
+     link itself, so commission is unaffected. -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- Deliberately narrow. The app is one file of inline script and inline style, so script-src
+     would need 'unsafe-inline' and buy little; connect-src is left out because getting the host
+     list wrong silently breaks weather, prayer times or rates in production. These three cost
+     nothing — the app has no <form>, <object>, <embed> or <base> anywhere — and they remove three
+     real primitives: rewriting every relative URL via an injected <base>, loading a plugin, and
+     posting a form to an attacker. -->
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="بوصلة">
@@ -1445,7 +1457,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-03 13:40 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-03 14:30 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -3343,7 +3355,12 @@
   function chatSubmitText(){
     if(CHATBUSY)return;
     var inp=$('chatInput'), text=(inp.value||'').trim(); if(!text)return; inp.value=''; chatGrow();
-    meSay(text); try{ track('chat_msg',{msg:text.slice(0,200)}); }catch(e){}
+    // The message itself is NOT sent. People describe trips in the first person — who they are
+    // travelling with, children's ages, an anniversary — and that was going verbatim to the
+    // analytics sheet, which the welcome screen's "no account, no email" promise does not leave
+    // room for. The event and a coarse length still show that chat is being used and how much
+    // people type, which is what the number was ever read for.
+    meSay(text); try{ track('chat_msg',{len:text.length<40?'short':(text.length<120?'medium':'long')}); }catch(e){}
     if(!CONFIG.aiEndpoint){ localChatSubmit(text); return; }
     CHATBUSY=true; CHATCHIPS=[]; var ph={role:'assistant',content:'…'}; CHATMSGS.push(ph); chatRender();
     aiChat().then(function(res){
