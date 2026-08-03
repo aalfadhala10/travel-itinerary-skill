@@ -1420,7 +1420,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-03 01:20 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-03 02:05 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -4471,6 +4471,7 @@
     LANG=lang; var t=I18N[lang],u=t.ui;
     if(!VOICEOVERRIDE)VOICELANG=lang; (function(){ var ml=$('micLang'); if(ml)ml.textContent=voiceLabel(VOICELANG); })();
     $('app').setAttribute('dir',t.dir);
+    try{ document.documentElement.setAttribute('lang',lang); document.documentElement.setAttribute('dir',t.dir); }catch(e){}
     try{ $('langSel').value=lang; }catch(e){}
     $('heroEyebrow').textContent=u.eyebrow; $('heroTag').textContent=u.tag;
     $('lblDest').textContent=u.dest; $('dest').setAttribute('placeholder',u.destPh); $('surprise').textContent=u.surprise;
@@ -8028,6 +8029,7 @@
     var c=recTxt(),n=RECV.v.length,total=rgCountries().length;
     $('recBar').innerHTML='<b>'+n+'</b><span class="of">/ '+total+' '+esc(c.of)+'</span>'
       +(n?'<span class="pct">'+Math.round(n*100/total)+'%</span>':'');
+    try{ var rcv=$('recCv'); if(rcv) rcv.setAttribute('aria-label',c.t+' — '+n+' '+c.of); }catch(e){}
     $('recFlags').innerHTML=RECV.v.map(function(nm){
       var a=rgAnchor(nm); return a?'<span title="'+esc(rgCName(nm))+'">'+esc(a.flag)+'</span>':''; }).join('');
     var h=rgAnchor(RECV.h),dist=0,far=null,farKm=0;
@@ -8065,8 +8067,8 @@
         +' <button type="button" class="recbtn" id="recMine" style="margin-inline-start:8px">'+esc(c.mine)+'</button>'
         +' <button type="button" class="recbtn main" id="cmpMine" style="margin-inline-start:6px">'+esc(c.cmpDo)+'</button></div>':'')
       +'<div class="reccard"><div class="recswrow"><span>'+esc(c.flat)+'</span>'
-      +'<button type="button" id="recFlatT" role="switch" aria-checked="'+(RGFLAT?'true':'false')+'" class="recsw'+(RGFLAT?' on':'')+'"><i></i></button></div>'
-      +'<canvas id="recCv" width="760" height="760"></canvas>'
+      +'<button type="button" id="recFlatT" role="switch" aria-label="'+esc(c.flat)+'" aria-checked="'+(RGFLAT?'true':'false')+'" class="recsw'+(RGFLAT?' on':'')+'"><i></i></button></div>'
+      +'<canvas id="recCv" width="760" height="760" role="img" aria-label="'+esc(c.t)+'"></canvas>'
       +'<div class="recbar reccnt" id="recBar"></div></div>'
       +'<div class="reccard" id="recGoal"></div>'
       +'<div class="reccard" id="recSug" style="padding-bottom:6px"></div>'
@@ -8985,6 +8987,7 @@
     var c=CTXT[LANG]||CTXT.en, m=$('pubModal');
     $('pubTitleH').textContent=c.pubTitleH; $('pubSub').textContent=c.pubSub; $('pubNote').textContent=c.pubNote;
     $('pubTitle').placeholder=c.pubTitlePh; $('pubName').placeholder=c.pubNamePh; $('pubGo').textContent=c.pub;
+    $('pubTitle').setAttribute('aria-label',c.pubTitlePh); $('pubName').setAttribute('aria-label',c.pubNamePh);
     $('pubVisFeed').textContent=c.visFeed; $('pubVisLink').textContent=c.visLink;
     document.querySelectorAll('#pubVis .chip').forEach(function(x){ x.classList.toggle('active',x.getAttribute('data-vis')==='feed'); });
     var s=stateObj(), cities=[s.d]; if(s.rt&&s.rt.length)cities=s.rt.map(function(k){return DEST[k]?DEST[k].city:k;}); else if(s.d2)cities.push(s.d2);
