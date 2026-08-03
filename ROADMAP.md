@@ -405,6 +405,26 @@ solid-on-solid failures. Two clear, non-brand failures found and fixed:
 - **Auth-sheet Privacy/Terms links were unstyled** → default browser blue `#0000ee`, 1.9:1 on the
   dark navy sheet. Given `color:var(--ink)` + underline (the drawer copies already used `--muted`).
 
+### Keyboard focus rings (commit follows)
+
+`focusaudit.cjs` tabs through the app and checks each interactive control for a visible focus
+indicator. The app had no global outline reset (good) but relied on the browser's default focus
+ring — inconsistent and weak on custom-coloured buttons, and a few controls (`.stychip`,
+`.areachip`, `.bookbtn`) showed none. Added one global rule:
+
+```
+a:focus-visible,button:focus-visible,[role="button"]:focus-visible,[role="switch"]:focus-visible,
+[tabindex]:focus-visible,summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+```
+
+`:focus-visible` fires only on keyboard/AT navigation, so the mouse/touch experience is unchanged
+(verified: a mouse click on the plan button produces no ring in either theme). `--teal` is
+high-contrast in both themes — navy `#173a5c` on cream (9.1:1) and bright blue `#6db1f7` on navy
+(6.3–8:1), both well past the 3:1 focus-indicator bar. Ring appearance eyeballed in both themes
+(scratchpad ring-dark.png / ring-light.png). Note: the headless Chromium here can't exercise
+`:focus-visible` *styling* (it reports `matches(':focus-visible')` true but doesn't paint the
+ring), so this rule is verified by construction + screenshot, not by the tab-through audit.
+
 **DECISION FOR AHMED (left unchanged on purpose):** the brand gold `--amber #ac7f22` used as
 *text* on the cream light-theme backgrounds is 2.82:1 — below AA (4.5) and even below the 3:1
 large-text bar. It's uniform across ~15 spots (`.eyebrow`, `.weleyebrow`, `.dlabel`, `.surprise`,
