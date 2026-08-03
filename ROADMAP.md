@@ -391,3 +391,26 @@ and gains text the moment it's shown.
 
 Verifier: `a11yverify.cjs` (8/8). Next a11y candidates if the loop revisits: focus-visible rings
 audit, tab-order through the plan pager, and an axe-core-style contrast sweep on secondary text.
+
+### Contrast sweep (commit follows)
+
+`contrast2.cjs` measures every visible text node's colour against its real (ancestor-resolved)
+background in both themes, skipping anything over a gradient/image so it only reports genuine
+solid-on-solid failures. Two clear, non-brand failures found and fixed:
+
+- **Light `--muted` was `#6c7080` → 3.84:1 on `--paper`**, just under WCAG AA 4.5, and it carries
+  ~20 secondary-text spots (`.wsub`, `.reclbl`, `.pgtab`, `.drawitem`, `.goalask`, `.of`, …).
+  Darkened to `#5f6373` (4.65:1 on paper, 5.6:1 on card). Neutral grey, not the brand accent —
+  negligible visual change. Dark `--muted` untouched (already passes on navy).
+- **Auth-sheet Privacy/Terms links were unstyled** → default browser blue `#0000ee`, 1.9:1 on the
+  dark navy sheet. Given `color:var(--ink)` + underline (the drawer copies already used `--muted`).
+
+**DECISION FOR AHMED (left unchanged on purpose):** the brand gold `--amber #ac7f22` used as
+*text* on the cream light-theme backgrounds is 2.82:1 — below AA (4.5) and even below the 3:1
+large-text bar. It's uniform across ~15 spots (`.eyebrow`, `.weleyebrow`, `.dlabel`, `.surprise`,
+`.editfab`, `.cmback`, `.recbtn.main` text, `.ptschip`, `.svplan`, …) — one coherent brand accent,
+not scattered bugs. Fixing it means either (a) a dedicated darker `--amber-ink` (~`#7f5c10`, 4.76:1)
+used only where amber is *text* on light — keeps every gold *fill* identical, ~15 targeted edits;
+or (b) accept the accent below AA as a deliberate brand choice. This is a design call on your gold,
+so I did not touch it. Amber as a *fill* (buttons, active pills, with dark/white text on it) passes
+and is unaffected either way. Gold-as-text in **dark** theme passes on navy — light-only issue.

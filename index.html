@@ -32,7 +32,7 @@
 <style>
   :root{
     --paper:#e6e3db; --paper2:#efece4; --card:#faf8f2;
-    --ink:#1a1e28; --muted:#6c7080; --line:#d2cfc4;
+    --ink:#1a1e28; --muted:#5f6373; --line:#d2cfc4;
     --teal:#173a5c; --teal-soft:#173a5c12;
     --amber:#ac7f22; --amber-soft:#ac7f221f;
     --clay:#8a3145;
@@ -54,7 +54,7 @@
   }
   :root[data-theme="light"]{
     --paper:#e6e3db; --paper2:#efece4; --card:#faf8f2;
-    --ink:#1a1e28; --muted:#6c7080; --line:#d2cfc4;
+    --ink:#1a1e28; --muted:#5f6373; --line:#d2cfc4;
     --teal:#173a5c; --teal-soft:#173a5c12; --amber:#ac7f22; --amber-soft:#ac7f221f;
     --clay:#8a3145; --land:#ded4bc; --landline:#b3a685; --ocean1:#dfe9ee; --ocean2:#c2d5de;
     --shadow:0 16px 38px rgba(30,36,28,.16);
@@ -1420,7 +1420,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-03 02:05 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-03 02:50 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -8394,8 +8394,8 @@
   function signedIn(){ return !!(AUTHME&&AUTHME.signedIn); }
   function authPriv(c){
     return '<div class="notehint" style="margin-top:8px">'+esc(c.priv)
-      +' <a href="privacy.html" target="_blank" rel="noopener">'+esc(c.privL)+'</a>'
-      +' · <a href="terms.html" target="_blank" rel="noopener">'+esc(c.termL)+'</a></div>';
+      +' <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline">'+esc(c.privL)+'</a>'
+      +' · <a href="terms.html" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline">'+esc(c.termL)+'</a></div>';
   }
   function openAuth(){
     var sh=$('authSheet');
