@@ -923,3 +923,39 @@ One thing that cost a round trip and is worth remembering: pasting `DASH_KEY` wi
 a `ReferenceError` on line 21 — a top-level statement, so the *whole file* failed to load and
 `doPost` died with it. Analytics stopped recording entirely, not just the dashboard. A config
 constant at file scope has no blast radius smaller than "everything".
+
+### Security — final hardening pass
+
+Went looking for what hadn't been checked rather than re-listing what had. The publish layer came
+back clean: `pub_get` deletes the delete key before replying, `pubRow` (the feed) is an explicit
+allowlist that never had it, trip ids are `rnd(8)` = 64 bits so unlisted "link only" trips can't be
+enumerated, sync is capped at 400KB and 400 writes a day per account, and chat is capped at the last
+20 turns of 1000 characters. Two gaps were real:
+
+**Oversized request bodies.** `request.json()` buffered whatever arrived. Every legitimate request
+is a few KB, so anything past 512KB is probing — now rejected on `Content-Length`, before the parse.
+
+**Clickjacking.** GitHub Pages can send neither `X-Frame-Options` nor `frame-ancestors`, and
+`frame-ancestors` is ignored in a `<meta>` policy, so the app had no defence at all. Added a
+framebuster: break out of the frame if the browser permits, and hide the body either way. The
+belt-and-braces earned itself immediately — in `frametest.cjs` the cross-origin breakout navigation
+was *refused* by Chrome for lack of user activation, and only the CSS fallback stopped the page
+being clickable. A framebuster that only tries to navigate would have failed silently.
+
+### Deployment review — and a preflight gate
+
+GitHub Pages deploys whatever lands on `main` with nothing in between, and two of the three
+deployables (Worker, Apps Script) are pasted by hand with no pipeline at all. Added
+`tools/preflight.cjs`, which refuses the four mistakes that have actually happened on this project:
+a page that throws on load, city tables out of alignment, and the two manual bumps — the drawer
+stamp and the `sw.js` cache — being forgotten. It caught a real omission on its first run: this very
+commit had neither bump.
+
+One bug in the gate worth remembering: `git show origin/main:index.html` exceeds `execSync`'s 1MB
+default `maxBuffer` on a 3MB file, so it threw and the comparison degraded to "nothing to compare" —
+a safety net that silently reports success is worse than none.
+
+Also wrote `RELEASE.md`: how each of the three pieces ships, which secrets do what, the emergency
+rollback table, and the beta checklist. The thing worth knowing from it — the Worker rolls back in
+seconds from Cloudflare's own version list, while the app is the slowest of the three to un-break
+because a device that cached a bad build keeps it until its next launch. Test the app hardest.

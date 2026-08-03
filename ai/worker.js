@@ -395,6 +395,12 @@ export default {
     // actually bound the damage, and they are the part to keep tight.
     if (!originOk(origin)) return reply({ error: "not allowed from here" }, 403, origin);
 
+    // request.json() buffers whatever arrives. Every real request here is a few KB — the chat is
+    // capped at 20 turns of 1000 chars, a published trip at 400KB — so anything past 512KB is
+    // somebody probing. Reject on the header, before spending CPU parsing it.
+    const clen = parseInt(request.headers.get("content-length") || "0", 10);
+    if (clen > 524288) return reply({ error: "too big" }, 413, origin);
+
     let body;
     try { body = await request.json(); } catch { return reply({ error: "bad json" }, 400, origin); }
 

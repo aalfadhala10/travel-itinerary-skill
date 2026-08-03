@@ -24,8 +24,19 @@
      hash would mean recomputing it on every deploy, which is the build step this project doesn't
      have. They are listed anyway so that a future <script src> from anywhere else is refused.
      frame-ancestors is absent on purpose: it is ignored in a <meta> policy and only works as a
-     real header, which GitHub Pages cannot set. -->
+     real header, which GitHub Pages cannot set — the script below stands in for it. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://upload.wikimedia.org; connect-src 'self' https://shy-fire-8a78.ahmed-alfadala.workers.dev https://script.google.com https://script.googleusercontent.com https://open.er-api.com https://api.open-meteo.com https://api.aladhan.com https://en.wikipedia.org https://tinyurl.com https://is.gd https://cleanuri.com; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<!-- The clickjacking defence, since neither X-Frame-Options nor frame-ancestors can be sent from
+     GitHub Pages. Nothing legitimately embeds Bosla, so being in a frame means somebody is
+     stacking an invisible copy over their own page to farm clicks on Publish or Delete. Break out
+     if the browser allows it; hide the page either way, so there is nothing left to click on. -->
+<script>
+  if (window.top !== window.self) {
+    document.documentElement.setAttribute('data-framed', '1');
+    try { window.top.location = window.self.location; } catch (e) {}
+  }
+</script>
+<style>html[data-framed] body{display:none!important}</style>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="بوصلة">
@@ -1409,7 +1420,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-03 23:15 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-04 00:30 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
