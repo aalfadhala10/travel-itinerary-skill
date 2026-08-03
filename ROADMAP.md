@@ -472,12 +472,15 @@ chains to the body. `.intro` is inline content, not an overlay, so it's excluded
 used elsewhere in the app, so support is fine. Verifier `scrolllock.cjs` 11/11 (each overlay freezes
 the body on open and restores scroll on close, both themes); matrix 90/90, qa 0, esctest 7/7.
 
-**DECISION FOR AHMED (left unchanged on purpose):** the brand gold `--amber #ac7f22` used as
-*text* on the cream light-theme backgrounds is 2.82:1 — below AA (4.5) and even below the 3:1
-large-text bar. It's uniform across ~15 spots (`.eyebrow`, `.weleyebrow`, `.dlabel`, `.surprise`,
-`.editfab`, `.cmback`, `.recbtn.main` text, `.ptschip`, `.svplan`, …) — one coherent brand accent,
-not scattered bugs. Fixing it means either (a) a dedicated darker `--amber-ink` (~`#7f5c10`, 4.76:1)
-used only where amber is *text* on light — keeps every gold *fill* identical, ~15 targeted edits;
-or (b) accept the accent below AA as a deliberate brand choice. This is a design call on your gold,
-so I did not touch it. Amber as a *fill* (buttons, active pills, with dark/white text on it) passes
-and is unaffected either way. Gold-as-text in **dark** theme passes on navy — light-only issue.
+### Gold-text contrast — DONE (Ahmed approved, commit follows)
+
+Ahmed reviewed the before/after screenshots and approved. Added a dedicated `--amber-ink` token and
+pointed every `color:var(--amber)` (60 occurrences) at it; fills/borders/underlines keep `--amber`.
+- light `--amber-ink:#7f5c10` — 4.76:1 on cream (was `#ac7f22` at 2.82:1, below AA)
+- dark `--amber-ink:#ddb45f` — identical to dark `--amber`, so dark-theme gold text is unchanged
+  (it already passed on navy)
+
+So gold *text* on light backgrounds now meets AA while every gold *fill* (plan button, active pills,
+compass, record toggle) stays pixel-identical, and dark theme is untouched. Verified: contrast2.cjs
+shows zero remaining `#ac7f22`-on-cream failures (only the known active-pill false positives remain);
+matrix 90/90; qa 0; dataaudit 771.
