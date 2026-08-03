@@ -472,6 +472,23 @@ chains to the body. `.intro` is inline content, not an overlay, so it's excluded
 used elsewhere in the app, so support is fine. Verifier `scrolllock.cjs` 11/11 (each overlay freezes
 the body on open and restores scroll on close, both themes); matrix 90/90, qa 0, esctest 7/7.
 
+### Error-state audit (session 2026-08-03)
+
+Swept every async error path. Handling is comprehensive: global offline bar wired to online/offline
+events; every fetch has a catch; network/API failures toast "offline" and re-enable their button;
+prayer-times failure swaps to a Google-search fallback link (no stuck "Loading…"); the AI chat
+distinguishes rate-limit (429 → "busy, wait Ns") from a lost reply (→ "that didn't come through, tap
+Try again — everything's still here") with retry chips and a 28s timeout; community fetch failure
+shows the cloud-off empty box + Retry; weather/FX/cityphoto degrade silently (progressive
+enhancement); invalid input is caught (no city → toast, past date → auto-corrected, days clamped).
+
+One real defect found & fixed: **`saveTrip()` toasted "Saved to My trips" even when the localStorage
+write threw** (storage full) — a silent false-success. `saveTripsArr` now returns a boolean, `saveTrip`
+propagates it, and the Save action toasts a truthful "Couldn't save — storage may be full" (EN/AR/ES)
+instead of a false success. Verifier `savefail.cjs` 4/4 (normal save persists + says so; a throwing
+storage shows the failure, never "Saved"). No global window.onerror added on purpose — it risks
+masking bugs and firing on benign errors; every expected path is already handled. qa 0, dataaudit 771.
+
 ### Loading-state audit (session 2026-08-03)
 
 Inspected every async action. Already well-covered: community feed shows skeletons (yesterday's feed
