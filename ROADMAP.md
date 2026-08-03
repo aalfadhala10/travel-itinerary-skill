@@ -472,6 +472,21 @@ chains to the body. `.intro` is inline content, not an overlay, so it's excluded
 used elsewhere in the app, so support is fine. Verifier `scrolllock.cjs` 11/11 (each overlay freezes
 the body on open and restores scroll on close, both themes); matrix 90/90, qa 0, esctest 7/7.
 
+### Loading-state audit (session 2026-08-03)
+
+Inspected every async action. Already well-covered: community feed shows skeletons (yesterday's feed
+paints first), publish/photo/sync buttons disable + show a busy label and re-enable on error, the AI
+chat shows typing dots with a 28s timeout, prayer times have a "Loading…" line, pager arrows disable
+at the ends, FX/weather/cityphoto fill in progressively, plan generation is instant (local data).
+The `#promptBox` AI-description path is dead code (not in the live DOM) — ignored.
+
+One real gap: the **auth buttons** (email "Send code", "Verify", Google) fired their network call with
+no disable — rapid taps sent duplicate codes/requests and gave no feedback. Fixed: each now guards
+`if(t.disabled)return`, disables + shows "…" during the call, and restores on success/error (Google
+stays disabled through its redirect, restores only on failure). Verifier `authload.cjs` 5/5 — a
+triple-tap fires exactly ONE request, button shows loading, re-enables after. qa 0, dataaudit 771,
+emptytest 15/15.
+
 ### Empty-state audit + consistent empty states (session 2026-08-03)
 
 Audited every screen that can have no content. Before: friendly text existed in a few places but no

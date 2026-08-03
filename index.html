@@ -1445,7 +1445,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-03 10:40 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-03 11:25 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -8473,25 +8473,29 @@
       if(!e.target.closest('.cmppanel')){ closeAuth(); return; }
       var c=authTxt(),t;
       if((t=e.target.closest('#authG'))){
+        if(t.disabled)return; t.disabled=true; var _g=t;
         authApi('auth_google_start',{}).then(function(d){
-          if(d&&d.url)location.href=d.url; else toast(c.off);
-        }).catch(function(){ toast((CTXT[LANG]||CTXT.en).offline); });
+          if(d&&d.url)location.href=d.url; else { _g.disabled=false; toast(c.off); }
+        }).catch(function(){ _g.disabled=false; toast((CTXT[LANG]||CTXT.en).offline); });
         return;
       }
       if((t=e.target.closest('#authSend'))){
+        if(t.disabled)return; var _s=t, _st=_s.textContent; _s.disabled=true; _s.textContent='…';
         var em=($('authEm')||{}).value||'';
         authApi('auth_email_start',{email:em}).then(function(d){
+          _s.disabled=false; _s.textContent=_st;
           if(d&&d.sent){ $('authCodeRow').classList.remove('is-hidden'); toast(c.sent); }
           else toast(c.off);
-        }).catch(function(){ toast((CTXT[LANG]||CTXT.en).offline); });
+        }).catch(function(){ _s.disabled=false; _s.textContent=_st; toast((CTXT[LANG]||CTXT.en).offline); });
         return;
       }
       if((t=e.target.closest('#authVerify'))){
+        if(t.disabled)return; var _v=t, _vt=_v.textContent; _v.disabled=true; _v.textContent='…';
         authApi('auth_email_verify',{email:($('authEm')||{}).value||'',code:($('authCode')||{}).value||''})
           .then(function(d){
             if(d&&d.token){ authSet(d.token); AUTHME={signedIn:1,email:d.email}; renderAuth(); syncNow(); }
-            else toast(c.bad);
-          }).catch(function(){ toast(c.bad); });
+            else { _v.disabled=false; _v.textContent=_vt; toast(c.bad); }
+          }).catch(function(){ _v.disabled=false; _v.textContent=_vt; toast(c.bad); });
         return;
       }
       if((t=e.target.closest('#authSync'))){ syncNow(); return; }
