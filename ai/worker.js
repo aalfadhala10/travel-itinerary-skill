@@ -19,7 +19,8 @@
 // domain (a Cloudflare Pages address, a custom domain) or it will be turned away from its own
 // Worker and every AI feature will go quiet at once.
 const ALLOWED_ORIGINS = [
-  "https://aalfadhala10.github.io",
+  "https://bosla.pages.dev",
+  "https://aalfadhala10.github.io",   // kept: rollback path while the move settles
   "http://localhost",
   "http://127.0.0.1",
 ];
@@ -128,7 +129,7 @@ function gid(env) { return ev(env.GOOGLE_CLIENT_ID); }
 function gsec(env) { return ev(env.GOOGLE_CLIENT_SECRET); }
 function authOn(env) { return !!(gid(env) && gsec(env)); }
 function mailOn(env) { return !!(ev(env.RESEND_KEY) && ev(env.MAIL_FROM)); }
-function appUrl(env) { return ev(env.APP_URL) || "https://aalfadhala10.github.io/travel-itinerary-skill/"; }
+function appUrl(env) { return ev(env.APP_URL) || "https://bosla.pages.dev/"; }
 function workerUrl(env, request) {
   if (ev(env.WORKER_URL)) return ev(env.WORKER_URL).replace(/\/+$/, "");
   const u = new URL(request.url);
@@ -1469,7 +1470,7 @@ async function community(body, env, request, origin) {
 // is cached in KV forever and the app displays it WITH the attribution. No scraping, no
 // hotlinking mystery images, nothing whose provenance we cannot show. Wikimedia asks callers to
 // identify themselves, so we do.
-const PHOTO_UA = { headers: { "User-Agent": "Bosla-Travel-App/1.0 (https://aalfadhala10.github.io/travel-itinerary-skill/)" } };
+const PHOTO_UA = { headers: { "User-Agent": "Bosla-Travel-App/1.0 (https://bosla.pages.dev/)" } };
 const LICENCE_OK = /^(public domain|pd|cc0|cc[ -]by(?:[ -]sa)?(?: \d\.\d)?)$/i;
 
 // The photo should be the postcard, not the street: Doha is its corniche towers, Cairo is the
