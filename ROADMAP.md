@@ -472,6 +472,23 @@ chains to the body. `.intro` is inline content, not an overlay, so it's excluded
 used elsewhere in the app, so support is fine. Verifier `scrolllock.cjs` 11/11 (each overlay freezes
 the body on open and restores scroll on close, both themes); matrix 90/90, qa 0, esctest 7/7.
 
+### Premium-feel audit (session 2026-08-03)
+
+Checked the app against a 9-point "premium touches" list. Result: 6/9 already solid —
+smooth transitions (52), swipe between day pages, full form auto-save (`saveState`), ~30 remembered
+preferences, friendly microcopy ("Welcome, X" / "Signed in as…"), smooth scrolling + overscroll
+containment. Gaps and what was done:
+
+- **Destructive confirm** — delete-trip and remove-from-community already confirm, but the record
+  **"Start over"** button wiped every visited country with NO confirmation (data loss). Fixed:
+  added `clearSure` (EN/AR-Khaleeji/ES) and guarded the handler. Verifier `clearconfirm.cjs` 3/3
+  (dismiss keeps the record, accept clears it).
+- **Stale microcopy** — the About text said "735 destinations"; now 771 (EN/AR/ES).
+- **Haptics** (`navigator.vibrate`) — absent. NOTE: the Web Vibration API does not fire on iOS
+  Safari at all, so it would only add feedback on Android; left for Ahmed to decide.
+- **Pull-to-refresh** — absent, and deliberately: browser PTR is globally disabled to protect an
+  in-progress form. The community feed already reloads on open. Left for Ahmed to decide.
+
 ### Gold-text contrast — DONE (Ahmed approved, commit follows)
 
 Ahmed reviewed the before/after screenshots and approved. Added a dedicated `--amber-ink` token and
