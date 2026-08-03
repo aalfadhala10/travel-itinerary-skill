@@ -761,3 +761,43 @@ So gold *text* on light backgrounds now meets AA while every gold *fill* (plan b
 compass, record toggle) stays pixel-identical, and dark theme is untouched. Verified: contrast2.cjs
 shows zero remaining `#ac7f22`-on-cream failures (only the known active-pill false positives remain);
 matrix 90/90; qa 0; dataaudit 771.
+
+### Visual consistency audit — DONE
+
+Not a redesign: tokens only. Every fix is either invisible-to-layout (radius, shadow, duration) or a
+bounded ±1–3px on an icon sitting inside a padded box. Verified with computed-style measurement plus
+light/dark screenshots, then the full suite battery.
+
+**Border radius — 20 rendered values → 5.** Snapped the whole sheet onto `999px / 50% / 20 surface /
+16 card / 12 control / 8 chip`: 10px+11px+13px→12, 14px→16, 9px+7px+6px→8, 19px & `18px 18px 0 0`→20.
+Left alone: 2px (a 2px-tall hamburger bar) and 3px (a 5px-tall grab handle) — those are shape
+constraints, not tiers. `.cmuse` went 16→12 so the community CTA matches `.btn`/`.welbtn`/`.pubgo`.
+
+**Icons — 8 rendered sizes → 4** (`14 / 16 / 20 / 22`). 13→14, 15+17+18→16, 19→20, including the four
+sized by inline `width=`/`height=` attributes rather than CSS (chatfab, topbtn, WENTSVG, MKPEN).
+
+**Transitions — 11 durations → 6.** Snapped the seven singletons onto the four steps already in use
+(`.12 press / .15 default / .2 / .25 panel`): .08+.1→.12, .18→.2, .22+.3→.25. Kept `.5s` (progress-bar
+fill) and `.35s` (cover expand) — those are deliberate slow motions, not UI-state transitions.
+Also folded `@keyframes fadeUp` (10px) into `@keyframes rise` (12px) — two entrance animations doing
+the same job at .4/.45/.5s, now one at .45s.
+
+**14 controls were rendering in Arial.** `button`/`input`/`select`/`textarea` don't inherit the page
+font, and only some had `font-family` set — so `.chip`, `.cmteaser`, `.fbnno`, `.topbtn` and ten more
+fell back to the UA default next to brand-font peers. One element-selector rule fixes all of them;
+class rules still win, so the two `--ff-data` monospace fields are untouched.
+
+**Header band.** The four top controls were 30/38/34/32px tall at tops 20/18/20/21 with the menu
+button alone at an 11px radius. Now all four are 38px pills at top 20 — which also lifts three touch
+targets (theme 30→38, lang 32→38, home 34→38) instead of shrinking the menu to match.
+
+**FAB elevation.** Three floating buttons had three hardcoded shadows (`.28/24px`, `.24/18px`,
+`.18/14px`), none theme-aware — so light mode got a dark-mode shadow. Added `--shadow-fab` to all four
+theme blocks and pointed all three at it, keyframes included.
+
+`.welsave` was 46px/15px sitting under `.welbtn` at 49px/16px; now identical.
+
+**Deliberately not done: spacing.** 15 distinct `gap` values and 17 distinct single-value `padding`s
+is real sprawl, but padding is the one token here that moves layout — and the longest strings are
+Arabic, where a 2px change is how you find an overflow in production rather than in a screenshot.
+A 4px-grid migration wants its own pass with per-screen AR/ES verification, not a sed.
