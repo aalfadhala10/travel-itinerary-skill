@@ -16,7 +16,10 @@ One web app handles both, and you get a live dashboard that shows the stats
    e.g. `Bosla Analytics`.
 2. In that sheet: **Extensions → Apps Script**. A code editor opens.
 3. Delete whatever's in `Code.gs`, then **paste the entire contents of
-   `analytics/Code.gs`** (from this repo) in its place. Click the **Save** icon.
+   `analytics/Code.gs`** (from this repo) in its place.
+4. Near the top you'll see `var DASH_KEY = '';`. Put a long random string
+   between those quotes — that's the password for your dashboard. Leave it
+   empty and the dashboard stays switched off. Click the **Save** icon.
 
 ## Step 2 — Deploy it as a web app
 
@@ -37,11 +40,28 @@ Paste that `.../exec` URL back to me. I'll drop it into **both**
 on, real visits show up in the **Events** tab and any feedback users submit shows
 up in the **Feedback** tab — automatically, in your Drive.
 
+## Updating the script later
+
+**Do NOT use "New deployment" for an update — it mints a NEW URL, and the app is
+still posting to the old one.** To publish a change to code you've already
+deployed:
+
+**Deploy → Manage deployments →** pencil icon on the existing deployment **→
+Version: New version → Deploy**. Same URL, new code.
+
+(If the `/exec` URL ever does change, tell me and I'll update `CONFIG`.)
+
 ## Viewing your stats
 
-Just open that same `.../exec` URL in any browser — it shows a live dashboard:
-total events, unique sessions, plans made, top destinations & countries,
-outbound clicks by site, and language split. Reload to refresh.
+Open `.../exec?k=YOUR_DASH_KEY` in any browser — the key is the string you put in
+`DASH_KEY` in Step 1. It shows a live dashboard: total events, unique sessions,
+plans made, top destinations & countries, outbound clicks by site, and language
+split. Reload to refresh. Bookmark it with the key on the end.
+
+Without the key the URL answers "Not found" — deliberately. That URL is in the
+app's page source (it has to be, that's where the app posts), so anyone who reads
+the source could otherwise have opened your dashboard and read the Feedback tab,
+including any contact details people typed in.
 
 The raw rows are always in the `Events` tab of your Sheet if you want to slice
 them yourself.
