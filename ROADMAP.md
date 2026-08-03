@@ -472,6 +472,22 @@ chains to the body. `.intro` is inline content, not an overlay, so it's excluded
 used elsewhere in the app, so support is fine. Verifier `scrolllock.cjs` 11/11 (each overlay freezes
 the body on open and restores scroll on close, both themes); matrix 90/90, qa 0, esctest 7/7.
 
+### Accessibility audit — round 2 (session 2026-08-03)
+
+Fresh a11y sweep on top of round 1 (lang/dir, labelled record/pub controls, contrast, focus rings,
+Esc-close, reduced-motion). Two real gaps found & fixed:
+- **Toast was `aria-hidden="true"`** — every status message (Saved, errors, Undo, "Trip deleted") was
+  invisible to screen readers. Now `role="status" aria-live="polite"`, so all status/undo/error
+  messages are announced.
+- **✕ delete buttons** — the note/favourite ones were labelled literally "✕" (read as "multiplication
+  sign") and the My-trips delete had no label at all. All three now carry a localized "Remove"/"إزالة"
+  /"Quitar" aria-label.
+
+Non-issues confirmed: empty-state icons and the search icon are `aria-hidden`; empty-state CTAs and
+the Undo button have text labels; the feedback-nudge dismiss reads empty only while its container is
+`aria-hidden`/opacity-0 (gains text when shown). Verifier `a11y2.cjs` 6/6 + `a11yverify.cjs` 8/8;
+qa 0, dataaudit 771, undotest 10/10, emptytest 15/15, savefail 4/4, authload 5/5.
+
 ### Error-state audit (session 2026-08-03)
 
 Swept every async error path. Handling is comprehensive: global offline bar wired to online/offline
