@@ -18,14 +18,16 @@
      the realistic worst case is script that runs and phones somewhere home. This list is every
      host the app actually fetches — nothing else can be reached, whatever runs on the page.
      KEEP IT IN STEP: add an endpoint to CONFIG and you must add its host here, or the request
-     is blocked with only a console line to show for it. script.googleusercontent.com is on the
+     is blocked with only a console line to show for it. Both Workers are listed during the
+     changeover — the old one is the rollback, and dropping it would make reverting CONFIG.aiEndpoint
+     a deploy rather than a one-line edit. script.googleusercontent.com is on the
      list because an Apps Script web app answers with a redirect, and CSP checks the whole chain.
      script-src/style-src still need 'unsafe-inline' — one file, one inline block of each, and a
      hash would mean recomputing it on every deploy, which is the build step this project doesn't
      have. They are listed anyway so that a future <script src> from anywhere else is refused.
      frame-ancestors is absent on purpose: it is ignored in a <meta> policy and only works as a
      real header, which GitHub Pages cannot set — the script below stands in for it. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://upload.wikimedia.org; connect-src 'self' https://shy-fire-8a78.ahmed-alfadala.workers.dev https://script.google.com https://script.googleusercontent.com https://open.er-api.com https://api.open-meteo.com https://api.aladhan.com https://en.wikipedia.org https://tinyurl.com https://is.gd https://cleanuri.com; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://upload.wikimedia.org; connect-src 'self' https://bosla.ahmed-alfadala.workers.dev https://shy-fire-8a78.ahmed-alfadala.workers.dev https://script.google.com https://script.googleusercontent.com https://open.er-api.com https://api.open-meteo.com https://api.aladhan.com https://en.wikipedia.org https://tinyurl.com https://is.gd https://cleanuri.com; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- The clickjacking defence, since neither X-Frame-Options nor frame-ancestors can be sent from
      GitHub Pages. Nothing legitimately embeds Bosla, so being in a frame means somebody is
      stacking an invisible copy over their own page to farm clicks on Publish or Delete. Break out
@@ -1420,7 +1422,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-04 06:20 UTC · pages</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-04 07:10 UTC · pages</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
