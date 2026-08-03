@@ -472,6 +472,18 @@ chains to the body. `.intro` is inline content, not an overlay, so it's excluded
 used elsewhere in the app, so support is fine. Verifier `scrolllock.cjs` 11/11 (each overlay freezes
 the body on open and restores scroll on close, both themes); matrix 90/90, qa 0, esctest 7/7.
 
+### Haptics — DONE (Ahmed asked for it, Android-only)
+
+Added a `haptic(ms)` helper (feature-detected `navigator.vibrate`; silent no-op on iOS Safari, which
+has no Web Vibration API) and fired it at exactly the six moments Ahmed specified — never on ordinary
+taps: trip created (planBtn, only when a plan actually renders), trip saved, favourite ADDED (not on
+remove), delete confirmed (all four confirm sites: my-trip/AI-build, account, community, record-clear),
+day changed via swipe (only when the page index actually changes), and share (trip share, WhatsApp,
+share-this-day). Verifier `haptictest.cjs` 11/11 — stubs `navigator.vibrate`, confirms each event
+buzzes and that empty-destination plan, tapping a place name, favourite-remove, and opening the drawer
+do NOT. The swipe buzz is verified at source level (the gesture can't be driven by synthetic/CDP touch
+headless; it's a shipped feature needing a real finger). qa 0, dataaudit 771, esctest 7/7.
+
 ### Premium-feel audit (session 2026-08-03)
 
 Checked the app against a 9-point "premium touches" list. Result: 6/9 already solid —

@@ -1435,7 +1435,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-03 08:30 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-03 09:10 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -5140,7 +5140,7 @@
       var fwd=dx<0;
       if(($('app').getAttribute('dir')||'')==='rtl')fwd=!fwd;
       if(PAGE==null)return;
-      pgGo(PAGE+(fwd?1:-1));
+      var _pp=PAGE; pgGo(PAGE+(fwd?1:-1)); if(PAGE!==_pp)haptic(10);
     },{passive:true});
   })();
   // Nights-per-city editor — the user decides how the total days split across cities (e.g. 8 Phuket / 4 Bangkok, not forced even).
@@ -5953,6 +5953,7 @@
   // Reads the day straight off the screen so whatever was swapped or added goes along.
   function shareDay(d){
     var day=document.getElementById('day-'+d); if(!day)return;
+    haptic(16);
     var t=I18N[LANG], lines=[(day.querySelector('.dlabel')||{}).textContent||''];
     day.querySelectorAll('.slot').forEach(function(sl){
       var tm=((sl.querySelector('.t')||{}).textContent||'').trim();
@@ -7337,7 +7338,7 @@
     var b=e.target.closest('[data-sv]'); if(!b)return;
     var p=b.getAttribute('data-sv').split('|');
     var on=toggleSaved(p[0],p[1],p[2],p[3]);
-    b.classList.toggle('on',on);
+    b.classList.toggle('on',on); if(on)haptic(14);
   });
   $('saved').addEventListener('click',function(e){
     var t, c=svTxt();
@@ -7901,7 +7902,7 @@
         return;
       }
       if(e.target.closest('#mkDel')){
-        if(!confirm(c.delSure))return;
+        if(!confirm(c.delSure))return; haptic(24);
         mkSave(mkLoad().filter(function(x){ return x.id!==tr.id; }));
         MKID=null; renderMake(); return;
       }
@@ -8169,7 +8170,7 @@
       if(navigator.share){ navigator.share({text:txt}).catch(function(){}); return; }
       if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){ toast(I18N[LANG].out.copied); },function(){});
     };
-    $('recClearB').onclick=function(){ if(!confirm(recTxt().clearSure))return; RECV.v=[]; recStore(); recRenderBits(); };
+    $('recClearB').onclick=function(){ if(!confirm(recTxt().clearSure))return; haptic(24); RECV.v=[]; recStore(); recRenderBits(); };
     var mineB=$('recMine');
     if(mineB)mineB.onclick=function(){
       RECSHARED=false; RECV=RECOWNV||recLoad(); RECOWNV=null;
@@ -8491,7 +8492,7 @@
         authSet(''); AUTHME=null; renderAuth(); toast(c.outDone); return;
       }
       if((t=e.target.closest('#authDel'))){
-        if(!confirm(c.delSure))return;
+        if(!confirm(c.delSure))return; haptic(24);
         authApi('auth_delete',{}).then(function(){
           authSet(''); AUTHME=null; renderAuth(); toast(c.delDone);
         }).catch(function(){ toast((CTXT[LANG]||CTXT.en).offline); });
@@ -9161,7 +9162,7 @@
     if((t=e.target.closest('[data-cmdel]'))){
       var did=t.getAttribute('data-cmdel'), key=cmMine()[did];
       if(!key)return;
-      if(!window.confirm(c.delAsk))return;
+      if(!window.confirm(c.delAsk))return; haptic(24);
       pubApi('pub_del',{id:did,key:key}).then(function(){
         try{ var mn=cmMine(); delete mn[did]; localStorage.setItem('bosla_pub_mine',JSON.stringify(mn)); }catch(x){}
         subPts(20);                          // the trip took its points with it
@@ -9453,7 +9454,7 @@
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
   $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYADD={}; ROUTEDC=null; STAYAREA=''; PGFRESH=true;
-    try{ $('lastTrip').classList.add('is-hidden'); }catch(e){} plan(); });
+    try{ $('lastTrip').classList.add('is-hidden'); }catch(e){} plan(); try{ if($('out').classList.contains('show'))haptic(18); }catch(e){} });
   // Currency is a display setting, not a reason to re-plan — but a plan already on screen was
   // frozen in the old currency until the traveller planned again, so the budget "stayed on the
   // previous". Changing it now re-renders the shown plan in place (same trip, new currency), and
@@ -9465,6 +9466,10 @@
   });
 
   function toast(msg){var el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove('show');},1800);}
+  // Subtle haptic tap for a few meaningful moments only (trip created/saved, favourite added,
+  // delete confirmed, day-swipe, share) — never on ordinary taps. Web Vibration API is Android-only;
+  // iOS Safari ignores it, so this is a silent no-op there.
+  function haptic(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||14); }catch(e){} }
   // Print/save-as-PDF: name the file after the destination, and print only the itinerary (see @media print).
   function printPlan(){
     var prev=document.title;
@@ -9480,11 +9485,11 @@
     if(act==='buy'){ var pk=(CONFIG.packages||[])[+b.dataset.pkg]; if(!pk)return; if(pk.link){ window.open(pk.link,'_blank'); } else { setCredits(getCredits()+pk.credits); toast(o.creditsAdded(pk.credits)); plan(); } return; }
     if(act==='pub'){ openPublish(); return; }
     if(act==='mates'){ inviteMates(); return; }
-    if(act==='save'){ saveTrip(); toast(o.saved); return; }
-    if(act==='wa'){ window.open('https://wa.me/?text='+encodeURIComponent(o.waMsg+'\n\n'+LASTTEXT+'\n\n'+shareLink()),'_blank'); return; }
+    if(act==='save'){ saveTrip(); haptic(18); toast(o.saved); return; }
+    if(act==='wa'){ haptic(16); window.open('https://wa.me/?text='+encodeURIComponent(o.waMsg+'\n\n'+LASTTEXT+'\n\n'+shareLink()),'_blank'); return; }
     if(act==='print'){printPlan();return;}
     if(act==='share'){
-      var link=shareLink();
+      haptic(16); var link=shareLink();
       if(navigator.share){navigator.share({title:'بوصلة · Bosla',text:o.waMsg+'\n\n'+LASTTEXT,url:link}).catch(function(){});return;}
       if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(o.waMsg+'\n\n'+LASTTEXT+'\n\n'+link).then(function(){toast(o.copied);},function(){toast(o.copied);});}
       else{toast(o.linkCopied);}
