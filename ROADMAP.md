@@ -472,6 +472,49 @@ chains to the body. `.intro` is inline content, not an overlay, so it's excluded
 used elsewhere in the app, so support is fine. Verifier `scrolllock.cjs` 11/11 (each overlay freezes
 the body on open and restores scroll on close, both themes); matrix 90/90, qa 0, esctest 7/7.
 
+### Performance audit (session 2026-08-03) — measured, not guessed
+
+Profiled first (Playwright + CDP, 1x and 4x CPU throttle, medians of 7–11 runs). Baseline: FCP was
+already fine (~156ms) because the CSS is inline, but the page was **not interactive for 1.34s (1x) /
+2.97s (4x)**, dominated by one long task. A CPU profile showed the cost was `(program)` = 2304ms —
+V8 *parsing/compiling* the 2.9MB file — not app logic (all app JS on load totalled ~250ms).
+
+**1. Big data tables → `JSON.parse` (the main win).** V8 parses JSON with a far simpler grammar than
+JS object literals. Converted the six blocks >50KB (DEST_EXTRA, POI_MORE, POI_CO, HOTELS_X, both
+`Object.assign(DEST,…)`) to `JSON.parse('…')`. Measured **−268ms DCL (−11.6%) at 4x**, `(program)`
+2304→2092ms. `var DEST` was left alone — the converter's safety check caught that it calls a helper
+`S()` so it isn't pure JSON. CUR and `Object.assign(CO,…)` skipped: no win (CUR even grows) and the
+city-batch generators splice into them. Data proven identical — all 9 tables byte-for-byte incl. key
+order (`verify.cjs`).
+
+**2. Storage thrash in the render path.** A single 7-day plan did **183 localStorage reads and 170
+JSON.parse calls**: `locLoad()` cached hits but *not misses*, so every place name re-read storage
+(127x), and `isSaved()` re-read+re-parsed the whole favourites list per place (36x). Added a miss
+sentinel and an in-memory favourites cache, with a `storage` event listener so cross-tab behaviour is
+unchanged and `loadSaved()` still hands out a private copy. **183→17 reads (−90%), 170→6 parses
+(−96%).**
+
+**3. Intl cold start.** `today()` used `toLocaleDateString('en-CA')` — the first Intl call, costing
+~55ms of ICU bootstrap in isolation. Replaced with arithmetic producing identical output (verified
+across 3004 dates incl. leap days). Honest result: only **−7ms** end-to-end, because the analytics
+timezone lookup initialises Intl anyway. Kept regardless: strictly less work, and it removes a locale
+dependency from a value that must be exactly YYYY-MM-DD.
+
+Measured clean, no action taken: **no memory leaks** (elements are recreated by innerHTML, exactly one
+handler fires after 8 re-renders, heap flat at 15.4MB across 10 nav cycles + 6 plans, 0 intervals);
+**network** is 3 requests on load, the 4 worker POSTs during a plan fire in parallel (2ms window, not
+a waterfall), zero duplicates; **images** are inline SVG/gradients (Wikipedia photos already
+`loading="lazy"`).
+
+Intentionally skipped: (a) the orphaned `runPrompt` chain (`#promptBox` isn't in the DOM) — ~0.5% of
+bytes and `paceWords` in the same cluster IS live, so the risk outweighs ~10ms; (b) minifying the
+inline CSS — this is a hand-maintained single file, readability is the point; (c) switching the
+service worker off network-first — it would speed up launch but re-introduce exactly the stale-cache
+problem Ahmed hit before; that's his call, not a silent change.
+
+Verifiers: `verify.cjs` (data identity), `svcache.cjs` 7/7, `loccache.cjs` 6/6, plus the full battery
+(matrix 90/90, qa 0, dataaudit 771, and all 13 suites green).
+
 ### Accessibility audit — round 2 (session 2026-08-03)
 
 Fresh a11y sweep on top of round 1 (lang/dir, labelled record/pub controls, contrast, focus rings,
