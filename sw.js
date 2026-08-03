@@ -1,4 +1,4 @@
-const CACHE = 'bosla-v52';
+const CACHE = 'bosla-v53';
 const ASSETS = ['./', './index.html', './favicon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './manifest.webmanifest'];
 self.addEventListener('install', function(e){
   // addAll is all-or-nothing: one 404 on an icon and the worker never installs, so the app has

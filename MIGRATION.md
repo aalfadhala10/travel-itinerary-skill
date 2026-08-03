@@ -1,6 +1,8 @@
 # Moving Bosla from GitHub Pages to Cloudflare Pages
 
-Plan only. Nothing here has been done.
+**Status:** Phase 1 applied on `claude/app-creation-y2v2ob` — URLs updated, `_headers` added,
+Worker changes prepared but **not pasted**. `main` untouched. GitHub Pages still serving testers.
+Testing URL is `https://bosla-b5w.pages.dev`; `bosla.app` replaces it publicly later.
 
 The move is worth making — it fixes the stale-build problem at its source and unlocks the security
 headers GitHub Pages cannot send. But it changes the origin, and **an origin change is not free**:
@@ -14,15 +16,16 @@ read §1 before anything else.
 saved trips, the travel record, packing ticks, notes, points, credits, the sign-in token, and the
 delete keys for trips they have published — lives on `aalfadhala10.github.io`.
 
-Serve the app from `bosla.pages.dev` and every one of those people opens an empty app. Their trips
+Serve the app from `bosla-b5w.pages.dev` and every one of those people opens an empty app. Their trips
 are not deleted; they are simply on an origin the new app cannot read. Worst case: a guest who
 published a trip loses the key that lets them delete it, permanently, because that key is in
 `bosla_pub_mine` on the old origin.
 
-There is no clever fix. Pick one deliberately:
+There is no clever fix. **Ahmed chose (a).** Testers are a handful of friends, feedback is already
+collected, and this is pre-public-beta — the cheapest moment it will ever be.
 
-- **(a) Move now, tell people.** Fine while testers are a handful of friends you can message. Do it
-  before the closed beta, not during.
+- **(a) CHOSEN — move now, tell people.** Fine while testers are a handful of friends you can
+  message. Do it before the closed beta, not during.
 - **(b) Keep GitHub Pages alive** as a redirect to the new origin, and accept that returning users
   arrive empty-handed. Same outcome, less confusion about which URL is real.
 - **(c) Build an export/import** before moving — a "carry my trips over" link that packs
@@ -39,7 +42,7 @@ Signed-in travellers are unaffected — their data is in KV under `sync:<uid>` a
 | --- | --- |
 | today | GitHub Pages, `main` branch, repo root, `.nojekyll`, no `CNAME` |
 | URL | `https://aalfadhala10.github.io/travel-itinerary-skill/` — a **sub-path** |
-| after | `https://<project>.pages.dev/` — the **root** |
+| after | `https://bosla-b5w.pages.dev/` — the **root** |
 | build | none. 69 files, 13MB, `index.html` is 3.0MB (Pages allows 25MB/file, 20,000 files) |
 | routing | none needed. One HTML file; state lives in the hash and query (`#trip`, `?t=`, `#pub=`) |
 | env vars | none. `CONFIG` is inline; there is no build to inject anything into |
@@ -56,12 +59,18 @@ Connect the GitHub repo, then:
 
 | setting | value |
 | --- | --- |
-| Production branch | `main` |
+| Production branch | `claude/app-creation-y2v2ob` |
 | Framework preset | **None** |
 | Build command | *(leave empty)* |
 | Build output directory | `/` |
 | Root directory | `/` |
 | Node version | not applicable |
+
+The production branch is the feature branch **on purpose**. Cloudflare gives preview deployments a
+per-build hostname that `originOk()` will never allow, so a true preview cannot reach the Worker and
+would look broken for reasons that have nothing to do with the migration. Pointing the project at
+the branch puts the build on the one stable hostname the Worker knows. `main` stays untouched in
+git; flip this to `main` after the merge.
 
 **Do NOT add a SPA fallback** (`/* /index.html 200`). Bosla has no client-side router;
 `privacy.html`, `terms.html` and `demo/globe.html` are real files and must stay real.
@@ -131,12 +140,12 @@ const ALLOWED_ORIGINS = [
 ];
 ```
 
-Add `https://<project>.pages.dev`. Keep the GitHub entry until you have retired that URL.
+Add `https://bosla-b5w.pages.dev`. (Cloudflare auto-suffixed the project name; `bosla` was taken.) Keep the GitHub entry until you have retired that URL.
 
 **Preview deployments will be blocked.** Every Pages preview gets its own hostname
-(`https://<hash>.<project>.pages.dev`), and `originOk()` matches exactly or on `origin + ":"`. No
+(`https://<hash>.bosla-b5w.pages.dev`), and `originOk()` matches exactly or on `origin + ":"`. No
 preview will ever be allowed. Either accept that previews cannot reach the API, or add a narrowly
-anchored suffix check for `.<project>.pages.dev` — a deliberate widening, not an accident, and one
+anchored suffix check for `.bosla-b5w.pages.dev` — a deliberate widening, not an accident, and one
 to think about rather than paste in.
 
 **5b. OAuth redirect.** `appUrl(env)` defaults to the old URL and is used for the Google sign-in
@@ -148,15 +157,18 @@ and `'self'` covers the new origin.
 
 ---
 
-## 6. Five hardcoded URLs in the app
+## 6. Eight hardcoded URLs — five in the app, three in the Worker
 
 | where | what |
 | --- | --- |
 | `index.html:45` | `og:url` |
 | `index.html:48` | `og:image` |
 | `index.html:54` | `twitter:image` |
-| `index.html:4909` | the link in shared plan text |
-| `index.html:7135` | the link in a shared travel record |
+| `index.html:4909` | the link in shared plan text — **now derived from `location.origin`** |
+| `index.html:7135` | the link in a shared record — **now derived** |
+| `ai/worker.js:22` | `ALLOWED_ORIGINS` |
+| `ai/worker.js:132` | `appUrl()` default |
+| `ai/worker.js:1473` | `PHOTO_UA` — Wikimedia asks for a working contact URL |
 
 Wrong `og:*` means WhatsApp and X keep showing the old preview; wrong share links mean every trip
 someone shares points at the old origin.
@@ -166,7 +178,7 @@ someone shares points at the old origin.
 ## 7. Migration steps, in order
 
 1. **Decide §1** — the data question. Everything else is mechanical; this one is not.
-2. Create the Pages project against the repo. Settings as §3. Deploy to `<project>.pages.dev`.
+2. Create the Pages project against the repo. Settings as §3. Deploy to `bosla-b5w.pages.dev`.
 3. Test the preview thoroughly (§9) **before** touching anything else. Nothing is live yet — GitHub
    Pages is still serving real users.
 4. Add `_headers`. Redeploy. Confirm the headers arrive (§9).
@@ -181,14 +193,20 @@ Do not delete the GitHub Pages deployment. It costs nothing and it is your rollb
 
 ---
 
-## 8. Custom domain — DNS, later
+## 8. Custom domain — `bosla.app`, later
+
+`bosla-b5w.pages.dev` is the migration and testing URL only. `bosla.app` replaces it publicly once
+connected, and at that point **every hostname in §5 and §6 moves again** — except the share links,
+which derive from `location.origin` and follow automatically. That was the reason for choosing the
+derived form.
+
 
 Do this **after** the Pages URL is proven, not during the move.
 
 1. Buy the domain. Add it in Cloudflare Pages → Custom domains.
 2. If the domain is on Cloudflare DNS, it adds the record itself. If it is registered elsewhere,
    either move the nameservers to Cloudflare, or add a `CNAME` for the apex/`www` pointing at
-   `<project>.pages.dev` (apex needs a registrar that supports ALIAS/ANAME/CNAME-flattening).
+   `bosla-b5w.pages.dev` (apex needs a registrar that supports ALIAS/ANAME/CNAME-flattening).
 3. Wait for the certificate. Cloudflare issues it automatically; it takes minutes, not hours.
 4. **Then repeat §5a, §5b and §6 for the new domain** — `ALLOWED_ORIGINS`, `APP_URL`, the Google
    redirect URI, and the five hardcoded URLs. This is the step everyone forgets, and the failure is
