@@ -455,6 +455,23 @@ sliding/pulsing/spinning). Safe because no JS depends on transition/animation-en
 Verifier `rmtest.cjs` 10/10 in both themes: media query seen, durations ~0 on the movers, plan still
 renders, drawer opens and Esc-closes, no errors; screenshots rm-dark/light.png look correct.
 
+### Background scroll-lock behind overlays (commit follows)
+
+Ahmed reported: with a popup/tab open (the drawer), scrolling inside it dragged the page behind it.
+Only the chat panel locked the background (`body.chatlock{overflow:hidden}`); the drawer, welcome,
+publish, auth, compare and lightbox did not. Added one rule that freezes the page whenever any of
+them is open:
+
+```
+body:has(.drawer.show),body:has(.welcome.show),body:has(.cmpsheet.show),body.lbopen{overflow:hidden}
+```
+
+(`.welcome` covers welcome + publish; `.cmpsheet` covers compare + auth; chat already handled.) Plus
+`overscroll-behavior:contain` on the scrollable `.drawerpanel` and `.cmppanel` so momentum never
+chains to the body. `.intro` is inline content, not an overlay, so it's excluded. `:has()` is already
+used elsewhere in the app, so support is fine. Verifier `scrolllock.cjs` 11/11 (each overlay freezes
+the body on open and restores scroll on close, both themes); matrix 90/90, qa 0, esctest 7/7.
+
 **DECISION FOR AHMED (left unchanged on purpose):** the brand gold `--amber #ac7f22` used as
 *text* on the cream light-theme backgrounds is 2.82:1 — below AA (4.5) and even below the 3:1
 large-text bar. It's uniform across ~15 spots (`.eyebrow`, `.weleyebrow`, `.dlabel`, `.surprise`,
