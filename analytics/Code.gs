@@ -13,6 +13,26 @@
  * /exec URL into BOTH CONFIG.analyticsEndpoint and CONFIG.feedbackEndpoint.
  */
 
+// The /exec URL is in the app's source — it must be, that is where the app POSTs. Which means
+// doGet below is world-readable too, and doGet renders every event AND every feedback row,
+// including the `contact` field somebody typed in. Set this to a long random string and open the
+// dashboard as ...?k=<that string>. Empty means the dashboard is off entirely, the same way the
+// Worker treats an unset ADMIN_KEY. The app only ever POSTs, so nothing in it changes either way.
+var DASH_KEY = '';
+
+// Anyone can POST here. Without caps one script can fill the sheet — Sheets allows 50k characters
+// per cell and 10M cells per spreadsheet, so a few thousand junk rows end your analytics.
+var MAX_TEXT = 500;
+function cap_(v, n) { return String(v == null ? '' : v).slice(0, n || MAX_TEXT); }
+// Constant-time compare, so the key can't be guessed one character at a time.
+function safeEq_(a, b) {
+  a = String(a); b = String(b);
+  if (a.length !== b.length) return false;
+  var diff = 0;
+  for (var i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 var EVENTS_SHEET = 'Events';
 var EVENTS_HEADERS = ['received', 't', 'ev', 'sid', 'lang', 'mode', 'dest', 'country', 'days', 'cities', 'host', 'ref', 'tz', 'msg'];
 var FEEDBACK_SHEET = 'Feedback';
@@ -44,29 +64,35 @@ function doPost(e) {
     var isFeedback = (data.type === 'feedback') || (data.message != null && data.ev == null);
     if (isFeedback) {
       sheet_(FEEDBACK_SHEET, FEEDBACK_HEADERS).appendRow([
-        new Date(), (data.rating != null ? data.rating : ''),
-        data.message || '', data.email || data.contact || '',
-        data.lang || '', data.page || ''
+        new Date(), cap_(data.rating, 4),
+        cap_(data.message, 2000), cap_(data.email || data.contact, 120),
+        cap_(data.lang, 8), cap_(data.page, 200)
       ]);
     } else {
       sheet_(EVENTS_SHEET, EVENTS_HEADERS).appendRow([
         new Date(),
-        data.t || '', data.ev || '', data.sid || '', data.lang || '',
-        data.mode || '', data.dest || '', data.country || '',
-        (data.days != null ? data.days : ''), (data.cities != null ? data.cities : ''),
-        data.host || '', data.ref || '', data.tz || '', data.msg || ''
+        cap_(data.t, 40), cap_(data.ev, 40), cap_(data.sid, 40), cap_(data.lang, 8),
+        cap_(data.mode, 40), cap_(data.dest, 80), cap_(data.country, 80),
+        cap_(data.days, 8), cap_(data.cities, 200),
+        cap_(data.host, 120), cap_(data.ref, 200), cap_(data.tz, 60), cap_(data.msg, 300)
       ]);
     }
     return ContentService.createTextOutput(JSON.stringify({ ok: true }))
       .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: String(err) }))
+    // The real error goes to the Apps Script log where only you can read it; the caller gets a flag.
+    try { console.error('bosla analytics:', err); } catch (_) {}
+    return ContentService.createTextOutput(JSON.stringify({ ok: false }))
       .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
 /** Opening the web-app URL in a browser shows a live stats dashboard. */
 function doGet(e) {
+  var k = (e && e.parameter && e.parameter.k) || '';
+  if (!DASH_KEY || !safeEq_(k, DASH_KEY)) {
+    return HtmlService.createHtmlOutput('<p style="font:16px system-ui;padding:24px">Not found.</p>');
+  }
   var eRows = sheet_(EVENTS_SHEET, EVENTS_HEADERS).getDataRange().getValues(); eRows.shift();
   var fRows = sheet_(FEEDBACK_SHEET, FEEDBACK_HEADERS).getDataRange().getValues(); fRows.shift();
 

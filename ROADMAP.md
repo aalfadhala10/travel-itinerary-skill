@@ -864,3 +864,52 @@ genuine share failure (an insecure context, an OS that refuses) does nothing rat
 back to copying. A cancelled share sheet is a decision and *should* be silent, so the fix is to
 distinguish `AbortError` from the rest and call the copy fallback for the rest — worth doing, but
 not worth restructuring seven working share paths in the same pass that touched every fetch.
+
+### Security review — second pass (Worker deployed)
+
+Ahmed confirmed the Worker is live with the fail-open admin fix, so this pass took the deployed
+Worker as the source of truth and went after what was left. Outbound to `workers.dev` is blocked by
+this environment's network policy, so the live behaviour is unverified from here — the check Ahmed
+runs from a browser console is `{action:'list'}` with no key, which must answer `403 not allowed`.
+
+**Found: the analytics dashboard was world-readable.** `analytics/Code.gs` `doGet()` renders every
+Events row *and* every Feedback row — including the `contact` field a user optionally types — and
+the `/exec` URL is necessarily in the app's source, because that is where the app POSTs. Anyone
+reading the page source could open it. Fixed the same way the Worker's admin route is: a `DASH_KEY`
+compared in constant time, fail-closed when unset, opened as `?k=<key>`. The app only ever POSTs, so
+nothing in it changes. Also capped every field a POST can write (Sheets allows 50k chars a cell and
+10M cells a spreadsheet — a few thousand junk rows would have ended the analytics) and stopped
+`doPost` returning `String(err)` to the caller.
+
+**CSP, now real.** Was three directives; the note said `connect-src` was left out because a wrong
+host list breaks weather or rates silently in production. That reasoning was right and the answer
+was a test, not an omission. `csptest.cjs` walks the whole app with the policy live and fails on any
+`securitypolicyviolation`, and `cspsw.cjs` repeats it over `http://` so the service worker and
+manifest are actually exercised — `file://` doesn't register a worker, so a wrong `worker-src` would
+only have shown up in production. Both green, and the suite proves the policy *enforces*: a script
+from an unlisted host is refused and a POST to an unlisted host is blocked. `connect-src` now names
+the ten hosts the app really talks to, `script.googleusercontent.com` among them because an Apps
+Script web app answers with a redirect and CSP checks the whole chain.
+
+**The personal address is out of the client.** `CONFIG.feedbackEmail` held a personal Gmail in
+world-readable source, and the `mailto` fallback it fed can only fire when `feedbackEndpoint` is
+unset — which it isn't. Now empty by default, with the fallback saying so rather than opening a mail
+app with an empty To: line. It stays in `privacy.html` and `terms.html` on purpose: a privacy policy
+without a reachable contact for deletion requests is worse than a harvestable address.
+
+**Worker, tightened further.** Every secret comparison is now constant-time — the admin key already
+was, the emailed sign-in code and all seven publish/comment ownership checks now are too. Replies
+carry `X-Content-Type-Options: nosniff`, since a JSON body can echo text somebody typed.
+
+**Checked and found sound, no change needed:** no SSRF (every outbound URL is a hardcoded host with
+the user-controlled part `encodeURIComponent`-escaped into a query parameter); `code6()` is
+`crypto.getRandomValues` with rejection sampling, not `Math.random()`; sessions are 32-byte random,
+sanitised to `[a-f0-9]`, with generation-based sign-out-everywhere; sign-in codes are five attempts,
+ten minutes, three requests an hour per address; every mutating publish action checks an owner or
+author key, and the trip owner can delete a comment but never rewrite it.
+
+**Service-worker cache, proven rather than asserted.** `swcache.cjs` signs in, walks the app with
+every API answering, then enumerates the whole Cache Storage: seven entries, all app shell, no API
+response, and no cached body containing the session token. The token stays in localStorage — which
+is the right trade for an app whose Worker is cross-origin, and the reason `connect-src` earns its
+place.

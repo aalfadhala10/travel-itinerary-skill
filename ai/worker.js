@@ -47,7 +47,9 @@ function corsHeaders(origin) {
 function reply(obj, status, origin) {
   return new Response(JSON.stringify(obj), {
     status,
-    headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
+    // A JSON body can carry text somebody typed. nosniff stops a browser deciding for itself
+    // that it looks like HTML and running it.
+    headers: { "Content-Type": "application/json", "X-Content-Type-Options": "nosniff", ...corsHeaders(origin) },
   });
 }
 function cityKey(name) {
@@ -247,7 +249,9 @@ async function auth(body, env, request, origin) {
     if (!raw) return reply({ error: "expired" }, 400, origin);
     const rec = JSON.parse(raw);
     if ((rec.n || 0) >= 5) { await kv.delete("acode:" + h); return reply({ error: "expired" }, 400, origin); }
-    if (String(body.code || "").trim() !== rec.c) {
+    // Same treatment the admin key gets. Five attempts and a ten-minute window already make a
+    // timing attack impractical, but there is no reason to compare a secret the careless way.
+    if (!safeEqual(String(body.code || "").trim(), String(rec.c))) {
       rec.n = (rec.n || 0) + 1;
       await kv.put("acode:" + h, JSON.stringify(rec), { expirationTtl: CODE_TTL });
       return reply({ error: "wrong code" }, 403, origin);
@@ -1283,7 +1287,7 @@ async function community(body, env, request, origin) {
     const raw = await kv.get("pub:" + id);
     if (!raw) return reply({ error: "not found" }, 404, origin);
     const r = JSON.parse(raw);
-    if (!r.k || r.k !== String(body.key || "")) return reply({ error: "not yours" }, 403, origin);
+    if (!r.k || !safeEqual(r.k, String(body.key || ""))) return reply({ error: "not yours" }, 403, origin);
     const title = pubClean(body.title, PUB.TITLE);
     if (title) r.title = title;
     try {
@@ -1341,9 +1345,9 @@ async function community(body, env, request, origin) {
     const i = (r.comments || []).findIndex((c) => c.cid === cid);
     if (i < 0) return reply({ comments: r.comments || [] }, 200, origin);
     // the trip's owner can remove any comment on their trip; the author can remove their own
-    const isOwner = r.k && r.k === String(body.key || "");
+    const isOwner = !!r.k && safeEqual(r.k, String(body.key || ""));
     const stored = await kv.get("cmtk:" + id + ":" + cid);
-    const isAuthor = stored && stored === String(body.ck || "");
+    const isAuthor = !!stored && safeEqual(stored, String(body.ck || ""));
     if (!isOwner && !isAuthor) return reply({ error: "not yours" }, 403, origin);
     r.comments.splice(i, 1);
     try { await kv.delete("cmtk:" + id + ":" + cid); } catch (e) {}
@@ -1362,7 +1366,7 @@ async function community(body, env, request, origin) {
     if (!c) return reply({ error: "not found" }, 404, origin);
     // only the author edits — the owner may remove words, never rewrite them
     const stored = await kv.get("cmtk:" + id + ":" + cid);
-    if (!stored || stored !== String(body.ck || "")) return reply({ error: "not yours" }, 403, origin);
+    if (!stored || !safeEqual(stored, String(body.ck || ""))) return reply({ error: "not yours" }, 403, origin);
     c.x = txt;
     await pubTouch(kv, r);
     return reply({ comments: r.comments }, 200, origin);
@@ -1381,7 +1385,7 @@ async function community(body, env, request, origin) {
     if (!raw) return reply({ error: "not found" }, 404, origin);
     const r = JSON.parse(raw);
     // the album belongs to the traveller who published the trip — same key that guards deletion
-    if (!r.k || r.k !== String(body.key || "")) return reply({ error: "owner only" }, 403, origin);
+    if (!r.k || !safeEqual(r.k, String(body.key || ""))) return reply({ error: "owner only" }, 403, origin);
     if ((r.photos || []).length >= PUB.PHOTOS_PER_TRIP)
       return reply({ error: "photos full" }, 400, origin);
     const pid = id + "." + ((r.photos || []).length + 1) + "." + String(Date.now()).slice(-5);
@@ -1410,7 +1414,7 @@ async function community(body, env, request, origin) {
     const raw = await kv.get("pub:" + id);
     if (!raw) return reply({ error: "not found" }, 404, origin);
     const r = JSON.parse(raw);
-    if (!r.k || r.k !== String(body.key || "")) return reply({ error: "owner only" }, 403, origin);
+    if (!r.k || !safeEqual(r.k, String(body.key || ""))) return reply({ error: "owner only" }, 403, origin);
     const i = (r.photos || []).indexOf(pid);
     if (i < 0) return reply({ photos: r.photos || [] }, 200, origin);   // already gone
     r.photos.splice(i, 1);
@@ -1425,7 +1429,7 @@ async function community(body, env, request, origin) {
     const raw = await kv.get("pub:" + id);
     if (!raw) return reply({ ok: 1 }, 200, origin);   // already gone is still gone
     const r = JSON.parse(raw);
-    if (!r.k || r.k !== String(body.key || "")) return reply({ error: "not yours" }, 403, origin);
+    if (!r.k || !safeEqual(r.k, String(body.key || ""))) return reply({ error: "not yours" }, 403, origin);
     for (const pid of r.photos || []) { try { await kv.delete("pubphoto:" + pid); } catch (e) {} }
     try { await kv.delete("pub:" + id); } catch (e) {}
     const idx = await pubIdx(kv);

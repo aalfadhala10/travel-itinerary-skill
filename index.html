@@ -14,13 +14,18 @@
      Cross-origin now sends only the origin. Affiliate credit is carried by the marker inside the
      link itself, so commission is unaffected. -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<!-- Deliberately narrow. The app is one file of inline script and inline style, so script-src
-     would need 'unsafe-inline' and buy little; connect-src is left out because getting the host
-     list wrong silently breaks weather, prayer times or rates in production. These three cost
-     nothing — the app has no <form>, <object>, <embed> or <base> anywhere — and they remove three
-     real primitives: rewriting every relative URL via an injected <base>, loading a plugin, and
-     posting a form to an attacker. -->
-<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'none'; form-action 'none'">
+<!-- connect-src is the one that matters: with 771 cities of third-party text and a chat box,
+     the realistic worst case is script that runs and phones somewhere home. This list is every
+     host the app actually fetches — nothing else can be reached, whatever runs on the page.
+     KEEP IT IN STEP: add an endpoint to CONFIG and you must add its host here, or the request
+     is blocked with only a console line to show for it. script.googleusercontent.com is on the
+     list because an Apps Script web app answers with a redirect, and CSP checks the whole chain.
+     script-src/style-src still need 'unsafe-inline' — one file, one inline block of each, and a
+     hash would mean recomputing it on every deploy, which is the build step this project doesn't
+     have. They are listed anyway so that a future <script src> from anywhere else is refused.
+     frame-ancestors is absent on purpose: it is ignored in a <meta> policy and only works as a
+     real header, which GitHub Pages cannot set. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://upload.wikimedia.org; connect-src 'self' https://shy-fire-8a78.ahmed-alfadala.workers.dev https://script.google.com https://script.googleusercontent.com https://open.er-api.com https://api.open-meteo.com https://api.aladhan.com https://en.wikipedia.org https://tinyurl.com https://is.gd https://cleanuri.com; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="بوصلة">
@@ -1404,7 +1409,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-03 21:40 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-03 23:15 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -1554,7 +1559,10 @@
     bookingAID:"",          // Booking.com direct affiliate id (only if used directly)
     bookingLabel:"rihla",
     paddleLink:"",          // Paddle checkout link for the paid unlock (add later)
-    feedbackEmail:"ahmed.alfadala@gmail.com", // where email-fallback feedback goes
+    // Empty on purpose. Anything here is world-readable in the page source and gets harvested;
+    // a personal address especially. The mailto path below is only a fallback for when
+    // feedbackEndpoint is unset — set a role address (not a personal one) if you ever want it.
+    feedbackEmail:"",
     feedbackEndpoint:"https://script.google.com/macros/s/AKfycbwSwgwp6VP0k4WdBph5iiB7r64OAGJh5ClSH9u-vsdl2jw7B2ZbrJyipWT5T2IUMcz3gg/exec",    // Apps Script web app (Feedback tab). When set,
                             // feedback POSTs here silently instead of opening the email app
     analyticsEndpoint:"https://script.google.com/macros/s/AKfycbwSwgwp6VP0k4WdBph5iiB7r64OAGJh5ClSH9u-vsdl2jw7B2ZbrJyipWT5T2IUMcz3gg/exec",   // Apps Script web app (Events tab). Cookieless usage tracking.
@@ -8159,9 +8167,11 @@
     if(!msg && !FBRATING){ toast(u.fbEmpty); try{$('fbMsg').focus();}catch(e){} return; } // a star rating alone is enough (from the nudge)
     try{ localStorage.setItem('bosla_fb_given','1'); }catch(e){} // don't nudge again once they've given feedback
     function mailtoFallback(){
+      // No address configured? Opening the mail app with an empty To: line is worse than saying so.
+      if(!CONFIG.feedbackEmail){ toast(I18N[LANG].out.saveFail); return; }
       var subject='Bosla feedback'+(FBRATING?' ('+FBRATING+'/5)':'');
       var body=msg+(contact?'\n\nContact: '+contact:'')+'\n\n— sent from بوصلة ('+LANG+')';
-      location.href='mailto:'+(CONFIG.feedbackEmail||'')+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+      location.href='mailto:'+CONFIG.feedbackEmail+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
       closeFeedback();
     }
     if(CONFIG.feedbackEndpoint){
