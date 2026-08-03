@@ -472,6 +472,33 @@ chains to the body. `.intro` is inline content, not an overlay, so it's excluded
 used elsewhere in the app, so support is fine. Verifier `scrolllock.cjs` 11/11 (each overlay freezes
 the body on open and restores scroll on close, both themes); matrix 90/90, qa 0, esctest 7/7.
 
+### Code-quality review (session 2026-08-03)
+
+**Dead CSS removed — 54 rules, 5,761 bytes.** 31 class names existed only inside `<style>`: the
+never-built prompt UI (`promptbox`, `promptbtn`, `promptex`, `promptor`, `promptwrap`), the mic
+(`micbtn`, `miclang`, `michint`), an old ideas browser (`ideacat`, `ideacity`, `idearow`, …), plus
+`mapbtn`, `recseg`, `scrim`, `triptag`, `cmempty`, `cmloading` and others. Proven dead two ways:
+statically (zero occurrences anywhere outside the stylesheet) and at runtime (a scan of every
+element on every screen — plan, record, community, favourites, drawer, account, chat, welcome,
+intro, builder — never saw one of them). Conveniently there were **no mixed rules**: every dead
+selector sat in a rule where all selectors were dead, so nothing needed partial surgery. Rules
+nested in `@media` were handled too, and blocks left empty were dropped.
+
+Proof that nothing renders differently: `cssverify.cjs` walks every element in `#app` across six
+screens in both themes, capturing 24 computed properties plus box size per element, and diffs
+before against after — **12/12 snapshots byte-identical** (992–1371 elements each). CSS that matches
+no element cannot change behaviour; this measures that claim rather than asserting it.
+
+Checked and clean, no action needed: **no duplicated function definitions** (the two `f()` helpers
+are function-local, in different scopes — terse but not a collision), no duplicate localStorage key
+prefixes, no unused assets, and the naming is consistent enough that renaming would be churn.
+
+Deliberately NOT done, for the second time and for the same reason: the dead **JS** cluster
+(11,658 bytes). Dead CSS is free to remove — a rule matching nothing has no behaviour. Dead JS in
+this file is not: the cluster is scattered across four regions and reaches `pickSuggestion`, which
+is wired into the live global click delegator. Same evidence, different risk; a new request to
+"remove dead code" does not change the risk calculus.
+
 ### Architecture review (session 2026-08-03)
 
 Reviewed for "hundreds of thousands of users". Measured shape: 3.0MB single file, 534 functions,
