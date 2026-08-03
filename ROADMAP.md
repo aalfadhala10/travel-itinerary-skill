@@ -959,3 +959,30 @@ Also wrote `RELEASE.md`: how each of the three pieces ships, which secrets do wh
 rollback table, and the beta checklist. The thing worth knowing from it — the Worker rolls back in
 seconds from Cloudflare's own version list, while the app is the slowest of the three to un-break
 because a device that cached a bad build keeps it until its next launch. Test the app hardest.
+
+### Beta copy + the analytics fix (Ahmed approved these four, and only these)
+
+**Provenance on the welcome card.** Nothing had ever told a first-time visitor that the destinations
+are curated rather than generated — `realTag` says so, but only inside the plan, after the leap of
+faith. One line under the pitch, in all three languages, reusing `.wsub` so nothing moves.
+
+**Affiliate disclosure at the point of use.** It existed once, in `terms.html`. Consumer-protection
+rules want it clear and proximate to the link, not filed in a policy. Added to all three surfaces
+that link out for money — `bookingBar()`, `staysBar()` and the hotel compare sheet — as `.notehint`,
+the muted 12px style already used elsewhere.
+
+**The name field was actively misleading.** The divider read "or save your trips", which implies a
+name is needed to save. It isn't: saving is local and works for guests. Now "or add your name
+(optional)", with the previously-empty `welcomeNote` explaining that the name is shown only on a
+shared trip or a comment, and that plans save either way.
+
+**`plan` now means a plan.** Every re-render re-runs the same `plan()`/`planRoute()` that first
+built the trip, so the event fired again for a trip that already existed — 18 `rerenderKeep()` call
+sites, plus a language switch and "another version". That is most of what made 824 plans out of 215
+sessions. Added a `REPLANNING` flag set by the three entry points that are not a new itinerary;
+those now emit `replan`. Verified on the wire rather than by reading: `betacopy.cjs` intercepts the
+analytics beacons and asserts the event names — pressing Plan sends exactly one `plan`, four
+re-renders send only `replan`, and a genuine second destination sends `plan` again.
+
+The dashboard needs no change: it counts `ev === 'plan'`, which is now correct. `replan` rows land
+in the Events tab uncounted — add a tile later if the number turns out to be interesting.
