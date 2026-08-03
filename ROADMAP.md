@@ -472,6 +472,27 @@ chains to the body. `.intro` is inline content, not an overlay, so it's excluded
 used elsewhere in the app, so support is fine. Verifier `scrolllock.cjs` 11/11 (each overlay freezes
 the body on open and restores scroll on close, both themes); matrix 90/90, qa 0, esctest 7/7.
 
+### Empty-state audit + consistent empty states (session 2026-08-03)
+
+Audited every screen that can have no content. Before: friendly text existed in a few places but no
+icons, CTAs mostly missing, My-trips had NO empty state (section just hid; nav toasted), and search
+hid silently. Built one reusable component — `emptyBox(icon,title,sub,cta)` + `.emptybox` CSS (icon,
+bold line, sub, gold CTA) with four stroke icons (bag/globe/cloud-off/search). Applied:
+- **No trips (My trips)**: was hidden entirely → now the drawer's "My trips" reveals a bag-icon empty
+  box with "Plan a trip" CTA that jumps home and focuses the destination field. (Still hidden on the
+  home feed when empty, so first-run home isn't cluttered.)
+- **No saved places**: bookmark icon + existing line + "Plan a trip" CTA (add-a-place form still there).
+- **No community posts**: globe icon + line + "Plan a trip" CTA.
+- **Offline / server error (feed)**: cloud-off icon + line + **"Try again"** CTA (re-opens the feed).
+- **No search results**: was a silent hide → now shows the AI-build offer when AI is on (a real CTA),
+  or a magnifier "no match — check spelling / try a nearby city" fallback row when AI is off.
+- No-notifications: N/A (app has no notifications surface). No-itinerary: the plan form is that state.
+
+New strings EN/AR-Khaleeji/ES: planCta, retry, noTripsSub, noMatch. Verifier `emptytest.cjs` 15/15
+(each state shows icon+title+CTA in both languages; My-trips CTA focuses the field; offline shows
+Retry; search shows AI-offer on / no-match fallback off). matrix 90/90, qa 0, dataaudit 771,
+undotest 10/10, esctest 7/7. Screenshots eb-community-dark/light.png.
+
 ### Destructive-action audit + Undo toasts (session 2026-08-03)
 
 Swept every destructive action (delete/remove/clear/reset/start-over/discard/sign-out/logout) and
