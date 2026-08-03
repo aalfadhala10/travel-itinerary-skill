@@ -21,6 +21,59 @@ app. The app does not reference it and the two share no code.
 Work in one or the other. If a request could mean either, ask first — a rule that is cosmetic
 in the demo may change real plans in the app.
 
+## How `index.html` is laid out
+
+One file, no bundler, ~534 functions in one scope. There are no imports to follow, so the shape
+below is the map. Sections run in this order and are marked with `// ---` banners:
+
+| region                  | what lives there                                                     |
+| ----------------------- | -------------------------------------------------------------------- |
+| `CONFIG`                | affiliate markers, endpoint URLs, paywall switches — public by nature |
+| `I18N`                  | every string, three languages, some as functions (so **not** JSON)    |
+| data tables             | `DEST`, `CO`, `POI_CO`, `HOTELS_X`, `CUR` — 771 cities, ~45% of file  |
+| AI + chat               | worker calls, the trip assistant, city-building on demand             |
+| planning engine         | `plan()` / `planRoute()` → day building, ordering, budget             |
+| render                  | itinerary pages, pager, maps, weather, prayer, packing               |
+| screens                 | record, community, favourites, builder, account                       |
+| storage + boot          | ~41 localStorage keys, service-worker registration, deep links        |
+
+Two invariants worth knowing before editing:
+
+- **The five city tables are positional siblings.** A city must exist in all of `DEST`, `CO`,
+  `POI_CO`, `HOTELS_X` and `CUR` or plans break in ways no test name will explain. `qa.cjs`
+  asserts the counts match; add cities with a generator that writes all five, never by hand.
+- **`DEST` and `I18N` are not pure JSON.** `DEST` calls the `S()` helper for `summer`, `I18N`
+  holds functions. The other big tables are `JSON.parse('…')` because V8 parses that ~2x faster
+  than an object literal — if you add a table, keep that shape.
+
+## The Worker's KV namespaces
+
+`ai/worker.js` keeps everything in one KV binding (`CITIES`), separated only by key prefix. This
+contract is load-bearing — `isCityKey()` decides what an admin dump may return by asking whether
+the key contains `":"`:
+
+| key                      | holds                                             |
+| ------------------------ | ------------------------------------------------- |
+| `<cityname>`             | a generated city — **the only keys with no colon** |
+| `sess:<token>`           | a session; the key name *is* the token            |
+| `u:` / `uemail:`         | account records and the email→id lookup           |
+| `acode:` / `astate:`     | live sign-in codes, OAuth state                   |
+| `sync:<uid>`             | a signed-in traveller's trips                     |
+| `pub:` / `pubidx`        | a published trip (carries its delete key) / the feed |
+| `publike:` `pubrep:` `pubsig:` `pubrl:` `rl:` | dedupe and rate-limit counters, keyed by hashed IP |
+
+**Never widen a listing to keys containing a colon.** Cities are safe to hand out; nothing else is.
+
+### The one thing that will not scale
+
+`pubidx` is a **single KV key holding the whole community feed**, rewritten by `pubTouch()` on
+every publish, like, comment, photo and report — nine call sites. Cloudflare KV allows roughly
+**one write per second per key**, and read-modify-write on a shared key loses concurrent updates.
+At a few hundred active publishers this is fine; at scale likes alone will exceed the write limit
+and silently drop. Fixing it means moving the feed off a single key — per-trip counters with a
+periodically-rebuilt index, or a Durable Object / D1 for atomic increments. Do that before
+promoting the community layer, not after.
+
 ## Both themes, every time
 
 The page follows the phone's light/dark setting and also has its own toggle, so a change that

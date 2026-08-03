@@ -472,6 +472,45 @@ chains to the body. `.intro` is inline content, not an overlay, so it's excluded
 used elsewhere in the app, so support is fine. Verifier `scrolllock.cjs` 11/11 (each overlay freezes
 the body on open and restores scroll on close, both themes); matrix 90/90, qa 0, esctest 7/7.
 
+### Architecture review (session 2026-08-03)
+
+Reviewed for "hundreds of thousands of users". Measured shape: 3.0MB single file, 534 functions,
+131 UPPERCASE globals, 21 top-level IIFEs, 41 localStorage keys, 129 listeners, ~45% of the file
+is city data. Supporting folders (`ai/`, `analytics/`, `data/`, `tools/`, `tests/`, `demo/`) are
+clean and correctly separated — `data/*.json` is tooling-only and never shipped.
+
+**The static app is not the scaling risk.** It is a CDN-served file with a service worker; 100k
+users cost the same as 100. The risk is entirely in the Worker, and it is specific:
+
+- **`pubidx` is a single KV key holding the whole feed**, rewritten by `pubTouch()` on every
+  publish/like/comment/photo/report (nine call sites). KV allows ~1 write/sec/key and gives no
+  atomic increment, so at scale (a) writes throttle and (b) concurrent likes lose updates through
+  read-modify-write. This is the one thing that must change before the community layer is pushed.
+  Documented in CLAUDE.md with the migration options (per-trip counters + rebuilt index, or a
+  Durable Object / D1). NOT implemented here: it is a redesign of the community layer, needs a
+  data migration, and cannot be tested from this environment.
+
+**Changes made: documentation only.** The architecture existed but was written down nowhere, which
+is the actual maintainability gap in a 534-function single file. Added to CLAUDE.md: the region map
+of index.html, the two invariants that bite (the five city tables are positional siblings; `DEST`
+and `I18N` are deliberately not pure JSON), the Worker's KV namespace contract, and the `pubidx`
+limit. No code was refactored — see below for why.
+
+**Dead code found, deliberately NOT removed.** The "plan from description" cluster is provably
+unreachable: `#promptBox`/`#promptEx`/`#promptGo`/`#lblPrompt` exist in no markup, `renderPromptEx`
+has zero callers, and instrumenting all nine functions through a full journey (plan, chat, all three
+languages, every screen) recorded zero invocations. It totals 11,658 bytes — **0.39% of the file** —
+scattered across four regions, and it reaches `pickSuggestion`, which is wired into the *live*
+global click delegator. Cutting four separate holes near a live event path, in an app real people
+use, to reclaim 0.39%, is a bad trade. Keep: `paceWords` is genuinely live via the chat. If this is
+ever cleaned up, the evidence is here and `deadcode.cjs` in the scratchpad reproduces it.
+
+Also considered and rejected: splitting into modules (breaks the no-build/offline design that is
+the product's backbone), extracting data to fetched files (adds round trips; parse, not download,
+was the measured cost), and namespacing the 131 globals (churn across 534 functions for no user-
+visible gain). The single-file design is a deliberate, correct trade for this product — the cost is
+navigability, and the fix for navigability is the map now in CLAUDE.md, not a bundler.
+
 ### Security review (session 2026-08-03) — production readiness
 
 **CRITICAL — admin endpoints failed open (worker, needs re-paste).** `list`/`dump` were guarded by
