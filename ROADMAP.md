@@ -436,6 +436,25 @@ The **welcome** gate is deliberately excluded — dismissing it is a real guest-
 an accidental keystroke. Verifier `esctest.cjs` 7/7 (each overlay closes; welcome stays open; no
 errors). Only added behaviour — no existing handler touched.
 
+### Reduced motion (commit follows)
+
+The app already honoured `prefers-reduced-motion` for a handful of animations (compass settle,
+itinerary rise/fadeUp, budget flash, page slides, fab hint) but missed the rest — the intro card,
+mic-recording pulse, loading skeletons, heart-pop, and **every `transition:`** (drawer/sheet slides,
+welcome fade, hovers). Added one global block:
+
+```
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
+                       transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+```
+
+Near-instant instead of removed, so end states are preserved (screens still open/close, just without
+sliding/pulsing/spinning). Safe because no JS depends on transition/animation-end events (grep clean).
+Verifier `rmtest.cjs` 10/10 in both themes: media query seen, durations ~0 on the movers, plan still
+renders, drawer opens and Esc-closes, no errors; screenshots rm-dark/light.png look correct.
+
 **DECISION FOR AHMED (left unchanged on purpose):** the brand gold `--amber #ac7f22` used as
 *text* on the cream light-theme backgrounds is 2.82:1 — below AA (4.5) and even below the 3:1
 large-text bar. It's uniform across ~15 spots (`.eyebrow`, `.weleyebrow`, `.dlabel`, `.surprise`,
