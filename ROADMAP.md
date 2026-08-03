@@ -962,9 +962,13 @@ because a device that cached a bad build keeps it until its next launch. Test th
 
 ### Beta copy + the analytics fix (Ahmed approved these four, and only these)
 
-**Provenance on the welcome card.** Nothing had ever told a first-time visitor that the destinations
-are curated rather than generated — `realTag` says so, but only inside the plan, after the leap of
-faith. One line under the pitch, in all three languages, reusing `.wsub` so nothing moves.
+**Provenance on the welcome card — added, then pulled.** The idea was to tell a first-time visitor
+that the destinations are curated rather than generated. Ahmed removed it: "Real destinations,
+checked by hand — every place opens in Google Maps" claims more than the product delivers. Some
+rows are a map search rather than a named place, and the coordinate sweep the next day found 73
+places filed in the wrong country, which makes "checked by hand" hard to say with a straight face.
+The trust gap it was meant to close is still open; closing it needs the product to be true first,
+not the copy to be bolder. `betacopy.cjs` now asserts the line is absent, so it can't drift back in.
 
 **Affiliate disclosure at the point of use.** It existed once, in `terms.html`. Consumer-protection
 rules want it clear and proximate to the link, not filed in a policy. Added to all three surfaces
