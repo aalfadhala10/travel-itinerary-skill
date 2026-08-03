@@ -472,6 +472,23 @@ chains to the body. `.intro` is inline content, not an overlay, so it's excluded
 used elsewhere in the app, so support is fine. Verifier `scrolllock.cjs` 11/11 (each overlay freezes
 the body on open and restores scroll on close, both themes); matrix 90/90, qa 0, esctest 7/7.
 
+### Destructive-action audit + Undo toasts (session 2026-08-03)
+
+Swept every destructive action (delete/remove/clear/reset/start-over/discard/sign-out/logout) and
+asked per action: data loss? confirm? undoable? Result — the four heavyweight/irreversible ones
+already confirm (account delete, community-trip removal, AI-build delete, record "Start over"). Three
+LOCAL, frequent, reversible deletes had NO guard at all: **delete saved trip (My trips)**, **remove
+favourite place**, **delete a trip note** — each one ✕-tap = silent data loss.
+
+Rather than nag with confirms on frequent actions, added a reusable **Undo toast** (`undoToast(msg,
+undoFn)`): the delete runs, then a 6-second toast offers "Undo" that restores the exact item. Wired
+to all three. There was NO undo anywhere in the app before this. Sign-out/remove-name lose nothing
+recoverable (local trips persist; name retypeable) so left as-is.
+
+Strings added (EN/AR-Khaleeji/ES): undo, delTrip, delPlace, delNote. Verifiers: `undotest.cjs` 10/10
+(trip + favourite delete→undo restores, both languages) and `notesundo.cjs` 4/4 (note delete→undo
+restores the exact line). qa 0, dataaudit 771, esctest 7/7, haptictest 11/11.
+
 ### Haptics — DONE (Ahmed asked for it, Android-only)
 
 Added a `haptic(ms)` helper (feature-detected `navigator.vibrate`; silent no-op on iOS Safari, which
