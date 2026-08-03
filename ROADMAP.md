@@ -986,3 +986,33 @@ re-renders send only `replan`, and a genuine second destination sends `plan` aga
 
 The dashboard needs no change: it counts `ev === 'plan'`, which is now correct. `replan` rows land
 in the Events tab uncounted — add a tile later if the number turns out to be interesting.
+
+### 73 coordinates were in the wrong country
+
+Ahmed screenshotted a dinner row reading "Places to eat near Seljalandsfoss" and asked since when we
+give something general. Chasing it found a much bigger thing, and the answer to his actual question
+turned out to be "that one is deliberate" — both worth writing down.
+
+**The find.** Sweeping every place against its own city centre: 73 coordinates whose sign had been
+dropped. Every place in Belfast, Fes and Gibraltar (longitude), all of Bali (latitude), one in
+Saint-Pierre, and a digit typo in Košice that put St. Elisabeth Cathedral in the Central African
+Republic. Belfast's centre sat at −5.9 while its own places sat at +5.9, in Poland.
+
+**Be precise about the damage.** Each city's error was internally consistent, so hop distances and
+day grouping still looked right, and the mini map turns out to be a decorative sine wave rather than
+a projection. The one live break was the "restaurants near here" link on a long day out, which opens
+raw coordinates. Everything else was latent — the globe, distance to an airport, per-place weather.
+Wrong data that happens not to show yet is still wrong data, and it would have surfaced the first
+time anything measured real position. I overstated this in a comment before checking and had to
+correct it; noting that here rather than quietly.
+
+`tools/preflight.cjs` now refuses any place that is over 200km from its own centre but comes home
+when one component is negated. Real excursions (Etosha 424km, Zakouma 351km, Upemba 315km) stay.
+
+**The thing Ahmed actually saw is not a bug.** `FAR_DAY` is 55km; Seljalandsfoss is 61km from
+Selfoss, so lunch and dinner become a map centred on where the traveller actually is. The reasoning
+holds — every restaurant in the list is in town, and booking one for a day 61km out sends them back
+and out again. But it reads as the app giving up, and it now sits under a welcome screen promising
+real places checked by hand. Left alone pending a decision, because the options are a product call:
+raise the threshold, resolve a real nearby restaurant through the Worker's existing Places
+integration, or curate food for the popular day-trip anchors.

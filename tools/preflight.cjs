@@ -71,6 +71,35 @@ ok(!/ANTHROPIC_API_KEY\s*[:=]\s*["'][^"']/.test(html), 'no API key in the app so
   ok(n && n.dest === n.co && n.dest === n.poi && n.dest === n.hot && n.dest === n.cur,
     `the five city tables are aligned (${n ? JSON.stringify(n) : 'could not read'})`);
 
+  // A dropped minus sign parses fine and looks like a number, so nothing catches it. 73 were wrong
+  // this way — every place in Belfast, Fes and Gibraltar, all of Bali, one each in Saint-Pierre and
+  // Košice. Belfast's centre sat at -5.9 while its own places sat at +5.9, in Poland.
+  // Worth being precise about the damage: each city's error was internally consistent, so hop
+  // distances and day grouping still looked right, and the mini map is decorative. What it did
+  // break is the "restaurants near here" link on a long day out, which opens raw coordinates —
+  // and anything that ever measures real position: the globe, distance to an airport, per-place
+  // weather. Wrong data that happens not to show yet is still wrong data.
+  // The tell is that negating one component brings the place home.
+  const bad = await p.evaluate(() => {
+    const km = (a, b) => { const R = 6371, t = x => x * Math.PI / 180, dLa = t(b[0] - a[0]), dLo = t(b[1] - a[1]);
+      const h = Math.sin(dLa / 2) ** 2 + Math.cos(t(a[0])) * Math.cos(t(b[0])) * Math.sin(dLo / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(h)); };
+    const out = [];
+    for (const k of Object.keys(DEST)) {
+      const cen = CO[k], co = POI_CO[k] || {};
+      if (!cen) continue;
+      for (const [nm, c] of Object.entries(co)) {
+        if (!c || c.length < 2) continue;
+        const d = km(c, cen);
+        if (d < 200) continue;                       // real excursions exist; 200km is generous
+        if (km([-c[0], c[1]], cen) < 200 || km([c[0], -c[1]], cen) < 200)
+          out.push(`${DEST[k].city}: ${nm} is ${Math.round(d)}km away, but flips home`);
+      }
+    }
+    return out;
+  }).catch(() => ['could not read']);
+  ok(bad.length === 0, `no place has a flipped coordinate (${bad.length ? bad[0] : 'clean'})`);
+
   await b.close();
   done();
 })();
