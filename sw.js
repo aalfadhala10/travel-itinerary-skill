@@ -1,7 +1,13 @@
-const CACHE = 'bosla-v45';
+const CACHE = 'bosla-v46';
 const ASSETS = ['./', './index.html', './favicon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './manifest.webmanifest'];
 self.addEventListener('install', function(e){
-  e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll(ASSETS); }).then(function(){ return self.skipWaiting(); }));
+  // addAll is all-or-nothing: one 404 on an icon and the worker never installs, so the app has
+  // no offline mode at all. The document is the part that matters; the icons are best-effort.
+  e.waitUntil(caches.open(CACHE).then(function(c){
+    return c.add('./index.html').then(function(){
+      return Promise.all(ASSETS.map(function(a){ return c.add(a).catch(function(){}); }));
+    });
+  }).then(function(){ return self.skipWaiting(); }));
 });
 self.addEventListener('activate', function(e){
   e.waitUntil(caches.keys().then(function(ks){ return Promise.all(ks.filter(function(k){ return k !== CACHE; }).map(function(k){ return caches.delete(k); })); }).then(function(){ return self.clients.claim(); }));
@@ -23,9 +29,15 @@ self.addEventListener('fetch', function(e){
     // shipped. no-cache still allows a 304, so an unchanged app costs nothing to check.
     e.respondWith(
       fetch(new Request(url.href, { cache: 'no-cache', credentials: 'same-origin' })).then(function(resp){
-        var copy = resp.clone();
-        caches.open(CACHE).then(function(c){ c.put('./index.html', copy); });
-        return resp;
+        // Only a real app goes in the cache. A 404 mid-deploy, a 5xx, a captive portal's login
+        // page — caching any of those replaces the working offline copy with a broken one, and
+        // it stays broken until the next successful load. A bad answer is worse than none.
+        if (resp && resp.ok && resp.type === 'basic') {
+          var copy = resp.clone();
+          caches.open(CACHE).then(function(c){ c.put('./index.html', copy); });
+          return resp;
+        }
+        return caches.match('./index.html').then(function(c){ return c || resp; });
       }).catch(function(){ return caches.match('./index.html').then(function(c){ return c || caches.match('./'); }); })
     );
     return;
@@ -42,10 +54,12 @@ self.addEventListener('fetch', function(e){
   e.respondWith(
     caches.match(e.request).then(function(cached){
       return cached || fetch(e.request).then(function(resp){
-        var copy = resp.clone();
-        caches.open(CACHE).then(function(c){ c.put(e.request, copy); });
+        if (resp && resp.ok) {
+          var copy = resp.clone();
+          caches.open(CACHE).then(function(c){ c.put(e.request, copy); });
+        }
         return resp;
-      }).catch(function(){ return cached; });
+      }).catch(function(){ return cached || Response.error(); });
     })
   );
 });

@@ -1404,7 +1404,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-03 19:05 UTC</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-03 21:40 UTC</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -1575,6 +1575,29 @@
     ]
   };
   /* ================================================== */
+
+  // fetch() has no deadline. On a train, in a lift, on hotel wifi that answered the handshake and
+  // then stopped, a request neither succeeds nor fails — it just never comes back, and whatever
+  // was waiting on it (a skeleton, a "loading prayer times", a spinner) stays on screen for ever.
+  // Every request in the app goes through here so the worst case is a rejection somebody handles.
+  // The chat has its own longer clock (28s) because a model writing a full itinerary is genuinely slow.
+  function netFetch(url,opts,ms){
+    // Copy, don't mutate: a caller that reuses one options object across a retry would otherwise
+    // hand the second attempt the first attempt's already-aborted signal and fail instantly.
+    var o={}, k; for(k in (opts||{}))o[k]=opts[k];
+    var ac=null; try{ ac=new AbortController(); }catch(e){}
+    if(ac&&!o.signal)o.signal=ac.signal;
+    var timer=setTimeout(function(){ try{ if(ac)ac.abort(); }catch(e){} },ms||12000);
+    return fetch(url,o).then(function(r){ clearTimeout(timer); return r; },
+                            function(e){ clearTimeout(timer); throw e; });
+  }
+
+  // A key holding valid JSON of the WRONG SHAPE is worse than a key holding junk: JSON.parse
+  // doesn't throw, so the try/catch never fires and the wrong type reaches code that expects an
+  // array. One stored "null" in rihla_trips took the whole app down at boot — renderMyTrips ran
+  // .length on it inside applyLang, before anything was on screen. Shape-check, don't just parse.
+  function lsArr(k){ try{ var v=JSON.parse(localStorage.getItem(k)||'[]'); return Array.isArray(v)?v:[]; }catch(e){ return []; } }
+  function lsObj(k){ try{ var v=JSON.parse(localStorage.getItem(k)||'{}'); return (v&&typeof v==='object'&&!Array.isArray(v))?v:{}; }catch(e){ return {}; } }
 
   var ICON={Budget:"💸","Mid-range":"✨",Luxury:"👑",Culture:"🏛️",Food:"🍜",Nature:"🏔️",Shopping:"🛍️",Relax:"🏖️"};
   var TAGICON={Culture:"🏛️",Food:"🥘",Nature:"🌿",Shopping:"🛍️",Relax:"🌅"};
@@ -2204,7 +2227,7 @@
   // Somebody who has already booked doesn't want a recommendation, they want their own hotel to be
   // the point the days are built around. Kept per city, so a two-city trip can have one of each.
   var MYHOTEL=null;
-  function myHotelLoad(){ if(MYHOTEL)return MYHOTEL; try{ MYHOTEL=JSON.parse(localStorage.getItem('bosla_myhotel')||'{}')||{}; }catch(e){ MYHOTEL={}; } return MYHOTEL; }
+  function myHotelLoad(){ if(MYHOTEL)return MYHOTEL; try{ MYHOTEL=lsObj('bosla_myhotel')||{}; }catch(e){ MYHOTEL={}; } return MYHOTEL; }
   function myHotelSave(){ try{ localStorage.setItem('bosla_myhotel',JSON.stringify(MYHOTEL||{})); }catch(e){} }
   function myHotel(ck){ var m=myHotelLoad()[ck]; return (m&&String(m).trim())||''; }
   function setMyHotel(ck,name){
@@ -2216,7 +2239,7 @@
     // and so the day is measured from where they are actually sleeping.
     var d=DEST[ck];
     if(name&&d&&CONFIG.aiEndpoint){
-      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+      netFetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({action:'places',city:d.city,names:[name]})})
         .then(function(r){ return r.json(); })
         .then(function(res){
@@ -2376,7 +2399,7 @@
   /* ---- Trip credits / unlock state (device-local) ---- */
   function getCredits(){try{return parseInt(localStorage.getItem('bosla_credits'),10)||0;}catch(e){return 0;}}
   function setCredits(n){try{localStorage.setItem('bosla_credits',String(Math.max(0,n)));}catch(e){}}
-  function getUnlocked(){try{return JSON.parse(localStorage.getItem('bosla_unlocked')||'[]');}catch(e){return [];}}
+  function getUnlocked(){ return lsArr('bosla_unlocked'); }
   function addUnlocked(k){try{var a=getUnlocked();if(a.indexOf(k)<0){a.push(k);localStorage.setItem('bosla_unlocked',JSON.stringify(a));}}catch(e){}}
   function getFreeDest(){try{return localStorage.getItem('bosla_freedest')||'';}catch(e){return '';}}
   function setFreeDest(k){try{localStorage.setItem('bosla_freedest',k);}catch(e){}}
@@ -2425,7 +2448,7 @@
   // Google hands back a place id with the rating we already pay for; with it the link lands on the
   // exact pin every time. Without one, the search is still the fallback.
   var PINS=null;
-  function pinsLoad(){ if(PINS)return PINS; try{ PINS=JSON.parse(localStorage.getItem('bosla_pins')||'{}')||{}; }catch(e){ PINS={}; } return PINS; }
+  function pinsLoad(){ if(PINS)return PINS; try{ PINS=lsObj('bosla_pins')||{}; }catch(e){ PINS={}; } return PINS; }
   function pinsSave(){ try{ localStorage.setItem('bosla_pins',JSON.stringify(PINS||{})); }catch(e){} }
   function pinOf(n){ var p=pinsLoad()[String(n||'').toLowerCase()]; return (p&&p.id)?p:null; }
   function mapUrl(q,name){
@@ -2764,7 +2787,7 @@
     }catch(e){}
   }
   function aiCityLoad(){
-    try{ var o=JSON.parse(localStorage.getItem('bosla_aicities')||'{}'); return (o&&typeof o==='object')?o:{}; }catch(e){ return {}; }
+    try{ var o=lsObj('bosla_aicities'); return (o&&typeof o==='object')?o:{}; }catch(e){ return {}; }
   }
   function aiCityHydrate(){
     var all=aiCityLoad(),n=0;
@@ -2779,7 +2802,7 @@
     return new Promise(function(resolve){
       if(!CONFIG.aiEndpoint){ resolve(null); return; }
       var have=matchDest(name); if(have){ resolve(keyOf(have)); return; } // already in our data
-      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'city',name:String(name).slice(0,60)})})
+      netFetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'city',name:String(name).slice(0,60)})})
         .then(function(r){return r.json();})
         .then(function(d){
           var c=d&&d.city;
@@ -2834,7 +2857,7 @@
   function aiParse(raw){
     return new Promise(function(resolve){
       if(!CONFIG.aiEndpoint){ resolve(false); return; }
-      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'parse',text:String(raw).slice(0,1200)})})
+      netFetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'parse',text:String(raw).slice(0,1200)})})
         .then(function(r){return r.json();})
         .then(function(d){
           var pp=d&&d.parsed;
@@ -2869,7 +2892,7 @@
   function aiSuggest(raw){
     return new Promise(function(resolve){
       if(!CONFIG.aiEndpoint){ resolve(null); return; }
-      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'suggest',text:String(raw).slice(0,1200)})})
+      netFetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'suggest',text:String(raw).slice(0,1200)})})
         .then(function(r){return r.json();})
         .then(function(d){ var s=d&&d.suggest; resolve((s&&Array.isArray(s.suggestions)&&s.suggestions.length)?s:null); })
         .catch(function(){ resolve(null); });
@@ -3543,7 +3566,15 @@
       b.classList.toggle('show',off);
       b.setAttribute('aria-hidden',off?'false':'true');
     }
-    window.addEventListener('online',upd);
+    // Coming back is the moment to try again. Whatever failed while the signal was gone — the
+    // forecast, prayer times, today's rate — asked once and gave up; nothing would ever ask again
+    // until the next render, so a traveller who walks out of the metro would see a plan with
+    // holes in it and no way to fill them.
+    function back(){
+      upd();
+      try{ if(planLive()){ runWeather(); runPrayers(); fxLoad(); } }catch(e){}
+    }
+    window.addEventListener('online',back);
     window.addEventListener('offline',upd);
     setTimeout(upd,1200);
   })();
@@ -4096,7 +4127,7 @@
       if(box.getAttribute('data-done'))return; box.setAttribute('data-done','1');
       var lat=box.getAttribute('data-lat'),lng=box.getAttribute('data-lng'),sd=box.getAttribute('data-sd'),loc=box.getAttribute('data-loc')||'en',lbl=box.getAttribute('data-lbl');
       var url='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lng+'&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=16';
-      fetch(url).then(function(r){return r.json();}).then(function(d){
+      netFetch(url).then(function(r){return r.json();}).then(function(d){
         if(!d||!d.daily||!d.daily.time||!d.daily.time.length)return;
         var tm=d.daily.time,wc=d.daily.weather_code,hi=d.daily.temperature_2m_max,lo=d.daily.temperature_2m_min,st=0;
         if(sd){var idx=tm.indexOf(sd); if(idx>=0)st=idx;}
@@ -4104,7 +4135,11 @@
         for(var i=st;i<Math.min(st+3,tm.length);i++){ var dt=new Date(tm[i]+'T00:00:00');
           h+='<div class="wxday"><div class="wxwd">'+dt.toLocaleDateString(loc,{weekday:'short'})+'</div><div class="wxemo">'+wmoEmoji(wc[i])+'</div><div class="wxt">'+Math.round(hi[i])+'°<span>'+Math.round(lo[i])+'°</span></div></div>'; }
         box.innerHTML=h+'</div>'; box.classList.add('show');
-      }).catch(function(){});
+      }).catch(function(){
+        // The flag goes back up so the next render tries again — a forecast that failed on the
+        // platform shouldn't stay missing for the rest of the trip once the signal comes back.
+        box.removeAttribute('data-done');
+      });
     });
   }
   // --- Local time at the destination ---
@@ -4187,7 +4222,7 @@
     var day=fxToday();
     try{ var c=JSON.parse(localStorage.getItem('bosla_fx')||'null');
       if(c&&c.d===day&&c.r&&fxApply(c.r,c.d))return; }catch(e){}
-    fetch('https://open.er-api.com/v6/latest/USD').then(function(r){return r.json();})
+    netFetch('https://open.er-api.com/v6/latest/USD').then(function(r){return r.json();})
       .then(function(d){
         var rates=d&&d.rates;
         if(!fxApply(rates,day))return;
@@ -4362,7 +4397,7 @@
   // appears while the trip is underway, and stays out of the way during planning.
   function tripUnderway(){ try{ return tripTodayNum(parseInt($('days').value,10)||30)>0; }catch(e){ return false; } }
   function wentKey(){ return 'bosla_went:'+tripSig(); }
-  function wentMap(){ try{ return JSON.parse(localStorage.getItem(wentKey())||'{}'); }catch(e){ return {}; } }
+  function wentMap(){ try{ return lsObj(wentKey()); }catch(e){ return {}; } }
   function wentLbl(){ return LANG==='ar'?'زرته':(LANG==='es'?'Visitado':'Visited'); }
   var WENTSVG='<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function eslot(tm,poi,city,sk,o,ck,food,hop){
@@ -4885,7 +4920,7 @@
       if(!d||!CONFIG.aiEndpoint){ resolve(false); return; }
       var hit=foodCached(k);
       if(hit){ resolve(mergeFood(k,hit)); return; }
-      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+      netFetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({action:'food',name:d.city,country:d.country||''})})
         .then(function(r){return r.json();})
         .then(function(res){
@@ -4923,7 +4958,7 @@
   // The worker answers once per destination and KV keeps it forever, because it does not change.
   // Durations arrive as minutes so one cached record serves all three languages.
   var GW={}, GWGOT={};
-  function gwLoad(){ try{ var r=JSON.parse(localStorage.getItem('bosla_gw')||'{}');
+  function gwLoad(){ try{ var r=lsObj('bosla_gw');
     if(r&&r.v===1&&r.d)GW=r.d; }catch(e){} }
   function gwSave(){ try{ localStorage.setItem('bosla_gw',JSON.stringify({v:1,d:GW})); }catch(e){} }
   function fetchGateway(k){
@@ -4931,7 +4966,7 @@
       var d=DEST[k];
       if(!d||!CONFIG.aiEndpoint){ resolve(false); return; }
       if(GW[k]){ resolve(false); return; }
-      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+      netFetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({action:'gateway',name:d.city,country:d.country||''})})
         .then(function(r){ return r.json(); })
         .then(function(res){
@@ -5089,7 +5124,7 @@
       var tag=k+'|'+lang; if(!k||LOCGOT[tag]||!DEST[k])return;
       var want=needNames(k,lang); if(!want.length)return;
       LOCGOT[tag]=1;
-      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+      netFetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({action:'names',name:DEST[k].city,country:DEST[k].country||'',lang:lang,items:want})})
         .then(function(r){return r.json();})
         .then(function(res){
@@ -5115,13 +5150,13 @@
   // put the well-reviewed places first — not to hide the rest, because a city with eight decent
   // restaurants shouldn't produce a plan with four empty meals.
   var RATED=null, GOODMIN=4.0, MINVOTES=25;
-  function ratedLoad(){ if(RATED)return RATED; try{ RATED=JSON.parse(localStorage.getItem('bosla_rated')||'{}')||{}; }catch(e){ RATED={}; } return RATED; }
+  function ratedLoad(){ if(RATED)return RATED; try{ RATED=lsObj('bosla_rated')||{}; }catch(e){ RATED={}; } return RATED; }
   function ratedSave(){ try{ localStorage.setItem('bosla_rated',JSON.stringify(ratedLoad())); }catch(e){} }
   function ratingOf(n){ var r=ratedLoad()[String(n).toLowerCase()]; return r&&r.r>0?r:null; }
   // Unknown counts as fine: with no Google key nothing is rated, and everything would be "poor".
   function wellRated(n){ var r=ratingOf(n); return !r || r.r>=GOODMIN || (r.n||0)<MINVOTES; }
   var CLOSED=null, CLOSEDGOT={};
-  function closedLoad(){ if(CLOSED)return CLOSED; try{ CLOSED=JSON.parse(localStorage.getItem('bosla_closed')||'{}')||{}; }catch(e){ CLOSED={}; } return CLOSED; }
+  function closedLoad(){ if(CLOSED)return CLOSED; try{ CLOSED=lsObj('bosla_closed')||{}; }catch(e){ CLOSED={}; } return CLOSED; }
   function closedSave(){ try{ localStorage.setItem('bosla_closed',JSON.stringify(closedLoad())); }catch(e){} }
   function isClosed(n){ return !!closedLoad()[String(n).toLowerCase()]; }
   // Drop them from the city's own lists so nothing can pick them again this session. Never empty a
@@ -5155,7 +5190,7 @@
         .concat(d.poi.map(function(x){return x.n;}))
         .filter(function(n,i,a){ return n&&a.indexOf(n)===i&&!isClosed(n); }).slice(0,40);
       if(!names.length)return;
-      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+      netFetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({action:'places',city:d.city,names:names})})
         .then(function(r){return r.json();})
         .then(function(res){
@@ -5351,7 +5386,7 @@
     items.push('<a href="'+esimLink()+'" target="_blank" rel="noopener">'+pk.esim+'</a>');
     items.push(pk.modest);
     var key=slug(keyName||'trip'), checked=[];
-    try{checked=JSON.parse(localStorage.getItem('rihla_pack_'+key)||'[]');}catch(e){}
+    try{checked=lsArr('rihla_pack_'+key);}catch(e){}
     var done=0, total=items.length;
     var li=items.map(function(x,i){ var on=checked.indexOf(i)>=0; if(on)done++; return '<li class="pki'+(on?' done':'')+'" data-pk="'+i+'">'+x+'</li>'; }).join('');
     return '<div class="pack" data-pkkey="'+esc(key)+'"><h4>'+t.out.pkTitle+' <span class="pkprog">'+done+'/'+total+'</span></h4>'+
@@ -5439,7 +5474,7 @@
     var el=$(id); if(!el)return; var o=t.out;
     var addr=city+(country?', '+country:'');
     var url='https://api.aladhan.com/v1/timingsByAddress?address='+encodeURIComponent(addr)+'&method=3&latitudeAdjustmentMethod=3';
-    fetch(url).then(function(r){return r.json();}).then(function(j){
+    netFetch(url).then(function(r){return r.json();}).then(function(j){
       if(!j||!j.data||!j.data.timings)throw 0;
       var tm=j.data.timings, n=o.prayerNames;
       function f(x){return (tm[x]||'').replace(/\s*\(.*\)/,'');}
@@ -5949,7 +5984,9 @@
   }
 
   /* My trips — save & reopen */
-  function loadTrips(){try{return JSON.parse(localStorage.getItem('rihla_trips')||'[]');}catch(e){return [];}}
+  // A row from an older build, a half-written entry, a key edited by hand: anything without a
+  // state object takes the whole My-trips screen down at tripLabel(). Drop the row, keep the screen.
+  function loadTrips(){ return lsArr('rihla_trips').filter(function(t){ return t&&t.state&&typeof t.state==='object'; }); }
   function saveTripsArr(a){try{localStorage.setItem('rihla_trips',JSON.stringify(a));return true;}catch(e){return false;}}
   function tripLabel(s){var name=(s.d||'?')+(s.d2?' → '+s.d2:''); return name+' · '+(s.days||'')+' '+I18N[LANG].out.daysUnit;}
   function renderMyTrips(){
@@ -6159,7 +6196,7 @@
   // storeSaved refreshes it, and a storage event from another tab drops it, so what callers see is
   // exactly what they saw before. loadSaved still hands out a private copy — callers mutate it.
   var SVCACHE=null;
-  function savedArr(){ if(!SVCACHE){ try{ SVCACHE=JSON.parse(localStorage.getItem('bosla_saved')||'[]'); }catch(e){ SVCACHE=[]; } } return SVCACHE; }
+  function savedArr(){ if(!SVCACHE){ SVCACHE=lsArr('bosla_saved').filter(function(x){ return x&&typeof x==='object'&&x.ck; }); } return SVCACHE; }
   function loadSaved(){ return savedArr().slice(); }
   function storeSaved(a){ SVCACHE=a.slice(0,200); try{ localStorage.setItem('bosla_saved',JSON.stringify(SVCACHE)); }catch(e){} }
   function isSaved(ck,n){ return savedArr().some(function(x){ return x.ck===ck&&x.n===n; }); }
@@ -6546,7 +6583,7 @@
     var k=mkKey(r), f=c.labels.filter(function(x){ return x.k===k; })[0];
     return f?f.t:c.labels[0].t;
   }
-  function mkLoad(){ try{ var a=JSON.parse(localStorage.getItem('bosla_made')||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+  function mkLoad(){ return lsArr('bosla_made').filter(function(x){ return x&&typeof x==='object'&&x.id; }); }
   function mkSave(list){ try{ localStorage.setItem('bosla_made',JSON.stringify(list.slice(0,40))); }catch(e){} }
   var MKID=null;                                  // which hand-made trip is open, null = the list
   var MKEDIT=null;                                // "day|index" of the row being typed into
@@ -6832,7 +6869,7 @@
   // No AI, no lookups — geography we already hold. One country near somewhere they have been,
   // one from the region they clearly favour, one within reach of home. Never repeats a country
   // they have visited, never suggests home.
-  function sugDismissed(){ try{ var a=JSON.parse(localStorage.getItem('bosla_sugx')||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+  function sugDismissed(){ return lsArr('bosla_sugx'); }
   function sugDismiss(nm){
     var a=sugDismissed(); if(a.indexOf(nm)<0)a.push(nm);
     try{ localStorage.setItem('bosla_sugx',JSON.stringify(a.slice(-200))); }catch(e){}
@@ -7176,21 +7213,21 @@
       g:'كمّل بحساب قوقل',em:'بريدك الإلكتروني',send:'أرسل رمز',code:'الرمز اللي وصلك',verify:'تأكيد',
       inAs:function(e){return 'مسجّل باسم '+e;},sync:'زامن الآن',out:'خروج',outAll:'خروج من كل الأجهزة',outAllDone:'تم — انقفلت الجلسات على كل الأجهزة.',del:'احذف حسابي',
       delSure:'يُحذف حسابك وكل الي عندنا. الي على جوالك يبقى. متأكد؟',
-      done:'تم — بياناتك محفوظة في حسابك',outDone:'خرجت. كل شي باقٍ على جهازك.',
+      done:'تم — بياناتك محفوظة في حسابك',expired:'انتهت جلستك — سجّل دخول مرة ثانية. كل شي باقٍ على جهازك.',outDone:'خرجت. كل شي باقٍ على جهازك.',
       delDone:'انحذف حسابك.',bad:'الرمز غلط',sent:'أرسلنا لك رمز — شيك بريدك',
       off:'تسجيل الدخول ما هو جاهز بعد على السيرفر.',priv:'نحفظ بريدك ونسخة من رحلاتك. لا شي غير كذا.',privL:'الخصوصية',termL:'الشروط',syncWhat:'يرفع اللي على هذا الجهاز وينزّل اللي ناقص — ويصير لحاله كل ما تفتح التطبيق.',prefT:'تفضيلاتك',prefLang:'اللغة',prefHome:'بلدك',prefCur:'عملتك',prefNone:'— اختر —',prefNote:'تنطبق على كل التطبيق — التسعير، وخطوط سجلك من بيتك.',prefSync:'محفوظة في حسابك، فتلقاها على أي جهاز.'}
     :(LANG==='es'?{t:'Tu cuenta',sub:'La cuenta es opcional — planear funciona sin ella. Entra para que tu historial y tus viajes sobrevivan a un móvil perdido.',
       g:'Continuar con Google',em:'Tu correo',send:'Enviar código',code:'El código',verify:'Confirmar',
       inAs:function(e){return 'Conectado como '+e;},sync:'Sincronizar',out:'Salir',outAll:'Salir en todos los dispositivos',outAllDone:'Listo — todas las sesiones quedaron cerradas.',del:'Borrar mi cuenta',
       delSure:'Se borra tu cuenta y lo que guardamos. Lo del móvil se queda. ¿Seguro?',
-      done:'Listo — guardado en tu cuenta',outDone:'Saliste. Todo sigue en este dispositivo.',
+      done:'Listo — guardado en tu cuenta',expired:'Tu sesión caducó — vuelve a entrar. Todo sigue en este dispositivo.',outDone:'Saliste. Todo sigue en este dispositivo.',
       delDone:'Cuenta borrada.',bad:'Código incorrecto',sent:'Te enviamos un código — mira tu correo',
       off:'El inicio de sesión aún no está configurado en el servidor.',priv:'Guardamos tu correo y una copia de tus viajes. Nada más.',privL:'Privacidad',termL:'Términos',syncWhat:'Sube lo de este dispositivo y baja lo que falte — también ocurre solo al abrir la app.',prefT:'Tus preferencias',prefLang:'Idioma',prefHome:'Tu país',prefCur:'Tu moneda',prefNone:'— elige —',prefNote:'Se aplican a toda la app — a los precios y a las líneas desde casa de tu historial.',prefSync:'Guardadas en tu cuenta, así las tienes en cualquier dispositivo.'}
     :{t:'Your account',sub:'An account is optional — planning works without one. Sign in so your record and trips survive a lost phone.',
       g:'Continue with Google',em:'Your email',send:'Send a code',code:'The code',verify:'Confirm',
       inAs:function(e){return 'Signed in as '+e;},sync:'Sync now',out:'Sign out',outAll:'Sign out everywhere',outAllDone:'Done — every device\'s session is closed.',del:'Delete my account',
       delSure:'This deletes your account and what we hold. What is on this phone stays. Sure?',
-      done:'Done — saved to your account',outDone:'Signed out. Everything stays on this device.',
+      done:'Done — saved to your account',expired:'Your session expired — sign in again. Everything is still on this device.',outDone:'Signed out. Everything stays on this device.',
       delDone:'Account deleted.',bad:'Wrong code',sent:'We sent you a code — check your email',
       off:'Sign-in is not set up on the server yet.',priv:'We store your email and a copy of your trips. Nothing else.',privL:'Privacy',termL:'Terms',syncWhat:'Sends up what is on this device and brings down anything missing — it also happens on its own each time you open the app.',prefT:'Your preferences',prefLang:'Language',prefHome:'Your country',prefCur:'Your currency',prefNone:'— choose —',prefNote:'Used across the app — for pricing, and for the lines from home on your record.',prefSync:'Kept in your account, so they follow you to any device.'});
   }
@@ -7280,7 +7317,17 @@
       try{ if(document.body.classList.contains('recmode'))openRecView(); }catch(e){}
       try{ drawPts(); }catch(e){}
       if(!quiet)toast(c.done);
-    }).catch(function(){ if(!quiet)toast((CTXT[LANG]||CTXT.en).offline); });
+    }).catch(function(e){
+      // A session that expired, or was killed from another device, fails every sync from here on.
+      // Reporting that as "offline" would have them checking their wifi for ever. Drop the dead
+      // token and put the sign-in door back — nothing on the device is touched either way.
+      if(e&&/not signed in/i.test(String(e.message||''))){
+        authSet(''); AUTHME={signedIn:0};
+        try{ renderAuth(); }catch(x){}
+        toast(c.expired); return;
+      }
+      if(!quiet)toast((CTXT[LANG]||CTXT.en).offline);
+    });
   }
   function renderAuth(){
     var c=authTxt(), host=$('authBody'); if(!host)return;
@@ -7491,7 +7538,7 @@
     // a real number, only from a real source: the Worker answers from Hotellook when the owner
     // has connected a token; otherwise this quietly stays a link list
     if(CONFIG.aiEndpoint&&dt){
-      fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+      netFetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({action:'hotelprice',name:h,city:city,checkin:dt.ci,checkout:dt.co,adults:ad})})
         .then(function(r){return r.json();})
         .then(function(res){
@@ -7532,7 +7579,7 @@
       applied:'Plan loaded — it is yours to edit now',empty:'No shared trips yet — yours could be the first.',
       offline:'The community feed could not be reached — try again in a moment.',
       report:'Report this trip',reported:'Thank you — we will take a look.',
-      cmtDone:'Comment added',photoDone:'Photos added — thank you for sharing',phTitle:'Your photos, before they go up',phSub:function(n){return n+' photo'+(n===1?'':'s')+' — write a line under each one if you like';},phCap:'Describe this photo, the place, the moment… (optional)',phGo:'Share the photos',phBusy:'Compressing…',phMax:'Five photos at a time',
+      cmtDone:'Comment added',photoDone:'Photos added — thank you for sharing',phBad:'Those photos could not be opened — try a different one.',phTitle:'Your photos, before they go up',phSub:function(n){return n+' photo'+(n===1?'':'s')+' — write a line under each one if you like';},phCap:'Describe this photo, the place, the moment… (optional)',phGo:'Share the photos',phBusy:'Compressing…',phMax:'Five photos at a time',
       pts:function(n){return n+' points';},ptsNote:function(n){return n+' points to your next free trip credit';},
       ptsCredit:'You earned a free trip credit!',mine:'Yours',fresh:'New',visFeed:'Everyone',visLink:'Link only',noteLink:'Only people you send the link to can open it — it stays out of the public feed.',linkReady:'Published — link copied, send it to your friends',del:'Remove my trip',delAsk:'Remove this trip from the community? This cannot be undone.',deleted:'Your trip was removed',search:'Search a city or a name…',moreTo:function(c){return 'More trips to '+c;},lvls:['New traveller','Explorer','Wayfarer','Compass master']},
     ar:{title:'رحلات المسافرين',sub:'خطط حقيقية شاركها ناس جرّبوها. افتح أي وحدة وخلها لك.',
@@ -7546,7 +7593,7 @@
       applied:'تم تحميل الخطة — عدّلها كيفك',empty:'ما فيه رحلات مشتركة بعد — ممكن تكون رحلتك الأولى.',
       offline:'ما قدرنا نوصل لرحلات المسافرين — جرّب بعد شوي.',
       report:'أبلغ عن هذه الرحلة',reported:'شكراً لك — بنراجعها.',
-      cmtDone:'تم إضافة تعليقك',photoDone:'انضافت صورك — شكراً لمشاركتك',phTitle:'صورك قبل النشر',phSub:function(n){return n+' صور — اكتب سطر تحت كل وحدة إذا تبي';},phCap:'وصف الصورة، المكان، اللحظة… (اختياري)',phGo:'انشر الصور',phBusy:'جاري الضغط…',phMax:'خمس صور كحد أقصى بالمرة',
+      cmtDone:'تم إضافة تعليقك',photoDone:'انضافت صورك — شكراً لمشاركتك',phBad:'ما قدرنا نفتح هالصور — جرّب صورة ثانية.',phTitle:'صورك قبل النشر',phSub:function(n){return n+' صور — اكتب سطر تحت كل وحدة إذا تبي';},phCap:'وصف الصورة، المكان، اللحظة… (اختياري)',phGo:'انشر الصور',phBusy:'جاري الضغط…',phMax:'خمس صور كحد أقصى بالمرة',
       pts:function(n){return n+' نقطة';},ptsNote:function(n){return 'باقي '+n+' نقطة على رصيد رحلة مجاني';},
       ptsCredit:'حصلت على رصيد رحلة مجاني!',mine:'رحلتك',fresh:'جديدة',visFeed:'للجميع',visLink:'بالرابط فقط',noteLink:'ما يفتحها إلا اللي ترسل له الرابط — ما تظهر في الصفحة العامة.',linkReady:'تم النشر — انتسخ الرابط، أرسله لأصحابك',del:'احذف رحلتي',delAsk:'تحذف هذه الرحلة من رحلات المسافرين؟ ما تقدر ترجعها.',deleted:'انحذفت رحلتك',search:'ابحث عن مدينة أو اسم…',moreTo:function(c){return 'رحلات ثانية إلى '+c;},lvls:['مسافر جديد','مستكشف','رحّالة','خبير البوصلة']},
     es:{title:'Viajes de viajeros',sub:'Planes reales compartidos por quienes los usaron. Abre uno y hazlo tuyo.',
@@ -7560,7 +7607,7 @@
       applied:'Plan cargado — ahora es tuyo para editar',empty:'Aún no hay viajes compartidos — el tuyo puede ser el primero.',
       offline:'No se pudo cargar el muro — inténtalo en un momento.',
       report:'Denunciar este viaje',reported:'Gracias — lo revisaremos.',
-      cmtDone:'Comentario añadido',photoDone:'Fotos añadidas — gracias por compartir',phTitle:'Tus fotos, antes de publicar',phSub:function(n){return n+' foto'+(n===1?'':'s')+' — escribe una línea bajo cada una si quieres';},phCap:'Describe la foto, el lugar, el momento… (opcional)',phGo:'Publicar las fotos',phBusy:'Comprimiendo…',phMax:'Cinco fotos por vez',
+      cmtDone:'Comentario añadido',photoDone:'Fotos añadidas — gracias por compartir',phBad:'No se pudieron abrir esas fotos — prueba con otra.',phTitle:'Tus fotos, antes de publicar',phSub:function(n){return n+' foto'+(n===1?'':'s')+' — escribe una línea bajo cada una si quieres';},phCap:'Describe la foto, el lugar, el momento… (opcional)',phGo:'Publicar las fotos',phBusy:'Comprimiendo…',phMax:'Cinco fotos por vez',
       pts:function(n){return n+' puntos';},ptsNote:function(n){return n+' puntos para tu próximo crédito de viaje';},
       ptsCredit:'¡Ganaste un crédito de viaje gratis!',mine:'Tuyo',fresh:'Nuevo',visFeed:'Todos',visLink:'Solo con enlace',noteLink:'Solo quien reciba el enlace puede abrirlo — no aparece en el muro público.',linkReady:'Publicado — enlace copiado, envíalo a tus amigos',del:'Eliminar mi viaje',delAsk:'¿Eliminar este viaje de la comunidad? No se puede deshacer.',deleted:'Tu viaje fue eliminado',search:'Busca una ciudad o un nombre…',moreTo:function(c){return 'Más viajes a '+c;},lvls:['Viajero nuevo','Explorador','Trotamundos','Maestro de la brújula']}
   };
@@ -7569,10 +7616,14 @@
   var CMTSVG='<svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2.5-2.7A8 8 0 1 1 21 12z"/></svg>';
   var CAMSVG='<svg viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="14" r="3.4"/></svg>';
   var STARSVG='<svg viewBox="0 0 24 24"><path d="M12 2.7l2.9 5.9 6.5.9-4.7 4.6 1.1 6.4L12 17.5l-5.8 3-1.1-6.4L.4 9.5l6.5-.9z"/></svg>';
+  // Reads get 14s — long enough for a slow phone, short enough that the skeletons don't outstay
+  // their welcome. Publishing and photo upload push ~160KB up a hotel uplink, so they get 40s.
+  var PUB_SLOW={pub_add:1,pub_update:1,pub_photo_add:1};
   function pubApi(action,payload){
     if(!CONFIG.aiEndpoint)return Promise.reject(new Error('off'));
     payload=payload||{}; payload.action=action;
-    return fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    return netFetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)},
+                    PUB_SLOW[action]?40000:14000)
       .then(function(r){ return r.json().then(function(d){ if(!r.ok||d.error)throw new Error(d.error||('http '+r.status)); return d; }); });
   }
   // ---- points: contributions become the trip credits the paywall sells ----
@@ -7585,8 +7636,11 @@
     try{ var v=parseInt(localStorage.getItem('bosla_pts_life'),10); return isNaN(v)?getPts():v; }catch(e){ return getPts(); }
   }
   function addPts(n){
-    var c=CTXT[LANG]||CTXT.en, lifeWas=getPtsLife(), life=lifeWas+n;
-    try{ localStorage.setItem('bosla_pts_life',String(life)); localStorage.setItem('bosla_pts',String(getPts()+n)); }catch(e){}
+    var c=CTXT[LANG]||CTXT.en, lifeWas=getPtsLife(), life=lifeWas+n, wrote=true;
+    try{ localStorage.setItem('bosla_pts_life',String(life)); localStorage.setItem('bosla_pts',String(getPts()+n)); }catch(e){ wrote=false; }
+    // Points buy trip credits, so losing them to a full disk is losing something they earned.
+    // Say so instead of congratulating them on a balance that won't survive the next reload.
+    if(!wrote){ toast(I18N[LANG].out.saveFail); try{ drawPts(); }catch(e){} return; }
     if(Math.floor(life/PTS_CREDIT)>Math.floor(lifeWas/PTS_CREDIT)){ setCredits(getCredits()+1); toast(c.ptsCredit); }
     try{ drawPts(); }catch(e){}
   }
@@ -7614,7 +7668,7 @@
     el.innerHTML=STARSVG+' '+esc(c.lvls[ptsLevel(n)])+' · '+esc(c.pts(n));
   }
   // ---- the feed ----
-  var CMLIKED={}; try{ CMLIKED=JSON.parse(localStorage.getItem('bosla_liked')||'{}'); }catch(e){}
+  var CMLIKED={}; try{ CMLIKED=lsObj('bosla_liked'); }catch(e){}
   var CMSORT='new', CMFEED=[];
   function cmAgo(t){
     var d=Math.max(0,Date.now()-t), day=Math.floor(d/864e5);
@@ -7650,7 +7704,7 @@
     try{track('community_open',{});}catch(e){}
   }
   var CMQUERY='';
-  function cmMine(){ try{ return JSON.parse(localStorage.getItem('bosla_pub_mine')||'{}'); }catch(e){ return {}; } }
+  function cmMine(){ try{ return lsObj('bosla_pub_mine'); }catch(e){ return {}; } }
   // a card's face: the first shared photo if the trip has one, else the destination's own
   // climate-tinted artwork — the same scene the itinerary banner uses, drawn locally for free
   // No photo yet? The country's flag carries the card: a blurred wash of it as the backdrop and
@@ -7672,7 +7726,7 @@
     }catch(e){}
     var d=DEST[ck];
     if(!d||!CONFIG.aiEndpoint){ CPH[ck]=null; return Promise.resolve(null); }
-    return fetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+    return netFetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({action:'cityphoto',name:d.city,country:d.country||''})})
       .then(function(r){return r.json();})
       .then(function(res){
@@ -7779,7 +7833,10 @@
       box.innerHTML=h;
       try{ upgradeCovers(box); }catch(e){}
       CMTRIP=r; renderCmts(r.comments||[]); loadPhotos(r.photos||[]);
-    }).catch(function(){ openCommunity(); });
+    }).catch(function(){
+      // Bouncing back to the feed with no word reads as "the tap didn't work" — say why.
+      toast((CTXT[LANG]||CTXT.en).offline); openCommunity();
+    });
   }
   var CMTRIP=null;
   // trips in the feed that visit the same city — the reader is standing in exactly the mood to
@@ -7799,7 +7856,7 @@
     });
     return h;
   }
-  function cmtKeys(){ try{ return JSON.parse(localStorage.getItem('bosla_cmtkeys')||'{}'); }catch(e){ return {}; } }
+  function cmtKeys(){ try{ return lsObj('bosla_cmtkeys'); }catch(e){ return {}; } }
   function renderCmts(list){
     var host=$('cmCmts'); if(!host)return;
     var mk=cmtKeys(), ownTrip=CMTRIP&&cmMine()[CMTRIP.id];
@@ -7864,7 +7921,9 @@
     Promise.all(files.map(function(f){ return shrinkPhoto(f).catch(function(){ return null; }); }))
       .then(function(datas){
         PHQUEUE=datas.filter(Boolean);
-        if(!PHQUEUE.length)return;
+        // A HEIC the browser won't decode, a file that isn't really an image: every one failed,
+        // and returning here silently looks exactly like the picker not working.
+        if(!PHQUEUE.length){ toast(c.phBad); return; }
         $('phTitle').textContent=c.phTitle;
         $('phSub').textContent=c.phSub(PHQUEUE.length);
         $('phGo').textContent=c.phGo; $('phGo').disabled=false;
@@ -7955,11 +8014,13 @@
   $('pubGo').addEventListener('click',function(){
     var c=CTXT[LANG]||CTXT.en, s=stateObj();
     var cities=[s.d]; if(s.rt&&s.rt.length)cities=s.rt.map(function(k){return DEST[k]?DEST[k].city:k;}); else if(s.d2)cities.push(s.d2);
-    var btn=$('pubGo'); btn.disabled=true;
+    // Publishing a trip with photos can take most of a minute on hotel wifi. A button that is
+    // merely disabled reads as broken; the same "…" the sign-in buttons use reads as working.
+    var btn=$('pubGo'), btnWas=btn.textContent; btn.disabled=true; btn.textContent='…';
     var vis=(document.querySelector('#pubVis .chip.active')||{}).getAttribute&&(document.querySelector('#pubVis .chip.active').getAttribute('data-vis'))||'feed';
     pubApi('pub_add',{title:$('pubTitle').value,name:$('pubName').value,state:s,cities:cities,days:parseInt(s.days,10)||1,lang:LANG,vis:vis})
       .then(function(d){
-        btn.disabled=false; closePublish();
+        btn.disabled=false; btn.textContent=btnWas; closePublish();
         // the worker recognised a trip we already published: refresh that card in place —
         // same likes, same comments, no duplicate in the feed, and no points a second time
         if(d&&d.dupe&&d.id){
@@ -7970,7 +8031,7 @@
           } else { toast(c.alreadyShared); }
           return;
         }
-        if(d&&d.id&&d.key){ try{ var mn=JSON.parse(localStorage.getItem('bosla_pub_mine')||'{}'); mn[d.id]=d.key; localStorage.setItem('bosla_pub_mine',JSON.stringify(mn)); }catch(e){} }
+        if(d&&d.id&&d.key){ try{ var mn=lsObj('bosla_pub_mine'); mn[d.id]=d.key; localStorage.setItem('bosla_pub_mine',JSON.stringify(mn)); }catch(e){} }
         if(vis==='link'&&d&&d.id){
           var lk=location.href.split('#')[0]+'#pub='+d.id;
           if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(lk).then(function(){},function(){});
@@ -7978,7 +8039,7 @@
         } else { toast(c.published); }
         if(pubPayable())addPts(20);
         try{track('pub_add',{vis:vis});}catch(e){} })
-      .catch(function(){ btn.disabled=false; toast(c.offline); });
+      .catch(function(){ btn.disabled=false; btn.textContent=btnWas; toast(c.offline); });
   });
   $('cmTeaser').addEventListener('click',openCommunity);
   // one delegated handler for everything inside the community box
@@ -8491,7 +8552,7 @@
       var url='https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*'+
         '&generator=search&gsrsearch='+encodeURIComponent(q)+'&gsrlimit=1'+
         '&prop=pageimages&piprop=thumbnail&pithumbsize=360';
-      fetch(url).then(function(r){return r.json();}).then(function(d){
+      netFetch(url).then(function(r){return r.json();}).then(function(d){
         var pages=d&&d.query&&d.query.pages, u='';
         if(pages)for(var id in pages){ var th=pages[id]&&pages[id].thumbnail; if(th&&th.source){ u=th.source; break; } }
         picStore(k,u); res(u);

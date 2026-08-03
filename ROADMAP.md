@@ -801,3 +801,66 @@ theme blocks and pointed all three at it, keyframes included.
 is real sprawl, but padding is the one token here that moves layout — and the longest strings are
 Arabic, where a 2px change is how you find an overflow in production rather than in a screenshot.
 A 4px-grid migration wants its own pass with per-screen AR/ES verification, not a sed.
+
+### Reliability review — DONE
+
+Built `reliab.cjs`: a harness that breaks the network eight ways (dead, 500, an HTML error page
+where JSON was expected, `{}`, `null`, valid-JSON-wrong-shape, 429, and *hang* — a route that never
+answers), plus corrupted storage, storage that throws, denied permissions, and rows pointing at
+cities that no longer exist. 83 assertions. It found three real defects.
+
+**1. `fetch()` had no deadline anywhere except the chat.** Nineteen of twenty call sites would wait
+for ever. On the *hang* route the community feed sat on its skeletons indefinitely and prayer times
+stayed on "loading" — the exact failure a train tunnel produces. Added `netFetch(url,opts,ms)`:
+AbortController, a clock, and a rejection somebody handles. 12s default; community reads 14s;
+publish and photo upload 40s because ~160KB up a hotel uplink is genuinely slow.
+
+**2. One corrupted key took the whole app down at boot.** `rihla_trips` holding the literal string
+`"null"` parses without throwing, so the `try/catch` never fired; `renderMyTrips` then ran `.length`
+on `null` inside `applyLang` — before anything reached the screen. Valid JSON of the wrong *shape*
+is worse than junk, because junk throws. Added `lsArr`/`lsObj`, which shape-check rather than merely
+parse, and routed all 19 array/object loaders through them. `loadTrips`, `savedArr` and `mkLoad`
+additionally drop individual rows that can't be rendered instead of taking the screen with them.
+
+**3. A saved trip row with no `.state`** — an older format, a half-written entry — crashed
+`tripLabel` and with it all of My trips. Now filtered out on read.
+
+Recovery behaviour added:
+- **Reconnecting refills what failed.** The `online` event only hid the offline bar; now it also
+  re-runs the forecast, prayer times and today's exchange rate if a plan is on screen. Walk out of
+  the metro and the holes fill in rather than staying empty until the next render.
+- A forecast that fails clears its `data-done` flag, so the next render tries again.
+- **An expired session said "offline".** `syncNow` reported every failure the same way, so a dead
+  token meant checking your wifi for ever. It now recognises the Worker's `not signed in`, clears
+  the token, and puts the sign-in door back with a line saying so (EN/AR/ES).
+- **Points could vanish silently.** `addPts` swallowed a failed write — and points buy trip credits.
+  It now says so with the same "couldn't save" line trip saving uses.
+- Opening a community trip that fails now explains itself instead of bouncing back to the feed mute.
+- Photos that no browser can decode (HEIC, a file that isn't an image) now say so instead of the
+  picker appearing to do nothing.
+- The publish button shows "…" while working, like the sign-in buttons — 40s of a merely-disabled
+  button reads as broken.
+
+**Service worker.** Three fixes: `addAll` was all-or-nothing, so one 404 on an icon cost the app its
+entire offline mode (the document is now mandatory, icons best-effort); the document handler cached
+*any* response, so a 404 mid-deploy or a 5xx would overwrite the working offline copy with a broken
+one (now `resp.ok && resp.type === 'basic'` only); and the asset branch could call
+`respondWith(undefined)` on a cold-cache network failure, which is a TypeError.
+
+**A near-miss worth writing down.** The regex that routed loaders through `lsArr`/`lsObj` also
+rewrote the helpers' own bodies into `function lsArr(k){ ... return lsArr(k) ... }` — infinite
+recursion, caught by their own `try/catch`, returning `[]` silently. Every localStorage read in the
+app returned empty and **nothing threw**. `qa.cjs` still passed 12/12 and the page reported zero
+errors; only `matrix.cjs`'s "builder day cards render" caught it, 6 assertions out of 90. Zero page
+errors is not the same as working — the suites that assert on *content* are the ones that earn their
+keep.
+
+Not fixed, and why: the paywall is `paywallOn:false` with no payment integration, so there is no
+payment failure to handle yet. `runPrompt`/`runPromptLocal` have no loading state and no re-entrancy
+guard, but `#promptBox` no longer exists in the DOM — that path is dead code, not a live risk.
+
+Also left alone: all seven `navigator.share` sites swallow every rejection and `return`, so a
+genuine share failure (an insecure context, an OS that refuses) does nothing rather than falling
+back to copying. A cancelled share sheet is a decision and *should* be silent, so the fix is to
+distinguish `AbortError` from the rest and call the copy fallback for the rest — worth doing, but
+not worth restructuring seven working share paths in the same pass that touched every fetch.
