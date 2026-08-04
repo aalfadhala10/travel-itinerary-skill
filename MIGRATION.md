@@ -1,8 +1,11 @@
 # Moving Bosla from GitHub Pages to Cloudflare Pages
 
-**Status:** Phase 1 applied on `claude/app-creation-y2v2ob` — URLs updated, `_headers` added,
-Worker changes prepared but **not pasted**. `main` untouched. GitHub Pages still serving testers.
-Testing URL is `https://bosla-b5w.pages.dev`; `bosla.app` replaces it publicly later.
+**Status:** Phase 3 applied on `claude/app-creation-y2v2ob`. The Pages site is live at
+`https://bosla-b5w.pages.dev`, `_headers` is in place, and `CONFIG.aiEndpoint` now points at
+**`bosla-api.ahmed-alfadala.workers.dev`** — a new Worker created for this, because the existing
+`bosla` Worker turned out to be a git-connected copy of the *site*, not an API. `shy-fire-8a78`
+is still deployed and still in the CSP as the rollback. `main` untouched; GitHub Pages still
+serving testers. `bosla.app` replaces the Pages URL publicly later.
 
 The move is worth making — it fixes the stale-build problem at its source and unlocks the security
 headers GitHub Pages cannot send. But it changes the origin, and **an origin change is not free**:
@@ -152,8 +155,18 @@ to think about rather than paste in.
 round trip. Set the `APP_URL` secret to the new origin, and add the new redirect URI in the Google
 Cloud console. Miss either and "continue with Google" breaks.
 
-**5c. Nothing else.** The Worker URL itself does not change, the CSP `connect-src` already names it,
-and `'self'` covers the new origin.
+**5c. The Worker URL did change after all.** The plan assumed the old Worker could simply be
+re-pasted. It could not: `bosla.ahmed-alfadala.workers.dev` is a **git-connected deployment of this
+same static site**, not an API, so pasting into it was never possible. A dedicated Worker
+`bosla-api` was created instead, with the `CITIES` KV binding and all six secrets (`APP_URL`,
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_PLACES_KEY`, `IP_SALT`, `ANTHROPIC_API_KEY`).
+Both Worker hosts are in the CSP `connect-src` during the changeover; `'self'` covers the new origin.
+
+**Verifying CORS from the browser is a trap.** `Access-Control-Allow-Origin` is not a
+CORS-safelisted response header, so `r.headers.get('access-control-allow-origin')` returns `null`
+even when CORS is working perfectly. The only real signal is whether the fetch resolves at all:
+a readable body means CORS passed, and a genuine failure surfaces as `TypeError: Failed to fetch`
+before any status is available.
 
 ---
 
