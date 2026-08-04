@@ -7850,7 +7850,9 @@
       });
     }
     if(CMSORT==='mine')list=list.filter(function(r){ return mine[r.id]; });
-    var back=LANG==='ar'?'خطط رحلة جديدة':(LANG==='es'?'Planear un viaje':'Plan a trip');
+    // The feed is opened from inside the Trips screen, so back belongs to its parent — going
+    // straight home skipped a level and stranded people who came here from their own trips.
+    var back=I18N[LANG].ui.myTrips;
     var h='<button type="button" class="cmback" data-cmexit="1"><span class="cmbkch">‹</span> '+esc(back)+'</button>'
       +'<div class="cmhead"><h2>'+esc(c.title)+'</h2></div><div class="cmsub">'+esc(c.sub)+'</div>'
       +'<input type="text" class="cmsearch" id="cmSearch" placeholder="'+esc(c.search)+'" value="'+esc(CMQUERY)+'">'
@@ -8116,7 +8118,7 @@
     if(e.target.closest('.cmattr'))return;   // the photo credit is a link, not a card tap
     var c=CTXT[LANG]||CTXT.en, t;
     if((t=e.target.closest('[data-cmsort]'))){ CMSORT=t.getAttribute('data-cmsort'); renderFeed(); return; }
-    if((t=e.target.closest('[data-cmexit]'))){ exitCm(); window.scrollTo({top:0,behavior:'smooth'}); return; }
+    if((t=e.target.closest('[data-cmexit]'))){ exitCm(); openMyTrips(); return; }
     if((t=e.target.closest('[data-cmback]'))){ openCommunity(); return; }
     if((t=e.target.closest('[data-cmuse]'))){
       if(CMTRIP&&CMTRIP.state){ try{
