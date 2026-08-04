@@ -838,6 +838,16 @@
   .pkgp{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
   .pkgper{color:var(--muted);font-size:14.5px;font-weight:400;margin-left:6px}
   #app[dir="rtl"] .pkgper{margin-left:0;margin-right:6px}
+  /* Migration notice for the retired github.io host. Reuses the .fbnudge card tokens — same
+     surface, border, radius and shadow — but sits in the flow under the hero rather than fixed
+     at the bottom, where the tab bar, the chat button and the toast already compete. Every
+     colour is an existing variable, so both themes follow without a second rule. */
+  .mignote{position:relative;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px 42px 12px 16px;margin:0 0 18px;font-size:14px;line-height:1.55;color:var(--ink)}
+  .mignote b{display:block;font-family:var(--ff-display);font-size:17px;margin-bottom:7px}
+  .mignote p{margin:0 0 8px}
+  .mignote p.mignlast{margin:0;color:var(--muted)}
+  .mignote a{color:var(--teal);font-weight:700;word-break:break-word}
+  .mignox{position:absolute;top:7px;right:9px;background:none;border:none;color:var(--muted);font-size:17px;line-height:1;cursor:pointer;padding:5px}
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:11px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s;z-index:9;max-width:86vw}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .toast.undo{pointer-events:auto;display:inline-flex;align-items:center;gap:16px}
@@ -1277,6 +1287,16 @@
     <p class="tag" id="heroTag">Tell me where and when — I'll map out your days in seconds.</p>
     <p class="greet is-hidden" id="greet"></p>
   </header>
+
+  <!-- Shown only on the retired github.io host; showMigNote() un-hides it. Stays display:none
+       everywhere else, so the Pages site renders exactly as before. -->
+  <div class="mignote is-hidden" id="migNote" role="status" aria-hidden="true" dir="ltr">
+    <button type="button" class="mignox" id="migNoteX" aria-label="Dismiss">✕</button>
+    <b>Bosla has moved 🚀</b>
+    <p>We have moved to a faster and improved version.</p>
+    <p>Please use our new link:<br><a href="https://bosla-b5w.pages.dev/">https://bosla-b5w.pages.dev/</a></p>
+    <p class="mignlast">Your trips and saved data continue to work normally.</p>
+  </div>
 
   <div class="intro is-hidden" id="intro">
     <div class="introhead"><span class="t" id="introTitle">How it works</span><button type="button" class="introx" id="introClose" aria-label="Close">✕</button></div>
@@ -9015,6 +9035,23 @@
   // usage tracking: one page view, and outbound clicks (booking / maps / tours / flights) to gauge intent
   track('page_view',{});
   $('out').addEventListener('click',function(e){ var a=e.target.closest('a[href^="http"]'); if(!a)return; try{ track('outbound',{host:new URL(a.href).hostname.replace(/^www\./,'')}); }catch(err){} });
+  // The github.io host is retired but bookmarks still point at it. Say so in place, once, and
+  // let people carry on using the app — no redirect, and nothing at all on the Pages domain.
+  function showMigNote(){
+    if(String(location.hostname).indexOf('github.io')===-1) return;
+    // A blocked localStorage (private mode) must not swallow the notice, so the dismissal check
+    // fails open rather than returning early.
+    var done=false; try{ done=localStorage.getItem('bosla_mignote')==='1'; }catch(e){}
+    if(done) return;
+    var el=$('migNote'); if(!el) return;
+    el.classList.remove('is-hidden'); el.removeAttribute('aria-hidden');
+    var x=$('migNoteX');
+    if(x)x.addEventListener('click',function(){
+      el.classList.add('is-hidden'); el.setAttribute('aria-hidden','true');
+      try{ localStorage.setItem('bosla_mignote','1'); }catch(e){}
+    });
+  }
+  try{ showMigNote(); }catch(e){}
   if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 </script>
 
