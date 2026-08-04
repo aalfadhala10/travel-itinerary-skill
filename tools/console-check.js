@@ -46,18 +46,28 @@
      'no github.io URL left in the app');
 
   // ---- 6. the Worker — must answer now that the migration is done ----------
-  // A refusal here is a real failure, not an expected one: it means the Worker does not have
-  // this origin in ALLOWED_ORIGINS, so chat, community and building a new city are all dead.
+  // Probe with an action the Worker does not have. The origin gate runs before the action
+  // dispatch, so "unknown action" can only come back to a caller that already cleared it —
+  // which is the one thing this check exists to prove. A refusal is a real failure now, not an
+  // expected one: it means the Worker has not got this origin in ALLOWED_ORIGINS, so chat,
+  // community and building a new city are all dead.
+  //
+  // {action:"list"} is the obvious probe and the wrong one: list/dump are admin-gated and
+  // answer 403 "not allowed" to every caller without the ADMIN_KEY, whatever the origin — a
+  // check that can never pass. Note the two strings differ by "from here"; only the longer one
+  // is about the origin. Nothing here spends Anthropic or Google budget.
   const API = 'https://bosla-api.ahmed-alfadala.workers.dev';
-  let api = 'unreachable', apiOk = false;
+  let api = 'unreachable', apiOk = false, apiOriginRefused = false;
   try {
     const r = await fetch(API, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'list' }) });
-    apiOk = r.ok;
-    api = r.status + ' ' + JSON.stringify(await r.json()).slice(0, 60);
+      body: JSON.stringify({ action: '__probe' }) });
+    const j = await r.json().catch(() => ({}));
+    apiOk = r.status === 400 && j.error === 'unknown action';
+    apiOriginRefused = r.status === 403 && /from here/.test(j.error || '');
+    api = r.status + ' ' + JSON.stringify(j).slice(0, 60);
   } catch (e) { api = 'blocked: ' + e.message; }
-  ok(apiOk, 'Worker answers this origin', api);
+  ok(apiOk, 'Worker accepts this origin', api);
 
   // ---- report --------------------------------------------------------------
   const bad = R.filter(r => r[0] === 'FAIL');
@@ -67,10 +77,14 @@
   console.log(`  ${R.length - bad.length} passed, ${bad.length} failed`);
   console.log(line);
   console.log('  Worker reply: ' + api);
-  if (!apiOk) {
+  if (!apiOk && apiOriginRefused) {
     console.log('  ^ the Worker refused this origin. Add it to ALLOWED_ORIGINS in');
     console.log('    ai/worker.js and re-paste the Worker. Until then chat, community');
     console.log('    and building a new city stay dead; planning a known city still works.');
+  } else if (!apiOk) {
+    console.log('  ^ expected 400 {"error":"unknown action"} — the reply that proves the');
+    console.log('    origin gate was cleared. Anything else means the Worker is not running');
+    console.log('    the current code, or is not reachable from this page at all.');
   }
   console.log(line);
   return { passed: R.length - bad.length, failed: bad.length, failures: bad.map(b => b[1]), api };
