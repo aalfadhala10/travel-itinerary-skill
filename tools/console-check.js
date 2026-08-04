@@ -45,14 +45,19 @@
   ok(!document.documentElement.innerHTML.includes('aalfadhala10.github.io'),
      'no github.io URL left in the app');
 
-  // ---- 6. the Worker — EXPECTED TO FAIL until Phase 3 ----------------------
-  let api = 'unreachable';
+  // ---- 6. the Worker — must answer now that the migration is done ----------
+  // A refusal here is a real failure, not an expected one: it means the Worker does not have
+  // this origin in ALLOWED_ORIGINS, so chat, community and building a new city are all dead.
+  const API = 'https://bosla-api.ahmed-alfadala.workers.dev';
+  let api = 'unreachable', apiOk = false;
   try {
-    const r = await fetch('https://shy-fire-8a78.ahmed-alfadala.workers.dev', {
+    const r = await fetch(API, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'list' }) });
+    apiOk = r.ok;
     api = r.status + ' ' + JSON.stringify(await r.json()).slice(0, 60);
   } catch (e) { api = 'blocked: ' + e.message; }
+  ok(apiOk, 'Worker answers this origin', api);
 
   // ---- report --------------------------------------------------------------
   const bad = R.filter(r => r[0] === 'FAIL');
@@ -62,9 +67,11 @@
   console.log(`  ${R.length - bad.length} passed, ${bad.length} failed`);
   console.log(line);
   console.log('  Worker reply: ' + api);
-  console.log('  ^ EXPECTED to be refused until Phase 3 — the Worker has not been');
-  console.log('    re-pasted, so it does not know this origin yet. Chat, community');
-  console.log('    and building a new city will not work. Planning a known city will.');
+  if (!apiOk) {
+    console.log('  ^ the Worker refused this origin. Add it to ALLOWED_ORIGINS in');
+    console.log('    ai/worker.js and re-paste the Worker. Until then chat, community');
+    console.log('    and building a new city stay dead; planning a known city still works.');
+  }
   console.log(line);
   return { passed: R.length - bad.length, failed: bad.length, failures: bad.map(b => b[1]), api };
 })();
