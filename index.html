@@ -948,16 +948,16 @@
   /* ---- Community: traveller-shared trips ---- */
   .cmwrap{margin:26px 0 8px}
   /* browsing shared trips — or your favourites — is a screen, not a section under the planner */
-  body.cmmode .card,body.cmmode #cmTeaser,body.cmmode #mytrips,body.cmmode #lastTrip,
+  body.cmmode .card,body.cmmode #mytrips,body.cmmode #lastTrip,
   body.cmmode #out,body.cmmode #saved,body.cmmode .intro,body.cmmode .editfab{display:none!important}
-  body.svmode .card,body.svmode #cmTeaser,body.svmode #mytrips,body.svmode #lastTrip,
+  body.svmode .card,body.svmode #mytrips,body.svmode #lastTrip,
   body.svmode #out,body.svmode #community,body.svmode .intro,body.svmode .editfab{display:none!important}
   /* A planned trip is a place, not a section under the form: once it exists it owns the
      screen, and the form is one tap away. People were pressing Plan and still looking at the
      form, or scrolling up later and thinking their trip had vanished. */
-  body.planmode .card,body.planmode #cmTeaser,body.planmode #mytrips,body.planmode #lastTrip,
+  body.planmode .card,body.planmode #mytrips,body.planmode #lastTrip,
   body.planmode .intro{display:none!important}
-  body.recmode .card,body.recmode #cmTeaser,body.recmode #mytrips,body.recmode #lastTrip,
+  body.recmode .card,body.recmode #mytrips,body.recmode #lastTrip,
   body.recmode #out,body.recmode #community,body.recmode #saved,body.recmode .intro,
   body.recmode .editfab,body.recmode .chatfab{display:none!important}
   body.cmmode #recscr,body.svmode #recscr{display:none!important}
@@ -965,7 +965,7 @@
      A blank itinerary for a traveller who already knows where they went: the same day cards as a
      generated plan, with every line typed by hand. Deliberately reuses .day / .slot so a hand-made
      trip and a generated one look like the same app. */
-  body.mkmode .card,body.mkmode #cmTeaser,body.mkmode #mytrips,body.mkmode #lastTrip,
+  body.mkmode .card,body.mkmode #mytrips,body.mkmode #lastTrip,
   body.mkmode #out,body.mkmode #community,body.mkmode #saved,body.mkmode #recscr,
   body.mkmode .intro,body.mkmode .editfab,body.mkmode .chatfab{display:none!important}
   body.cmmode #mkscr,body.svmode #mkscr,body.recmode #mkscr{display:none!important}
@@ -1388,12 +1388,12 @@
     </div>
   </div>
 
-  <button type="button" class="cmteaser" id="cmTeaser">
-    <span class="cmticon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21C7 16.5 3 13 3 8.8 3 6 5.2 4 7.8 4c1.6 0 3.1.8 4.2 2.2C13.1 4.8 14.6 4 16.2 4 18.8 4 21 6 21 8.8c0 4.2-4 7.7-9 12.2z"/></svg></span>
-    <span class="cmttext"><b id="cmTeaserT">Traveller trips</b><span id="cmTeaserS">Real plans shared by other travellers</span></span>
-    <span class="cmtgo" aria-hidden="true">›</span>
-  </button>
+  <!-- Traveller trips used to sit here as a teaser card. The drawer's "Traveller trips" item
+       opens the same screen via openCommunity(), so the home page keeps the entry point without
+       the card. -->
 
+  <!-- Filled by renderMyTrips() but no longer revealed on the home page: only the drawer's
+       "My trips" un-hides it (see nav==='trips'), and goHome() puts it away again. -->
   <div id="mytrips" class="is-hidden"></div>
   <div id="community" class="cmwrap is-hidden"></div>
   <div id="saved" class="cmwrap is-hidden"></div>
@@ -3452,7 +3452,7 @@
       $('tabTrips').textContent=ar2?'رحلات الناس':(es2?'Viajes':'Trips');
       $('tabRecord').textContent=ar2?'سجلي':(es2?'Historial':'Record');
       $('tabSaved').textContent=ar2?'مفضلاتي':(es2?'Guardados':'Saved');
-    }catch(e3){} if(document.body.classList.contains('recmode'))openRecView(RECSHARED?RECV:null); $('cmTeaserT').textContent=cx.title; $('cmTeaserS').textContent=cx.sub.split('.')[0]+'.'; drawPts(); }catch(e){}
+    }catch(e3){} if(document.body.classList.contains('recmode'))openRecView(RECSHARED?RECV:null); drawPts(); }catch(e){}
     $('introTitle').textContent=u.introTitle; $('introS1').textContent=u.introS1; $('introS2').textContent=u.introS2; $('introS3').textContent=u.introS3; try{$('introS4').textContent=u.introS4;}catch(e){}
     try{ $('moreOptsLbl').textContent=(lang==='ar'?'خيارات أكثر':(lang==='es'?'Más opciones':'More options')); }catch(e){}
     try{ if(LASTSTATE&&!$('lastTrip').classList.contains('is-hidden'))showLastTrip(LASTSTATE); }catch(e){}
@@ -3544,6 +3544,10 @@
   function goHome(){
     try{ exitCm(); exitSv(); exitRec(); exitMake(); }catch(e){}
     document.body.classList.remove('planmode');
+    // My trips is reached from the drawer, which un-hides it in place. Coming home puts it away
+    // again — otherwise one visit leaves it stuck on the home page for the rest of the session.
+    // The drawer route calls goHome() before revealing, so this never fights it.
+    try{ $('mytrips').classList.add('is-hidden'); }catch(e){}
     try{ syncEditFab(); }catch(e){}
   }
   function tabSync(){
@@ -6028,7 +6032,9 @@
   function renderMyTrips(){
     var box=$('mytrips'), arr=loadTrips(), u=I18N[LANG].ui;
     if(!arr.length){ box.innerHTML='<div class="mytrips"><div class="maphdr">'+u.myTrips+'</div>'+emptyBox(EB_BAG,u.noTrips,u.noTripsSub,ebPlanCta())+'</div>'; box.classList.add('is-hidden'); return; }
-    box.classList.remove('is-hidden');
+    // Render, but do not reveal: this block is off the home page now. Only the drawer's
+    // "My trips" un-hides it. Saving or deleting a trip re-renders whatever is already on screen
+    // without dragging the list back onto home.
     // cards with the destination's climate artwork, like the community feed — a saved trip
     // deserves a face, not a chip
     var cards=arr.map(function(tr,i){
@@ -8077,7 +8083,6 @@
         try{track('pub_add',{vis:vis});}catch(e){} })
       .catch(function(){ btn.disabled=false; btn.textContent=btnWas; toast(c.offline); });
   });
-  $('cmTeaser').addEventListener('click',openCommunity);
   // one delegated handler for everything inside the community box
   $('community').addEventListener('click',function(e){
     if(e.target.closest('.cmattr'))return;   // the photo credit is a link, not a card tap
