@@ -850,6 +850,9 @@
   /* Arabic sets the card RTL, so the close button and padding mirror with it. */
   .mignote[dir="rtl"]{text-align:right;padding:14px 16px 12px 42px}
   .mignote[dir="rtl"] .mignox{right:auto;left:9px}
+  /* Back to My trips: needs both the arming class and a plan on screen. */
+  #tripBack{display:none;margin:0 0 2px}
+  body.planmode.tripback #tripBack{display:inline-block}
   .mignox{position:absolute;top:7px;right:9px;background:none;border:none;color:var(--muted);font-size:17px;line-height:1;cursor:pointer;padding:5px}
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:11px 18px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s;z-index:9;max-width:86vw}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -1428,6 +1431,9 @@
   <div id="recscr" class="cmwrap is-hidden"></div>
   <div id="mkscr" class="cmwrap is-hidden"></div>
   <div class="lasttrip is-hidden" id="lastTrip"></div>
+  <!-- Only for a trip opened from My trips: CSS pairs it with planmode, so it cannot outlive
+       the plan it belongs to. tripBackTo() decides when it is armed. -->
+  <button type="button" class="cmback" id="tripBack"><span class="cmbkch">‹</span> <span id="tripBackT"></span></button>
   <div class="out" id="out" aria-live="polite"></div>
   <p class="foot" id="foot"></p>
 
@@ -3452,6 +3458,7 @@
     try{ $('langSel').value=lang; }catch(e){}
     $('heroEyebrow').textContent=u.eyebrow; $('heroTag').textContent=u.tag;
     try{ paintMigNote(); }catch(e){}
+    try{ $('tripBackT').textContent=u.myTrips; }catch(e){}
     $('lblDest').textContent=u.dest; $('dest').setAttribute('placeholder',u.destPh); $('surprise').textContent=u.surprise;
     $('lblDest2').textContent=u.dest2; $('addCityLabel').textContent=u.addCity; $('dest2').setAttribute('placeholder',u.dest2Ph);
     try{
@@ -3572,6 +3579,7 @@
      turns into "My trip" and brings it straight back. */
   function goHome(){
     try{ exitCm(); exitSv(); exitRec(); exitMake(); exitTp(); }catch(e){}
+    document.body.classList.remove('tripback');
     document.body.classList.remove('planmode');
     try{ syncEditFab(); }catch(e){}
   }
@@ -5881,6 +5889,7 @@
     noteSearch();
   }
   function planRoute(keys,daysArg,vibes,budget,pace,drive){
+    document.body.classList.remove('tripback');
     freshSearch();
     var t=I18N[LANG],o=t.out;
     keys=(keys||[]).filter(function(k){return DEST[k];});
@@ -6102,6 +6111,10 @@
     box.innerHTML=myTripsChrome()+'<div class="mytrips">'+cards+'</div>';
     try{ upgradeCovers(box); }catch(e){}
   }
+  function tripBackWire(){
+    var b=$('tripBack'); if(!b) return;
+    b.addEventListener('click',function(){ document.body.classList.remove('tripback'); openMyTrips(); });
+  }
   function openMyTrips(){
     enterTp(); renderMyTrips();
     $('mytrips').classList.remove('is-hidden');
@@ -6122,7 +6135,11 @@
     var tag=e.target.closest('[data-trip]');
     // Leave the Trips screen first: tpmode hides #out, so opening a trip without dropping the
     // mode would render the itinerary underneath a display:none.
-    if(tag){ var a=loadTrips(), tr=a[+tag.dataset.trip]; if(tr&&tr.state){ exitTp(); applyState(tr.state); window.scrollTo({top:0,behavior:'smooth'}); } }
+    if(tag){ var a=loadTrips(), tr=a[+tag.dataset.trip]; if(tr&&tr.state){
+      exitTp(); applyState(tr.state);
+      // after applyState: it runs plan()/planRoute(), which clear the flag on the way in
+      document.body.classList.add('tripback');
+      window.scrollTo({top:0,behavior:'smooth'}); } }
   });
 
   /* Light / dark theme */
@@ -8377,6 +8394,7 @@
     return out;
   }
   function plan(){
+    document.body.classList.remove('tripback');
     // Three cities or more is a route, and the route engine already knows how to split the nights
     // and work out every hop. plan() only ever understood one city or two.
     var ks=formCities();
@@ -9065,6 +9083,7 @@
       try{ localStorage.setItem('bosla_mignote','1'); }catch(e){}
     });
   }
+  try{ tripBackWire(); }catch(e){}
   try{ showMigNote(); }catch(e){}
   if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 </script>
