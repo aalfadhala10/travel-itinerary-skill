@@ -952,6 +952,11 @@
   body.cmmode #out,body.cmmode #saved,body.cmmode .intro,body.cmmode .editfab{display:none!important}
   body.svmode .card,body.svmode #mytrips,body.svmode #lastTrip,
   body.svmode #out,body.svmode #community,body.svmode .intro,body.svmode .editfab{display:none!important}
+  /* My trips is a screen of its own now (the Trips tab), so unlike every other mode this one
+     keeps #mytrips on screen and hides the planner around it instead. */
+  body.tpmode .card,body.tpmode #lastTrip,body.tpmode #out,body.tpmode #community,
+  body.tpmode #saved,body.tpmode #recscr,body.tpmode #mkscr,body.tpmode .intro,
+  body.tpmode .editfab{display:none!important}
   /* A planned trip is a place, not a section under the form: once it exists it owns the
      screen, and the form is one tap away. People were pressing Plan and still looking at the
      form, or scrolling up later and thinking their trip had vanished. */
@@ -3542,16 +3547,12 @@
      again: the trip owned the screen with no way back to planning. The trip is not lost, the FAB
      turns into "My trip" and brings it straight back. */
   function goHome(){
-    try{ exitCm(); exitSv(); exitRec(); exitMake(); }catch(e){}
+    try{ exitCm(); exitSv(); exitRec(); exitMake(); exitTp(); }catch(e){}
     document.body.classList.remove('planmode');
-    // My trips is reached from the drawer, which un-hides it in place. Coming home puts it away
-    // again — otherwise one visit leaves it stuck on the home page for the rest of the session.
-    // The drawer route calls goHome() before revealing, so this never fights it.
-    try{ $('mytrips').classList.add('is-hidden'); }catch(e){}
     try{ syncEditFab(); }catch(e){}
   }
   function tabSync(){
-    var m=document.body.classList.contains('cmmode')?'trips'
+    var m=(document.body.classList.contains('cmmode')||document.body.classList.contains('tpmode'))?'trips'
       :document.body.classList.contains('recmode')?'record'
       :document.body.classList.contains('svmode')?'saved':'home';
     document.querySelectorAll('#tabbar .tab').forEach(function(t){
@@ -3564,7 +3565,7 @@
       var t=e.target.closest('.tab'); if(!t)return;
       var k=t.getAttribute('data-tab');
       if(k==='home'){ goHome(); window.scrollTo({top:0,behavior:'smooth'}); }
-      else if(k==='trips')openCommunity();
+      else if(k==='trips')openMyTrips();
       else if(k==='record')openRecView();
       else if(k==='saved')openSavedView();
       tabSync();
@@ -6029,12 +6030,23 @@
   function loadTrips(){ return lsArr('rihla_trips').filter(function(t){ return t&&t.state&&typeof t.state==='object'; }); }
   function saveTripsArr(a){try{localStorage.setItem('rihla_trips',JSON.stringify(a));return true;}catch(e){return false;}}
   function tripLabel(s){var name=(s.d||'?')+(s.d2?' → '+s.d2:''); return name+' · '+(s.days||'')+' '+I18N[LANG].out.daysUnit;}
+  // The Trips tab. Your own trips lead; traveller-shared ones are one tap above them, because
+  // "my trips" is what you came for and the feed is where you go when you want ideas.
+  // Renders but never reveals — visibility belongs to openMyTrips()/exitTp(), so saving or
+  // deleting a trip refreshes what is on screen without dragging the list anywhere.
+  function myTripsChrome(){
+    var u=I18N[LANG].ui, c=CTXT[LANG]||CTXT.en;
+    var back=LANG==='ar'?'رجوع':(LANG==='es'?'Volver':'Back');
+    return '<button type="button" class="cmback" data-tpexit="1"><span class="cmbkch">‹</span> '+esc(back)+'</button>'
+      +'<div class="cmhead"><h2>'+esc(u.myTrips)+'</h2></div>'
+      +'<button type="button" class="cmteaser" data-tpcomm="1">'
+        +'<span class="cmticon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21C7 16.5 3 13 3 8.8 3 6 5.2 4 7.8 4c1.6 0 3.1.8 4.2 2.2C13.1 4.8 14.6 4 16.2 4 18.8 4 21 6 21 8.8c0 4.2-4 7.7-9 12.2z"/></svg></span>'
+        +'<span class="cmttext"><b>'+esc(c.title)+'</b><span>'+esc(c.sub.split('.')[0]+'.')+'</span></span>'
+        +'<span class="cmtgo" aria-hidden="true">›</span></button>';
+  }
   function renderMyTrips(){
     var box=$('mytrips'), arr=loadTrips(), u=I18N[LANG].ui;
-    if(!arr.length){ box.innerHTML='<div class="mytrips"><div class="maphdr">'+u.myTrips+'</div>'+emptyBox(EB_BAG,u.noTrips,u.noTripsSub,ebPlanCta())+'</div>'; box.classList.add('is-hidden'); return; }
-    // Render, but do not reveal: this block is off the home page now. Only the drawer's
-    // "My trips" un-hides it. Saving or deleting a trip re-renders whatever is already on screen
-    // without dragging the list back onto home.
+    if(!arr.length){ box.innerHTML=myTripsChrome()+'<div class="mytrips">'+emptyBox(EB_BAG,u.noTrips,u.noTripsSub,ebPlanCta())+'</div>'; return; }
     // cards with the destination's climate artwork, like the community feed — a saved trip
     // deserves a face, not a chip
     var cards=arr.map(function(tr,i){
@@ -6058,11 +6070,18 @@
         ?'<div class="cmcovw">'+cover+'<div class="cmov"><div class="cmtitle" dir="auto">'+esc(tripLabel(tr.state))+'</div></div></div>'
         :'<div class="cmpad"><div class="cmtitle" dir="auto">'+esc(tripLabel(tr.state))+'</div></div>';
       return '<div class="cmcard cmfeed" data-trip="'+i+'">'+face
-        +'<div class="cmstats"><span>'+esc(tr.state.days||'')+' '+esc(u.days||'')+'</span>'+when+
+        // ui.days is the form's label ("How many days?"), not a unit — it printed "7 How many
+        // days?" under every card. The unit word is out.daysUnit, which tripLabel already uses.
+        +'<div class="cmstats"><span>'+esc(tr.state.days||'')+' '+esc((I18N[LANG].out||{}).daysUnit||'')+'</span>'+when+
         '<button type="button" class="cmreport" data-del="'+i+'" aria-label="'+esc(u.remove)+'" style="margin:0 0 0 auto;display:inline">✕</button></div></div>';
     }).join('');
-    box.innerHTML='<div class="mytrips"><div class="maphdr">'+u.myTrips+'</div>'+cards+'</div>';
+    box.innerHTML=myTripsChrome()+'<div class="mytrips">'+cards+'</div>';
     try{ upgradeCovers(box); }catch(e){}
+  }
+  function openMyTrips(){
+    enterTp(); renderMyTrips();
+    $('mytrips').classList.remove('is-hidden');
+    window.scrollTo({top:0,behavior:'smooth'});
   }
   function saveTrip(){
     var arr=loadTrips(), s=stateObj(), label=tripLabel(s);
@@ -6071,11 +6090,15 @@
     var okv=saveTripsArr(arr); renderMyTrips(); return okv;
   }
   $('mytrips').addEventListener('click',function(e){
+    if(e.target.closest('[data-tpexit]')){ goHome(); window.scrollTo({top:0,behavior:'smooth'}); return; }
+    if(e.target.closest('[data-tpcomm]')){ openCommunity(); return; }
     var del=e.target.closest('[data-del]');
     if(del){ e.stopPropagation(); var _i=+del.dataset.del, arr=loadTrips(), _rm=arr[_i]; arr.splice(_i,1); saveTripsArr(arr); renderMyTrips();
       undoToast(I18N[LANG].ui.delTrip, function(){ var a=loadTrips(); a.splice(Math.min(_i,a.length),0,_rm); saveTripsArr(a); renderMyTrips(); }); return; }
     var tag=e.target.closest('[data-trip]');
-    if(tag){ var a=loadTrips(), tr=a[+tag.dataset.trip]; if(tr&&tr.state){ applyState(tr.state); window.scrollTo({top:0,behavior:'smooth'}); } }
+    // Leave the Trips screen first: tpmode hides #out, so opening a trip without dropping the
+    // mode would render the itinerary underneath a display:none.
+    if(tag){ var a=loadTrips(), tr=a[+tag.dataset.trip]; if(tr&&tr.state){ exitTp(); applyState(tr.state); window.scrollTo({top:0,behavior:'smooth'}); } }
   });
 
   /* Light / dark theme */
@@ -6183,7 +6206,7 @@
     // — all of which hide home — they did nothing. goHome() leaves whatever screen you are on
     // first, then they land where they should.
     if(nav==='how'){ closeDrawer(); goHome(); showIntro(); $('intro').scrollIntoView({behavior:'smooth',block:'center'}); }
-    else if(nav==='trips'){ closeDrawer(); goHome(); try{renderMyTrips();}catch(e){} var mt=$('mytrips'); if(mt){ mt.classList.remove('is-hidden'); mt.scrollIntoView({behavior:'smooth',block:'start'}); } }
+    else if(nav==='trips'){ closeDrawer(); try{openMyTrips();}catch(e){} }
     else if(nav==='community'){ closeDrawer(); openCommunity(); }
     else if(nav==='saved'){ closeDrawer(); openSavedView(); }
     else if(nav==='record'){ closeDrawer(); openRecView(); }
@@ -6578,7 +6601,7 @@
     if(!RGFLAT&&!RGDRAGGING){ RGV.lon+=0.06; rgDraw(); }
     RGRAF=requestAnimationFrame(rgLoop);
   }
-  function enterRec(){ document.body.classList.add('recmode'); exitCm(); exitSv(); try{exitMake();}catch(e){}  document.body.classList.remove('planmode'); try{syncEditFab();}catch(e){} }
+  function enterRec(){ document.body.classList.add('recmode'); exitCm(); exitSv(); try{exitTp();exitMake();}catch(e){}  document.body.classList.remove('planmode'); try{syncEditFab();}catch(e){} }
   /* ---- Build it yourself --------------------------------------------------------------------
      Some travellers already know their trip — they have lived it, or it is sitting in a Google
      Maps list. Generating a plan for them is the wrong tool: they do not want suggestions, they
@@ -6792,7 +6815,7 @@
   }
   function openMake(){
     document.body.classList.add('mkmode');
-    exitCm(); exitSv(); exitRec();
+    exitCm(); exitSv(); exitRec(); try{exitTp();}catch(e){}
     $('mkscr').classList.remove('is-hidden');
     renderMake();
     window.scrollTo({top:0,behavior:'smooth'});
@@ -7718,12 +7741,17 @@
     if(LANG==='es')return day<1?'hoy':(day===1?'ayer':('hace '+day+' días'));
     return day<1?'today':(day===1?'yesterday':(day+' days ago'));
   }
-  function enterCm(){ document.body.classList.add('cmmode'); document.body.classList.remove('svmode'); try{exitRec();exitMake();}catch(e){}  document.body.classList.remove('planmode'); try{syncEditFab();}catch(e){} }
+  function enterCm(){ document.body.classList.add('cmmode'); document.body.classList.remove('svmode'); try{exitTp();exitRec();exitMake();}catch(e){}  document.body.classList.remove('planmode'); try{syncEditFab();}catch(e){} }
   function exitCm(){
     document.body.classList.remove('cmmode');
     $('community').classList.add('is-hidden');
   }
-  function enterSv(){ document.body.classList.add('svmode'); exitCm(); try{exitRec();exitMake();}catch(e){}  document.body.classList.remove('planmode'); try{syncEditFab();}catch(e){} }
+  function enterTp(){ document.body.classList.add('tpmode'); exitCm(); try{exitSv();exitRec();exitMake();}catch(e){} document.body.classList.remove('planmode'); try{syncEditFab();}catch(e){} }
+  function exitTp(){
+    document.body.classList.remove('tpmode');
+    $('mytrips').classList.add('is-hidden');
+  }
+  function enterSv(){ document.body.classList.add('svmode'); exitCm(); try{exitTp();exitRec();exitMake();}catch(e){}  document.body.classList.remove('planmode'); try{syncEditFab();}catch(e){} }
   function exitSv(){
     document.body.classList.remove('svmode');
     $('saved').classList.add('is-hidden');
