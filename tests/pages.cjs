@@ -45,12 +45,13 @@ const FILE = 'file:///home/user/travel-itinerary-skill/index.html';
   await open();
   await plan('Cairo', 4);
   const v = await view();
-  // Trip, Info, then the four days — the trip comes first because that is what you asked for
-  // when you tapped Plan, and the info page sits with it rather than past the end of the week.
+  // The four days, then Info / Book / Budget. The days come first because the itinerary is what
+  // you asked for when you tapped Plan; the summary, the shop and the cost follow it.
   pass('the plan is split into pages (' + v.pages + ' pages: ' + v.tabs.join(' ') + ')',
-    v.pages === 6 && v.tabs[0] === 'Trip' && v.tabs[1] === 'Info' && v.tabs[5] === '4');
+    v.pages === 7 && v.tabs[0] === 'Day 1' && v.tabs[3] === 'Day 4' &&
+    v.tabs.slice(4).join(',') === 'Info,Book,Budget');
   pass('only one page is on screen at a time (' + v.visible + ' visible)', v.visible === 1);
-  pass('it opens on the trip, not on day 1 (' + v.shown.slice(0, 34) + ')',
+  pass('it opens on day 1 (' + v.shown.slice(0, 34) + ')',
     v.onIndex === 0 && /Trip|Cairo/i.test(v.shown));
   pass('every day is still there (' + v.days + ')', v.days === 4);
   pass('and a day is never collapsed — the day IS the page (' + v.collapsed + ' collapsed)', v.collapsed === 0);
@@ -61,37 +62,45 @@ const FILE = 'file:///home/user/travel-itinerary-skill/index.html';
   pass('Next reaches the info page (' + inf.shown.slice(0, 30) + ')', inf.onIndex === 1);
   await page.click('#out .pg.on .pgbtn.next'); await page.waitForTimeout(500);
   const d1 = await view();
-  pass('and then day 1 (' + d1.shown.slice(0, 34) + ')', d1.onIndex === 2 && /Day 1/.test(d1.shown));
+  pass('and then day 3 (' + d1.shown.slice(0, 34) + ')', d1.onIndex === 2 && /Day 3/.test(d1.shown));
   await page.click('#out .pg.on .pgbtn.next'); await page.waitForTimeout(500);
   const d2 = await view();
-  pass('and then day 2 (' + d2.shown.slice(0, 34) + ')', d2.onIndex === 3 && /Day 2/.test(d2.shown));
+  pass('and then day 4 (' + d2.shown.slice(0, 34) + ')', d2.onIndex === 3 && /Day 4/.test(d2.shown));
   await page.click('#out .pg.on .pgbtn.prev'); await page.waitForTimeout(500);
   pass('Back returns to day 1', (await view()).onIndex === 2);
 
   // the next button says where you're going
   const preview = await page.evaluate(() => document.querySelector('#out .pg.on .pgbtn.next .pgwhat').textContent.trim());
-  pass('the Next button names the day ahead (' + preview + ')', /Day 2/.test(preview));
+  pass('the Next button names what is ahead (' + preview + ')', /Day|Info|Book|Budget/.test(preview));
 
   // tabs jump straight there
-  await page.click('#out .pgtab[data-pgt="5"]'); await page.waitForTimeout(500);
+  await page.click('#out .pgtab[data-pgt="3"]'); await page.waitForTimeout(500);
   const t4 = await view();
-  pass('a tab jumps straight to that day (' + t4.shown.slice(0, 30) + ')', t4.onIndex === 5 && /Day 4/.test(t4.shown));
+  pass('a tab jumps straight to that day (' + t4.shown.slice(0, 30) + ')', t4.onIndex === 3 && /Day 4/.test(t4.shown));
 
-  // the ends are closed off
+  // the ends are closed off — the last page is Budget now, not the last day
   const ends = await page.evaluate(() => {
+    const tabs = document.querySelectorAll('#out .pgtab');
+    pgGo(tabs.length - 1, true, true);
     const on = document.querySelector('#out .pg.on');
     return { next: on.querySelector('.pgbtn.next').disabled, prev: on.querySelector('.pgbtn.prev').disabled };
   });
-  pass('the last day is the end of the trip now, so Next is closed off', ends.next === true);
-  await page.click('#out .pgtab[data-pgt="1"]'); await page.waitForTimeout(500);
+  pass('the last page is the end, so Next is closed off', ends.next === true);
+  await page.evaluate(() => {                    // Info sits after the days now
+    const t = [...document.querySelectorAll('#out .pgtab')]
+      .findIndex(x => /Info|معلومات/.test(x.textContent));
+    pgGo(t, true, true);
+  });
+  await page.waitForTimeout(500);
   const info = await view();
   const infoCards = await page.evaluate(() => [...document.querySelector('#out .pg.on').children].map(c => c.className.split(' ')[0]));
   pass('the info page still gathers the trip-wide cards (' + infoCards.join(', ') + ')',
-    info.onIndex === 1 && infoCards.includes('bookbar') && infoCards.includes('note'));
+    infoCards.includes('ticket') && infoCards.includes('note'));
   // "change something?" lands where you land
-  const overCards = await page.evaluate(() => [...document.querySelector('#out > .pg').children].map(c => c.className.split(' ')[0]));
-  pass('"change something?" and the cost sit on the overview (' + overCards.join(', ') + ')',
-    overCards.includes('editbar') && overCards.includes('ticket') && overCards.includes('bud') && !overCards.includes('actions'));
+  const overCards = await page.evaluate(() => [...document.querySelector('#out .pg.on').children].map(c => c.className.split(' ')[0]));
+  pass('"change something?" sits with the summary, and the cost has its own page (' + overCards.join(', ') + ')',
+    overCards.includes('editbar') && overCards.includes('ticket') &&
+    !overCards.includes('bud') && !overCards.includes('actions'));
 
   // the bottom line is on every page, and opens the breakdown
   const cost = await page.evaluate(() => {
@@ -140,8 +149,8 @@ const FILE = 'file:///home/user/travel-itinerary-skill/index.html';
   // ...but a brand-new trip goes back to the front, whatever page you were on before
   await plan('Rome', 3);
   const fresh = await view();
-  pass('a new trip opens on its own trip page (' + fresh.pages + ' pages, page ' + fresh.onIndex + ')',
-    fresh.onIndex === 0 && fresh.pages === 5);
+  pass('a new trip opens on day one (' + fresh.pages + ' pages, page ' + fresh.onIndex + ')',
+    fresh.onIndex === 0 && fresh.pages === 6);
 
   // printing must show the whole thing, not one page
   await page.emulateMedia({ media: 'print' });
@@ -169,7 +178,7 @@ const FILE = 'file:///home/user/travel-itinerary-skill/index.html';
   await plan('Cairo', 3);
   const ar = await view();
   pass('Arabic gets Arabic tabs, in the new order (' + ar.tabs.join(' ') + ')',
-    ar.tabs[0] === 'الرحلة' && ar.tabs[1] === 'معلومات' && ar.tabs[2] === '1');
+    ar.tabs[0] === 'يوم 1' && ar.tabs.slice(3).join(',') === 'معلومات,الحجز,الميزانية');
 
   console.log('\n=== PLAN AS PAGES ===');
   res.forEach(r => console.log(r));

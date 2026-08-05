@@ -57,17 +57,17 @@ const FILE = 'file:///home/user/travel-itinerary-skill/index.html';
   // The plan opens on the trip itself now — what it is, how long, what it costs — with the info
   // page next and the days after that. So page 2 is day 1, not page 1.
   const start = await at();
-  pass('it opens on the trip page and says so (' + start.count + ')', start.i === 0 && /Trip/.test(start.count));
+  pass('it opens on day one and says so (' + start.count + ')', start.i === 0 && /Day 1 of 7/.test(start.count));
   await page.click('#out .pgarrow.next'); await page.waitForTimeout(400);
   const info = await at();
-  pass('the right arrow goes to the info page next (' + info.count + ')', info.i === 1 && /Info/.test(info.count));
+  pass('the right arrow goes to day two next (' + info.count + ')', info.i === 1 && /Day 2 of 7/.test(info.count));
   await page.click('#out .pgarrow.next'); await page.waitForTimeout(400);
   const one = await at();
-  pass('and then into day one (' + one.count + ')', one.i === 2 && /Day 1 of 7/.test(one.count));
+  pass('and then day three (' + one.count + ')', one.i === 2 && /Day 3 of 7/.test(one.count));
   await page.click('#out .pgarrow.prev'); await page.waitForTimeout(400);
   await page.click('#out .pgarrow.prev'); await page.waitForTimeout(400);
   const over = await at();
-  pass('and the left arrow walks back to the trip page (' + over.count + ')', over.i === 0 && /Trip/.test(over.count));
+  pass('and the left arrow walks back to day one (' + over.count + ')', over.i === 0 && /Day 1 of 7/.test(over.count));
 
   // 3. the ends are closed off, so nothing dead-ends silently
   pass('the left arrow is closed off on the first page', over.prev === true && over.next === false);
@@ -81,15 +81,15 @@ const FILE = 'file:///home/user/travel-itinerary-skill/index.html';
 
   // 4. the counter is the point — on a long trip the highlighted chip scrolls out of sight
   const longTrip = await page.evaluate(() => {
-    pgGo(6, true);
+    pgGo(4, true);   // day 5 — far enough in that its chip has scrolled out of sight
     const tabs = document.querySelector('#out .pgtabs'), cnt = document.querySelector('#out .pgcount');
     return { scrolls: tabs.scrollWidth > tabs.clientWidth + 4,
       count: cnt.textContent, countVisible: cnt.getBoundingClientRect().width > 0,
       font: parseFloat(getComputedStyle(cnt).fontSize) };
   });
   pass('on a 7-day trip the chip strip already scrolls (' + longTrip.scrolls + ')', longTrip.scrolls);
-  // page 6 is day 5 now that the trip and info pages come first — which is the whole reason the
-  // counter reads the page instead of counting its position.
+  // the days lead now, so page index and day number line up again — but the counter still reads
+  // the page rather than counting its position, which is what keeps Info/Book/Budget correct.
   pass('and the counter says which DAY you are on regardless (' + longTrip.count + ')',
     /Day 5 of 7/.test(longTrip.count) && longTrip.countVisible);
   pass('at a size you can read (' + longTrip.font + 'px)', longTrip.font >= 14);

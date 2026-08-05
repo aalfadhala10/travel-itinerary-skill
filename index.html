@@ -3762,7 +3762,7 @@
   // The plan is still built as one block of HTML; this splits the finished thing into pages
   // afterwards, so nothing about how a day is generated had to change. Overview first, then one
   // page per day, then everything you read once (packing, weather, phrases, booking) at the end.
-  var PAGE=0, PGFRESH=true; // PGFRESH: a brand-new plan opens on the trip page, a re-render stays put
+  var PAGE=0, PGFRESH=true; // PGFRESH: a brand-new plan opens on day one, a re-render stays put
   function pgLabels(){
     var ar=LANG==='ar', es=LANG==='es';
     return { over: ar?'الرحلة':(es?'Viaje':'Trip'),
@@ -3868,10 +3868,14 @@
     // things you read once. They are one page now, and what was crowding it (book, budget) has
     // pages of its own.
     var infoItems=buckets[0].concat(tail.length?buckets[buckets.length-1]:[]);
-    var order=[{items:infoItems,kind:'info'}];
+    // The days lead. What people came for is the itinerary, so a fresh plan opens on day one
+    // rather than a summary they have to page past; the summary, the shop and the cost are all
+    // still one tap away, at the end. PGFRESH already lands on page 0, which is now day one.
+    var order=[];
+    for(var bi=1;bi<=dayCount;bi++)order.push({items:buckets[bi],kind:'day',day:bi});
+    order.push({items:infoItems,kind:'info'});
     if(book)order.push({items:[book],kind:'book'});
     if(bud)order.push({items:[bud],kind:'budget'});
-    for(var bi=1;bi<=dayCount;bi++)order.push({items:buckets[bi],kind:'day',day:bi});
 
     var pages=order.map(function(spec,i){
       var items=spec.items;

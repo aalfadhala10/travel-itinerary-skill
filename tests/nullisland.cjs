@@ -87,7 +87,15 @@ const BUFFALO = {
   await page.waitForTimeout(4000);
   const hops = await page.evaluate(() => [...document.querySelectorAll('#out .hop')]
     .map(h => h.textContent.trim()));
-  const nums = hops.map(h => parseFloat(h.replace(/[^\d.]/g, ''))).filter(n => !isNaN(n));
+  // A hop reads "2.4 km · ~7 min drive" — two numbers. Stripping non-digits glued them into
+  // "2437", so take only the distance, which is what this assertion is about.
+  const nums = hops.map(h => {
+    const d = h.split('\u00b7')[0];                       // before the middot: the distance
+    const m = d.match(/([\d.]+)\s*(km|m|\u0643\u0645|\u0645)\b/);
+    if (!m) return NaN;
+    const v = parseFloat(m[1]);
+    return /^(m|\u0645)$/.test(m[2]) ? v / 1000 : v;      // metres → km, so one scale
+  }).filter(n => !isNaN(n));
   const worst = nums.length ? Math.max(...nums) : 0;
   pass('no absurd distance is printed anywhere (' + hops.length + ' hops, largest ' +
     worst + ')', hops.every(h => !/9105|9,105/.test(h)) && worst < 500);

@@ -38,14 +38,14 @@ const THEME = process.env.THEME || 'dark';
 
   // English, one city, a week
   let s = await plan('en', 'Dubai', 7);
-  pass('a brand-new plan opens on the trip page, not day one (page ' + s.page +
-    ', "' + s.count + '")', s.onIndex === 0 && s.onKind === 'over');
-  pass('the strip reads Trip, Info, then the days (' + s.tabs.join(' · ') + ')',
-    s.tabs[0] === 'Trip' && s.tabs[1] === 'Info' && s.tabs[2] === '1' &&
-    s.tabs[s.tabs.length - 1] === '7');
+  pass('a brand-new plan opens on day one (page ' + s.page +
+    ', "' + s.count + '")', s.onIndex === 0 && s.onKind === 'day');
+  pass('the strip reads the days, then Info/Book/Budget (' + s.tabs.join(' · ') + ')',
+    s.tabs[0] === 'Day 1' && s.tabs[6] === 'Day 7' &&
+    s.tabs.slice(7).join(',') === 'Info,Book,Budget');
   pass('and the pages are ordered to match (' + s.kinds.join(',') + ')',
-    s.kinds[0] === 'over' && s.kinds[1] === 'info' &&
-    s.kinds.slice(2).every(k => k === 'day'));
+    s.kinds.slice(0, 7).every(k => k === 'day') &&
+    s.kinds.slice(7).join(',') === 'info,book,budget');
 
   // the counter must name the DAY, not the page it happens to sit on
   const walk = await page.evaluate(() => {
@@ -54,7 +54,8 @@ const THEME = process.env.THEME || 'dark';
     return out;
   });
   pass('the counter follows the day, not the page number (' + walk.join(' | ') + ')',
-    walk[0] === 'Trip' && walk[1] === 'Info' && walk[2] === 'Day 1 of 7' && walk[3] === 'Day 2 of 7');
+    walk[0] === 'Day 1 of 7' && walk[1] === 'Day 2 of 7' &&
+    walk[2] === 'Day 3 of 7' && walk[3] === 'Day 4 of 7');
 
   // "jump to day 5" has to land on day 5, not on whatever page 5 became
   const jump = await page.evaluate(() => {
@@ -68,9 +69,9 @@ const THEME = process.env.THEME || 'dark';
 
   // Arabic reads the same way round
   s = await plan('ar', 'دبي', 5);
-  pass('Arabic opens on الرحلة too (' + s.count + ')', s.onIndex === 0 && s.onKind === 'over');
-  pass('and the Arabic strip is الرحلة · معلومات · then the days (' + s.tabs.join(' · ') + ')',
-    s.tabs[0] === 'الرحلة' && s.tabs[1] === 'معلومات' && s.tabs[2] === '1');
+  pass('Arabic opens on day one too (' + s.count + ')', s.onIndex === 0 && s.onKind === 'day');
+  pass('and the Arabic strip is the days, then معلومات · الحجز · الميزانية (' + s.tabs.join(' · ') + ')',
+    s.tabs[0] === 'يوم 1' && s.tabs.slice(5).join(',') === 'معلومات,الحجز,الميزانية');
   await page.screenshot({ path: 'pg-ar-' + THEME + '.png' });
 
   // a re-render must NOT throw you back to the trip page
