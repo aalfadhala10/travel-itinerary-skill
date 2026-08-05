@@ -2572,7 +2572,9 @@
       if(!CONFIG.analyticsEndpoint)return;
       var sid; try{ sid=sessionStorage.getItem('bosla_sid'); if(!sid){ sid=Date.now().toString(36)+Math.random().toString(36).slice(2,8); sessionStorage.setItem('bosla_sid',sid);} }catch(e){ sid='na'; }
       var tz=''; try{ tz=Intl.DateTimeFormat().resolvedOptions().timeZone||''; }catch(e){} // timezone → visitor's country (anonymous, no permission, no precise location)
-      var body=JSON.stringify(Object.assign({ev:ev,sid:sid,lang:(typeof LANG!=='undefined'?LANG:''),tz:tz,t:new Date().toISOString(),ref:document.referrer||''},props||{}));
+      // site = which deployment this came from (github.io vs pages.dev), so the dashboard can
+      // show traffic moving across. Our own hostname, not anything about the traveller.
+      var body=JSON.stringify(Object.assign({ev:ev,sid:sid,lang:(typeof LANG!=='undefined'?LANG:''),tz:tz,t:new Date().toISOString(),ref:document.referrer||'',site:location.hostname},props||{}));
       if(navigator.sendBeacon){ navigator.sendBeacon(CONFIG.analyticsEndpoint, body); }
       else { fetch(CONFIG.analyticsEndpoint,{method:'POST',body:body,keepalive:true,mode:'no-cors'}); }
     }catch(e){}

@@ -34,7 +34,7 @@ function safeEq_(a, b) {
 }
 
 var EVENTS_SHEET = 'Events';
-var EVENTS_HEADERS = ['received', 't', 'ev', 'sid', 'lang', 'mode', 'dest', 'country', 'days', 'cities', 'host', 'ref', 'tz', 'msg'];
+var EVENTS_HEADERS = ['received', 't', 'ev', 'sid', 'lang', 'mode', 'dest', 'country', 'days', 'cities', 'host', 'ref', 'tz', 'msg', 'site'];
 var FEEDBACK_SHEET = 'Feedback';
 var FEEDBACK_HEADERS = ['received', 'rating', 'message', 'contact', 'lang', 'page'];
 
@@ -74,7 +74,8 @@ function doPost(e) {
         cap_(data.t, 40), cap_(data.ev, 40), cap_(data.sid, 40), cap_(data.lang, 8),
         cap_(data.mode, 40), cap_(data.dest, 80), cap_(data.country, 80),
         cap_(data.days, 8), cap_(data.cities, 200),
-        cap_(data.host, 120), cap_(data.ref, 200), cap_(data.tz, 60), cap_(data.msg, 300)
+        cap_(data.host, 120), cap_(data.ref, 200), cap_(data.tz, 60), cap_(data.msg, 300),
+        cap_(data.site, 120)
       ]);
     }
     return ContentService.createTextOutput(JSON.stringify({ ok: true }))
@@ -99,6 +100,8 @@ function doGet(e) {
   var total = eRows.length;
   var pageViews = 0, plans = 0, saves = 0, shares = 0, outbound = 0;
   var sessions = {}, dests = {}, countries = {}, hosts = {}, langs = {}, byDay = {}, misses = {}, missTotal = 0;
+  // which deployment each event came from — blank on anything logged before the column existed
+  var sites = {}, siteSessions = {};
   // A funnel has to count PEOPLE, not events. Counting events gave "made a plan 219%", which is
   // not a drop-off — it is one visitor planning four times. These sets hold the sessions that
   // reached each step, so every step is a subset of the one above it and the percentages mean
@@ -111,7 +114,7 @@ function doGet(e) {
 
   for (var i = 0; i < eRows.length; i++) {
     var r = eRows[i];
-    var received = r[0], ev = r[2], sid = r[3], lang = r[4], dest = r[6], country = r[7], host = r[10], tz = r[12], msg = r[13];
+    var received = r[0], ev = r[2], sid = r[3], lang = r[4], dest = r[6], country = r[7], host = r[10], tz = r[12], msg = r[13], site = r[14];
     if (sid) sessions[sid] = 1;
     if (sid && tz && !sessCountry[sid]) sessCountry[sid] = tzCountry_(tz);
     if (sid) {
@@ -120,6 +123,8 @@ function doGet(e) {
       else if (ev === 'outbound') sOut[sid] = 1;
       else if (ev === 'save' || ev === 'share' || ev === 'wa') sKeep[sid] = 1;
     }
+    if (site) { sites[site] = (sites[site] || 0) + 1;
+      if (sid) { (siteSessions[site] = siteSessions[site] || {})[sid] = 1; } }
     if (ev === 'chat_msg') { chatMsgTotal++; if (msg) chatMsgList.push([received, msg]); }
     else if (ev === 'chat_plan') { chatPlanTotal++; if (dest) chatDests[dest] = (chatDests[dest] || 0) + 1; }
     if (lang) langs[lang] = (langs[lang] || 0) + 1;
@@ -266,6 +271,14 @@ function doGet(e) {
     tbl_('Top destinations', 'Destination', rowsHtml(topList(dests))) +
     tbl_('Top countries', 'Country', rowsHtml(topList(countries))) +
     tbl_('Outbound clicks by site', 'Site', rowsHtml(topList(hosts))) +
+    '<h3>Traffic by deployment (which link people are actually on)</h3>' +
+    '<table><tr><th>Site</th><th class="n">Events</th><th class="n">Visitors</th></tr>' +
+    Object.keys(sites).sort(function (a, b) { return sites[b] - sites[a]; }).map(function (k) {
+      return '<tr><td>' + esc_(k) + '</td><td class="n">' + sites[k] + '</td><td class="n">' +
+        Object.keys(siteSessions[k] || {}).length + '</td></tr>';
+    }).join('') +
+    (Object.keys(sites).length ? '' : '<tr><td colspan="3" style="opacity:.5">nothing logged with a site yet</td></tr>') +
+    '</table>' +
     tbl_('Language', 'Lang', rowsHtml(topList(langs))) +
     '</div>' +
     '<h3>Chat trips — by destination the assistant built</h3>' +
