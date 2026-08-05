@@ -5896,6 +5896,7 @@
   }
   function planRoute(keys,daysArg,vibes,budget,pace,drive){
     document.body.classList.remove('tripback');
+    try{ showMore(false); }catch(e){}
     freshSearch();
     var t=I18N[LANG],o=t.out;
     keys=(keys||[]).filter(function(k){return DEST[k];});
@@ -8402,6 +8403,9 @@
   }
   function plan(){
     document.body.classList.remove('tripback');
+    // Planning answers the question the advanced options were asked for, so they fold away. The
+    // values are kept, just not left open across the trip and every visit back to the form.
+    try{ showMore(false); }catch(e){}
     // Three cities or more is a route, and the route engine already knows how to split the nights
     // and work out every hop. plan() only ever understood one city or two.
     var ks=formCities();
