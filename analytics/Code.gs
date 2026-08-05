@@ -271,14 +271,15 @@ function doGet(e) {
     tbl_('Top destinations', 'Destination', rowsHtml(topList(dests))) +
     tbl_('Top countries', 'Country', rowsHtml(topList(countries))) +
     tbl_('Outbound clicks by site', 'Site', rowsHtml(topList(hosts))) +
-    '<h3>Traffic by deployment (which link people are actually on)</h3>' +
+    // one grid cell, like tbl_() returns — an unwrapped h3 and table become two separate cells
+    '<div><h3>Traffic by deployment (which link people are actually on)</h3>' +
     '<table><tr><th>Site</th><th class="n">Events</th><th class="n">Visitors</th></tr>' +
     Object.keys(sites).sort(function (a, b) { return sites[b] - sites[a]; }).map(function (k) {
       return '<tr><td>' + esc_(k) + '</td><td class="n">' + sites[k] + '</td><td class="n">' +
         Object.keys(siteSessions[k] || {}).length + '</td></tr>';
     }).join('') +
     (Object.keys(sites).length ? '' : '<tr><td colspan="3" style="opacity:.5">nothing logged with a site yet</td></tr>') +
-    '</table>' +
+    '</table></div>' +
     tbl_('Language', 'Lang', rowsHtml(topList(langs))) +
     '</div>' +
     '<h3>Chat trips — by destination the assistant built</h3>' +
