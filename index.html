@@ -920,10 +920,10 @@
   #app[dir="rtl"] .ticket .tip{border-left:none;border-right:3px solid #e9d6a8}
 
   /* collapsible itinerary sections */
-  .bud>h4,.pack>h4,.bookbar>.maphdr,.mapcard>.maphdr{cursor:pointer;user-select:none;position:relative;padding-right:24px}
-  #app[dir="rtl"] .bud>h4,#app[dir="rtl"] .pack>h4,#app[dir="rtl"] .bookbar>.maphdr,#app[dir="rtl"] .mapcard>.maphdr{padding-right:0;padding-left:24px}
-  .bud>h4::after,.pack>h4::after,.bookbar>.maphdr::after,.mapcard>.maphdr::after{content:"";position:absolute;right:4px;top:calc(50% - 5px);width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
-  #app[dir="rtl"] .bud>h4::after,#app[dir="rtl"] .pack>h4::after,#app[dir="rtl"] .bookbar>.maphdr::after,#app[dir="rtl"] .mapcard>.maphdr::after{right:auto;left:4px}
+  .bud>h4,.pack>h4,.bookbar>.maphdr,.mapcard>.maphdr,.notecard>.maphdr{cursor:pointer;user-select:none;position:relative;padding-right:24px}
+  #app[dir="rtl"] .bud>h4,#app[dir="rtl"] .pack>h4,#app[dir="rtl"] .bookbar>.maphdr,#app[dir="rtl"] .mapcard>.maphdr,#app[dir="rtl"] .notecard>.maphdr{padding-right:0;padding-left:24px}
+  .bud>h4::after,.pack>h4::after,.bookbar>.maphdr::after,.mapcard>.maphdr::after,.notecard>.maphdr::after{content:"";position:absolute;right:4px;top:calc(50% - 5px);width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
+  #app[dir="rtl"] .bud>h4::after,#app[dir="rtl"] .pack>h4::after,#app[dir="rtl"] .bookbar>.maphdr::after,#app[dir="rtl"] .mapcard>.maphdr::after,#app[dir="rtl"] .notecard>.maphdr::after{right:auto;left:4px}
   .collapsed>h4::after,.collapsed>.maphdr::after{transform:rotate(-135deg)}
   .collapsed>*:not(h4):not(.maphdr){display:none!important}
 
@@ -3753,14 +3753,6 @@
   var CHEVR='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var SHUFSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 4v5h-5M3 20a9 9 0 0 1 15-6.7L21 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function poiByName(ck,name){ var d=DEST[ck]; if(!d)return null; var all=d.poi.concat(d.food); for(var i=0;i<all.length;i++)if(all[i].n===name)return all[i]; return null; }
-  // Compact tuner shown atop a plan: adjust trip length and get a fresh version without scrolling up.
-  function tunerBar(o,days){
-    return '<div class="tuner">'+
-      '<div class="tunedays"><button type="button" class="tunebtn" data-tune="-1" aria-label="−">−</button>'+
-        '<span class="tuneval"><b>'+days+'</b> '+o.daysUnit+'</span>'+
-        '<button type="button" class="tunebtn" data-tune="1" aria-label="+">+</button></div>'+
-      '<button type="button" class="tuneanother">'+SHUFSVG+'<span>'+o.anotherVersion+'</span></button></div>';
-  }
   function dayNav(total,o){
     if(total<4)return '';
     var chips=''; for(var d=1;d<=total;d++)chips+='<button type="button" class="dnav" data-day="'+d+'">'+d+'</button>';
@@ -3775,6 +3767,7 @@
     var ar=LANG==='ar', es=LANG==='es';
     return { over: ar?'الرحلة':(es?'Viaje':'Trip'),
              info: ar?'معلومات':(es?'Info':'Info'),
+             budget: ar?'الميزانية':(es?'Presupuesto':'Budget'),
              day: ar?'يوم':(es?'Día':'Day'),
              prev: ar?'السابق':(es?'Anterior':'Back'),
              next: ar?'التالي':(es?'Siguiente':'Next') };
@@ -3786,6 +3779,7 @@
   function pgCountText(pg,dayCount){
     var L=pgLabels(), k=pg?pg.getAttribute('data-pgk'):'';
     if(k==='info')return L.info;
+    if(k==='budget')return L.budget;
     var d=+((pg&&pg.getAttribute('data-pgday'))||0);
     if(!d)return L.over;
     if(LANG==='ar')return 'اليوم '+d+' من '+dayCount;
@@ -3836,7 +3830,6 @@
         if(bi&&items[j].classList.contains('editbar'))buckets[0].push(items.splice(j,1)[0]);
       }
     });
-    if(bud)buckets[0].push(bud);
     // Trip notes live on the overview page: booking numbers, ideas, the restaurant a friend swore
     // by. Keyed to the trip itself so every trip keeps its own page, and stored only on the device
     // — same promise as everything else.
@@ -3867,6 +3860,9 @@
     // stranded past the end of a fortnight, where nobody scrolls to find them, and they belong
     // with the summary — you read them while you are still deciding, not on the last afternoon.
     var order=[{items:buckets[0],kind:'over'}];
+    // What it costs is its own question — it was 473px sat under the summary, and a page of its
+    // own is both easier to find and one fewer thing on the trip page.
+    if(bud)order.push({items:[bud],kind:'budget'});
     if(tail.length)order.push({items:buckets[buckets.length-1],kind:'info'});
     for(var bi=1;bi<=dayCount;bi++)order.push({items:buckets[bi],kind:'day',day:bi});
 
@@ -3884,7 +3880,7 @@
       t.type='button'; t.className='pgtab'; t.setAttribute('data-pgt',i);
       // a bare number told you nothing about what the chip was. The strip is wider for it,
       // which is the trade the feedback asked for.
-      t.textContent=(spec.kind==='over'?L.over:(spec.kind==='info'?L.info:(L.day+' '+spec.day)));
+      t.textContent=(spec.kind==='over'?L.over:(spec.kind==='info'?L.info:(spec.kind==='budget'?L.budget:(L.day+' '+spec.day))));
       if(spec.day&&spec.day===tripTodayNum(dayCount))t.classList.add('today');
       tabs.appendChild(t);
       return pg;
@@ -3895,6 +3891,7 @@
       var k=pg.getAttribute('data-pgk');
       if(k==='over')return L.over;
       if(k==='info')return L.info;
+      if(k==='budget')return L.budget;
       var lbl=pg.querySelector('.dlabel');
       return lbl?lbl.textContent.trim():(L.next+' '+(pg.getAttribute('data-pgday')||i));
     }
@@ -4031,7 +4028,9 @@
   }
   function notesCard(){
     var no=I18N[LANG].out, nc=document.createElement('div');
-    nc.className='notecard';
+    // Closed to begin with: an empty notepad took a third of the trip page from everyone, and
+    // the people who want it know where it is. Tapping the header opens it, like the others.
+    nc.className='notecard collapsed';
     nc.innerHTML='<div class="maphdr">'+esc(no.notesTitle)+'</div>'
       +'<div class="nlist"></div>'
       +'<div class="naddrow"><input type="text" class="nadd" dir="auto" maxlength="160" placeholder="'+esc(no.notesPh)+'">'
@@ -4151,18 +4150,6 @@
     return '<div class="nightsbar citybar"><div class="nightslbl">'+title+' · '+total+' '+dayW+'</div>'+rows+noteHtml+'</div>';
   }
   // Who's travelling — adjust adults/kids right on the plan; costs and the day plan refresh in place.
-  function travellersEditor(){
-    var ar=LANG==='ar', es=LANG==='es';
-    var a=Math.max(1,Math.min(20,parseInt($('adults').value,10)||1)), k=Math.max(0,Math.min(20,parseInt($('kids').value,10)||0));
-    var title=ar?'مين مسافر':(es?'Quién viaja':'Who’s travelling');
-    var aL=ar?'بالغين':(es?'Adultos':'Adults'), kL=ar?'أطفال':(es?'Niños':'Kids');
-    function row(lbl,val,who){ return '<div class="nrow"><span class="ncity">'+esc(lbl)+'</span>'+
-      '<span class="nctl"><button type="button" class="nbtn" data-tv="'+who+'|-1" aria-label="-">−</button>'+
-      '<span class="nnum">'+val+'</span>'+
-      '<button type="button" class="nbtn" data-tv="'+who+'|1" aria-label="+">+</button></span></div>'; }
-    return '<div class="nightsbar travbar">'+
-      '<div class="nightslbl">'+title+'</div>'+row(aL,a,'a')+row(kL,k,'k')+'</div>';
-  }
   function bumpTravellers(who,delta){
     var id=(who==='k')?'kids':'adults', min=(who==='k')?0:1;
     var cur=parseInt($(id).value,10); if(isNaN(cur))cur=min;
@@ -5398,17 +5385,6 @@
       :(LANG==='es'?'Abre la ruta del día en Google Maps':"Open the whole day's route in Google Maps");
     return '<a class="dayroute" href="'+u+'" target="_blank" rel="noopener">'+esc(txt)+'</a>';
   }
-  function routeStrip(names,t){
-    names=names.filter(Boolean); if(!names.length)return '';
-    // A single city has no route to show — the card opened a map of the city they are already
-    // going to. Each day now carries its own route link, which is the one worth tapping.
-    if(names.length===1) return '';
-    var pills=names.map(function(c,i){return '<a class="rtstop" href="'+mapUrl(c)+'" target="_blank" rel="noopener"><b class="rtn">'+(i+1)+'</b>'+esc(c)+'</a>';}).join('');
-    return '<div class="mapcard"><div class="maphdr">'+t.out.mapTitle+'</div>'+
-      '<div class="routetrail">'+pills+'</div>'+
-      '<div class="maptaphint">'+t.out.mapTapHint+'</div>'+
-      '<a class="routefull" href="'+fullRouteUrl(names)+'" target="_blank" rel="noopener">'+t.out.openRouteSmall+'</a></div>';
-  }
   function drawMiniMap(cv,n){
     var w=cv.clientWidth||300,h=150,dpr=Math.min(2,window.devicePixelRatio||1),ctx=cv.getContext('2d');
     cv.width=w*dpr; cv.height=h*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -5982,8 +5958,7 @@
       if(access&&i<n-1){ var tr=transferInfo(t,ms[i],ms[i+1],kmDist(CO[keys[i]]||[0,0],CO[keys[i+1]]||[0,0]),ROUTEDRIVE); var mode=ROUTEDRIVE?o.modeDrive:tr.mode; routeHtml+='<div class="transfer"><div class="tlabel">'+o.cats.transfer+'</div><div class="tbody">'+mode+' · '+esc(ms[i].city)+' → '+esc(ms[i+1].city)+' · '+tr.dur+' · '+tr.km+kmUnit()+' · '+money(t,tr.usd)+routeLink(ms[i].city,ms[i+1].city,legMode(o,tr,ROUTEDRIVE))+'</div></div>'; txt.push(''); txt.push('» '+o.cats.transfer+': '+mode+' '+ms[i].city+' → '+ms[i+1].city+' ('+tr.dur+')'); }
       startDay+=dc[i];
     }
-    mapHtml=routeStrip(ms.slice(0,upto).map(function(m){return m.city;}),t);
-    html+=(access?nightsEditor(ms,dc):'')+(access?travellersEditor():'')+tunerBar(o,days)+mapHtml+'<div class="realtag">'+o.realTag+'</div>'+dayNav(access?days:1,o)+'<div class="route">'+routeHtml+'</div>';
+    html+=(access?nightsEditor(ms,dc):'')+mapHtml+'<div class="realtag">'+o.realTag+'</div>'+dayNav(access?days:1,o)+'<div class="route">'+routeHtml+'</div>';
     if(access)html+=editBar();
     if(!access)html+=paywallCard(t);
     if(access){
@@ -8505,7 +8480,6 @@
         txt.push(''); txt.push('» '+o.cats.transfer+': '+m1.city+' → '+m2.city+' ('+tr.dur+', ~$'+tr.usd+')');
         var stops2=[]; route2=emitDays(m2,d1+1,d2,days,vibes,spd,o,t,txt,stops2);
       }
-      html+=(access?travellersEditor():'')+tunerBar(o,days)+routeStrip((access&&multi)?[m1.city,m2.city]:[m1.city],t);
       html+='<div class="realtag">'+o.realTag+'</div>'+dayNav(access?days:1,o)+'<div class="route">'+route1+transHtml+route2+'</div>';
       if(access)html+=editBar();
       if(!access){ html+=paywallCard(t); paywallShown=true; }
@@ -8648,7 +8622,7 @@
   $('out').addEventListener('click',function(e){
     var dh=e.target.closest('.dhead');
     if(dh && !e.target.closest('.dayshuffle')){ dh.parentElement.classList.toggle('dcol'); return; }
-    var hd=e.target.closest('.bud>h4,.pack>h4,.bookbar>.maphdr,.mapcard>.maphdr');
+    var hd=e.target.closest('.bud>h4,.pack>h4,.bookbar>.maphdr,.mapcard>.maphdr,.notecard>.maphdr');
     if(!hd)return; hd.parentElement.classList.toggle('collapsed');
   });
   // change your home currency right from the converter — updates the whole plan's budget
