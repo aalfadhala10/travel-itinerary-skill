@@ -1566,7 +1566,7 @@
   <button type="button" class="tab on" data-tab="home"><svg viewBox="0 0 24 24"><path d="M3.5 11.5 12 4l8.5 7.5M5.5 10v9.5h13V10"/></svg><span id="tabHome">Home</span></button>
   <button type="button" class="tab" data-tab="trips"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M3.6 12h16.8M12 3.6c2.6 2.2 3.9 5 3.9 8.4s-1.3 6.2-3.9 8.4c-2.6-2.2-3.9-5-3.9-8.4s1.3-6.2 3.9-8.4z"/></svg><span id="tabTrips">Trips</span></button>
   <button type="button" class="tab" data-tab="record"><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-10.4a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><path d="M9.6 10.4l1.8 1.8 3.4-3.4"/></svg><span id="tabRecord">Record</span></button>
-  <button type="button" class="tab" data-tab="saved"><svg viewBox="0 0 24 24"><path d="M7 4.5h10a1 1 0 0 1 1 1V20l-6-3.4L6 20V5.5a1 1 0 0 1 1-1z"/></svg><span id="tabSaved">Saved</span></button>
+  <button type="button" class="tab" data-tab="saved"><svg viewBox="0 0 24 24"><path d="M7 4.5h10a1 1 0 0 1 1 1V20l-6-3.4L6 20V5.5a1 1 0 0 1 1-1z"/></svg><span id="tabSaved">Favourites</span></button>
 </nav>
 <div class="chatpanel" id="chatPanel" aria-hidden="true">
   <div class="chatsheet">
@@ -3490,7 +3490,9 @@
       $('tabHome').textContent=ar2?'الرئيسية':(es2?'Inicio':'Home');
       $('tabTrips').textContent=ar2?'رحلات الناس':(es2?'Viajes':'Trips');
       $('tabRecord').textContent=ar2?'سجلي':(es2?'Historial':'Record');
-      $('tabSaved').textContent=ar2?'مفضلاتي':(es2?'Guardados':'Saved');
+      // "Saved" collided with Save, which writes to My trips — two different places, one word.
+      // This tab has always held favourites, and Arabic already said so.
+      $('tabSaved').textContent=ar2?'مفضلاتي':(es2?'Favoritos':'Favourites');
     }catch(e3){} if(document.body.classList.contains('recmode'))openRecView(RECSHARED?RECV:null); drawPts(); }catch(e){}
     $('introTitle').textContent=u.introTitle; $('introS1').textContent=u.introS1; $('introS2').textContent=u.introS2; $('introS3').textContent=u.introS3; try{$('introS4').textContent=u.introS4;}catch(e){}
     try{ $('moreOptsLbl').textContent=(lang==='ar'?'خيارات أكثر':(lang==='es'?'Más opciones':'More options')); }catch(e){}
@@ -3773,6 +3775,7 @@
     var ar=LANG==='ar', es=LANG==='es';
     return { over: ar?'الرحلة':(es?'Viaje':'Trip'),
              info: ar?'معلومات':(es?'Info':'Info'),
+             day: ar?'يوم':(es?'Día':'Day'),
              prev: ar?'السابق':(es?'Anterior':'Back'),
              next: ar?'التالي':(es?'Siguiente':'Next') };
   }
@@ -3879,7 +3882,9 @@
       pg.querySelectorAll('.day.dcol').forEach(function(d){ d.classList.remove('dcol'); });
       var t=document.createElement('button');
       t.type='button'; t.className='pgtab'; t.setAttribute('data-pgt',i);
-      t.textContent=(spec.kind==='over'?L.over:(spec.kind==='info'?L.info:String(spec.day)));
+      // a bare number told you nothing about what the chip was. The strip is wider for it,
+      // which is the trade the feedback asked for.
+      t.textContent=(spec.kind==='over'?L.over:(spec.kind==='info'?L.info:(L.day+' '+spec.day)));
       if(spec.day&&spec.day===tripTodayNum(dayCount))t.classList.add('today');
       tabs.appendChild(t);
       return pg;
@@ -3960,6 +3965,7 @@
     pages.forEach(function(p,n){ p.classList.remove('slidefwd','slideback'); p.classList.toggle('on',n===i); });
     if(dir&&pages[i]){ void pages[i].offsetWidth; pages[i].classList.add(dir>0?'slidefwd':'slideback'); }
     out.querySelectorAll('.pgtab').forEach(function(t,n){ t.classList.toggle('on',n===i); });
+    try{ fbNudgeOnPage(i,pages.length-1); }catch(e){}
     // the arrows in the strip are the ones people actually see, so they carry the ends
     out.querySelectorAll('.pgarrow').forEach(function(a){
       var d=+a.getAttribute('data-pgd');
@@ -8298,20 +8304,22 @@
   // actually engaged with a generated trip (scrolled through it, or ~45s in). Star-tap opens
   // the feedback box with the rating pre-filled. Skipped if they already gave feedback, and
   // it goes quiet for ~2 weeks after being shown/dismissed so it never nags.
-  var FBNUDGE_ARMED=false, FBNUDGE_T=null, FBNUDGE_SCROLL=null;
+  var FBNUDGE_ARMED=false, FBNUDGE_T=null;
   function fbNudgeQuiet(){ try{ if(localStorage.getItem('bosla_fb_given')==='1')return true; var t=parseInt(localStorage.getItem('bosla_fb_nudge')||'0',10); return !!t && (Date.now()-t) < 14*24*3600*1000; }catch(e){ return false; } }
+  // Asked in the middle of the trip it interrupts the read — the timer fired on whatever day you
+  // happened to be on, and "near the bottom of #out" is true on every page once a day IS a page.
+  // It now waits until the last page, which is the end of the trip however long the trip is.
   function armFbNudge(){
     if(FBNUDGE_ARMED || fbNudgeQuiet() || !CONFIG.feedbackEndpoint) return;
     FBNUDGE_ARMED=true;
-    var fire=function(){ if(FBNUDGE_T){clearTimeout(FBNUDGE_T);FBNUDGE_T=null;} if(FBNUDGE_SCROLL){window.removeEventListener('scroll',FBNUDGE_SCROLL);FBNUDGE_SCROLL=null;} showFbNudge(); };
-    FBNUDGE_T=setTimeout(fire, 45000);
-    // Every paginated day is short, so the bottom of the plan is always "near" and this fired on
-    // day one within seconds. Ask only once they have actually spent a while with it.
-    var armed=Date.now();
-    FBNUDGE_SCROLL=function(){ var out=$('out'); if(!out)return;
-      if(Date.now()-armed < 25000)return;
-      var r=out.getBoundingClientRect(); if(r.bottom - window.innerHeight < 400) fire(); };
-    window.addEventListener('scroll',FBNUDGE_SCROLL,{passive:true});
+  }
+  // called by pgGo once a page is on screen
+  function fbNudgeOnPage(i,last){
+    if(!FBNUDGE_ARMED || fbNudgeQuiet() || !CONFIG.feedbackEndpoint) return;
+    if(i<last || last<=0) return;                 // not the end yet (a one-page plan never asks)
+    if(FBNUDGE_T) return;                         // already counting down on this page
+    // a breath after arriving, so it doesn't land under the thumb that turned the page
+    FBNUDGE_T=setTimeout(function(){ FBNUDGE_T=null; showFbNudge(); }, 2500);
   }
   var FBNUDGE_OFF=null;
   function showFbNudge(){
