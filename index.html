@@ -439,8 +439,6 @@
   .budrow .amt{font-variant-numeric:tabular-nums;color:var(--muted)}
   .budrow.total{border-top:2px solid var(--line);margin-top:4px;font-weight:700}
   .budrow.total .amt{color:var(--ink)}
-  .daymap{margin:10px 0 2px;background:var(--paper2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-  .daymap canvas{display:block;width:100%;height:150px}
   .budnote{font-size:14px;color:var(--muted);margin-top:8px}
   .budgetamt{display:flex;gap:8px;margin-top:2px}
   .budgetamt input{flex:1;min-width:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-size:15px;font-family:var(--ff-body)}
@@ -3968,7 +3966,6 @@
     if(dir&&pages[i]){ void pages[i].offsetWidth; pages[i].classList.add(dir>0?'slidefwd':'slideback'); }
     out.querySelectorAll('.pgtab').forEach(function(t,n){ t.classList.toggle('on',n===i); });
     try{ fbNudgeOnPage(i,pages.length-1); }catch(e){}
-    try{ redrawMaps(); }catch(e){}   // pages are display:none until shown, so width is only real now
     // the arrows in the strip are the ones people actually see, so they carry the ends
     out.querySelectorAll('.pgarrow').forEach(function(a){
       var d=+a.getAttribute('data-pgd');
@@ -4941,7 +4938,7 @@
         +'<button type="button" class="dayshuffle dayshare" data-dshare="'+d+'" title="'+esc(o.shareDay)+'" aria-label="'+esc(o.shareDay)+'">'+SHARESVG+'</button>'
         +'<span class="dchev" aria-hidden="true"></span></div>'
         +'<div class="dsum">'+sum+'</div>'
-        +'<div class="dbody">'+(d===1?arrivalCard(ck):'')+dayHint(o,d)+hotelSlot(ck,o,fromDay,count)+body+dayMapCard(walk,ck,match.city)+'</div></div>';
+        +'<div class="dbody">'+(d===1?arrivalCard(ck):'')+dayHint(o,d)+hotelSlot(ck,o,fromDay,count)+body+dayRouteLink(walk,match.city)+'</div></div>';
     }
     return html;
   }
@@ -5377,17 +5374,6 @@
     if(way)u+='&waypoints='+way;
     return u+'&travelmode=driving';
   }
-  // canvas first, then the link that was already there — seeing the shape and being able to open
-  // it in Maps are different jobs
-  function dayMapCard(stops,ck,city){
-    var link=dayRouteLink(stops,city);
-    var pts=dayPts(stops,ck);
-    if(!ptsWorthDrawing(pts)) return link;         // unknown or coincident coords: link only
-    var id='dmap'+(++MAPN);
-    MAPQ.push({id:id,pts:pts});
-    var lbl=LANG==='ar'?'مسار اليوم':(LANG==='es'?'Ruta del día':"The day's route");
-    return '<div class="daymap"><canvas id="'+id+'" role="img" aria-label="'+esc(lbl)+'"></canvas></div>'+link;
-  }
   function dayRouteLink(stops,city){
     var u=dayMapUrl(stops,city); if(!u)return '';
     var txt=LANG==='ar'?'افتح مسار اليوم كامل في خرائط قوقل'
@@ -5405,66 +5391,27 @@
       '<div class="maptaphint">'+t.out.mapTapHint+'</div>'+
       '<a class="routefull" href="'+fullRouteUrl(names)+'" target="_blank" rel="noopener">'+t.out.openRouteSmall+'</a></div>';
   }
-  // The day's stops, where they actually are. POI_CO has a real [lat,lng] for every place, so the
-  // shape of a day — the three things on one street, then the trek across town — can be drawn
-  // honestly instead of decoratively. An evenly-spaced sine wave drew 200m and 30km identically.
-  function dayPts(stops,ck){
-    var co=POI_CO[ck]||{}, pts=[];
-    (stops||[]).filter(Boolean).forEach(function(n){
-      var c=co[n];
-      if(c&&isFinite(c[0])&&isFinite(c[1])) pts.push([+c[0],+c[1],n]);
-    });
-    return pts;
-  }
-  // true if the stops are far enough apart to be worth drawing (~50m); otherwise the projection
-  // would magnify GPS noise into a sprawling, meaningless map
-  function ptsWorthDrawing(pts){
-    if(pts.length<2) return false;
-    var la=pts.map(function(p){return p[0];}), lo=pts.map(function(p){return p[1];});
-    return (Math.max.apply(null,la)-Math.min.apply(null,la))>0.0005 ||
-           (Math.max.apply(null,lo)-Math.min.apply(null,lo))>0.0005;
-  }
-  function drawMiniMap(cv,pts){
-    if(!pts||pts.length<2)return;
+  function drawMiniMap(cv,n){
     var w=cv.clientWidth||300,h=150,dpr=Math.min(2,window.devicePixelRatio||1),ctx=cv.getContext('2d');
     cv.width=w*dpr; cv.height=h*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
     var teal=cssVar('--teal'),amber=cssVar('--amber'),ink=cssVar('--ink'),card=cssVar('--card');
     ctx.clearRect(0,0,w,h);
-    // Longitude degrees shrink towards the poles, so a degree of east-west is not a degree of
-    // north-south. Squeezing by cos(lat) keeps the drawn distances true to the ground.
-    var mlat=pts.reduce(function(a,p){return a+p[0];},0)/pts.length;
-    var kx=Math.cos(mlat*Math.PI/180)||1;
-    var xs=pts.map(function(p){return p[1]*kx;}), ys=pts.map(function(p){return -p[0];}); // north up
-    var x0=Math.min.apply(null,xs), x1=Math.max.apply(null,xs);
-    var y0=Math.min.apply(null,ys), y1=Math.max.apply(null,ys);
-    var pad=26, aw=w-2*pad, ah=h-2*pad;
-    // one scale for both axes, so the map keeps its true proportions rather than stretching to fill
-    var sx=(x1-x0)>1e-9?aw/(x1-x0):0, sy=(y1-y0)>1e-9?ah/(y1-y0):0;
-    var sc=Math.min(sx||sy, sy||sx)||1;
-    var cx=(x0+x1)/2, cy=(y0+y1)/2;
-    var P=pts.map(function(p,i){
-      return [w/2+(xs[i]-cx)*sc, h/2+(ys[i]-cy)*sc];
-    });
-    // the subtle connecting line the feedback asked for
-    ctx.strokeStyle=teal; ctx.globalAlpha=0.5; ctx.lineWidth=2; ctx.setLineDash([5,5]);
-    ctx.lineJoin='round'; ctx.lineCap='round';
-    ctx.beginPath(); P.forEach(function(q,i){i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]);}); ctx.stroke();
+    ctx.strokeStyle=ink; ctx.globalAlpha=0.05; ctx.lineWidth=1;
+    for(var r=18;r<170;r+=22){ctx.beginPath();ctx.arc(w*0.5,h*0.5,r,0,Math.PI*2);ctx.stroke();}
+    ctx.globalAlpha=1;
+    var pad=28,pts=[];
+    for(var i=0;i<n;i++){var x=pad+(n===1?(w-2*pad)/2:i*(w-2*pad)/(n-1));var y=h*0.5+Math.sin(i*0.9+0.6)*h*0.24;pts.push([x,y]);}
+    ctx.strokeStyle=teal; ctx.globalAlpha=0.55; ctx.lineWidth=2; ctx.setLineDash([5,5]);
+    ctx.beginPath(); pts.forEach(function(p,i){i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]);}); ctx.stroke();
     ctx.setLineDash([]); ctx.globalAlpha=1;
-    // Stops that really are next door land almost on top of each other — which is the truth, but
-    // an unreadable one. Shrink the pins to fit the tightest gap rather than move them apart.
-    var gap=Infinity;
-    for(var a1=0;a1<P.length;a1++)for(var b1=a1+1;b1<P.length;b1++)
-      gap=Math.min(gap,Math.hypot(P[b1][0]-P[a1][0],P[b1][1]-P[a1][1]));
-    var rad=Math.max(7,Math.min(11,isFinite(gap)?gap*0.62:11));
-    var fs=Math.max(9,Math.round(rad));
-    P.forEach(function(q,i){
-      ctx.beginPath(); ctx.arc(q[0],q[1],rad,0,Math.PI*2); ctx.fillStyle=amber; ctx.fill();
+    pts.forEach(function(p,i){
+      ctx.beginPath(); ctx.arc(p[0],p[1],11,0,Math.PI*2); ctx.fillStyle=amber; ctx.fill();
       ctx.lineWidth=2; ctx.strokeStyle=card; ctx.stroke();
-      ctx.fillStyle='#231a0a'; ctx.font='bold '+fs+'px ui-monospace,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(String(i+1),q[0],q[1]);
+      ctx.fillStyle='#231a0a'; ctx.font='bold 11px ui-monospace,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(String(i+1),p[0],p[1]);
     });
   }
-  function redrawMaps(){MAPQ.forEach(function(q){var cv=$(q.id);if(cv)drawMiniMap(cv,q.pts);});}
+  function redrawMaps(){MAPQ.forEach(function(q){var cv=$(q.id);if(cv)drawMiniMap(cv,q.n);});}
 
   function budgetCard(o,t,rows,transferUSD,totalUSD,localKey,adults,kids){
     var h='<div class="bud"><h4>'+o.budTitle+'</h4>';
