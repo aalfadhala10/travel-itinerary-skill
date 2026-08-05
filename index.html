@@ -4342,8 +4342,26 @@
     var ar=LANG==='ar', es=LANG==='es', t;
     if(km<1) t=String(Math.max(50,Math.round(km*1000/50)*50))+(ar?' م':' m');
     else t=(km<10?km.toFixed(1):String(Math.round(km)))+kmUnit();
-    var ttl=ar?'المسافة من المكان السابق':(es?'Distancia desde la parada anterior':'Distance from the previous stop');
-    return ' <span class="hop" title="'+esc(ttl)+'">'+esc(t)+'</span>';
+    var ttl=ar?'المسافة والوقت من المكان السابق':(es?'Distancia y tiempo desde la parada anterior':'Distance and time from the previous stop');
+    return ' <span class="hop" title="'+esc(ttl)+'">'+esc(t+hopTime(km))+'</span>';
+  }
+  // A distance answers "is this order sensible"; a time answers "can I actually do this before
+  // lunch". Straight-line km understates real streets, so the speeds below are deliberately slow
+  // — walking pace already allows for crossings, and city driving for traffic and parking. It is
+  // an estimate and the tooltip says so; nothing here is a routing engine.
+  function hopTime(km){
+    if(km==null||!(km>0))return '';
+    var ar=LANG==='ar', es=LANG==='es', walk=km<1.2;
+    // 4.2km/h walking rather than a textbook 5. Driving speed RAMPS with distance instead of
+    // stepping at a threshold: a step made 25km read faster than 12km, because the longer hop
+    // jumped to open-road speed while the shorter one crawled. Crossing town stays ~18km/h and
+    // only a genuine run out of the city approaches 45.
+    var mins=Math.round(km/(walk?4.2:Math.min(45,18+km*0.9))*60);
+    if(walk) mins=Math.max(3,mins); else mins=Math.max(5,mins);
+    if(mins>180)return '';                        // past this it is a day trip, not a hop
+    var mn=ar?(mins+' د'):(mins+' min');
+    var how=walk?(ar?'مشي':(es?'a pie':'walk')):(ar?'بالسيارة':(es?'en coche':'drive'));
+    return ' · ~'+mn+' '+how;
   }
   function kmDist(a,b){ var R=6371,r=Math.PI/180,dlat=(b[0]-a[0])*r,dlng=(b[1]-a[1])*r;
     var x=Math.sin(dlat/2)*Math.sin(dlat/2)+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dlng/2)*Math.sin(dlng/2);
