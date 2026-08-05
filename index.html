@@ -3768,6 +3768,7 @@
     return { over: ar?'الرحلة':(es?'Viaje':'Trip'),
              info: ar?'معلومات':(es?'Info':'Info'),
              budget: ar?'الميزانية':(es?'Presupuesto':'Budget'),
+             book: ar?'الحجز':(es?'Reservar':'Book'),
              day: ar?'يوم':(es?'Día':'Day'),
              prev: ar?'السابق':(es?'Anterior':'Back'),
              next: ar?'التالي':(es?'Siguiente':'Next') };
@@ -3780,6 +3781,7 @@
     var L=pgLabels(), k=pg?pg.getAttribute('data-pgk'):'';
     if(k==='info')return L.info;
     if(k==='budget')return L.budget;
+    if(k==='book')return L.book;
     var d=+((pg&&pg.getAttribute('data-pgday'))||0);
     if(!d)return L.over;
     if(LANG==='ar')return 'اليوم '+d+' من '+dayCount;
@@ -3820,10 +3822,13 @@
     var dayCount=buckets.length-1-(tail.length?1:0);
     // Save / share / print isn't something to go hunting for — it comes out of the pages entirely
     // and sits under every one of them. "Change something?" belongs where you land.
-    var foot=null, bud=null;
+    var foot=null, bud=null, book=null;
     buckets.forEach(function(items,bi){
       for(var j=items.length-1;j>=0;j--){
         if(items[j].classList.contains('actions')){ foot=items.splice(j,1)[0]; continue; }
+        // Book & save is a shop, not an itinerary — its own page. Only from the summary bucket:
+        // "Getting there" is a .bookbar too and belongs with the read-once cards.
+        if(bi===0&&items[j].classList.contains('bookbar')){ book=items.splice(j,1)[0]; continue; }
         // What it costs is the first thing anyone wants after tapping Plan — it belongs on the
         // trip page with the rest of the summary, not behind every day of the itinerary.
         if(items[j].classList.contains('bud')){ bud=items.splice(j,1)[0]; continue; }
@@ -3859,11 +3864,13 @@
     // The trip, then the things you read once, then the days. Packing lists and phrases were
     // stranded past the end of a fortnight, where nobody scrolls to find them, and they belong
     // with the summary — you read them while you are still deciding, not on the last afternoon.
-    var order=[{items:buckets[0],kind:'over'}];
-    // What it costs is its own question — it was 473px sat under the summary, and a page of its
-    // own is both easier to find and one fewer thing on the trip page.
+    // The trip page and the info page were the same page split in two — the summary, then the
+    // things you read once. They are one page now, and what was crowding it (book, budget) has
+    // pages of its own.
+    var infoItems=buckets[0].concat(tail.length?buckets[buckets.length-1]:[]);
+    var order=[{items:infoItems,kind:'info'}];
+    if(book)order.push({items:[book],kind:'book'});
     if(bud)order.push({items:[bud],kind:'budget'});
-    if(tail.length)order.push({items:buckets[buckets.length-1],kind:'info'});
     for(var bi=1;bi<=dayCount;bi++)order.push({items:buckets[bi],kind:'day',day:bi});
 
     var pages=order.map(function(spec,i){
@@ -3880,7 +3887,7 @@
       t.type='button'; t.className='pgtab'; t.setAttribute('data-pgt',i);
       // a bare number told you nothing about what the chip was. The strip is wider for it,
       // which is the trade the feedback asked for.
-      t.textContent=(spec.kind==='over'?L.over:(spec.kind==='info'?L.info:(spec.kind==='budget'?L.budget:(L.day+' '+spec.day))));
+      t.textContent=(spec.kind==='info'?L.info:(spec.kind==='budget'?L.budget:(spec.kind==='book'?L.book:(L.day+' '+spec.day))));
       if(spec.day&&spec.day===tripTodayNum(dayCount))t.classList.add('today');
       tabs.appendChild(t);
       return pg;
@@ -3892,6 +3899,7 @@
       if(k==='over')return L.over;
       if(k==='info')return L.info;
       if(k==='budget')return L.budget;
+      if(k==='book')return L.book;
       var lbl=pg.querySelector('.dlabel');
       return lbl?lbl.textContent.trim():(L.next+' '+(pg.getAttribute('data-pgday')||i));
     }
