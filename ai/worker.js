@@ -423,7 +423,13 @@ export default {
         if (!env.ANTHROPIC_API_KEY) return reply({ error: "server not configured" }, 500, origin);
         const name = String(body.name || "").slice(0, 60).trim();
         if (name.length < 2) return reply({ error: "name too short" }, 400, origin);
-        const out = await getOrBuildCity(name, env);
+        // Evaluation only: `fresh` skips the cache on the way in AND on the way out, so an A/B
+        // run measures the pipeline rather than replaying whatever the first run happened to
+        // write. Gated on the same debug variable, so it cannot be reached in production — with
+        // DEBUG_PIPELINE unset this is exactly the old line.
+        const fresh = body.fresh === true && env[DEBUG_VAR] === "1";
+        const out = fresh ? { city: await buildCity(name, env), cached: false }
+                          : await getOrBuildCity(name, env);
         return reply({ city: out.city, cached: out.cached }, 200, origin);
       }
       if (body.action === "parse") {
