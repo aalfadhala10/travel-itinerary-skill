@@ -726,7 +726,10 @@
   /* save / share / print, under every page — and far enough up to clear the floating buttons */
   .actions.pgfoot{margin-top:0;padding-top:16px;border-top:1px solid var(--line);margin-bottom:74px}
   /* the bottom line, on every page: tap it for the full breakdown */
-  .pgcost{flex:1 0 100%;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:10px;
+  /* .actions is a GRID, so the flex:1 0 100% here did nothing and this sat in column 1 as an
+     ordinary cell — taller than a button, which stretched the whole first row. grid-column is
+     the grid way to say the same thing, and now the eight buttons are one uniform size. */
+  .pgcost{grid-column:1/-1;flex:1 0 100%;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:10px;
     margin-bottom:8px;padding:9px 12px;border:1px solid var(--line);border-radius:11px;
     background:var(--paper2);color:var(--ink);font-family:var(--ff-body);cursor:pointer;text-align:start}
   .pgcost:hover{border-color:var(--teal)}
