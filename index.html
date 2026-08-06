@@ -302,8 +302,17 @@
   #app[dir="rtl"] .swappick .spk{letter-spacing:normal;font-family:var(--ff-body)}
   .swappick button{padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font-size:15px;font-family:var(--ff-body);cursor:pointer}
   .swappick button:hover{border-color:var(--teal)}
+  .spkcustom{display:flex;gap:6px;width:100%;margin-top:2px}
+  .spkcustom .spkin{flex:1 1 auto;min-width:0;padding:8px 11px;border:1px solid var(--line);border-radius:999px;
+    background:var(--card);color:var(--ink);font-size:15px;font-family:var(--ff-body)}
+  .spkcustom .spkin:focus{outline:none;border-color:var(--teal)}
+  .spkcustom .spkuse{flex:0 0 auto}
   .swappick a.spkmore,.swappick button.spkmore{width:100%;padding:8px 11px;border:1px dashed var(--teal);border-radius:12px;background:transparent;color:var(--teal);font-size:14.5px;font-weight:600;text-decoration:none;text-align:center;font-family:var(--ff-body);cursor:pointer}
   .swappick button.spkmore[disabled]{opacity:.6;cursor:default}
+  /* Deliberately not the dashed teal of "show all" — removing a stop is a quiet option, not the
+     one being suggested. It only picks up warning colour once you are actually on it. */
+  .swappick button.spkrm{border-style:solid;border-color:var(--line);color:var(--muted);font-weight:500}
+  .swappick button.spkrm:hover{border-color:#b4443a;color:#b4443a}
   .note{color:var(--muted);font-size:14.5px;text-align:center;margin-top:22px;padding:0 8px;text-wrap:balance}
   /* padding, not margin: the bigger chat button is fixed and used to sit right on this text */
   .foot{color:var(--muted);font-size:14.5px;text-align:center;margin-top:34px;line-height:1.6;padding-bottom:88px}
@@ -2775,7 +2784,7 @@
     });
   $('surprise').addEventListener('click',function(){
     var keys=Object.keys(DEST), k=keys[Math.floor(Math.random()*keys.length)];
-    $('dest').value=DEST[k].city; newSeed(); DAYEDITS={}; DAYROT={}; plan();
+    $('dest').value=DEST[k].city; newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; plan();
   });
   // Zero-cost "Get ideas" — a fully button-driven picker over OUR OWN destinations (no AI calls at all).
   var IDEAS={
@@ -2962,7 +2971,7 @@
             var seen={}, ks=[];
             keys.forEach(function(k){ if(k&&DEST[k]&&!seen[k]){seen[k]=1;ks.push(k);} });
             if(!ks.length){ resolve(false); return; }
-            newSeed(); DAYEDITS={}; DAYROT={};
+            newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={};
             var days=Math.max(1,Math.min(30,(pp.days|0)||(pp.roadtrip?12:5)));
             var vibes=(Array.isArray(pp.vibes)&&pp.vibes.length)?pp.vibes:['Culture'];
             var budget=(pp.budget==='Budget'||pp.budget==='Luxury')?pp.budget:'Mid-range';
@@ -3012,7 +3021,7 @@
     var apply=function(k){
       if(!k||!DEST[k]){ toast(I18N[LANG].ui.promptNone); return; }
       var h=SUGHINTS||{}, days=Math.max(1,Math.min(30,h.days||5));
-      newSeed(); DAYEDITS={}; DAYROT={};
+      newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={};
       $('days').value=days; syncDayChips();
       if(h.vibes&&h.vibes.length)document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',h.vibes.indexOf(c.dataset.v)>=0);});
       document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===(h.budget||'Mid-range'));});
@@ -3167,7 +3176,7 @@
       var lbl=onlyCityLabel(); meSay(lbl);
       // the whole trip stays in that one city — not just the slice it had been given
       var nights=Math.max(1,parseInt($('days').value,10)||3);
-      ROUTE=null; ROUTEDC=null; ROUTEDCSIG=''; DAYEDITS={}; DAYROT={}; DAYADD={};
+      ROUTE=null; ROUTEDC=null; ROUTEDCSIG=''; DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; DAYADD={};
       $('dest').value=DEST[only].city; clearExtraCities();
       try{$('city2wrap').classList.add('is-hidden'); $('addCity').classList.remove('is-hidden');}catch(e){}
       $('days').value=nights; syncDayChips();
@@ -3199,7 +3208,7 @@
     var vibe=(IDEAS[cat]||{}).vibe||'Culture';
     botSay(LANG==='ar'?('تمام! أجهّز لك '+DEST[k].city+'…'):(LANG==='es'?('¡Listo! Preparando '+DEST[k].city+'…'):('Perfect — building your '+DEST[k].city+' trip…')));
     CHATCHIPS=[]; chatRender();
-    newSeed(); DAYEDITS={}; DAYROT={}; ROUTE=null;
+    newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; ROUTE=null;
     $('dest').value=DEST[k].city; clearExtraCities();
     $('days').value=days; syncDayChips();
     document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===vibe);});
@@ -3212,7 +3221,7 @@
     var nm=keys.map(function(k){return DEST[k].city;}).join(' → ');
     botSay(LANG==='ar'?('تمام! أجهّز رحلتك: '+nm+'…'):(LANG==='es'?('¡Listo! Preparando: '+nm+'…'):('Perfect — building your road trip: '+nm+'…')));
     CHATCHIPS=[]; chatRender();
-    newSeed(); DAYEDITS={}; DAYROT={};
+    newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={};
     $('dest').value=DEST[keys[0]].city; $('days').value=days; syncDayChips();
     try{ track('chat_plan',{dest:DEST[keys[0]].city,country:DEST[keys[0]].country||'',cities:keys.length,days:days}); }catch(e){}
     setTimeout(function(){ chatClose(); planRoute(keys,days,vibes,'Mid-range','balanced',true); CHATPICK=[]; askWhatToChange(); },700);
@@ -3378,7 +3387,7 @@
       if(kd>0){ try{ $('kids').value=Math.max(0,Math.min(20,kd)); }catch(e){} }
       // On an edit keep the seed and the user's own swaps, so changing the days doesn't reshuffle
       // every place they already liked. A brand-new trip starts clean.
-      if(!editing){ newSeed(); DAYEDITS={}; DAYROT={}; DAYADD={}; }
+      if(!editing){ newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; DAYADD={}; }
       ROUTE=null; ROUTEDC=null; ROUTEDCSIG='';
       if(explicit){
         ROUTEDC=nightsArr.map(function(x){ return Math.max(1,Math.min(30,x|0)); }); // their own split, e.g. 8 + 4
@@ -3786,7 +3795,13 @@
   };
   var CHEVR='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var SHUFSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 4v5h-5M3 20a9 9 0 0 1 15-6.7L21 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  function poiByName(ck,name){ var d=DEST[ck]; if(!d)return null; var all=d.poi.concat(d.food); for(var i=0;i<all.length;i++)if(all[i].n===name)return all[i]; return null; }
+  // Somewhere the traveller typed themselves. DAYEDITS stores a name and this resolves it, so a
+  // custom stop only has to be findable here to behave like any other — routing reads coordinates
+  // we do not have for it, which is why it carries no area and sorts wherever the slot already was.
+  var CUSTOMPOI={};   // cityKey -> { name: {n,a,t} }
+  var DAYDEL={};      // slot key -> 1, for stops the traveller removed
+  function poiByName(ck,name){ var d=DEST[ck]; if(!d)return null; var all=d.poi.concat(d.food); for(var i=0;i<all.length;i++)if(all[i].n===name)return all[i];
+    var cm=CUSTOMPOI[ck]; return (cm&&cm[name])||null; }
   function dayNav(total,o){
     if(total<4)return '';
     var chips=''; for(var d=1;d<=total;d++)chips+='<button type="button" class="dnav" data-day="'+d+'">'+d+'</button>';
@@ -4229,7 +4244,7 @@
     ROUTEDCSIG=ROUTE.join('|');
     var tot=(ROUTEDC&&ROUTEDC.length)?ROUTEDC.reduce(function(a,b){return a+b;},0):0;
     if(tot>0){ try{ $('days').value=Math.max(1,Math.min(30,tot)); if(window.syncDayChips)syncDayChips(); }catch(e){} }
-    DAYEDITS={}; DAYROT={}; DAYADD={}; // day numbers shift, so per-day edits no longer line up
+    DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; DAYADD={}; // day numbers shift, so per-day edits no longer line up
     if(ROUTE.length<2){ try{ $('dest').value=DEST[ROUTE[0]].city; clearExtraCities(); }catch(e){} }
     rerenderKeep();
   }
@@ -4239,11 +4254,11 @@
     try{ $('days').value=ROUTEDC.reduce(function(a,b){return a+b;},0); if(window.syncDayChips)syncDayChips(); }catch(e){}
     rerenderKeep();
   }
-  function anotherVersion(){ newSeed(); DAYEDITS={}; DAYROT={}; asReplan(function(){ if(LASTPLAN)LASTPLAN(); }); var out=$('out'); if(out)out.scrollIntoView({block:'start'}); }
+  function anotherVersion(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; asReplan(function(){ if(LASTPLAN)LASTPLAN(); }); var out=$('out'); if(out)out.scrollIntoView({block:'start'}); }
   function retuneDays(delta){
     var cur=Math.max(1,Math.min(30,parseInt($('days').value,10)||5)), nn=Math.max(1,Math.min(30,cur+delta));
     if(nn===cur)return;
-    $('days').value=nn; if(window.syncDayChips)syncDayChips(); DAYEDITS={}; DAYROT={}; ROUTEDC=null; // total tuner re-spreads evenly; per-city editor sets each city
+    $('days').value=nn; if(window.syncDayChips)syncDayChips(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; ROUTEDC=null; // total tuner re-spreads evenly; per-city editor sets each city
     if(ROUTE&&ROUTE.length>=2){ var vibes=picked('vibeChips'); if(!vibes.length)vibes=['Culture']; planRoute(ROUTE,nn,vibes,picked('budgetChips')[0]||'Mid-range',$('pace').value,ROUTEDRIVE); }
     else plan();
     var out=$('out'); if(out)out.scrollIntoView({block:'start'});
@@ -4965,12 +4980,17 @@
       picks=routeDay(picks,pinned,here);
       for(s=0;s<dspd;s++){
         sk=ck+'|'+d+'|'+s;
-        var pk=picks[s]; dayPois.push(pk); names.push(pk.n);
-        if(stops)stops.push({n:pk.n,a:pk.a});
-        var phop=hopTo(pk); walk.push(pk.n);
-        body+=eslot(tl[s],pk,match.city,sk,o,ck,false,phop);
-        txt.push('  '+tl[s]+': '+pk.n+' ('+pk.a+')'+hopTxt(phop));
-        if(s===Math.min(lunchAt,dspd)-1){
+        var pk=picks[s];
+        // Skip the row, not the iteration: lunch is placed by slot number, so dropping the whole
+        // pass here would take the day's lunch with the stop the traveller removed.
+        if(!DAYDEL[sk]){
+          dayPois.push(pk); names.push(pk.n);
+          if(stops)stops.push({n:pk.n,a:pk.a});
+          var phop=hopTo(pk); walk.push(pk.n);
+          body+=eslot(tl[s],pk,match.city,sk,o,ck,false,phop);
+          txt.push('  '+tl[s]+': '+pk.n+' ('+pk.a+')'+hopTxt(phop));
+        }
+        if(s===Math.min(lunchAt,dspd)-1&&!DAYDEL[ck+'|'+d+'|l']){
           var lsk=ck+'|'+d+'|l', lu=DAYEDITS[lsk]?poiByName(ck,DAYEDITS[lsk]):null;
           if(!lu&&farSet[pk.n]){        // out of town at lunchtime — eat out of town
             body+=nslot(o.times.lunch,pk,o,ck);
@@ -4987,7 +5007,8 @@
       (DAYADD[d]||[]).forEach(function(x,xi){ body+=xslot(x.n,match.city,d,xi,o); txt.push('  '+o.extraLbl+': '+x.n); });
       var dsk=ck+'|'+d+'|d', fo=DAYEDITS[dsk]?poiByName(ck,DAYEDITS[dsk]):null;
       var lastPk=picks[picks.length-1];
-      if(!fo&&lastPk&&farSet[lastPk.n]){   // the day ends out there, so dinner does too
+      if(DAYDEL[dsk]){ /* removed by the traveller */ }
+      else if(!fo&&lastPk&&farSet[lastPk.n]){   // the day ends out there, so dinner does too
         body+=nslot(o.times.dinner,lastPk,o,ck);
         txt.push('  '+o.times.dinner+': '+o.eatNear(String(lastPk.n).replace(/\s*Day Trip$/i,'')));
       }else{
@@ -5720,7 +5741,7 @@
   var ROUTEDRIVE=false;
   var SEED=0;
   var DAYEDITS={};   // explicit per-slot swaps: key "cityKey|day|slotIndex" (or |d for dinner) → place name
-  var DAYROT={};     // per-day shuffle rotation: key "cityKey|day" → integer (picks different unused places)
+  var DAYROT={}; DAYDEL={}; CUSTOMPOI={};     // per-day shuffle rotation: key "cityKey|day" → integer (picks different unused places)
   var LASTPLAN=null; // re-renders the current plan in place (honouring edits) after a change
   var LASTSPD=3;     // activity slots per day in the current plan
   var KEEPSCROLL=false; // when re-rendering after an in-place edit, don't jump back to the top
@@ -5915,7 +5936,7 @@
     runPromptLocal(raw);
   }
   function runPromptLocal(raw){
-    newSeed(); DAYEDITS={}; DAYROT={};
+    newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={};
     var pp=parsePrompt(raw);
     (pp.unresolved||[]).forEach(function(q){ try{track('miss',{dest:q,src:'prompt'});}catch(e){} }); // places asked for but not in our data
     if(CONFIG.aiEndpoint && pp.unresolved && pp.unresolved.length){ // build the missing places, then re-parse & plan
@@ -7118,7 +7139,7 @@
     if(!city)return;
     exitRec();
     $('dest').value=city; clearExtraCities();
-    newSeed(); DAYEDITS={}; DAYROT={}; ROUTE=null;
+    newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; ROUTE=null;
     $('planBtn').click();
   }
   function renderGoalSug(){
@@ -8618,7 +8639,7 @@
       ensureFood(fk, multi?[d1,d2]:[days]); checkOpen(fk); ensureNames(fk); ensureGateway(fk); }
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
-  $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYADD={}; ROUTEDC=null; STAYAREA=''; PGFRESH=true;
+  $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; DAYADD={}; ROUTEDC=null; STAYAREA=''; PGFRESH=true;
     try{ $('lastTrip').classList.add('is-hidden'); }catch(e){} plan(); try{ if($('out').classList.contains('show'))haptic(18); }catch(e){} });
   // Currency is a display setting, not a reason to re-plan — but a plan already on screen was
   // frozen in the old currency until the traveller planned again, so the budget "stayed on the
@@ -8860,6 +8881,20 @@
     window.addEventListener('scroll',picHide,{passive:true});
     window.addEventListener('scroll',infHide,{passive:true});
   })();
+  // A typed place has no coordinates, so it cannot be routed or measured — it simply holds the
+  // slot it was put in. That is the honest version: we show what they asked for and claim nothing
+  // about how far it is or how long it takes.
+  function useCustomStop(btn){
+    var sk=btn.getAttribute('data-sk'); if(!sk)return;
+    var box=btn.closest('.swappick'), inp=box&&box.querySelector('.spkin');
+    var v=inp?String(inp.value||'').replace(/[<>]/g,'').trim().slice(0,60):'';
+    if(v.length<2){ if(inp)inp.focus(); return; }
+    var ck=sk.split('|')[0];
+    if(!CUSTOMPOI[ck])CUSTOMPOI[ck]={};
+    CUSTOMPOI[ck][v]={n:v,a:'',t:[]};
+    DAYEDITS[sk]=v; delete DAYDEL[sk];
+    rerenderKeep();
+  }
   function openSwap(btn){
     var slot=btn.closest('.slot'); if(!slot)return;
     var nx=slot.nextElementSibling;
@@ -8912,8 +8947,21 @@
       var q=encodeURIComponent('restaurants in '+dd.city), lbl=LANG==='ar'?('كل المطاعم في '+dd.city+' على الخريطة ←'):(LANG==='es'?('Más restaurantes en '+dd.city+' →'):('More restaurants in '+dd.city+' →'));
       html+='<a class="spkmore" href="https://www.google.com/maps/search/'+q+'" target="_blank" rel="noopener">'+esc(lbl)+'</a>';
     }
+    // None of the above. Three friends asked for both halves of this: somewhere of their own, and
+    // the freedom to drop a stop the plan was sure about.
+    var ar=(LANG==='ar'), es=(LANG==='es');
+    var cuPh=ar?'أو اكتب مكان من عندك…':(es?'O escribe tu propio lugar…':'Or type your own place…');
+    var cuGo=ar?'استخدمه':(es?'Usar':'Use it');
+    var rmLb=ar?'احذف هذي المحطة':(es?'Quitar esta parada':'Remove this stop');
+    html+='<div class="spkcustom"><input type="text" class="spkin" autocomplete="off" maxlength="60" placeholder="'+esc(cuPh)+'">'+
+          '<button type="button" class="spkuse" data-sk="'+sk+'">'+esc(cuGo)+'</button></div>'+
+          '<button type="button" class="spkmore spkrm" data-sk="'+sk+'">'+esc(rmLb)+'</button>';
     var div=document.createElement('div'); div.className='swappick'; div.innerHTML=html;
     slot.parentNode.insertBefore(div, slot.nextElementSibling);
+    var fi=div.querySelector('.spkin'); if(fi)fi.addEventListener('keydown',function(ev){
+      if(ev.key!=='Enter')return; ev.preventDefault();
+      var go=div.querySelector('.spkuse'); if(go)useCustomStop(go);   // Enter, not "dismiss the keyboard then aim"
+    });
   }
   $('out').addEventListener('click',function(e){
     // match on the data attribute, not the class — the share button borrows .dayshuffle for its looks
@@ -8944,6 +8992,13 @@
       var sbtn=$('out').querySelector('.swapbtn[data-sk="'+ssk+'"]');
       if(sbtn){ var pick=sa.closest('.swappick'); if(pick)pick.parentNode.removeChild(pick);
         sbtn.setAttribute('data-all','1'); openSwap(sbtn); sbtn.removeAttribute('data-all'); }
+      return; }
+    var su=e.target.closest('.spkuse');
+    if(su){ useCustomStop(su); return; }
+    var rm=e.target.closest('.spkrm');
+    if(rm){
+      var rsk=rm.getAttribute('data-sk'); DAYDEL[rsk]=1; rerenderKeep();
+      undoToast(I18N[LANG].ui.delPlace,function(){ delete DAYDEL[rsk]; rerenderKeep(); });
       return; }
     var pk=e.target.closest('.swappick button');
     if(pk&&pk.getAttribute('data-sk')){ var sk=pk.getAttribute('data-sk'), i=+pk.getAttribute('data-i'), pr2=sk.split('|'), ck=pr2[0], isFood=(pr2[2]==='d'||pr2[2]==='l');
