@@ -486,6 +486,7 @@ export default {
         return reply(await placeFacts(names, city, env), 200, origin);
       }
       if (body.action === "cityphoto") return await cityPhoto(body, env, origin);
+      if (body.action === "placeinfo") return await placeInfo(body, env, origin);
       if (body.action === "hotelprice") return await hotelPrice(body, env, origin);
 
       // --- Community: published trips, likes, comments, photos --------------------------------
@@ -1571,6 +1572,76 @@ async function cityPhoto(body, env, origin) {
     // a found photo is cached forever (the licence record travels with it); a miss is retried
     // after a week, because pages gain photos
     try { await kv.put(ckey, JSON.stringify(rec), photo ? undefined : { expirationTtl: 604800 }); } catch (e) {}
+  }
+  return reply(rec, 200, origin);
+}
+
+
+// --- what IS this place? ------------------------------------------------------------------------
+// A stop in an itinerary is a name, an area and a coordinate. "Rec del Sola Trail" tells a traveller
+// who has never been there precisely nothing, and the plan asks them to give it an afternoon.
+//
+// So Bosla writes the line itself rather than republishing anyone else's: two sentences, our own
+// words, cached in KV the same way the photo is. That keeps the house rule intact — no scraped
+// prose, no reviews — and keeps the cost near zero, because a place is described once for all
+// travellers who ever open it, not once per traveller.
+//
+// The key carries a colon, so isCityKey() keeps these out of any admin dump, same as every other
+// non-city record in this namespace.
+const PINFO_SCHEMA = {
+  type: "object", additionalProperties: false, required: ["info"],
+  properties: {
+    info: {
+      type: "string",
+      description: "Two short sentences: what this place actually is, and why a traveller would give it their time. " +
+        "Concrete and specific to THIS place. No marketing adjectives, no 'must-see', no opening hours or prices. " +
+        "Empty string if you do not genuinely know the place.",
+    },
+  },
+};
+async function placeInfo(body, env, origin) {
+  const kv = env.CITIES;
+  const name = String(body.name || "").slice(0, 80).trim();
+  const city = String(body.city || "").slice(0, 60).trim();
+  const country = String(body.country || "").slice(0, 60).trim();
+  const lang = ({ ar: "ar", es: "es" })[String(body.lang || "en")] || "en";
+  if (name.length < 2) return reply({ error: "name too short" }, 400, origin);
+
+  const ckey = "pinfo:v1:" + lang + ":" + cityKey(city) + ":" + cityKey(name).slice(0, 40);
+  if (kv) { const hit = await kv.get(ckey); if (hit) return reply(JSON.parse(hit), 200, origin); }
+
+  if (!env.ANTHROPIC_API_KEY) return reply({ info: "" }, 200, origin);
+  if (await overBudget(env, "llm", DAY_LLM_CAP)) return reply({ info: "" }, 200, origin);
+
+  const voice = lang === "ar"
+    ? "Write in Khaleeji Arabic (Gulf dialect) — the way someone from the Gulf actually speaks, not Modern Standard Arabic."
+    : lang === "es" ? "Write in Spanish." : "Write in English.";
+
+  let rec = { info: "" };
+  try {
+    const got = await claude(env.ANTHROPIC_API_KEY,
+      // Arabic gets the stronger model: a two-sentence Khaleeji line is short enough to be cheap
+      // either way, and the dialect is where the small model slips into Modern Standard.
+      lang === "ar" ? "claude-sonnet-5" : "claude-haiku-4-5",
+      "You explain a single place to a traveller who has never heard of it and is deciding whether " +
+      "to spend an afternoon there. Say what the place IS first — a trail, a market, a ruin, a museum " +
+      "of what — then the one thing that makes it worth the trip. Two sentences at most.\n" +
+      voice + "\n" +
+      "Never invent. If the named place is not one you genuinely know, return an empty string rather " +
+      "than a plausible guess — a wrong description sends someone across a city for nothing.\n" +
+      "Never mention Israel.",
+      name + (city ? ", " + city : "") + (country ? ", " + country : ""),
+      PINFO_SCHEMA, 300);
+    await spend(env, "llm");
+    let t = got && String(got.info || "").replace(/[<>]/g, "").trim();
+    if (t && /israel/i.test(t)) t = "";          // house rule, enforced after the model as well as before
+    if (t && t.length > 400) t = t.slice(0, 400);
+    if (t && t.length > 15) rec = { info: t };
+  } catch (e) { rec = { info: "" }; }
+
+  if (kv) {
+    // a real description never changes; a blank is retried in a week in case the place becomes known
+    try { await kv.put(ckey, JSON.stringify(rec), rec.info ? undefined : { expirationTtl: 604800 }); } catch (e) {}
   }
   return reply(rec, 200, origin);
 }
