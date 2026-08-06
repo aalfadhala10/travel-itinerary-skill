@@ -45,11 +45,11 @@ const FILE = 'file:///home/user/travel-itinerary-skill/index.html';
   await open();
   await plan('Cairo', 4);
   const v = await view();
-  // The four days, then Info / Book / Budget. The days come first because the itinerary is what
+  // The four days, then Info / Flights / Stay / Budget. The days come first because the itinerary is what
   // you asked for when you tapped Plan; the summary, the shop and the cost follow it.
   pass('the plan is split into pages (' + v.pages + ' pages: ' + v.tabs.join(' ') + ')',
-    v.pages === 7 && v.tabs[0] === 'Day 1' && v.tabs[3] === 'Day 4' &&
-    v.tabs.slice(4).join(',') === 'Info,Book,Budget');
+    v.pages === 8 && v.tabs[0] === 'Day 1' && v.tabs[3] === 'Day 4' &&
+    v.tabs.slice(4).join(',') === 'Info,Flights,Stay,Budget');
   pass('only one page is on screen at a time (' + v.visible + ' visible)', v.visible === 1);
   pass('it opens on day 1 (' + v.shown.slice(0, 34) + ')',
     v.onIndex === 0 && /Trip|Cairo/i.test(v.shown));
@@ -71,7 +71,7 @@ const FILE = 'file:///home/user/travel-itinerary-skill/index.html';
 
   // the next button says where you're going
   const preview = await page.evaluate(() => document.querySelector('#out .pg.on .pgbtn.next .pgwhat').textContent.trim());
-  pass('the Next button names what is ahead (' + preview + ')', /Day|Info|Book|Budget/.test(preview));
+  pass('the Next button names what is ahead (' + preview + ')', /Day|Info|Flights|Stay|Budget/.test(preview));
 
   // tabs jump straight there
   await page.click('#out .pgtab[data-pgt="3"]'); await page.waitForTimeout(500);
@@ -150,7 +150,7 @@ const FILE = 'file:///home/user/travel-itinerary-skill/index.html';
   await plan('Rome', 3);
   const fresh = await view();
   pass('a new trip opens on day one (' + fresh.pages + ' pages, page ' + fresh.onIndex + ')',
-    fresh.onIndex === 0 && fresh.pages === 6);
+    fresh.onIndex === 0 && fresh.pages === 7);
 
   // printing must show the whole thing, not one page
   await page.emulateMedia({ media: 'print' });
@@ -178,7 +178,7 @@ const FILE = 'file:///home/user/travel-itinerary-skill/index.html';
   await plan('Cairo', 3);
   const ar = await view();
   pass('Arabic gets Arabic tabs, in the new order (' + ar.tabs.join(' ') + ')',
-    ar.tabs[0] === 'يوم 1' && ar.tabs.slice(3).join(',') === 'معلومات,الحجز,الميزانية');
+    ar.tabs[0] === 'يوم 1' && ar.tabs.slice(3).join(',') === 'معلومات,الطيران,الإقامة,الميزانية');
 
   console.log('\n=== PLAN AS PAGES ===');
   res.forEach(r => console.log(r));
