@@ -4458,9 +4458,12 @@
       :'The grey number is how far it is from the stop before — each day runs nearest-first');
     // Honest about what we don't know: we can't see today's opening hours, but the name link
     // opens the one place that can. Said once per day, where the plan is read.
-    var hoursTxt=ar?'الأوقات اقتراح للإيقاع — اضغط اسم المكان تتأكد من ساعات اليوم قبل ما تروح'
-      :(es?'Los horarios son un ritmo sugerido — toca un lugar para ver su horario de hoy antes de ir'
-      :'Times are a suggested rhythm — tap any place to check today\'s opening hours before you go');
+    // We know nothing about which places need tickets — a POI is a name, an area, tags and a
+    // coordinate. So this says the true general thing rather than inventing a per-place claim, and
+    // rides on the hours line instead of adding a fourth hint to a day.
+    var hoursTxt=ar?'الأوقات اقتراح للإيقاع — اضغط اسم المكان تتأكد من ساعات اليوم، واحجز بدري للأماكن اللي تنحجز بسرعة'
+      :(es?'Los horarios son un ritmo sugerido — toca un lugar para ver su horario y reserva con antelación lo que suela agotarse'
+      :'Times are a suggested rhythm — tap any place to check today\'s hours, and book ahead for anything that sells out');
     var swapTxt=ar?'تبديل':(es?'Cambiar':'Swap');
     var picTxt=ar?'صورة':(es?'Foto':'Photo');
     var whenTxt=ar?'الوقت':(es?'Hora':'When');
