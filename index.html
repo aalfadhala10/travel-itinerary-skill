@@ -533,6 +533,13 @@
   .picbtn svg{width:16px;height:16px}
   .picbtn.on{border-color:var(--teal);color:var(--teal);opacity:1}
   @media (hover:none){.picbtn{display:flex}}
+  /* Unlike the photo button this one is never hidden: it is the only thing telling a traveller
+     that an unfamiliar name can be explained at all. Hover reads it, tap opens it inline. */
+  .infobtn{display:flex;flex:0 0 auto;width:30px;height:30px;padding:0;border:1px solid var(--line);
+    border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;
+    align-items:center;justify-content:center;opacity:.75;transition:opacity .15s,border-color .15s,color .15s}
+  .infobtn svg{width:16px;height:16px}
+  .infobtn:hover,.infobtn.on{border-color:var(--teal);color:var(--teal);opacity:1}
   /* the visited tick shows everywhere once the trip is live — desktop planners deserve it too */
   .wentbtn{display:flex;border-radius:50%}
   .wentbtn.on{background:var(--teal);border-color:var(--teal);color:#fff;opacity:1}
@@ -559,6 +566,9 @@
   .svrow:has(.svtoplan) .svx{margin-inline-start:6px}
   .svmiss{color:var(--muted);font-size:12.5px;margin-top:8px;text-align:center}
   .picinline{margin:6px 0 2px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--paper2)}
+  .infinline{margin:6px 0 2px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;
+    background:var(--paper2);color:var(--ink);font-size:14.5px;line-height:1.5}
+  .picpop.infopop{max-width:270px;padding:10px 12px;color:var(--ink);font-size:14px;line-height:1.5}
   .picinline img{display:block;width:100%;max-height:200px;object-fit:cover;border-radius:8px}
   .picinline .pinone{font-size:14.5px;color:var(--muted);text-align:center;padding:8px}
   .picpop img{display:block;width:100%;max-height:180px;object-fit:cover;border-radius:8px}
@@ -954,7 +964,7 @@
     #out,#out *{visibility:visible}
     .out{margin:0}
     /* drop the interactive controls that don't belong on paper */
-    .picpop,#out .picinline,#out .picbtn,#out .tuner,#out .daynav,#out .realtag,#out .actions,#out .cvbar,#out .flycard,#out .staybar,#out .bookrow,#out .provrow,#out .tuneanother,#out .dayshuffle,#out .swapbtn,#out .swappick,#out .dchev,#out button{display:none!important}
+    .picpop,#out .picinline,#out .infinline,#out .infobtn,#out .picbtn,#out .tuner,#out .daynav,#out .realtag,#out .actions,#out .cvbar,#out .flycard,#out .staybar,#out .bookrow,#out .provrow,#out .tuneanother,#out .dayshuffle,#out .swapbtn,#out .swappick,#out .dchev,#out button{display:none!important}
     #out .day.dcol .dbody{display:block!important} #out .dsum{display:none!important} /* PDF shows every day in full */
     .ticket{background:#173a5c!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .ticket,.day,.bud,.bookbar,.mapcard{break-inside:avoid}
@@ -4546,6 +4556,9 @@
     return '<div class="slot'+(went?' went':'')+'" data-ic="'+ic+'" data-sk="'+sk+'" data-q="'+esc(q)+'"><div class="t">'+tm+'</div>'
       +'<div class="d">'+link(locName(ck,poi.n),q,food?'':q,poi.n)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a),locName(ck,poi.n))+hopLabel(hop)+'</div>'
       +(food?'':'<button type="button" class="picbtn" data-pic="'+esc(q)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>')
+      // Restaurants are chosen from the name and the rating, not from a paragraph — and describing
+      // a restaurant is exactly the review-writing the house rules rule out. Places get the "i".
+      +(food?'':'<button type="button" class="infobtn" data-inf="'+esc(poi.n)+'" data-infc="'+esc(city)+'" data-infk="'+esc((DEST[ck]&&DEST[ck].country)||'')+'" aria-label="'+esc(infLbl())+'" title="'+esc(infLbl())+'">'+INFSVG+'</button>')
       +'<button type="button" class="picbtn svbtn'+(isSaved(ck,poi.n)?' on':'')+'" data-sv="'+esc(ck)+'|'+esc(poi.n)+'|'+esc(poi.a||'')+'|'+svCatOf(poi,food)+'" aria-label="'+esc(svLbl())+'" title="'+esc(svLbl())+'">'+BKSVG+'</button>'
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button>'
       +wentBtn+'</div>';
@@ -8746,6 +8759,57 @@
   }
   function picHide(){ if(PICTIMER){ clearTimeout(PICTIMER); PICTIMER=null; } if(PICEL)PICEL.classList.remove('show'); }
   function picLbl(){ return LANG==='ar'?'شوف صورة المكان':(LANG==='es'?'Ver foto del lugar':'See a photo'); }
+  // --- what is this place? ---------------------------------------------------------------------
+  // A stop is a name, an area and a coordinate. "Rec del Solà Trail" tells a first-time traveller
+  // nothing, and the plan asks them to give it an afternoon. The Worker writes the line in Bosla's
+  // own words — no scraped prose, no reviews — and caches it in KV, so a place is described once
+  // for everyone who ever opens it rather than once per reader. Cached again on the device, because
+  // the second look at the same trip should not cost a request.
+  var INF={}, INFEL=null, INFTIMER=null;
+  var INFSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 11.2v5.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7.7" r="1.15" fill="currentColor"/></svg>';
+  function infLbl(){ return LANG==='ar'?'وش هذا المكان؟':(LANG==='es'?'¿Qué es este lugar?':'What is this place?'); }
+  function infNone(){ return LANG==='ar'?'ما عندنا وصف لهذا المكان':(LANG==='es'?'Sin descripción para este lugar':'No description for this place'); }
+  function infOf(b){ return {n:b.getAttribute('data-inf')||'',c:b.getAttribute('data-infc')||'',k:b.getAttribute('data-infk')||''}; }
+  function infFetch(nm,city,country){
+    var mk=LANG+'|'+city+'|'+nm, sk='bosla_inf:'+mk;
+    if(mk in INF)return Promise.resolve(INF[mk]);
+    try{ var raw=localStorage.getItem(sk); if(raw!==null){ INF[mk]=raw; return Promise.resolve(raw); } }catch(e){}
+    if(!CONFIG.aiEndpoint||!window.fetch){ INF[mk]=''; return Promise.resolve(''); }
+    return netFetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'placeinfo',name:nm,city:city,country:country||'',lang:LANG})})
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        var t=(res&&typeof res.info==='string')?res.info:'';
+        INF[mk]=t; if(t){ try{ localStorage.setItem(sk,t); }catch(e){} }
+        return t;
+      }).catch(function(){ INF[mk]=''; return ''; });
+  }
+  function infHide(){ if(INFTIMER){ clearTimeout(INFTIMER); INFTIMER=null; } if(INFEL)INFEL.classList.remove('show'); }
+  function infShow(btn){
+    var q=infOf(btn); if(!q.n)return;
+    infFetch(q.n,q.c,q.k).then(function(t){
+      if(!t||!btn.isConnected)return;
+      if(!INFEL){ INFEL=document.createElement('div'); INFEL.className='picpop infopop'; document.body.appendChild(INFEL); }
+      INFEL.textContent=t;                                   // textContent, so a model reply is never markup
+      INFEL.classList.add('show');
+      var r=btn.getBoundingClientRect(), w=INFEL.offsetWidth||260, h=INFEL.offsetHeight||90;
+      INFEL.style.left=Math.min(window.innerWidth-w-10,Math.max(10,r.left+r.width/2-w/2))+'px';
+      INFEL.style.top=((r.top>h+16)?(r.top-h-10):(r.bottom+10))+'px';
+    });
+  }
+  // Touch has no hover, so tapping the "i" opens the line under the row instead.
+  function infToggle(btn){
+    var slot=btn.closest('.slot'); if(!slot)return;
+    var nx=slot.nextElementSibling;
+    if(nx&&nx.classList&&nx.classList.contains('infinline')){ nx.parentNode.removeChild(nx); btn.classList.remove('on'); return; }
+    var open=$('out').querySelector('.infinline');
+    if(open){ var ob=open.previousElementSibling; if(ob){ var xb=ob.querySelector('.infobtn'); if(xb)xb.classList.remove('on'); } open.parentNode.removeChild(open); }
+    var box=document.createElement('div'); box.className='infinline'; box.textContent='…';
+    slot.parentNode.insertBefore(box, slot.nextElementSibling);
+    btn.classList.add('on');
+    var q=infOf(btn);
+    infFetch(q.n,q.c,q.k).then(function(t){ if(box.isConnected)box.textContent=t||infNone(); });
+  }
   // Touch devices can't hover, so the photo opens inline under the place — the name still opens Maps.
   function picToggle(btn){
     var slot=btn.closest('.slot'); if(!slot)return;
@@ -8785,7 +8849,16 @@
     out.addEventListener('mouseout',function(e){
       var a=e.target.closest&&e.target.closest('a[data-pic]'); if(a)picHide();
     });
+    out.addEventListener('mouseover',function(e){
+      var b=e.target.closest&&e.target.closest('.infobtn'); if(!b)return;
+      if(INFTIMER)clearTimeout(INFTIMER);
+      INFTIMER=setTimeout(function(){ infShow(b); },300);
+    });
+    out.addEventListener('mouseout',function(e){
+      var b=e.target.closest&&e.target.closest('.infobtn'); if(b)infHide();
+    });
     window.addEventListener('scroll',picHide,{passive:true});
+    window.addEventListener('scroll',infHide,{passive:true});
   })();
   function openSwap(btn){
     var slot=btn.closest('.slot'); if(!slot)return;
@@ -8888,6 +8961,8 @@
     if(nb){ var tv=nb.getAttribute('data-tv');
       if(tv){ var pt=tv.split('|'); bumpTravellers(pt[0], +pt[1]); return; }
       var pn=nb.getAttribute('data-nb').split('|'); bumpNights(+pn[0], +pn[1]); return; }
+    var ib=e.target.closest('.infobtn');
+    if(ib){ e.preventDefault(); infHide(); infToggle(ib); return; }
     var pb=e.target.closest('.picbtn');
     if(pb){ e.preventDefault(); picToggle(pb); return; }
     var sw=e.target.closest('.swapbtn');
