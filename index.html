@@ -757,11 +757,11 @@
      icon above the word — so the eye reads one row of days and one row of tools, not ten chips. */
   .pgutil{display:flex;align-items:stretch;gap:6px;margin-top:7px}
   .pgutil .pgu{flex:1 1 0;min-width:0;height:auto;padding:5px 2px 4px;gap:2px;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
     border:1px solid transparent;background:transparent;color:var(--muted);
     font-size:10.5px;font-weight:600;letter-spacing:.01em;line-height:1.15}
   .pgutil .pgu svg{width:17px;height:17px;flex:0 0 auto}
-  .pgutil .pgu span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pgutil .pgu span{max-width:100%;text-align:center;white-space:normal;overflow-wrap:break-word}
   .pgutil .pgu:hover{color:var(--teal);border-color:transparent}
   .pgutil .pgu.on{background:transparent;border-color:transparent;color:var(--teal)}
   .pgutil .pgu.on svg{stroke-width:2.1}
@@ -3790,7 +3790,7 @@
   function pgLabels(){
     var ar=LANG==='ar', es=LANG==='es';
     return { over: ar?'الرحلة':(es?'Viaje':'Trip'),
-             info: ar?'معلومات':(es?'Info':'Info'),
+             info: ar?'معلومات الرحلة':(es?'Info del viaje':'Trip info'),
              budget: ar?'الميزانية':(es?'Presupuesto':'Budget'),
              fly: ar?'الطيران':(es?'Vuelos':'Flights'),
              stay: ar?'الإقامة':(es?'Alojamiento':'Stay'),
@@ -3906,9 +3906,9 @@
     var order=[];
     for(var bi=1;bi<=dayCount;bi++)order.push({items:buckets[bi],kind:'day',day:bi});
     order.push({items:infoItems,kind:'info'});
+    if(bud)order.push({items:[bud],kind:'budget'});
     if(flyc)order.push({items:[flyc],kind:'fly'});
     if(stayc)order.push({items:[stayc],kind:'stay'});
-    if(bud)order.push({items:[bud],kind:'budget'});
 
     var pages=order.map(function(spec,i){
       var items=spec.items;
