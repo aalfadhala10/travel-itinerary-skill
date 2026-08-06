@@ -194,9 +194,10 @@ const ok = (c, m) => { console.log((c ? 'PASS — ' : 'FAIL — ') + m); if (!c)
     await show(s);
     ok(await p.locator('#d3 .d3-tabs').isVisible(), `${s}: has the tab bar`);
   }
-  // a screen that isn't itself a tab still lights its parent tab
-  await p.evaluate(() => document.querySelector('#d3 .d3-tab[data-tab="discover"]').click());
-  await p.waitForTimeout(200);
+  // The Discover TAB now opens the app's real community screen, so the designed
+  // discover/published pair is the fallback for when that opener is absent.
+  // Reach it directly rather than through the tab.
+  await show('discover');
   await p.evaluate(() => document.querySelector('#d3 .d3-pick').click());
   await p.waitForTimeout(250);
   ok(await p.locator('#d3 .d3-scr[data-scr="published"]').isVisible(),

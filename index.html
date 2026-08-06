@@ -1342,9 +1342,67 @@
      "not #d3" rather than a list so a new element added to the classic app
      later can't leak through and float over the redesign. */
   #d3{display:none}
-  html[data-design="3a"] body>*:not(#d3){display:none!important}
-  html[data-design="3a"] body{background:#0d0b0a;overflow:hidden}
   html[data-design="3a"] #d3{display:block}
+  html[data-design="3a"] body{background:#0d0b0a}
+
+  /* The real app stays in the DOM, in place, with every listener and every
+     `#app[dir="rtl"] …` rule intact. Only the chrome the 3a shell replaces is
+     hidden — masthead, language bar, theme button, the classic tab bar and the
+     floating pills. What is left is the working content. */
+  html[data-design="3a"] #topo,
+  html[data-design="3a"] .themebtn,
+  html[data-design="3a"] .menubtn,
+  html[data-design="3a"] .langbar,
+  html[data-design="3a"] .hero,
+  html[data-design="3a"] .intro,
+  html[data-design="3a"] .mignote,
+  html[data-design="3a"] .foot,
+  html[data-design="3a"] nav.tabbar,
+  html[data-design="3a"] .chatfab,
+  html[data-design="3a"] .editfab,
+  html[data-design="3a"] .topbtn,
+  html[data-design="3a"] .fbnudge,
+  html[data-design="3a"] #manualForm,
+  /* The classic first-run gate — language picker, name, "start as a guest".
+     3a has its own welcome screen doing exactly that job, so leaving this on
+     means two welcomes, and the classic one sits on top and blocks everything. */
+  html[data-design="3a"] #welcome{display:none!important}
+
+  /* The app's own screens, wearing the 3a palette. Every one of these variables
+     is what the classic stylesheet already draws from, so redefining them here
+     re-skins the whole itinerary — days, maps, budget, flights, booking bars —
+     without touching a single classic rule. */
+  html[data-design="3a"]{
+    --paper:#14110f; --paper2:#1a1613; --card:#1e1a16;
+    --ink:#f3ede5; --muted:#a2988e; --line:#2a231d;
+    --teal:#e8cfa9; --teal-soft:rgba(232,207,169,.14);
+    --amber:#e8cfa9; --amber-soft:rgba(232,207,169,.14); --amber-ink:#e8cfa9;
+    --clay:#d98b6a;
+    --land:#2a231d; --landline:#3b322a; --ocean1:#1a1613; --ocean2:#14110f;
+    --shadow:0 18px 44px rgba(0,0,0,.5); --shadow-fab:0 8px 24px rgba(0,0,0,.4);
+  }
+  /* .ticket is the one component in the whole stylesheet that hardcodes the navy
+     instead of drawing from a token, so it is the one that has to be restated. */
+  html[data-design="3a"] .ticket{
+    background:linear-gradient(155deg,#241d17 0%,#16120f 100%);
+    color:#f3ede5;border-color:rgba(232,207,169,.22)}
+  html[data-design="3a"] #app{
+    position:fixed;inset:0;z-index:21;max-width:430px;margin-inline:auto;
+    padding:calc(14px + env(safe-area-inset-top)) 18px calc(104px + env(safe-area-inset-bottom));
+    overflow-y:auto;-webkit-overflow-scrolling:touch;background:#14110f;
+    display:none;
+  }
+  /* shown only while a real screen is the thing you are looking at */
+  html[data-design="3a"][data-real="1"] #app{display:block}
+  html[data-design="3a"][data-real="1"] #d3 .d3-scr{display:none}
+  /* The shell becomes a frame around the real app: transparent, click-through,
+     and stacked ABOVE #app so its tab bar is still reachable. Without the z-index
+     the bar renders under the itinerary; without the display:grid it inherits the
+     "no tab bar" rule from whichever designed screen was last shown. */
+  html[data-design="3a"][data-real="1"] #d3{background:transparent;pointer-events:none;z-index:22}
+  html[data-design="3a"][data-real="1"] #d3 .d3-tabs{display:grid!important;pointer-events:auto}
+  html[data-design="3a"] #app::-webkit-scrollbar{width:0}
+  html[data-design="3a"] #app{scrollbar-width:none}
 
   #d3{
     --d3-ground:#14110f; --d3-surface:#1e1a16; --d3-line:#2a231d; --d3-line2:#302821;
@@ -1950,7 +2008,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-06 17:36 UTC · pages</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-06 22:06 UTC · pages</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -9803,7 +9861,7 @@
       <p class="d3-lede" data-t="pSub"></p>
 
       <div class="d3-lab" data-t="pWhere"></div>
-      <div class="d3-search filled"><span class="d3-pin" aria-hidden="true"></span><span data-t="pCity"></span></div>
+      <div class="d3-search filled"><span class="d3-pin" aria-hidden="true"></span><span id="d3City"></span></div>
       <div class="d3-qchips" id="d3Quick"></div>
 
       <div class="d3-lab" data-t="pHowLong"></div>
@@ -9818,7 +9876,7 @@
     </div>
     <div class="d3-tail tall"></div>
     <div class="d3-foot">
-      <button type="button" class="d3-cta" data-go="chat" data-t="pCta"></button>
+      <button type="button" class="d3-cta" id="d3Build" data-t="pCta"></button>
       <div class="d3-fnote" data-t="pCredits"></div>
     </div>
   </section>
@@ -10336,7 +10394,7 @@
   var lang = 'en';
   try { if (localStorage.getItem('bosla_lang') === 'ar') lang = 'ar'; } catch (e) {}
   var st = { chip: 0, openDay: 0, savedTab: 'places', length: 1, party: 1, plan: 0,
-             interests: { culture: true, food: true } };
+             city: 'Cairo', interests: { culture: true, food: true } };
 
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -10397,7 +10455,16 @@
         b.setAttribute('data-tab', t.id);
         b.appendChild(el('i'));
         b.appendChild(el('span', null, t[lang]));
-        b.addEventListener('click', function () { go(t.id); });
+        b.addEventListener('click', function () {
+          /* Trips / Discover / Record open the app's real screens. Home and Me
+             are the 3a shell's own. If a real opener is missing the designed
+             screen still shows, so the tab is never a dead tap. */
+          if (t.id === 'me') { real(false); go('me'); return; }
+          if (t.id === 'home') { openReal('home'); go('home'); return; }
+          var m = { trips: 'trips', discover: 'discover', record: 'record' }[t.id];
+          if (m && openReal(m)) { markTab(t.id); return; }
+          go(t.id);
+        });
         wrap.appendChild(b);
       });
     });
@@ -10413,7 +10480,8 @@
         cap.appendChild(el('b', null, tx(d)[0]));
         cap.appendChild(el('span', null, tx(d)[1]));
         b.appendChild(cap);
-        b.addEventListener('click', function () { go('plan'); });
+        b.setAttribute('data-city', d.en[0]);
+        b.addEventListener('click', function () { st.city = d.en[0]; go('plan'); });
         rail.appendChild(b);
       });
     });
@@ -10435,6 +10503,8 @@
   }
 
   function renderPlan() {
+    var cityNode = document.getElementById('d3City');
+    if (cityNode) cityNode.textContent = st.city;
     fill('d3Quick', function (w) {
       QUICK.forEach(function (c) {
         var b = el('button', 'd3-qchip', c[lang]); b.type = 'button';
@@ -10746,6 +10816,14 @@
        to the top — which is what a bottom tab bar leads people to expect. */
   }
 
+  function markTab(tab) {
+    root.querySelectorAll('.d3-tab').forEach(function (b) {
+      var isOn = b.getAttribute('data-tab') === tab;
+      b.classList.toggle('on', isOn);
+      b.setAttribute('aria-current', isOn ? 'page' : 'false');
+    });
+  }
+
   function setDrawer(open) {
     root.setAttribute('data-drawer', open ? 'open' : 'shut');
     var panel = document.getElementById('d3Drawer');
@@ -10777,9 +10855,71 @@
   document.getElementById('d3Lang').addEventListener('click', function () {
     setLang(lang === 'ar' ? 'en' : 'ar');
   });
+  document.getElementById('d3Build').addEventListener('click', function () {
+    /* the real planner, with the real city tables and the real budget engine */
+    if (!buildPlan()) go('chat');                   // no engine on the page: show the designed chat
+  });
+  /* the home search and destination cards choose the city, then open the form */
+  root.querySelectorAll('[data-city]').forEach(function (n) {
+    n.addEventListener('click', function () { st.city = n.getAttribute('data-city'); });
+  });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && root.getAttribute('data-drawer') === 'open') setDrawer(false);
   });
+
+  /* ── the real app ───────────────────────────────────────────────────────
+     Everything below reaches the classic app, which is top-level (no IIFE), so
+     plan(), goHome(), openMyTrips() and friends are simply on window. */
+  var HTML = document.documentElement;
+  function real(yes) { HTML.setAttribute('data-real', yes ? '1' : '0'); }
+  /* the classic gate also stamps body.welopen, which hides chrome app-wide */
+  try { document.body.classList.remove('welopen'); } catch (e) {}
+  function has(fn) { return typeof window[fn] === 'function'; }
+  function call(fn, arg) { try { if (has(fn)) { window[fn](arg); return true; } } catch (e) {} return false; }
+  function set(id, v) { var n = document.getElementById(id); if (n) { n.value = v; return true; } return false; }
+
+  /* the 3a form's answers, mapped onto the controls plan() actually reads */
+  var LEN_DAYS = [2, 4, 7, 10];
+  var PARTY = [[1, 0], [2, 0], [2, 2], [4, 0]];          // adults, kids
+  var VIBE_FOR = { culture: 'Culture', food: 'Food', nature: 'Nature',
+                   night: 'Nightlife', shopping: 'Shopping', relaxed: 'Relax', hidden: 'Culture' };
+
+  function pickChip(groupId, labels) {
+    var g = document.getElementById(groupId);
+    if (!g) return;
+    g.querySelectorAll('.chip').forEach(function (c) {
+      var want = labels.indexOf(c.getAttribute('data-v') || c.textContent.trim()) > -1;
+      c.classList.toggle('active', want);
+    });
+  }
+
+  function buildPlan() {
+    if (!has('plan')) return false;
+    set('dest', st.city || 'Cairo');
+    set('days', String(LEN_DAYS[st.length] || 4));
+    set('adults', String(PARTY[st.party][0]));
+    set('kids', String(PARTY[st.party][1]));
+    var vibes = Object.keys(st.interests).filter(function (k) { return st.interests[k]; })
+                  .map(function (k) { return VIBE_FOR[k]; })
+                  .filter(function (v, i, a) { return v && a.indexOf(v) === i; });
+    if (vibes.length) pickChip('vibeChips', vibes);
+    real(true);
+    window.plan();
+    try { document.getElementById('app').scrollTop = 0; } catch (e) {}
+    return true;
+  }
+
+  /* the tab bar drives the app's own openers; Home comes back to the 3a shell */
+  function openReal(which) {
+    if (which === 'home') { call('goHome'); real(false); return true; }
+    var fn = { trips: 'openMyTrips', discover: 'openCommunity',
+               record: 'openRecView', saved: 'openSavedView' }[which];
+    if (!fn || !has(fn)) return false;
+    real(true);
+    window[fn]();
+    try { document.getElementById('app').scrollTop = 0; } catch (e) {}
+    return true;
+  }
 
   photo(root.querySelector('.d3-welcome .d3-img'), 'welcome');
   root.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
