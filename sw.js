@@ -1,4 +1,4 @@
-const CACHE = 'bosla-v59';
+const CACHE = 'bosla-v61';
 // The 3a theme layer's typefaces are self-hosted (the CSP has no font-src, so Google
 // Fonts is refused) and they are listed here so the redesign reads correctly offline
 // rather than falling back to Georgia mid-flight. Each is a subset keyed by

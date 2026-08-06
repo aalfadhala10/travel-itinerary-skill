@@ -51,7 +51,11 @@ const ok = (c, m) => { console.log((c ? 'PASS — ' : 'FAIL — ') + m); if (!c)
   await p.waitForTimeout(900);
   ok(await p.locator('#d3').isVisible(), '3a: the layer renders');
   ok(!(await p.locator('#app').isVisible()), '3a: the classic wrap is hidden');
-  ok(!(await p.locator('nav.tabbar').isVisible()), '3a: the classic tab bar is hidden');
+  // assert it EXISTS and is hidden: `nav.tabbar` matched nothing (it is a <div>),
+  // and isVisible() on a locator that matches nothing is false — so this passed
+  // vacuously while the classic bar sat on top of the redesign.
+  ok(await p.locator('.tabbar').count() === 1, '3a: the classic tab bar element is found');
+  ok(!(await p.locator('.tabbar').isVisible()), '3a: the classic tab bar is hidden');
   ok(await p.locator('#d3 .d3-scr').count() === SCREENS.length,
      `3a: all ${SCREENS.length} screens are present`);
 

@@ -1357,8 +1357,7 @@
   html[data-design="3a"] .intro,
   html[data-design="3a"] .mignote,
   html[data-design="3a"] .foot,
-  html[data-design="3a"] nav.tabbar,
-  html[data-design="3a"] .chatfab,
+  html[data-design="3a"] .tabbar,
   html[data-design="3a"] .editfab,
   html[data-design="3a"] .topbtn,
   html[data-design="3a"] .fbnudge,
@@ -1367,6 +1366,10 @@
      3a has its own welcome screen doing exactly that job, so leaving this on
      means two welcomes, and the classic one sits on top and blocks everything. */
   html[data-design="3a"] #welcome{display:none!important}
+  /* Ask Bosla stays: it is the assistant on the worker, not chrome. Its own rule,
+     AFTER the list above — spliced into the middle of it, it terminates the
+     selector list early and every element before it gets display:flex instead. */
+  html[data-design="3a"] .chatfab{display:flex!important;bottom:calc(104px + env(safe-area-inset-bottom));z-index:25}
 
   /* The app's own screens, wearing the 3a palette. Every one of these variables
      is what the classic stylesheet already draws from, so redefining them here
@@ -2008,7 +2011,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-06 22:06 UTC · pages</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-06 22:14 UTC · pages</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -10088,9 +10091,11 @@
   try { q = new URLSearchParams(location.search); } catch (e) { q = null; }
   want = q ? q.get('design') : null;
   if (want === '3a') { try { localStorage.setItem(KEY, '3a'); } catch (e) {} }
-  else if (want) { try { localStorage.removeItem(KEY); } catch (e) {} }
+  else if (want) { try { localStorage.setItem(KEY, 'classic'); } catch (e) {} }
   on = want === '3a';
-  if (!want) { try { on = localStorage.getItem(KEY) === '3a'; } catch (e) { on = false; } }
+  /* Default ON: this IS the app now. ?design=classic switches back and sticks,
+     so the old screens are always one URL away. */
+  if (!want) { try { on = localStorage.getItem(KEY) !== 'classic'; } catch (e) { on = true; } }
   if (!on) return;
 
   var root = document.getElementById('d3');
@@ -10833,6 +10838,11 @@
   function setLang(next) {
     lang = next;
     try { localStorage.setItem('bosla_lang', lang); } catch (e) {}
+    /* Tell the real app too. Without this the two disagree inside a session —
+       the shell in English with the Ask Bosla pill still reading خطّط معي — and
+       only line up again on the next load. applyLang re-renders every classic
+       label and flips #app's dir. */
+    call('applyLang', lang);
     root.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
     root.setAttribute('lang', lang);
     renderAll();
@@ -10924,6 +10934,10 @@
   photo(root.querySelector('.d3-welcome .d3-img'), 'welcome');
   root.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
   root.setAttribute('lang', lang);
+  /* and on boot, not just on toggle — the classic app defaults to Arabic, so a
+     shell opening in English would sit above an Arabic Ask pill until you
+     switched language and back. */
+  call('applyLang', lang);
   setDrawer(false);
   renderAll();
 })();
