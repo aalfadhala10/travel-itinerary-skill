@@ -4456,9 +4456,6 @@
     var hopTxt=ar?'الرقم الرمادي هو المسافة من المكان السابق — اليوم مرتّب بالأقرب فالأقرب'
       :(es?'El número gris es la distancia desde la parada anterior — el día va de lo más cercano a lo más lejano'
       :'The grey number is how far it is from the stop before — each day runs nearest-first');
-    var menuTxt=ar?'المطاعم فيها رابط المنيو بدل الصورة'
-      :(es?'Los restaurantes llevan un enlace a la carta en vez de una foto'
-      :'Restaurants carry a link to the menu instead of a photo');
     // Honest about what we don't know: we can't see today's opening hours, but the name link
     // opens the one place that can. Said once per day, where the plan is read.
     var hoursTxt=ar?'الأوقات اقتراح للإيقاع — اضغط اسم المكان تتأكد من ساعات اليوم قبل ما تروح'
@@ -4479,7 +4476,6 @@
     return '<div class="dhint"><span class="dhtouch">'+esc(tapName)+'</span>'+
       '<span class="dhhover">'+esc(hovName)+'</span></div>'+
       '<div class="dhint">'+esc(hopTxt)+'</div>'+
-      '<div class="dhint">'+esc(menuTxt)+'</div>'+
       '<div class="dhint">'+esc(hoursTxt)+'</div>'+legend;
   }
   // `food` marks a meal. The rating is shown on restaurants only: choosing where to eat is where a
@@ -4488,11 +4484,6 @@
   // A photo of a restaurant is the one picture nobody can source reliably — hovering a Moroccan
   // place in Munich produced a black-and-white portrait of a stranger. What somebody actually wants
   // before choosing where to eat is the menu, so restaurants get that instead and no photo at all.
-  function menuLink(n,city){
-    var t=LANG==='ar'?'المنيو':(LANG==='es'?'La carta':'Menu');
-    return ' <a class="menulink" href="https://www.google.com/search?q='+
-      encodeURIComponent(n+' '+city+' menu')+'" target="_blank" rel="noopener">'+esc(t)+'</a>';
-  }
   // Ticking places off as you go is what a plan is FOR once the trip starts — so the tick only
   // appears while the trip is underway, and stays out of the way during planning.
   function tripUnderway(){ try{ return tripTodayNum(parseInt($('days').value,10)||30)>0; }catch(e){ return false; } }
@@ -4511,7 +4502,7 @@
     // worked right up until restaurants stopped having photos — and then the swap picker could no
     // longer tell which place you were replacing, so it offered you the same one back.
     return '<div class="slot'+(went?' went':'')+'" data-ic="'+ic+'" data-sk="'+sk+'" data-q="'+esc(q)+'"><div class="t">'+tm+'</div>'
-      +'<div class="d">'+link(locName(ck,poi.n),q,food?'':q,poi.n)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a),locName(ck,poi.n))+hopLabel(hop)+(food?menuLink(poi.n,city):'')+'</div>'
+      +'<div class="d">'+link(locName(ck,poi.n),q,food?'':q,poi.n)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a),locName(ck,poi.n))+hopLabel(hop)+'</div>'
       +(food?'':'<button type="button" class="picbtn" data-pic="'+esc(q)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>')
       +'<button type="button" class="picbtn svbtn'+(isSaved(ck,poi.n)?' on':'')+'" data-sv="'+esc(ck)+'|'+esc(poi.n)+'|'+esc(poi.a||'')+'|'+svCatOf(poi,food)+'" aria-label="'+esc(svLbl())+'" title="'+esc(svLbl())+'">'+BKSVG+'</button>'
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button>'
