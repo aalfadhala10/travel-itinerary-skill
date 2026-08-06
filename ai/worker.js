@@ -542,9 +542,10 @@ async function getOrBuildCity(name, env) {
     const hit = await kv.get(k, "json");
     if (hit) return { city: hit, cached: true };
   }
-  await spend(env, "llm");                                 // counted here: this is the call that costs
-  const city = await generateCity(name, env.ANTHROPIC_API_KEY);
-  if (kv && city && city.valid) {
+  const city = await buildCity(name, env);                 // Places first, invention as a fallback
+  // `valid` alone used to be the bar, and a city with one POI sailed past it into KV with no TTL —
+  // the app then refused it for ever, for everyone. Nothing unusable gets written now.
+  if (kv && cityUsable(city)) {
     await kv.put(k, JSON.stringify(city));                 // remember under the searched name
     const ck = cityKey(city.city);                          // ...and its canonical name
     if (ck && ck !== k) await kv.put(ck, JSON.stringify(city));
@@ -905,6 +906,367 @@ const CITY_SCHEMA = {
     hotelsLux: { type: "array", items: { type: "string" } },
   },
 };
+
+// ---------------------------------------------------------------------------------------------
+// Discovery pipeline for AI-generated cities (Phase 1)
+//
+// The 771 curated cities never come through here. This replaces only the part that used to be
+// invention: the model was asked to name seven POIs and five restaurants and give their
+// coordinates, which is exactly the thing a language model cannot be trusted with. Now Google
+// Places supplies the candidates and the model only CHOOSES among them, by id. A place the model
+// returns that was not in the pool is dropped in code — the guarantee is an allowlist, not a
+// sentence in a prompt.
+//
+// Three stages, deliberately separate so the middle one can grow:
+//   poolFor()      discovery   — one search per category, cached per city
+//   rankPool()     scoring     — pure, deterministic, no network and no model
+//   pickFromPool() curation    — the model, given a shortlist it cannot escape
+// ---------------------------------------------------------------------------------------------
+
+// --- temporary pipeline logging ----------------------------------------------------------------
+// TEMPORARY — remove before this pipeline is considered finished.
+//
+// Silent unless the Worker has DEBUG_PIPELINE = "1". That makes turning it off a dashboard change
+// rather than a code change: delete the variable in Cloudflare and every line below costs nothing,
+// with no re-paste and no redeploy. To strip it for good, `grep -n "bosla:debug" ai/worker.js`
+// finds the helper and all four call sites.
+//
+// City names and counts only. No traveller, no session, no address, nothing that could identify
+// anyone — the same promise the rest of the Worker keeps.
+const DEBUG_VAR = "DEBUG_PIPELINE";
+function dbg(env, stage, data) {
+  if (!env || env[DEBUG_VAR] !== "1") return;
+  try { console.log("[bosla:debug] " + stage + " " + JSON.stringify(data)); } catch (e) {}
+}
+
+// What a city needs to fill CITY_SCHEMA. `tag` maps a category onto the app's own vocabulary, so
+// adding a category later is a line here rather than a change anywhere else.
+const PLACE_CATS = [
+  { key: "landmark", q: "top tourist attractions",  tag: "Culture",  want: 2, kind: "poi",
+    good: ["tourist_attraction", "historical_landmark", "monument", "place_of_worship"] },
+  { key: "museum",   q: "museums",                  tag: "Culture",  want: 1, kind: "poi",
+    good: ["museum", "art_gallery"] },
+  { key: "nature",   q: "parks and gardens",        tag: "Nature",   want: 1, kind: "poi",
+    good: ["park", "garden", "national_park"] },
+  { key: "market",   q: "markets and shopping",     tag: "Shopping", want: 1, kind: "poi",
+    good: ["market", "shopping_mall", "department_store"] },
+  { key: "relax",    q: "viewpoints and waterfront",tag: "Relax",    want: 2, kind: "poi",
+    good: ["tourist_attraction", "park", "beach"] },
+  { key: "food",     q: "best restaurants",         tag: "Food",     want: 4, kind: "food",
+    good: ["restaurant", "meal_takeaway"] },
+  { key: "cafe",     q: "best cafes",               tag: "Food",     want: 1, kind: "food",
+    good: ["cafe", "coffee_shop", "bakery"] },
+];
+
+const POOL_TTL = 60 * 60 * 24 * 30;   // 30 days: ratings drift and places shut
+const POOL_PER_CAT = 20;
+
+// rating/userRatingCount already put this mask in the paid tier, so address and types ride along
+// for nothing. editorialSummary and openingHours are deliberately NOT here — they are the fields
+// that push into the dearer tier, and the model can write a reason from what is below.
+const POOL_MASK = [
+  "places.id", "places.displayName", "places.location", "places.rating",
+  "places.userRatingCount", "places.businessStatus", "places.types",
+  "places.shortFormattedAddress",
+].join(",");
+
+async function searchCategory(city, cat, env) {
+  try {
+    const r = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": env.GOOGLE_PLACES_KEY,
+        "X-Goog-FieldMask": POOL_MASK,
+      },
+      body: JSON.stringify({ textQuery: cat.q + " in " + city, maxResultCount: POOL_PER_CAT }),
+    });
+    if (!r.ok) return [];
+    const d = await r.json();
+    if (!d || !Array.isArray(d.places)) return [];
+    return d.places.map((p) => ({
+      id: p.id || "",
+      n: (p.displayName && p.displayName.text) || "",
+      lat: (p.location && p.location.latitude) || 0,
+      lng: (p.location && p.location.longitude) || 0,
+      r: p.rating || 0,
+      v: p.userRatingCount || 0,
+      s: p.businessStatus || "OPERATIONAL",
+      ty: Array.isArray(p.types) ? p.types.slice(0, 6) : [],
+      ad: p.shortFormattedAddress || "",
+      cat: cat.key, kind: cat.kind, tag: cat.tag,
+    })).filter((c) => c.id && c.n && c.lat && c.lng);
+  } catch (e) {
+    return [];
+  }
+}
+
+// One search per category, then cached whole. Every traveller who asks for this city afterwards
+// pays nothing.
+async function poolFor(city, env) {
+  const kv = env.CITIES;
+  const key = "pool:" + cityKey(city);
+  if (kv) {
+    try {
+      const hit = await kv.get(key, "json");
+      if (hit && hit.length) { dbg(env, "pool.cached", { city, candidates: hit.length }); return hit; }
+    } catch (e) {}
+  }
+  const all = [], per = {};
+  for (const cat of PLACE_CATS) {                       // sequential: 7 parallel calls earn a limit
+    await spend(env, "places");
+    const got = await searchCategory(city, cat, env);
+    per[cat.key] = got.length;
+    for (const c of got) all.push(c);
+  }
+  dbg(env, "pool.fetched", { city, requests: PLACE_CATS.length, candidates: all.length, byCategory: per });
+  if (kv && all.length) {
+    try { await kv.put(key, JSON.stringify(all), { expirationTtl: POOL_TTL }); } catch (e) {}
+  }
+  return all;
+}
+
+// --- ranking -----------------------------------------------------------------------------------
+// Each signal returns 0..1 and carries a weight. THIS is the extension point: trending, seasonal,
+// events, a traveller's own preferences all arrive as another entry here, reading whatever they
+// need off `ctx`. Nothing else in the pipeline has to know they exist.
+const BAYES_PRIOR = 50;   // how many reviews it takes before a score speaks for itself
+
+const SIGNALS = [
+  // A 5.0 from four people says less than a 4.3 from nine hundred. Shrink toward the pool's own
+  // mean by review count, which is the honest version of the old "4+ stars" gate.
+  { key: "bayes", w: 0.38, fn: (c, ctx) => {
+      if (!(c.r > 0)) return 0;
+      const v = c.v || 0;
+      return (((v / (v + BAYES_PRIOR)) * c.r + (BAYES_PRIOR / (v + BAYES_PRIOR)) * ctx.meanR) / 5);
+    } },
+  // Log, so 900 reviews beats 90 clearly but 90,000 does not simply win.
+  { key: "popularity", w: 0.20, fn: (c, ctx) =>
+      ctx.maxLogV ? Math.log10(1 + (c.v || 0)) / ctx.maxLogV : 0 },
+  // Near the middle of town beats an hour out, unless nothing else is close.
+  { key: "proximity", w: 0.16, fn: (c, ctx) =>
+      ctx.maxKm ? 1 - Math.min(1, kmBetween(c.lat, c.lng, ctx.lat, ctx.lng) / ctx.maxKm) : 0.5 },
+  // Google's own types agreeing with what we searched for: a mall returned for "museums" scores 0.
+  { key: "fit", w: 0.16, fn: (c) => {
+      const cat = PLACE_CATS.find((x) => x.key === c.cat);
+      if (!cat) return 0;
+      return c.ty.some((t) => cat.good.includes(t)) ? 1 : 0.25;
+    } },
+  // Somewhere with a handful of reviews is a coin toss however well it scores.
+  { key: "confidence", w: 0.10, fn: (c) => Math.min(1, (c.v || 0) / 200) },
+];
+
+function kmBetween(a1, n1, a2, n2) {
+  const R = 6371, r = Math.PI / 180;
+  const dla = (a2 - a1) * r, dln = (n2 - n1) * r;
+  const x = Math.sin(dla / 2) ** 2 + Math.cos(a1 * r) * Math.cos(a2 * r) * Math.sin(dln / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+}
+
+function normName(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }
+
+// Hard drops first: nothing scores its way past being shut or being a duplicate.
+function cleanPool(pool) {
+  const seenId = new Set(), out = [];
+  for (const c of pool) {
+    if (c.s !== "OPERATIONAL") continue;                       // shut, permanently or for now
+    if ((c.v || 0) < 8) continue;                              // too few voices to mean anything
+    if (seenId.has(c.id)) continue;
+    // the same place returned under two categories, or twice under near-identical names
+    const dupe = out.find((o) => normName(o.n) === normName(c.n) &&
+      kmBetween(o.lat, o.lng, c.lat, c.lng) < 0.15);
+    if (dupe) continue;
+    seenId.add(c.id); out.push(c);
+  }
+  return out;
+}
+
+function rankPool(pool, ctx) {
+  const rated = pool.filter((c) => c.r > 0);
+  const meanR = rated.length ? rated.reduce((a, c) => a + c.r, 0) / rated.length : 4.2;
+  const maxLogV = Math.log10(1 + Math.max(1, ...pool.map((c) => c.v || 0)));
+  const maxKm = Math.max(1, ...pool.map((c) => kmBetween(c.lat, c.lng, ctx.lat, ctx.lng)));
+  const full = Object.assign({ meanR, maxLogV, maxKm }, ctx);
+  const wsum = SIGNALS.reduce((a, s) => a + s.w, 0) || 1;
+  return pool.map((c) => {
+    let sc = 0;
+    for (const s of SIGNALS) sc += s.w * Math.max(0, Math.min(1, s.fn(c, full) || 0));
+    return Object.assign({}, c, { sc: sc / wsum });
+  }).sort((a, b) => b.sc - a.sc);
+}
+
+// Take the best, but stop the list turning into nine of the same thing. A place whose primary type
+// is already represented is pushed down rather than removed, so a city that genuinely only has
+// museums still fills up.
+function diversify(ranked, n) {
+  const out = [], typeSeen = {};
+  const pool = ranked.slice();
+  while (out.length < n && pool.length) {
+    let bestI = 0, bestV = -Infinity;
+    for (let i = 0; i < pool.length; i++) {
+      const t = pool[i].ty[0] || pool[i].cat;
+      const v = pool[i].sc - 0.12 * (typeSeen[t] || 0);
+      if (v > bestV) { bestV = v; bestI = i; }
+    }
+    const pick = pool.splice(bestI, 1)[0];
+    const t = pick.ty[0] || pick.cat;
+    typeSeen[t] = (typeSeen[t] || 0) + 1;
+    out.push(pick);
+  }
+  return out;
+}
+
+// The shortlist the model is allowed to choose from, and nothing else.
+function shortlist(pool, ctx) {
+  const clean = cleanPool(pool);
+  const ranked = rankPool(clean, ctx);
+  return {
+    poi: diversify(ranked.filter((c) => c.kind === "poi"), 14),
+    food: diversify(ranked.filter((c) => c.kind === "food"), 10),
+  };
+}
+
+// --- curation ----------------------------------------------------------------------------------
+// Same city metadata as before — blurbs, costs, currency, climate, hotels are prose and economics,
+// which the model is good at. The difference is poi/food: it returns IDs from the shortlist, never
+// names and never coordinates.
+const CITY_PICK_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["valid","city","country","flag","region","blurbEn","blurbAr","blurbEs",
+    "summerCond","summerTemp","costBudget","costMid","costLux","curSymbol","curRate",
+    "poi","food","hotelsBudget","hotelsMid","hotelsLux"],
+  properties: {
+    valid: { type: "boolean" },
+    city: { type: "string" }, country: { type: "string" }, flag: { type: "string" },
+    region: { type: "string", enum: ["eu","asia","me","africa","islands","americas","oceania"] },
+    blurbEn: { type: "string" }, blurbAr: { type: "string" }, blurbEs: { type: "string" },
+    summerCond: { type: "string", enum: CONDS }, summerTemp: { type: "integer" },
+    costBudget: { type: "integer" }, costMid: { type: "integer" }, costLux: { type: "integer" },
+    curSymbol: { type: "string" }, curRate: { type: "number" },
+    poi: { type: "array", items: { type: "object", additionalProperties: false,
+      required: ["id","a","t","why"], properties: {
+        id: { type: "string", description: "the id of a place from the CANDIDATES list — never anything else" },
+        a: { type: "string", description: "short area label in English taken from that candidate's address, e.g. 'Old Town'" },
+        t: { type: "array", items: { type: "string", enum: TAGS } },
+        why: { type: "string", description: "one short sentence on why this place earns its slot, from its rating, review count and type" } } } },
+    food: { type: "array", items: { type: "object", additionalProperties: false,
+      required: ["id","a","why"], properties: {
+        id: { type: "string" },
+        a: { type: "string", description: "cuisine and area in English, e.g. 'Seafood · Marina'" },
+        why: { type: "string" } } } },
+    hotelsBudget: { type: "array", items: { type: "string" } },
+    hotelsMid: { type: "array", items: { type: "string" } },
+    hotelsLux: { type: "array", items: { type: "string" } },
+  },
+};
+
+function candLine(c) {
+  return c.id + " | " + c.n + " | " + (c.r || "?") + "★ " + (c.v || 0) + " reviews | " +
+    (c.ty.slice(0, 3).join("/") || "-") + " | " + (c.ad || "");
+}
+
+function pickFromPool(name, short, apiKey) {
+  const system =
+    "You curate a trip-planning app's data for a real city. " +
+    "The CANDIDATES below come from Google Places and are the ONLY places you may use. " +
+    "Choose 7 for `poi` and 5 for `food` by copying their id EXACTLY. " +
+    "Never invent a place, a name or an id. If the candidates are too few, return fewer — never fill the gap yourself.\n" +
+    "Choose well: balance famous landmarks with places locals rate highly, spread the 7 across " +
+    "different kinds of thing rather than picking five of the same, and prefer places with many " +
+    "reviews over a high score from very few. For food, favour halal-friendly or clearly " +
+    "vegetarian options where the candidate list genuinely offers them.\n" +
+    "`why` is one short sentence justifying the pick from its rating, review count and type — " +
+    "concrete, never florid, and never a claim the data does not support.\n" +
+    "Everything else is ordinary city data: costs are USD per person per day, curSymbol/curRate are " +
+    "the local currency and its rate to 1 USD, summerTemp is the typical August high in Celsius, " +
+    "flag is the country's flag emoji, and 4-5 real hotel names per tier. " +
+    "blurbEn/Ar/Es are one short vivid sentence each. All labels in ENGLISH except blurbAr/blurbEs.";
+  const user = "City: " + name + "\n\nCANDIDATES (id | name | rating | types | address)\n" +
+    "POI:\n" + short.poi.map(candLine).join("\n") +
+    "\n\nFOOD:\n" + short.food.map(candLine).join("\n");
+  return claude(apiKey, "claude-sonnet-5", system, user, CITY_PICK_SCHEMA, 2600);
+}
+
+// Map the model's picks back onto real Places rows. Anything whose id was not in the pool is
+// dropped here — this, not the prompt, is what makes fabrication impossible.
+function assembleCity(picked, short) {
+  const byId = {};
+  for (const c of short.poi.concat(short.food)) byId[c.id] = c;
+  const take = (arr, kind) => (Array.isArray(arr) ? arr : []).map((sel) => {
+    const c = byId[String(sel && sel.id || "")];
+    if (!c || c.kind !== kind) return null;
+    const row = { n: c.n, a: String(sel.a || "").slice(0, 40) || (c.ad.split(",")[0] || ""),
+                  lat: c.lat, lng: c.lng };
+    if (kind === "poi") row.t = Array.isArray(sel.t) && sel.t.length ? sel.t.slice(0, 2) : [c.tag];
+    if (sel.why) row.w = String(sel.why).slice(0, 180);
+    return row;
+  }).filter(Boolean);
+  const city = Object.assign({}, picked);
+  city.poi = take(picked.poi, "poi");
+  city.food = take(picked.food, "food").map((f) => ({ n: f.n, a: f.a, w: f.w }));
+  city.lat = city.poi.length ? city.poi[0].lat : 0;
+  city.lng = city.poi.length ? city.poi[0].lng : 0;
+  city.src = "places";
+  return city;
+}
+
+// The app refuses a city with fewer than 3 POIs. Until now nothing stopped such a city being
+// written to KV with no TTL, so one thin generation poisoned that city for every traveller after,
+// permanently. Every write goes through here now.
+function cityUsable(c) {
+  return !!(c && c.valid && c.city && Array.isArray(c.poi) && c.poi.length >= 5 &&
+    Array.isArray(c.food) && c.food.length >= 3 &&
+    c.poi.every((p) => p && p.n && isFinite(p.lat) && isFinite(p.lng) && (p.lat || p.lng)));
+}
+
+// Discovery first, invention only if Places cannot furnish a city. Either way nothing unusable is
+// cached.
+async function buildCity(name, env) {
+  if (env.GOOGLE_PLACES_KEY) {
+    try {
+      const pool = await poolFor(name, env);
+      if (pool.length >= 8) {
+        const c0 = pool[0];
+        const short = shortlist(pool, { lat: c0.lat, lng: c0.lng });
+        dbg(env, "rank.kept", { city: name, candidates: pool.length,
+          afterRanking: short.poi.length + short.food.length,
+          poi: short.poi.length, food: short.food.length,
+          dropped: pool.length - (short.poi.length + short.food.length) });
+        if (short.poi.length >= 5 && short.food.length >= 3) {
+          await spend(env, "llm");
+          const picked = await pickFromPool(name, short, env.ANTHROPIC_API_KEY);
+          if (picked && picked.valid) {
+            const built = assembleCity(picked, short);
+            // asked-for vs kept: the gap is ids the model returned that were not in the pool,
+            // which is the fabrication guard doing its job and worth seeing while this is new
+            dbg(env, "ai.selected", { city: name,
+              askedPoi: (picked.poi || []).length, keptPoi: built.poi.length,
+              askedFood: (picked.food || []).length, keptFood: built.food.length,
+              names: built.poi.map((p) => p.n).concat(built.food.map((f) => f.n)) });
+            if (cityUsable(built)) { dbg(env, "city.built", { city: name, source: "places" }); return built; }
+            dbg(env, "city.rejected", { city: name, reason: "failed cityUsable",
+              poi: built.poi.length, food: built.food.length });
+          } else {
+            dbg(env, "city.rejected", { city: name, reason: "model returned invalid" });
+          }
+        } else {
+          dbg(env, "city.rejected", { city: name, reason: "shortlist too thin" });
+        }
+      } else {
+        dbg(env, "city.rejected", { city: name, reason: "pool too small", candidates: pool.length });
+      }
+    } catch (e) {
+      dbg(env, "city.rejected", { city: name, reason: "error", message: String(e && e.message || e).slice(0, 120) });
+    }
+  }
+  await spend(env, "llm");
+  const legacy = await generateCity(name, env.ANTHROPIC_API_KEY);
+  if (legacy) legacy.src = "ai";
+  dbg(env, "city.built", { city: name, source: "fallback",
+    poi: (legacy && legacy.poi || []).length, cacheable: cityUsable(legacy) });
+  return legacy;
+}
 
 function generateCity(name, apiKey) {
   const system =
