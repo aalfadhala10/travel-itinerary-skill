@@ -1,5 +1,19 @@
-const CACHE = 'bosla-v56';
-const ASSETS = ['./', './index.html', './favicon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './manifest.webmanifest'];
+const CACHE = 'bosla-v57';
+// The 3a theme layer's typefaces are self-hosted (the CSP has no font-src, so Google
+// Fonts is refused) and they are listed here so the redesign reads correctly offline
+// rather than falling back to Georgia mid-flight. Each is a subset keyed by
+// unicode-range, so a given session only ever fetches the two or three it renders —
+// listing them all costs nothing until they are asked for. c.add is best-effort per
+// asset in the install handler below, so a renamed font can't break the whole worker.
+const FONTS = [
+  './fonts/playfair-400-600-latin.woff2', './fonts/playfair-400-600-latin-ext.woff2',
+  './fonts/jakarta-400-700-latin.woff2', './fonts/jakarta-400-700-latin-ext.woff2',
+  './fonts/plex-arabic-400-arabic.woff2', './fonts/plex-arabic-400-latin.woff2',
+  './fonts/plex-arabic-500-arabic.woff2', './fonts/plex-arabic-500-latin.woff2',
+  './fonts/plex-arabic-600-arabic.woff2', './fonts/plex-arabic-600-latin.woff2',
+  './fonts/plex-arabic-700-arabic.woff2', './fonts/plex-arabic-700-latin.woff2'
+];
+const ASSETS = ['./', './index.html', './favicon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './manifest.webmanifest'].concat(FONTS);
 self.addEventListener('install', function(e){
   // addAll is all-or-nothing: one 404 on an icon and the worker never installs, so the app has
   // no offline mode at all. The document is the part that matters; the icons are best-effort.

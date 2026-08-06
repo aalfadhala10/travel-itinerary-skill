@@ -1304,6 +1304,253 @@
   .cmttext span{color:var(--muted);font-size:13.5px}
   .cmtgo{margin-inline-start:auto;color:var(--muted);font-size:22px;line-height:1}
   #app[dir="rtl"] .cmtgo{transform:scaleX(-1)}
+
+  /* ══ Bosla 3a — photography-led theme layer ═════════════════════════════════
+     The redesign from Claude Design turn 3a, built as a layer beside the classic
+     screens rather than on top of them: everything here is scoped to #d3 and the
+     whole thing only renders when html carries data-design="3a" (?design=3a).
+     Turn it off and not one classic rule has changed.
+
+     The typefaces are self-hosted on purpose. The CSP up top is default-src
+     'self' with no font-src, so a <link> to fonts.googleapis.com is refused —
+     and this is an offline-first PWA, so a webfont that needs the network would
+     be a webfont that vanishes on a plane. Playfair and Jakarta are variable
+     fonts: one file each covers the whole weight range. Arabic is IBM Plex,
+     listed second in every stack so Latin picks Playfair/Jakarta and Arabic
+     falls through to Plex automatically — one stack, both languages, no
+     per-language font switching in JS. */
+
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:400 600;font-display:swap;src:url(fonts/playfair-400-600-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:400 600;font-display:swap;src:url(fonts/playfair-400-600-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/jakarta-400-700-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/jakarta-400-700-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/plex-arabic-400-arabic.woff2) format('woff2');unicode-range:U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1}
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/plex-arabic-400-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/plex-arabic-500-arabic.woff2) format('woff2');unicode-range:U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1}
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/plex-arabic-500-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/plex-arabic-600-arabic.woff2) format('woff2');unicode-range:U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1}
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/plex-arabic-600-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/plex-arabic-700-arabic.woff2) format('woff2');unicode-range:U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1}
+@font-face{font-family:'IBM Plex Sans Arabic';font-style:normal;font-weight:700;font-display:swap;src:url(fonts/plex-arabic-700-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+
+  /* One switch. Everything that isn't the 3a layer stops rendering — the topo
+     canvas, #app, the Ask pill, the classic tab bar, the chat sheet. Written as
+     "not #d3" rather than a list so a new element added to the classic app
+     later can't leak through and float over the redesign. */
+  #d3{display:none}
+  html[data-design="3a"] body>*:not(#d3){display:none!important}
+  html[data-design="3a"] body{background:#0d0b0a;overflow:hidden}
+  html[data-design="3a"] #d3{display:block}
+
+  #d3{
+    --d3-ground:#14110f; --d3-surface:#1e1a16; --d3-line:#2a231d; --d3-line2:#302821;
+    --d3-accent:#e8cfa9; --d3-accent-ink:#221c15; --d3-type:#f3ede5;
+    --d3-muted:#a2988e; --d3-muted2:#8f857b; --d3-dim:#6f665e;
+    --d3-thumb:#262019; --d3-dash:#3b322a;
+    --d3-display:'Playfair Display','IBM Plex Sans Arabic',Georgia,serif;
+    --d3-body:'Plus Jakarta Sans','IBM Plex Sans Arabic',system-ui,sans-serif;
+    --d3-mono:ui-monospace,Menlo,Consolas,monospace;
+    /* the trip-card scrim runs from the text edge outwards, so it has to turn round in Arabic */
+    --d3-scrim-x:90deg;
+    position:fixed;inset:0;z-index:20;
+    max-width:430px;margin-inline:auto;
+    background:var(--d3-ground);color:var(--d3-type);
+    font-family:var(--d3-body);line-height:1.5;
+    overflow:hidden;
+    box-shadow:0 0 60px rgba(0,0,0,.5);
+  }
+  #d3[dir="rtl"]{--d3-scrim-x:270deg}
+  /* These undo the classic sheet inside the layer — it uppercases every label,
+     sets h1 to 44px, and leaves buttons on the UA's own colour.
+     :where() so they carry ZERO specificity. Written as plain `#d3 button` they
+     score (1,0,1) and quietly outrank every `.d3-*` component rule below, which
+     costs you the tan on See all / + Add to day, the ink on the welcome CTA, and
+     every heading margin — all of it silent, since the rule that loses is the one
+     that looks more specific. :where() makes the components win by default. */
+  :where(#d3) *{box-sizing:border-box}
+  :where(#d3) button{font-family:inherit;color:inherit;cursor:pointer}
+  :where(#d3) :where(h1,h2,p){margin:0}
+  :where(#d3) label{text-transform:none;letter-spacing:normal;font-family:inherit}
+
+  /* ── screens ───────────────────────────────────────────────────────────── */
+  /* Each screen owns its scroll, so switching tabs doesn't drag you back to the
+     top of the last one — and the phone's own scroll position per tab survives. */
+  .d3-scr{
+    position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;
+    padding-top:env(safe-area-inset-top);
+    display:none;
+  }
+  .d3-scr.on{display:block}
+  .d3-scr::-webkit-scrollbar{width:0}
+  .d3-scr{scrollbar-width:none}
+  /* room for the tab bar to float over the end of the list */
+  .d3-tail{height:120px}
+  #d3[data-scr="welcome"] .d3-tabs{display:none}
+
+  /* ── top chrome ────────────────────────────────────────────────────────── */
+  .d3-top{display:flex;align-items:center;justify-content:space-between;padding:14px 22px 0}
+  .d3-burger{width:22px;height:14px;border:none;background:transparent;padding:0;display:flex;flex-direction:column;justify-content:space-between}
+  .d3-burger span{display:block;height:1.6px;background:var(--d3-type);border-radius:1px}
+  .d3-burger span:nth-child(2){width:15px}
+  #d3[dir="rtl"] .d3-burger span:nth-child(2){margin-inline-start:auto}
+  .d3-avatar{width:34px;height:34px;border-radius:50%;border:1px solid var(--d3-line2);display:flex;align-items:center;justify-content:center;background:transparent}
+  .d3-avatar i{width:6px;height:6px;border-radius:50%;background:var(--d3-accent);display:block}
+  .d3-circ{width:34px;height:34px;border-radius:50%;border:1px solid var(--d3-line2);background:transparent;color:var(--d3-type);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
+  #d3[dir="rtl"] .d3-circ.d3-back{transform:scaleX(-1)}
+
+  /* ── type ──────────────────────────────────────────────────────────────── */
+  .d3-h1{font-family:var(--d3-display);font-weight:400;font-size:34px;line-height:1.15;letter-spacing:.005em}
+  .d3-h1.sm{font-size:32px}
+  .d3-lede{font-size:14.5px;line-height:1.55;color:var(--d3-muted)}
+  .d3-sec{display:flex;align-items:baseline;justify-content:space-between;padding:26px 22px 12px}
+  .d3-sec.tight{padding-top:28px}
+  .d3-sec b{font-weight:600;font-size:15px}
+  .d3-all{font-weight:600;font-size:12.5px;color:var(--d3-accent);background:none;border:none;padding:0}
+
+  /* ── image slots ───────────────────────────────────────────────────────── */
+  /* No photography shipped with the design, so every slot renders as a tonal
+     wash in the palette — quiet enough to read as a considered surface rather
+     than a broken <img>. Point D3_PHOTOS at real files and these fill in with
+     no markup change. */
+  .d3-img{position:absolute;inset:0;background:
+    radial-gradient(120% 90% at 30% 15%,rgba(232,207,169,.10),transparent 60%),
+    linear-gradient(150deg,#2b2119 0%,#1c1713 55%,#231d17 100%);
+    background-size:cover;background-position:center}
+  .d3-img[data-photo-src]{background-image:var(--d3-photo);background-size:cover;background-position:center}
+  /* the eight small tiles — the user asked for these to be quiet and static */
+  .d3-tile{width:100%;height:100%;background:var(--d3-thumb);
+    background-image:repeating-linear-gradient(135deg,rgba(243,237,229,.055) 0 1px,transparent 1px 7px)}
+
+  /* ── welcome ───────────────────────────────────────────────────────────── */
+  /* The hero fills the frame rather than scrolling under it — the welcome is one
+     screenful by definition, so it doesn't scroll at all. */
+  .d3-welcome-scr{overflow:hidden;padding-top:0}
+  .d3-welcome{position:absolute;inset:0}
+  .d3-wscrim{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(20,17,15,.55) 0%,rgba(20,17,15,.12) 32%,rgba(20,17,15,.86) 72%,var(--d3-ground) 100%)}
+  .d3-wbody{position:absolute;inset:0;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+  .d3-lang{align-self:flex-end;margin:6px 20px 0;height:34px;padding:0 14px;border-radius:17px;
+    border:1px solid rgba(243,237,229,.28);background:rgba(20,17,15,.42);color:var(--d3-type);
+    font-weight:600;font-size:12.5px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .d3-wfoot{margin-top:auto;padding:0 26px calc(44px + env(safe-area-inset-bottom))}
+  .d3-brand{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  .d3-mark{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--d3-accent);display:flex;align-items:center;justify-content:center;flex:none}
+  .d3-mark i{display:block;width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:11px solid var(--d3-accent);transform:rotate(38deg)}
+  .d3-bname{font-family:var(--d3-display);font-weight:500;font-size:20px;letter-spacing:.01em}
+  .d3-bar{font-family:'IBM Plex Sans Arabic',sans-serif;font-weight:400;font-size:17px;color:rgba(243,237,229,.65)}
+  .d3-wtitle{font-family:var(--d3-display);font-weight:400;font-size:42px;line-height:1.12;margin:0 0 14px;text-wrap:pretty}
+  .d3-wsub{font-size:15px;line-height:1.6;color:rgba(243,237,229,.72);margin:0 0 26px;max-width:300px}
+  .d3-cta{width:100%;height:56px;border-radius:16px;border:none;background:var(--d3-accent);color:var(--d3-accent-ink);font-weight:600;font-size:15.5px;transition:filter .15s}
+  .d3-cta:hover{filter:brightness(1.06)}
+  .d3-cta:active{transform:translateY(1px)}
+  .d3-wlink{display:block;margin:18px auto 0;background:none;border:none;font-weight:600;font-size:14px;color:rgba(243,237,229,.8);border-bottom:1px solid rgba(243,237,229,.3);padding:0 0 1px}
+
+  /* ── home ──────────────────────────────────────────────────────────────── */
+  .d3-head{padding:22px 22px 0}
+  .d3-head .d3-h1{margin:0 0 8px}
+  .d3-head .d3-lede{margin:0 0 20px}
+  .d3-search{height:54px;border-radius:16px;background:var(--d3-surface);border:1px solid var(--d3-line);display:flex;align-items:center;gap:12px;padding:0 18px;width:100%;text-align:start}
+  .d3-pin{width:9px;height:9px;border-radius:50% 50% 50% 0;background:var(--d3-accent);transform:rotate(-45deg);flex:none}
+  .d3-search span{font-size:14.5px;color:var(--d3-muted2)}
+  .d3-rail{display:flex;gap:12px;padding:0 22px;overflow-x:auto;scrollbar-width:none}
+  .d3-rail::-webkit-scrollbar{height:0}
+  .d3-dest{flex:none;width:132px;height:164px;border-radius:18px;overflow:hidden;position:relative;border:none;padding:0;background:var(--d3-surface)}
+  .d3-dscrim{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent 45%,rgba(20,17,15,.85) 100%)}
+  .d3-dcap{position:absolute;inset-inline-start:12px;bottom:11px;pointer-events:none;text-align:start}
+  .d3-dcap b{display:block;font-weight:600;font-size:14.5px}
+  .d3-dcap span{display:block;font-size:11.5px;color:rgba(243,237,229,.7)}
+  .d3-trips{padding:0 22px;display:flex;flex-direction:column;gap:12px}
+  .d3-trip{height:86px;border-radius:18px;overflow:hidden;position:relative;border:none;padding:0;background:var(--d3-surface);width:100%}
+  .d3-tscrim{position:absolute;inset:0;pointer-events:none;background:linear-gradient(var(--d3-scrim-x),rgba(20,17,15,.9) 30%,rgba(20,17,15,.35) 100%)}
+  .d3-tbody{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 16px;pointer-events:none;text-align:start}
+  .d3-tbody b{display:block;font-weight:600;font-size:15.5px}
+  .d3-tbody span{display:block;font-size:12px;color:rgba(243,237,229,.7);margin-top:2px}
+  .d3-badge{flex:none;height:26px;padding:0 11px;border-radius:13px;background:rgba(232,207,169,.16);color:var(--d3-accent);font-weight:600;font-size:11.5px;line-height:26px}
+
+  /* ── trip ──────────────────────────────────────────────────────────────── */
+  .d3-thead{display:flex;gap:16px;align-items:flex-start;padding:18px 22px 0}
+  .d3-thead .d3-h1{margin:0}
+  .d3-tmeta{font-size:13.5px;color:var(--d3-muted);margin-top:10px}
+  .d3-thero{flex:none;width:96px;height:96px;border-radius:18px;overflow:hidden;position:relative;background:var(--d3-surface)}
+  .d3-acts{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:22px 22px 0}
+  .d3-act{background:var(--d3-surface);border:1px solid var(--d3-line);border-radius:14px;padding:12px 0;text-align:center}
+  .d3-act i{display:block;width:16px;height:16px;border:1.5px solid var(--d3-muted2);border-radius:4px;margin:0 auto 7px}
+  .d3-act span{font-weight:500;font-size:9.5px;color:var(--d3-muted2)}
+  .d3-act.on i{border-color:var(--d3-accent)}
+  .d3-act.on span{font-weight:600;color:var(--d3-accent)}
+  .d3-day{margin:18px 22px 0;background:var(--d3-surface);border:1px solid var(--d3-line);border-radius:20px;overflow:hidden}
+  .d3-day+.d3-day{margin-top:12px}
+  .d3-dayhd{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;width:100%;background:none;border:none;text-align:start}
+  .d3-dayhd b{display:block;font-weight:600;font-size:15px}
+  .d3-dayhd span{display:block;font-size:12px;color:var(--d3-muted);margin-top:3px}
+  .d3-chev{color:var(--d3-muted);font-size:13px;flex:none;transition:transform .2s}
+  #d3[dir="rtl"] .d3-chev.next{transform:scaleX(-1)}
+  .d3-stops{padding:0 18px 6px}
+  .d3-day[aria-expanded="false"] .d3-stops{display:none}
+  .d3-stop{display:flex;gap:13px;align-items:center;padding:11px 0;border-top:1px solid var(--d3-line);width:100%;background:none;border-inline:none;border-bottom:none;text-align:start}
+  .d3-time{width:44px;flex:none;font-family:var(--d3-mono);font-weight:600;font-size:11px;color:var(--d3-accent)}
+  .d3-stoptx{flex:1;min-width:0}
+  .d3-stoptx b{display:block;font-weight:600;font-size:14.5px;text-wrap:pretty}
+  .d3-stoptx span{display:block;font-size:11.5px;color:var(--d3-muted2);margin-top:2px}
+  .d3-sthumb{width:46px;height:46px;border-radius:12px;overflow:hidden;flex:none}
+  .d3-add{width:100%;height:44px;margin:12px 0 16px;border-radius:12px;border:1px dashed var(--d3-dash);background:transparent;color:var(--d3-accent);font-weight:600;font-size:13px}
+
+  /* ── discover ──────────────────────────────────────────────────────────── */
+  .d3-dhead{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 22px 0;gap:16px}
+  .d3-dhead .d3-h1{margin:0 0 8px}
+  .d3-dhead .d3-lede{font-size:14px;max-width:250px}
+  .d3-chips{display:flex;gap:8px;padding:20px 22px 0;overflow-x:auto;scrollbar-width:none}
+  .d3-chips::-webkit-scrollbar{height:0}
+  .d3-chip{flex:none;height:34px;padding:0 16px;border-radius:17px;border:1px solid var(--d3-line);background:var(--d3-surface);color:var(--d3-muted);font-weight:500;font-size:12.5px;transition:border-color .15s,color .15s}
+  .d3-chip:hover{border-color:var(--d3-accent);color:var(--d3-type)}
+  .d3-chip.on{border-color:var(--d3-accent);background:var(--d3-accent);color:var(--d3-accent-ink);font-weight:600}
+  .d3-pick{height:210px;border-radius:20px;overflow:hidden;position:relative;margin:0 22px;background:var(--d3-surface)}
+  .d3-pscrim{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent 40%,rgba(20,17,15,.9) 100%)}
+  .d3-heart{position:absolute;top:14px;inset-inline-end:14px;width:34px;height:34px;border-radius:50%;background:rgba(20,17,15,.55);border:1px solid rgba(243,237,229,.2);color:var(--d3-accent);font-size:14px;display:flex;align-items:center;justify-content:center;padding:0}
+  .d3-heart[aria-pressed="true"]{background:var(--d3-accent);color:var(--d3-accent-ink);border-color:var(--d3-accent)}
+  .d3-pcap{position:absolute;inset-inline:16px;bottom:14px;pointer-events:none;text-align:start}
+  .d3-pcap b{display:block;font-family:var(--d3-display);font-weight:500;font-size:20px}
+  .d3-pcap span{display:block;font-size:12.5px;color:rgba(243,237,229,.72);margin-top:3px}
+  .d3-gems{padding:0 22px;display:flex;flex-direction:column;gap:12px}
+  .d3-gem{display:flex;gap:13px;align-items:center;background:var(--d3-surface);border:1px solid var(--d3-line);border-radius:16px;padding:11px}
+  .d3-gem.hide{display:none}
+  .d3-gthumb{width:58px;height:58px;border-radius:12px;overflow:hidden;flex:none}
+  .d3-gtx{flex:1;min-width:0;text-align:start}
+  .d3-gtx b{display:block;font-weight:600;font-size:14.5px}
+  .d3-gtx span{display:block;font-size:11.5px;color:var(--d3-muted2);margin-top:2px}
+  .d3-gtx i{display:block;font-style:normal;font-size:11.5px;color:var(--d3-accent);margin-top:3px}
+  .d3-glike{background:none;border:none;color:var(--d3-muted2);font-size:15px;padding:0;flex:none}
+  .d3-glike[aria-pressed="true"]{color:var(--d3-accent)}
+  .d3-none{padding:22px;text-align:center;color:var(--d3-muted2);font-size:13.5px}
+
+  /* ── stub ──────────────────────────────────────────────────────────────── */
+  /* Record and Me are outside this cut. The tabs stay exactly as drawn rather
+     than being greyed out, but tapping one lands somewhere that says so — a
+     dead tap reads as a bug, and pretending to have built the screen is worse. */
+  .d3-stub{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:100%;padding:0 40px calc(84px + env(safe-area-inset-bottom));text-align:center;gap:10px}
+  .d3-stub .d3-mark{margin-bottom:4px}
+  .d3-stub b{font-family:var(--d3-display);font-weight:400;font-size:26px}
+  .d3-stub span{font-size:14px;line-height:1.6;color:var(--d3-muted)}
+
+  /* ── tab bar ───────────────────────────────────────────────────────────── */
+  .d3-tabs{position:absolute;inset-inline:0;bottom:0;height:calc(84px + env(safe-area-inset-bottom));
+    padding-bottom:env(safe-area-inset-bottom);
+    background:rgba(30,26,22,.97);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border-top:1px solid var(--d3-line);display:grid;grid-template-columns:repeat(5,1fr);padding-top:13px}
+  .d3-tab{background:none;border:none;text-align:center;padding:0;color:var(--d3-muted2);font-weight:500;font-size:10px}
+  .d3-tab i{display:block;width:18px;height:18px;border:1.6px solid var(--d3-dim);margin:0 auto 6px}
+  .d3-tab[data-tab="home"] i{border-radius:5px}
+  .d3-tab[data-tab="trips"] i{border-radius:5px 5px 2px 2px}
+  .d3-tab[data-tab="discover"] i{border-radius:50%}
+  .d3-tab[data-tab="record"] i{border-radius:50% 50% 50% 2px}
+  .d3-tab[data-tab="me"] i{border-radius:50%}
+  .d3-tab.on{color:var(--d3-accent);font-weight:600}
+  .d3-tab.on i{border-color:var(--d3-accent)}
+
+  /* Focus ring matches the classic app's contract, in the tan rather than teal */
+  #d3 button:focus-visible,#d3 [tabindex]:focus-visible{outline:2px solid var(--d3-accent);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){#d3 *{transition:none!important}}
 </style>
 
 <canvas id="topo" aria-hidden="true"></canvas>
@@ -1493,7 +1740,7 @@
         <button type="button" class="drawitem" data-nav="feedback" id="navFeedback">Send feedback</button>
       </nav>
       <div class="drawerabout" id="drawerAbout"></div>
-      <div class="drawerver" id="drawerVer">v 2026-08-04 10:25 UTC · pages</div>
+      <div class="drawerver" id="drawerVer">v 2026-08-06 14:45 UTC · pages</div>
       <a class="drawitem" href="privacy.html" style="font-size:14px;color:var(--muted);margin-top:4px">Privacy policy · سياسة الخصوصية</a>
       <a class="drawitem" href="terms.html" style="font-size:14px;color:var(--muted)">Terms of use · شروط الاستخدام</a>
     </div>
@@ -9286,6 +9533,510 @@
   try{ tripBackWire(); }catch(e){}
   try{ showMigNote(); }catch(e){}
   if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+</script>
+
+
+<!-- ══ Bosla 3a — photography-led screens ═══════════════════════════════════
+     Welcome, home, trip and discover from Claude Design turn 3a. Inert until
+     html carries data-design="3a"; the skeleton below is structure only, and
+     every string and list is filled in by the D3 module at the end of the file
+     so English and Arabic live in one table instead of two copies of the DOM. -->
+<div id="d3" data-scr="welcome">
+
+  <section class="d3-scr d3-welcome-scr on" data-scr="welcome">
+    <div class="d3-welcome">
+      <div class="d3-img" data-photo="welcome"></div>
+      <div class="d3-wscrim"></div>
+      <div class="d3-wbody">
+        <button type="button" class="d3-lang" id="d3Lang">EN · العربية</button>
+        <div class="d3-wfoot">
+          <div class="d3-brand">
+            <span class="d3-mark" aria-hidden="true"><i></i></span>
+            <span class="d3-bname">Bosla</span>
+            <span class="d3-bar">بوصلة</span>
+          </div>
+          <h1 class="d3-wtitle" data-t="wTitle"></h1>
+          <p class="d3-wsub" data-t="wSub"></p>
+          <button type="button" class="d3-cta" data-go="home" data-t="wCta"></button>
+          <button type="button" class="d3-wlink" data-go="discover" data-t="wLink"></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="d3-scr" data-scr="home">
+    <div class="d3-top">
+      <button type="button" class="d3-burger" id="d3Menu" aria-label="Menu"><span></span><span></span><span></span></button>
+      <button type="button" class="d3-avatar" data-go="me" aria-label="Account"><i></i></button>
+    </div>
+    <div class="d3-head">
+      <h1 class="d3-h1" data-t="hTitle"></h1>
+      <p class="d3-lede" data-t="hSub"></p>
+      <button type="button" class="d3-search"><span class="d3-pin" aria-hidden="true"></span><span data-t="hSearch"></span></button>
+    </div>
+    <div class="d3-sec"><b data-t="hPopular"></b><button type="button" class="d3-all" data-t="seeAll"></button></div>
+    <div class="d3-rail" id="d3Dest"></div>
+    <div class="d3-sec tight"><b data-t="hRecent"></b><button type="button" class="d3-all" data-t="seeAll"></button></div>
+    <div class="d3-trips" id="d3Trips"></div>
+    <div class="d3-tail"></div>
+  </section>
+
+  <section class="d3-scr" data-scr="trip">
+    <div class="d3-top">
+      <button type="button" class="d3-circ d3-back" data-go="home" aria-label="Back">‹</button>
+      <button type="button" class="d3-circ" aria-label="More">···</button>
+    </div>
+    <div class="d3-thead">
+      <div style="flex:1;min-width:0">
+        <h1 class="d3-h1 sm" data-t="tTitle"></h1>
+        <div class="d3-tmeta" data-t="tMeta"></div>
+      </div>
+      <div class="d3-thero"><div class="d3-img" data-photo="tripHero"></div></div>
+    </div>
+    <div class="d3-acts" id="d3Acts"></div>
+    <div id="d3Days"></div>
+    <div class="d3-tail"></div>
+  </section>
+
+  <section class="d3-scr" data-scr="discover">
+    <div class="d3-dhead">
+      <div>
+        <h1 class="d3-h1 sm" data-t="dTitle"></h1>
+        <p class="d3-lede" data-t="dSub"></p>
+      </div>
+      <button type="button" class="d3-circ" aria-label="Filter">≡</button>
+    </div>
+    <div class="d3-chips" id="d3Chips"></div>
+    <div class="d3-sec"><b data-t="dTop"></b><button type="button" class="d3-all" data-t="seeAll"></button></div>
+    <div class="d3-pick">
+      <div class="d3-img" data-photo="azhar"></div>
+      <div class="d3-pscrim"></div>
+      <button type="button" class="d3-heart" aria-pressed="false" aria-label="Save">♡</button>
+      <div class="d3-pcap"><b data-t="dPickName"></b><span data-t="dPickMeta"></span></div>
+    </div>
+    <div class="d3-sec"><b data-t="dGems"></b><button type="button" class="d3-all" data-t="seeAll"></button></div>
+    <div class="d3-gems" id="d3Gems"></div>
+    <div class="d3-none" id="d3Empty" hidden data-t="dEmpty"></div>
+    <div class="d3-tail"></div>
+  </section>
+
+  <section class="d3-scr" data-scr="record">
+    <div class="d3-stub">
+      <span class="d3-mark" aria-hidden="true"><i></i></span>
+      <b data-t="sRecord"></b>
+      <span data-t="sSoon"></span>
+    </div>
+  </section>
+
+  <section class="d3-scr" data-scr="me">
+    <div class="d3-stub">
+      <span class="d3-mark" aria-hidden="true"><i></i></span>
+      <b data-t="sMe"></b>
+      <span data-t="sSoon"></span>
+    </div>
+  </section>
+
+  <nav class="d3-tabs" id="d3Tabs" aria-label="Navigation"></nav>
+</div>
+
+<script>
+/* ══ Bosla 3a — the theme layer's own module ═══════════════════════════════
+   Self-contained on purpose: it shares localStorage's bosla_lang with the
+   classic app so the two agree on language, and touches nothing else. If the
+   flag is off it returns before doing any work, so the classic app pays
+   nothing for this being here.
+
+   Switch it on with ?design=3a (sticky), off again with ?design=classic. */
+(function () {
+  'use strict';
+  var KEY = 'bosla_design', q, want, on;
+  try { q = new URLSearchParams(location.search); } catch (e) { q = null; }
+  want = q ? q.get('design') : null;
+  if (want === '3a') { try { localStorage.setItem(KEY, '3a'); } catch (e) {} }
+  else if (want) { try { localStorage.removeItem(KEY); } catch (e) {} }
+  on = want === '3a';
+  if (!want) { try { on = localStorage.getItem(KEY) === '3a'; } catch (e) { on = false; } }
+  if (!on) return;
+
+  var root = document.getElementById('d3');
+  if (!root) return;
+  document.documentElement.setAttribute('data-design', '3a');
+
+  /* ── photography ────────────────────────────────────────────────────────
+     No photos shipped with the design, so every slot renders as a tonal wash
+     in the palette. Drop files into an images/ folder, name them here, and the
+     slots fill in — no markup change. */
+  var D3_PHOTOS = {
+    welcome:   '',   /* hero — a wide, low-contrast travel shot works best */
+    cairo:     '',
+    alula:     '',
+    istanbul:  '',
+    tripCairo: '',
+    tripAlula: '',
+    tripHero:  '',
+    azhar:     ''
+  };
+
+  /* ── copy ───────────────────────────────────────────────────────────────
+     One table, both languages. Arabic is the app's default elsewhere, so it is
+     first-class here rather than a translation bolted on. */
+  var STR = {
+    en: {
+      wTitle: 'Plan a full trip in seconds',
+      wSub: 'Tell Bosla where and when. Saved on this device only — no account, no email.',
+      wCta: 'Plan as a guest', wLink: 'Explore destinations',
+      hTitle: 'Where to next?', hSub: 'Tell Bosla where and when — it builds the days.',
+      hSearch: 'Search a city or country…', hPopular: 'Popular destinations',
+      hRecent: 'Your recent trips', seeAll: 'See all',
+      tTitle: 'Your trip to<br>Cairo', tMeta: '12 Jul – 15 Jul · 4 days · 2 travellers',
+      tAdd: '+ Add to day',
+      dTitle: 'Discover',
+      dSub: 'Places travellers saved in Cairo — sights, food and quiet corners.',
+      dTop: 'Top picks for you', dGems: 'Hidden gems',
+      dPickName: 'Al-Azhar Park', dPickMeta: 'Darb al-Ahmar, Cairo · ★ 4.8 (2.3k)',
+      dEmpty: 'Nothing saved under that filter yet.',
+      sRecord: 'Travel record', sMe: 'Your account',
+      sSoon: 'Not part of this cut of the redesign — the classic screen is still there with ?design=classic.'
+    },
+    ar: {
+      wTitle: 'خطّط رحلة كاملة في ثوانٍ',
+      wSub: 'قل لبوصلة أين ومتى. محفوظة على هذا الجهاز فقط — بلا حساب، بلا بريد.',
+      wCta: 'خطّط كضيف', wLink: 'استكشف الوجهات',
+      hTitle: 'إلى أين بعد؟', hSub: 'قل لبوصلة أين ومتى — وهي ترتّب أيامك.',
+      hSearch: 'ابحث عن مدينة أو دولة…', hPopular: 'وجهات مشهورة',
+      hRecent: 'رحلاتك الأخيرة', seeAll: 'الكل',
+      tTitle: 'رحلتك إلى<br>القاهرة', tMeta: '12 يوليو – 15 يوليو · 4 أيام · مسافران',
+      tAdd: '+ أضف إلى اليوم',
+      dTitle: 'اكتشف',
+      dSub: 'أماكن حفظها المسافرون في القاهرة — معالم وأكل وزوايا هادئة.',
+      dTop: 'مختارات لك', dGems: 'كنوز مخفية',
+      dPickName: 'حديقة الأزهر', dPickMeta: 'الدرب الأحمر، القاهرة · ★ 4.8 (2.3 ألف)',
+      dEmpty: 'لا شيء تحت هذا التصنيف بعد.',
+      sRecord: 'سجلّ السفر', sMe: 'حسابك',
+      sSoon: 'ليست ضمن هذه المرحلة من التصميم — الشاشة القديمة ما زالت موجودة عبر ‎?design=classic‎.'
+    }
+  };
+
+  var TABS = [
+    { id: 'home',     en: 'Home',     ar: 'الرئيسية' },
+    { id: 'trips',    en: 'Trips',    ar: 'رحلاتي'   },
+    { id: 'discover', en: 'Discover', ar: 'اكتشف'    },
+    { id: 'record',   en: 'Record',   ar: 'سجلّي'    },
+    { id: 'me',       en: 'Me',       ar: 'حسابي'    }
+  ];
+
+  var DESTS = [
+    { photo: 'cairo',    en: ['Cairo', 'Egypt'],           ar: ['القاهرة', 'مصر'] },
+    { photo: 'alula',    en: ['AlUla', 'Saudi Arabia'],    ar: ['العُلا', 'السعودية'] },
+    { photo: 'istanbul', en: ['Istanbul', 'Türkiye'],      ar: ['إسطنبول', 'تركيا'] }
+  ];
+
+  var TRIPS = [
+    { photo: 'tripCairo', go: 'trip',
+      en: ['Cairo, Egypt', '12 Jul – 15 Jul', '4 days'],
+      ar: ['القاهرة، مصر', '12 يوليو – 15 يوليو', '4 أيام'] },
+    { photo: 'tripAlula', go: 'trip',
+      en: ['AlUla, Saudi Arabia', '3 Mar – 6 Mar', '3 days'],
+      ar: ['العُلا، السعودية', '3 مارس – 6 مارس', '3 أيام'] }
+  ];
+
+  var ACTS = [
+    { on: true,  en: 'Itinerary', ar: 'البرنامج'  },
+    { on: false, en: 'Map',       ar: 'الخريطة'   },
+    { on: false, en: 'Budget',    ar: 'الميزانية' },
+    { on: false, en: 'Notes',     ar: 'ملاحظات'   },
+    { on: false, en: 'Share',     ar: 'مشاركة'    }
+  ];
+
+  var DAYS = [
+    { open: true,
+      en: ['Day 1 · 12 Jul', 'Arrival & first impressions'],
+      ar: ['اليوم 1 · 12 يوليو', 'الوصول والانطباع الأول'],
+      stops: [
+        { t: '09:00', en: ['Coptic Cairo', 'Explore · Old Cairo'],
+                      ar: ['مصر القديمة', 'زيارة · مصر القديمة'] },
+        { t: '12:30', en: ['Lunch at Felfela', 'Restaurant · Downtown · ~12 min drive'],
+                      ar: ['غداء في فلفلة', 'مطعم · وسط البلد · ~12 دقيقة بالسيارة'] },
+        { t: '15:00', en: ['Manial Palace', 'Explore · Rhoda · ~7 min drive'],
+                      ar: ['قصر المنيل', 'زيارة · الروضة · ~7 دقائق بالسيارة'] },
+        { t: '18:30', en: ['Nile Felucca Ride', 'Evening · Nile Corniche · ~13 min walk'],
+                      ar: ['جولة فلوكة في النيل', 'مساءً · كورنيش النيل · ~13 دقيقة مشياً'] },
+        { t: '20:00', en: ['Koshary Abou Tarek', 'Restaurant · Downtown · ~8 min drive'],
+                      ar: ['كشري أبو طارق', 'مطعم · وسط البلد · ~8 دقائق بالسيارة'] }
+      ] },
+    { open: false,
+      en: ['Day 2 · 13 Jul', 'Exploring the highlights'],
+      ar: ['اليوم 2 · 13 يوليو', 'أبرز المعالم'],
+      stops: [] }
+  ];
+
+  var CHIPS = [
+    { id: 'all',    en: 'All',    ar: 'الكل'   },
+    { id: 'sights', en: 'Sights', ar: 'معالم'  },
+    { id: 'food',   en: 'Food',   ar: 'أكل'    },
+    { id: 'cafes',  en: 'Cafés',  ar: 'مقاهي'  },
+    { id: 'nature', en: 'Nature', ar: 'طبيعة'  }
+  ];
+
+  /* The design draws three gems and five filter chips, which would leave three
+     chips filtering to nothing. Four more real Cairo places so every chip has
+     something to show — same city, same voice as the three that were drawn. */
+  var GEMS = [
+    { cat: 'cafes',  r: '4.7', en: ['Naguib Mahfouz Café', 'Café · Khan el-Khalili'],
+                               ar: ['مقهى نجيب محفوظ', 'مقهى · خان الخليلي'] },
+    { cat: 'sights', r: '4.6', en: ['Manial Palace', 'Museum · Rhoda'],
+                               ar: ['قصر المنيل', 'متحف · الروضة'] },
+    { cat: 'sights', r: '4.8', en: ['Ibn Tulun Mosque', 'Landmark · Sayyida Zeinab'],
+                               ar: ['مسجد ابن طولون', 'معلم · السيدة زينب'] },
+    { cat: 'food',   r: '4.5', en: ['Abou El Sid', 'Restaurant · Zamalek'],
+                               ar: ['أبو السيد', 'مطعم · الزمالك'] },
+    { cat: 'food',   r: '4.6', en: ['Koshary Abou Tarek', 'Restaurant · Downtown'],
+                               ar: ['كشري أبو طارق', 'مطعم · وسط البلد'] },
+    { cat: 'nature', r: '4.8', en: ['Al-Azhar Park', 'Garden · Darb al-Ahmar'],
+                               ar: ['حديقة الأزهر', 'حديقة · الدرب الأحمر'] },
+    { cat: 'nature', r: '4.4', en: ['Nile Corniche', 'Waterfront · Garden City'],
+                               ar: ['كورنيش النيل', 'واجهة نيلية · جاردن سيتي'] }
+  ];
+
+  /* ── plumbing ───────────────────────────────────────────────────────────── */
+  var lang = 'en', filter = 'all';
+  try { if (localStorage.getItem('bosla_lang') === 'ar') lang = 'ar'; } catch (e) {}
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function tx(o) { return o[lang] || o.en; }
+  function photo(node, key) {
+    var src = D3_PHOTOS[key];
+    if (!src) return;
+    node.style.setProperty('--d3-photo', 'url("' + src + '")');
+    node.setAttribute('data-photo-src', '');
+  }
+  function imgIn(parent, key) {
+    var n = el('div', 'd3-img');
+    n.setAttribute('data-photo', key);
+    photo(n, key);
+    parent.appendChild(n);
+    return n;
+  }
+
+  /* ── rendering ──────────────────────────────────────────────────────────── */
+  function renderStrings() {
+    var s = STR[lang];
+    root.querySelectorAll('[data-t]').forEach(function (n) {
+      var v = s[n.getAttribute('data-t')];
+      if (v == null) return;
+      /* tTitle carries the one intentional line break in the design */
+      if (v.indexOf('<br>') > -1) {
+        n.textContent = '';
+        v.split('<br>').forEach(function (part, i) {
+          if (i) n.appendChild(document.createElement('br'));
+          n.appendChild(document.createTextNode(part));
+        });
+      } else n.textContent = v;
+    });
+  }
+
+  function renderTabs() {
+    var wrap = document.getElementById('d3Tabs');
+    wrap.textContent = '';
+    TABS.forEach(function (t) {
+      var b = el('button', 'd3-tab');
+      b.type = 'button';
+      b.setAttribute('data-tab', t.id);
+      b.appendChild(el('i'));
+      b.appendChild(el('span', null, t[lang]));
+      b.addEventListener('click', function () { go(t.id); });
+      wrap.appendChild(b);
+    });
+  }
+
+  function renderHome() {
+    var rail = document.getElementById('d3Dest');
+    rail.textContent = '';
+    DESTS.forEach(function (d) {
+      var b = el('button', 'd3-dest'); b.type = 'button';
+      imgIn(b, d.photo);
+      b.appendChild(el('div', 'd3-dscrim'));
+      var cap = el('div', 'd3-dcap');
+      cap.appendChild(el('b', null, tx(d)[0]));
+      cap.appendChild(el('span', null, tx(d)[1]));
+      b.appendChild(cap);
+      b.addEventListener('click', function () { go('trip'); });
+      rail.appendChild(b);
+    });
+
+    var trips = document.getElementById('d3Trips');
+    trips.textContent = '';
+    TRIPS.forEach(function (t) {
+      var b = el('button', 'd3-trip'); b.type = 'button';
+      imgIn(b, t.photo);
+      b.appendChild(el('div', 'd3-tscrim'));
+      var body = el('div', 'd3-tbody');
+      var left = el('div');
+      left.appendChild(el('b', null, tx(t)[0]));
+      left.appendChild(el('span', null, tx(t)[1]));
+      body.appendChild(left);
+      body.appendChild(el('div', 'd3-badge', tx(t)[2]));
+      b.appendChild(body);
+      b.addEventListener('click', function () { go(t.go); });
+      trips.appendChild(b);
+    });
+  }
+
+  function renderTrip() {
+    var acts = document.getElementById('d3Acts');
+    acts.textContent = '';
+    ACTS.forEach(function (a) {
+      var b = el('button', 'd3-act' + (a.on ? ' on' : '')); b.type = 'button';
+      b.appendChild(el('i'));
+      b.appendChild(el('span', null, a[lang]));
+      acts.appendChild(b);
+    });
+    photo(document.querySelector('#d3 .d3-thero .d3-img'), 'tripHero');
+
+    var days = document.getElementById('d3Days');
+    days.textContent = '';
+    DAYS.forEach(function (d) {
+      var card = el('div', 'd3-day');
+      var hasStops = d.stops.length > 0;
+      card.setAttribute('aria-expanded', String(!!d.open && hasStops));
+
+      var hd = el('button', 'd3-dayhd'); hd.type = 'button';
+      var txt = el('div');
+      txt.appendChild(el('b', null, tx(d)[0]));
+      txt.appendChild(el('span', null, tx(d)[1]));
+      hd.appendChild(txt);
+      /* a day you can open gets the caret; one that navigates away gets the arrow */
+      hd.appendChild(el('span', 'd3-chev' + (hasStops ? '' : ' next'), hasStops ? '▾' : '›'));
+      hd.setAttribute('aria-expanded', card.getAttribute('aria-expanded'));
+      card.appendChild(hd);
+
+      if (hasStops) {
+        var list = el('div', 'd3-stops');
+        d.stops.forEach(function (s) {
+          var row = el('button', 'd3-stop'); row.type = 'button';
+          row.appendChild(el('div', 'd3-time', s.t));
+          var t2 = el('div', 'd3-stoptx');
+          t2.appendChild(el('b', null, tx(s)[0]));
+          t2.appendChild(el('span', null, tx(s)[1]));
+          row.appendChild(t2);
+          var th = el('div', 'd3-sthumb');
+          th.appendChild(el('div', 'd3-tile'));
+          row.appendChild(th);
+          list.appendChild(row);
+        });
+        var add = el('button', 'd3-add', STR[lang].tAdd); add.type = 'button';
+        list.appendChild(add);
+        card.appendChild(list);
+
+        hd.addEventListener('click', function () {
+          var open = card.getAttribute('aria-expanded') !== 'true';
+          card.setAttribute('aria-expanded', String(open));
+          hd.setAttribute('aria-expanded', String(open));
+          hd.querySelector('.d3-chev').style.transform = open ? '' : 'rotate(-90deg)';
+        });
+      }
+      days.appendChild(card);
+    });
+  }
+
+  function renderDiscover() {
+    var chips = document.getElementById('d3Chips');
+    chips.textContent = '';
+    CHIPS.forEach(function (c) {
+      var b = el('button', 'd3-chip' + (c.id === filter ? ' on' : ''), c[lang]);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(c.id === filter));
+      b.addEventListener('click', function () { filter = c.id; renderDiscover(); });
+      chips.appendChild(b);
+    });
+
+    photo(document.querySelector('#d3 .d3-pick .d3-img'), 'azhar');
+
+    var wrap = document.getElementById('d3Gems');
+    wrap.textContent = '';
+    var shown = 0;
+    GEMS.forEach(function (g) {
+      if (filter !== 'all' && g.cat !== filter) return;
+      shown++;
+      var row = el('div', 'd3-gem');
+      var th = el('div', 'd3-gthumb');
+      th.appendChild(el('div', 'd3-tile'));
+      row.appendChild(th);
+      var t2 = el('div', 'd3-gtx');
+      t2.appendChild(el('b', null, tx(g)[0]));
+      t2.appendChild(el('span', null, tx(g)[1]));
+      t2.appendChild(el('i', null, '★ ' + g.r));
+      row.appendChild(t2);
+      var like = el('button', 'd3-glike', '♡'); like.type = 'button';
+      like.setAttribute('aria-pressed', 'false');
+      like.setAttribute('aria-label', tx(g)[0]);
+      like.addEventListener('click', function () { toggleHeart(like); });
+      row.appendChild(like);
+      wrap.appendChild(row);
+    });
+    document.getElementById('d3Empty').hidden = shown > 0;
+  }
+
+  function toggleHeart(btn) {
+    var nowOn = btn.getAttribute('aria-pressed') !== 'true';
+    btn.setAttribute('aria-pressed', String(nowOn));
+    btn.textContent = nowOn ? '♥' : '♡';
+  }
+
+  /* ── navigation ─────────────────────────────────────────────────────────── */
+  var SCREEN_FOR = { home: 'home', trips: 'trip', discover: 'discover',
+                     record: 'record', me: 'me' };
+
+  function go(target) {
+    var scr = SCREEN_FOR[target] || target;
+    if (!root.querySelector('.d3-scr[data-scr="' + scr + '"]')) return;
+    root.setAttribute('data-scr', scr);
+    root.querySelectorAll('.d3-scr').forEach(function (s) {
+      s.classList.toggle('on', s.getAttribute('data-scr') === scr);
+    });
+    var tab = scr === 'trip' ? 'trips' : scr;
+    root.querySelectorAll('.d3-tab').forEach(function (b) {
+      b.classList.toggle('on', b.getAttribute('data-tab') === tab);
+      b.setAttribute('aria-current', b.getAttribute('data-tab') === tab ? 'page' : 'false');
+    });
+    /* Deliberately no scrollTop reset: each screen owns its own scroller, so
+       coming back to a tab returns you to where you were reading rather than
+       to the top — which is what a bottom tab bar leads people to expect. */
+  }
+
+  function setLang(next) {
+    lang = next;
+    try { localStorage.setItem('bosla_lang', lang); } catch (e) {}
+    root.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+    root.setAttribute('lang', lang);
+    renderAll();
+  }
+
+  function renderAll() {
+    renderStrings(); renderTabs(); renderHome(); renderTrip(); renderDiscover();
+    go(root.getAttribute('data-scr') || 'welcome');
+  }
+
+  root.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-go]');
+    if (t) go(t.getAttribute('data-go'));
+    var h = e.target.closest('.d3-heart');
+    if (h) toggleHeart(h);
+  });
+  document.getElementById('d3Lang').addEventListener('click', function () {
+    setLang(lang === 'ar' ? 'en' : 'ar');
+  });
+
+  photo(root.querySelector('.d3-welcome .d3-img'), 'welcome');
+  root.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+  root.setAttribute('lang', lang);
+  renderAll();
+})();
 </script>
 
 </body>
