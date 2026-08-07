@@ -548,6 +548,8 @@
     border-radius:50%;background:transparent;color:var(--muted);cursor:pointer;
     align-items:center;justify-content:center;opacity:.75;transition:opacity .15s,border-color .15s,color .15s}
   .infobtn svg{width:16px;height:16px}
+  .infobtn.dayinfo{width:34px;height:34px}
+  .infobtn.dayinfo svg{width:17px;height:17px}
   .infobtn:hover,.infobtn.on{border-color:var(--teal);color:var(--teal);opacity:1}
   /* the visited tick shows everywhere once the trip is live — desktop planners deserve it too */
   .wentbtn{display:flex;border-radius:50%}
@@ -2389,6 +2391,12 @@
     var pool=hotelPool(dest,tier), rated=pool.filter(function(h){ return ratingOf(h); });
     return rated.length>0 && !rated.some(function(h){ return wellRated(h); });
   }
+  // Kids were read for the budget total and nowhere else — they never changed a single decision.
+  // What can honestly change is the SHAPE of a day: children set the pace, and marching a
+  // seven-year-old between four sights is the difference between a good day and a bad one.
+  // What cannot honestly change yet is WHICH places get picked — no POI in this data carries a
+  // family signal, and inventing one would be a guess a family then travels to.
+  function kidCount(){ try{ return Math.max(0,Math.min(20,parseInt(($('kids')||{}).value,10)||0)); }catch(e){ return 0; } }
   function curTier(){ try{ return picked('budgetChips')[0]||'Mid-range'; }catch(e){ return 'Mid-range'; } }
   // The hotel opens every day: it is where the day starts, and where the route is measured from.
   function hotelSlot(ck,o,fromDay,nights){
@@ -5037,6 +5045,7 @@
         // is the day's budget spent, and pretending anything else fits is a plan nobody can walk
         if(s===0&&!DAYEDITS[sk]&&aloneSet[poi.n])dspd=1;
       }
+      if(kidCount()>0)REASONS[ck+'|'+d+'|kids']={k:'kids',n:kidCount(),stops:dspd};
       picks=routeDay(picks,pinned,here,d);
       for(s=0;s<dspd;s++){
         sk=ck+'|'+d+'|'+s;
@@ -5086,6 +5095,7 @@
       html+='<div class="day'+(d>1?' dcol':'')+'" id="day-'+d+'">'
         +'<div class="dhead"><div class="dhtext"><div class="dlabel">'+o.dayWord+' '+d+' · '+esc(cityName(ck,match.city))+'</div><h3>'+title+'</h3></div>'
         +'<button type="button" class="dayshuffle" data-shuf="'+ck+'|'+d+'" title="'+o.shuffleDay+'">'+SHUFSVG+'<span>'+o.shuffleDay+'</span></button>'
+        +'<button type="button" class="infobtn dayinfo" data-why="'+ck+'|'+d+'|day" aria-label="'+esc(infLbl())+'" title="'+esc(infLbl())+'">'+INFSVG+'</button>'
         +'<button type="button" class="dayshuffle dayshare" data-dshare="'+d+'" title="'+esc(o.shareDay)+'" aria-label="'+esc(o.shareDay)+'">'+SHARESVG+'</button>'
         +'<span class="dchev" aria-hidden="true"></span></div>'
         +'<div class="dsum">'+sum+'</div>'
@@ -6069,7 +6079,9 @@
     var dcsig=keys.join('|'), dc;
     if(ROUTEDC && ROUTEDCSIG===dcsig && ROUTEDC.length===n){ dc=ROUTEDC.slice(); days=Math.max(n,dc.reduce(function(a,b){return a+b;},0)); }
     else { var per=Math.floor(days/n), rem=days-per*n; dc=ms.map(function(_,i){return per+(i<rem?1:0);}); ROUTEDC=dc.slice(); ROUTEDCSIG=dcsig; }
-    var spd=pace==='relaxed'?2:pace==='packed'?4:3; LASTSPD=spd;
+    var spd=pace==='relaxed'?2:pace==='packed'?4:3;
+    if(kidCount()>0)spd=Math.min(spd,2);   // a child's day holds fewer stops, whatever the pace says
+    LASTSPD=spd;
     if(!vibes||!vibes.length)vibes=['Culture'];
     var adults=Math.max(1,Math.min(20,parseInt($('adults').value,10)||1));
     var kids=Math.max(0,Math.min(20,parseInt($('kids').value,10)||0));
@@ -8578,7 +8590,9 @@
     var raw=($('dest').value||'').trim();
     if(!raw){ toast(o.pickFirst); try{$('dest').focus();}catch(e){} return; }
     var days=Math.max(1,Math.min(30,parseInt($('days').value,10)||5));
-    var pace=$('pace').value, spd=pace==='relaxed'?2:pace==='packed'?4:3; LASTSPD=spd;
+    var pace=$('pace').value, spd=pace==='relaxed'?2:pace==='packed'?4:3;
+    if(kidCount()>0)spd=Math.min(spd,2);
+    LASTSPD=spd;
     var budget=picked('budgetChips')[0]||'Mid-range';
     var vibes=picked('vibeChips'); if(!vibes.length)vibes=['Culture'];
     var adults=Math.max(1,Math.min(20,parseInt($('adults').value,10)||1));
@@ -8853,6 +8867,13 @@
   // A reason is stored as facts and rendered as a sentence here — never stored as a sentence,
   // or it could not be shown in three languages, and could not be re-checked against the numbers.
   function reasonText(key){
+    // A day is several decisions at once — how it was ordered, and who it was planned for. One
+    // tap should answer both rather than making somebody hunt for the second half.
+    if(/\|day$/.test(key)){
+      var base=key.slice(0,-4);
+      var parts=[reasonText(base+'|order'),reasonText(base+'|kids')].filter(Boolean);
+      return parts.join(' ');
+    }
     var r=REASONS[key]; if(!r)return '';
     var ar=LANG==='ar', es=LANG==='es';
     var nm=function(x){ return x||''; };
@@ -8874,6 +8895,11 @@
       return ar?('الأقرب إلى '+nm(r.fromName)+' — '+r.km+' كم، من '+r.of+' خيار.')
         :(es?('Lo más cercano a '+nm(r.fromName)+': '+r.km+' km, de '+r.of+' opciones.')
         :('Nearest to '+nm(r.fromName)+' — '+r.km+' km, out of '+r.of+' options.'));
+    }
+    if(r.k==='kids'){
+      return ar?('مخطط لعائلة فيها '+r.n+' أطفال — '+r.stops+' محطات باليوم بدل الأربع، وفنادق مناسبة للعائلات في البحث.')
+        :(es?('Planificado con '+r.n+' niños: '+r.stops+' paradas al día en vez de cuatro, y alojamientos familiares en la búsqueda.')
+        :('Planned with '+r.n+' kid'+(r.n===1?'':'s')+' — '+r.stops+' stops a day instead of four, and family-friendly filtered into the stay search.'));
     }
     if(r.k==='hotel'){
       if(r.how==='yours')return ar?'هذا فندقك اللي اخترته بنفسك.'
@@ -8925,7 +8951,7 @@
   }
   // Touch has no hover, so tapping the "i" opens the line under the row instead.
   function infToggle(btn){
-    var slot=btn.closest('.slot'); if(!slot)return;
+    var slot=btn.closest('.slot')||btn.closest('.dhead'); if(!slot)return;
     var nx=slot.nextElementSibling;
     if(nx&&nx.classList&&nx.classList.contains('infinline')){ nx.parentNode.removeChild(nx); btn.classList.remove('on'); return; }
     var open=$('out').querySelector('.infinline');
@@ -9237,6 +9263,9 @@
       var ss=(area&&!desc?area+', ':'')+(country?(city+', '+country):city);
       var tsel=bar.querySelector('.stychip.active'), ht=tsel?tsel.getAttribute('data-ht'):'';
       var flt=[].slice.call(bar.querySelectorAll('.samchip.active')).map(function(c){return c.getAttribute('data-code');});
+      // Booking already has a family-friendly filter and we already know there are children on
+      // this trip. Applying it is using a real filter on real inventory, not a claim of our own.
+      if(kidCount()>0&&flt.indexOf('hotelfacility=28')<0)flt.push('hotelfacility=28');
       var cflt=desc&&inp?inp.getAttribute('data-nflt'):''; if(cflt)flt.push(cflt); // e.g. Beach → beachfront
       if(ht)flt.unshift('ht_id='+ht);
       window.open(hotelSearchUrl(siteGet('hotel','booking'),ss,flt),'_blank'); return; }
