@@ -2953,7 +2953,9 @@
             cost:{Budget:c.costBudget|0,'Mid-range':c.costMid|0,Luxury:c.costLux|0},
             hotels:{Budget:(c.hotelsBudget||[])[0]||(c.city+' hotel'),'Mid-range':(c.hotelsMid||[])[0]||(c.city+' hotel'),Luxury:(c.hotelsLux||[])[0]||(c.city+' hotel')},
             poi:c.poi.map(function(p){return {n:p.n,a:enArea(p.a),t:(Array.isArray(p.t)&&p.t.length?p.t:['Culture'])};}),
-            food:(c.food||[]).map(function(p){return {n:p.n,a:enArea(p.a)};})};
+            // m is what keeps a cafe out of the dinner slot. Rebuilding the row field by field is
+            // how the coordinates were lost too — anything the pipeline adds must be added here.
+            food:(c.food||[]).map(function(p){return {n:p.n,a:enArea(p.a),m:(p.m==='light'?'light':'main')};})};
           CUR[key]={s:c.curSymbol||'$',r:c.curRate||1};
           // A model that doesn't know where something is answers 0,0 — and Null Island is 9,105km
           // from Buffalo, which is how "Elmwood Avenue · 9105 km" got printed beside a street you
@@ -4977,8 +4979,15 @@
     // dinner near where the day actually ends: prefer a restaurant closest to the last activity
     // (by coordinates, else by matching neighbourhood), so you're not driving across town to eat.
     // It picks the nearest of what's ELIGIBLE — the nearest overall is the same place every night.
-    function nearestFood(ck,food,dayPois,rot,day,today,partner,next){
+    function nearestFood(ck,food,dayPois,rot,day,today,partner,next,mainOnly){
       var avail=eligible(food,day,today);
+      // A cafe is not a dinner. AI cities tag each place "main" or "light"; the curated 771 carry
+      // no tag at all, so nothing there is ever excluded by this. Lunch still allows a bakery —
+      // katmer at midday is a real lunch in Gaziantep — but the evening asks for a kitchen.
+      if(mainOnly){
+        var mains=avail.filter(function(f){ return f.m!=='light'; });
+        if(mains.length)avail=mains;
+      }
       if(partner){
         var unpaired=avail.filter(function(f){ return !pairs[partner+'|'+f.n]; });
         if(unpaired.length)avail=unpaired;   // ...unless avoiding it would leave nothing
@@ -5088,7 +5097,7 @@
         body+=nslot(o.times.dinner,lastPk,o,ck);
         txt.push('  '+o.times.dinner+': '+o.eatNear(String(lastPk.n).replace(/\s*Day Trip$/i,'')));
       }else{
-        if(!fo){ LASTFOODWHY=null; fo=nearestFood(ck,match.food,dayPois,rot,d,todayN,lunchN);
+        if(!fo){ LASTFOODWHY=null; fo=nearestFood(ck,match.food,dayPois,rot,d,todayN,lunchN,null,true);
           if(LASTFOODWHY)REASONS[dsk]=LASTFOODWHY; }
         useMark(fo.n,d); todayN[fo.n]=1;
         if(lunchN)pairs[lunchN+'|'+fo.n]=1;

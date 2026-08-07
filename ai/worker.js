@@ -951,21 +951,36 @@ function dbg(env, stage, data) {
 
 // What a city needs to fill CITY_SCHEMA. `tag` maps a category onto the app's own vocabulary, so
 // adding a category later is a line here rather than a change anywhere else.
+// Seven places and five restaurants was the whole output for a city of two million, and a
+// seven-day Gaziantep plan showed every sight three times because there was nothing else to show.
+// A curated city carries 12-20. These counts aim at the same, and the categories are split finer
+// so a shopping mall stops taking the slot a covered bazaar should have had.
+//
+// `meal` marks what a food row is fit for. A cafe is not a dinner, and the old single pool served
+// one as dinner three times in a week.
 const PLACE_CATS = [
-  { key: "landmark", q: "top tourist attractions",  tag: "Culture",  want: 2, kind: "poi",
-    good: ["tourist_attraction", "historical_landmark", "monument", "place_of_worship"] },
-  { key: "museum",   q: "museums",                  tag: "Culture",  want: 1, kind: "poi",
+  { key: "landmark", q: "top tourist attractions",   tag: "Culture",  want: 4, kind: "poi",
+    good: ["tourist_attraction", "historical_landmark", "monument"] },
+  { key: "historic", q: "historic sites and old town", tag: "Culture", want: 2, kind: "poi",
+    good: ["historical_place", "historical_landmark", "tourist_attraction"] },
+  { key: "museum",   q: "museums",                   tag: "Culture",  want: 2, kind: "poi",
     good: ["museum", "art_gallery"] },
-  { key: "nature",   q: "parks and gardens",        tag: "Nature",   want: 1, kind: "poi",
+  { key: "worship",  q: "historic mosques and religious architecture", tag: "Culture", want: 1, kind: "poi",
+    good: ["place_of_worship", "mosque", "church", "historical_landmark"] },
+  { key: "nature",   q: "parks and gardens",         tag: "Nature",   want: 2, kind: "poi",
     good: ["park", "garden", "national_park"] },
-  { key: "market",   q: "markets and shopping",     tag: "Shopping", want: 1, kind: "poi",
-    good: ["market", "shopping_mall", "department_store"] },
-  { key: "relax",    q: "viewpoints and waterfront",tag: "Relax",    want: 2, kind: "poi",
+  { key: "viewpoint",q: "viewpoints and panoramas",  tag: "Relax",    want: 2, kind: "poi",
     good: ["tourist_attraction", "park", "beach"] },
-  { key: "food",     q: "best restaurants",         tag: "Food",     want: 4, kind: "food",
-    good: ["restaurant", "meal_takeaway"] },
-  { key: "cafe",     q: "best cafes",               tag: "Food",     want: 1, kind: "food",
-    good: ["cafe", "coffee_shop", "bakery"] },
+  { key: "market",   q: "markets and bazaars",       tag: "Shopping", want: 2, kind: "poi",
+    good: ["market", "department_store"] },
+  { key: "mall",     q: "shopping malls",            tag: "Shopping", want: 1, kind: "poi",
+    good: ["shopping_mall", "department_store"] },
+  { key: "food",     q: "best restaurants",          tag: "Food",     want: 5, kind: "food",
+    meal: "main", good: ["restaurant", "meal_takeaway"] },
+  { key: "local",    q: "traditional local food",    tag: "Food",     want: 3, kind: "food",
+    meal: "main", good: ["restaurant", "meal_takeaway"] },
+  { key: "cafe",     q: "best cafes and bakeries",   tag: "Food",     want: 2, kind: "food",
+    meal: "light", good: ["cafe", "coffee_shop", "bakery", "dessert_shop"] },
 ];
 
 const POOL_TTL = 60 * 60 * 24 * 30;   // 30 days: ratings drift and places shut
@@ -979,6 +994,32 @@ const POOL_MASK = [
   "places.userRatingCount", "places.businessStatus", "places.types",
   "places.shortFormattedAddress",
 ].join(",");
+
+// A Google listing title is a shop sign plus whatever the owner typed into the search box:
+// "Davinci Coffee Shop - Yeni Nesil Kahve Dukkani - Forum Avm", "Kelebek Restoran | Paca - Beyran
+// - Kebap", "GECE KEBAPCISI NAZIM USTA". Nobody writes a name that way and none of it belongs in
+// an itinerary. This trims the stuffing and leaves the name.
+//
+// Casing is done in Turkish rules when the name carries Turkish letters, because a plain
+// toLowerCase turns the dotted I into the wrong letter and misspells the place we are naming.
+const BRANCH_TAIL = /\s[-|·]\s*[^-|·]*\b(avm|a\.v\.m|mall|plaza|forum|subesi|şubesi|branch|outlet|store)\b[^-|·]*$/i;
+function tidyName(raw) {
+  let t = String(raw || "").replace(/\s+/g, " ").trim();
+  if (!t) return "";
+  if (t.includes("|")) t = t.split("|")[0].trim();          // "Name | keyword salad" -> "Name"
+  for (let i = 0; i < 2 && BRANCH_TAIL.test(t); i++) t = t.replace(BRANCH_TAIL, "").trim();
+  // SHOUTING -> Title Case, only when the whole thing is shouting
+  const letters = t.replace(/[^\p{L}]/gu, "");
+  if (letters.length > 3 && letters === letters.toUpperCase() && letters !== letters.toLowerCase()) {
+    const tr = /[çğışöüÇĞİŞÖÜ]/.test(t);
+    t = t.split(" ").map((w) => {
+      if (w.length < 2) return w;
+      const lower = tr ? w.replace(/I/g, "ı").replace(/İ/g, "i").toLowerCase() : w.toLowerCase();
+      return lower.charAt(0).toLocaleUpperCase(tr ? "tr" : undefined) + lower.slice(1);
+    }).join(" ");
+  }
+  return t.slice(0, 80);
+}
 
 async function searchCategory(city, cat, env) {
   try {
@@ -996,7 +1037,7 @@ async function searchCategory(city, cat, env) {
     if (!d || !Array.isArray(d.places)) return [];
     return d.places.map((p) => ({
       id: p.id || "",
-      n: (p.displayName && p.displayName.text) || "",
+      n: tidyName((p.displayName && p.displayName.text) || ""),
       lat: (p.location && p.location.latitude) || 0,
       lng: (p.location && p.location.longitude) || 0,
       r: p.rating || 0,
@@ -1004,7 +1045,7 @@ async function searchCategory(city, cat, env) {
       s: p.businessStatus || "OPERATIONAL",
       ty: Array.isArray(p.types) ? p.types.slice(0, 6) : [],
       ad: p.shortFormattedAddress || "",
-      cat: cat.key, kind: cat.kind, tag: cat.tag,
+      cat: cat.key, kind: cat.kind, tag: cat.tag, meal: cat.meal || "",
     })).filter((c) => c.id && c.n && c.lat && c.lng);
   } catch (e) {
     return [];
@@ -1215,6 +1256,9 @@ function assembleCity(picked, short) {
     const row = { n: c.n, a: String(sel.a || "").slice(0, 40) || (c.ad.split(",")[0] || ""),
                   lat: c.lat, lng: c.lng };
     if (kind === "poi") row.t = Array.isArray(sel.t) && sel.t.length ? sel.t.slice(0, 2) : [c.tag];
+    // Set here, where the candidate is in scope. The row carries no id, so reading the meal kind
+    // back off byId afterwards found nothing and quietly called every cafe a main course.
+    if (kind === "food") row.m = c.meal === "light" ? "light" : "main";
     if (sel.why) row.w = String(sel.why).slice(0, 180);
     return row;
   }).filter(Boolean);
@@ -1223,7 +1267,8 @@ function assembleCity(picked, short) {
   // Coordinates were dropped here while the poi rows kept theirs, so a restaurant arrived at the
   // app as a name with no position. nearestFood then had nothing to measure, fell through to
   // matching on area name, and dinner stopped being chosen for being near where the day ends.
-  city.food = take(picked.food, "food").map((f) => ({ n: f.n, a: f.a, w: f.w, lat: f.lat, lng: f.lng }));
+  // m carries "main" or "light" so the app can keep a cafe out of the dinner slot.
+  city.food = take(picked.food, "food");
   city.lat = city.poi.length ? city.poi[0].lat : 0;
   city.lng = city.poi.length ? city.poi[0].lng : 0;
   city.src = "places";
