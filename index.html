@@ -2938,7 +2938,7 @@
       // Building a city is the slowest thing the app asks for — a pool of candidates, then the
       // model choosing among them, and a second model call if the first comes back thin. The
       // default 12s abort was tuned for ordinary calls and silently killed every build.
-      netFetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'city',name:String(name).slice(0,60)})},30000)
+      netFetch(CONFIG.aiEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'city',name:String(name).slice(0,60)})},45000)
         .then(function(r){return r.json();})
         .then(function(d){
           var c=d&&d.city;

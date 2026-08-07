@@ -1202,16 +1202,16 @@ const CITY_PICK_SCHEMA = {
     costBudget: { type: "integer" }, costMid: { type: "integer" }, costLux: { type: "integer" },
     curSymbol: { type: "string" }, curRate: { type: "number" },
     poi: { type: "array", items: { type: "object", additionalProperties: false,
-      required: ["id","a","t","why"], properties: {
+      required: ["id","a","t"], properties: {
         id: { type: "string", description: "the id of a place from the CANDIDATES list — never anything else" },
         a: { type: "string", description: "short area label in English taken from that candidate's address, e.g. 'Old Town'" },
         t: { type: "array", items: { type: "string", enum: TAGS } },
-        why: { type: "string", description: "one short sentence on why this place earns its slot, from its rating, review count and type" } } } },
+        } } },
     food: { type: "array", items: { type: "object", additionalProperties: false,
-      required: ["id","a","why"], properties: {
+      required: ["id","a"], properties: {
         id: { type: "string" },
         a: { type: "string", description: "cuisine and area in English, e.g. 'Seafood · Marina'" },
-        why: { type: "string" } } } },
+        } } },
     hotelsBudget: { type: "array", items: { type: "string" } },
     hotelsMid: { type: "array", items: { type: "string" } },
     hotelsLux: { type: "array", items: { type: "string" } },
@@ -1259,7 +1259,6 @@ function assembleCity(picked, short) {
     // Set here, where the candidate is in scope. The row carries no id, so reading the meal kind
     // back off byId afterwards found nothing and quietly called every cafe a main course.
     if (kind === "food") row.m = c.meal === "light" ? "light" : "main";
-    if (sel.why) row.w = String(sel.why).slice(0, 180);
     return row;
   }).filter(Boolean);
   const city = Object.assign({}, picked);
