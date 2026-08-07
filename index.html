@@ -577,7 +577,10 @@
   .picinline{margin:6px 0 2px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--paper2)}
   .infinline{margin:6px 0 2px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;
     background:var(--paper2);color:var(--ink);font-size:14.5px;line-height:1.5}
-  .picpop.infopop{max-width:270px;padding:10px 12px;color:var(--ink);font-size:14px;line-height:1.5}
+  .picpop.infopop{max-width:270px;padding:10px 12px;color:var(--ink);font-size:14px;line-height:1.5;white-space:pre-line}
+  .infwhy{color:var(--ink);font-weight:600}
+  .infdesc{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);color:var(--muted)}
+  .infinline:not(:has(.infwhy)) .infdesc{margin:0;padding:0;border:0;color:var(--ink)}
   .picinline img{display:block;width:100%;max-height:200px;object-fit:cover;border-radius:8px}
   .picinline .pinone{font-size:14.5px;color:var(--muted);text-align:center;padding:8px}
   .picpop img{display:block;width:100%;max-height:180px;object-fit:cover;border-radius:8px}
@@ -2359,7 +2362,8 @@
     }
   }
   function hotelPick(dest,tier){
-    var mine=myHotel(keyOf(dest)); if(mine)return mine;   // theirs beats anything we would suggest
+    var mine=myHotel(keyOf(dest));
+    if(mine){ try{ REASONS[keyOf(dest)+'|hotel']={k:'hotel',how:'yours'}; }catch(e){} return mine; }
     var pool=hotelPool(dest,tier);
     if(!pool.length)return (dest.hotels&&dest.hotels[tier])||'';
     var rated=pool.filter(function(h){ return ratingOf(h); });
@@ -2371,8 +2375,13 @@
       // only breaks a tie between hotels that are rated the same.
       var best=ratingOf(list[0]).r;
       var top=list.filter(function(h){ return ratingOf(h).r===best; });
-      return top[((SEED%top.length)+top.length)%top.length];
+      var choice=top[((SEED%top.length)+top.length)%top.length];
+      // You book one hotel and live in it, so the reason is simply which pool it won and by what.
+      try{ REASONS[keyOf(dest)+'|hotel']={k:'hotel',how:'rated',tier:tier,
+        rating:best,of:pool.length,rated:rated.length,narrowed:good.length>0}; }catch(e){}
+      return choice;
     }
+    try{ REASONS[keyOf(dest)+'|hotel']={k:'hotel',how:'tier',tier:tier,of:pool.length}; }catch(e){}
     return pool[((SEED%pool.length)+pool.length)%pool.length];
   }
   // True when the tier they chose simply has nothing well reviewed in it, so the plan can say so.
@@ -2795,7 +2804,7 @@
     });
   $('surprise').addEventListener('click',function(){
     var keys=Object.keys(DEST), k=keys[Math.floor(Math.random()*keys.length)];
-    $('dest').value=DEST[k].city; newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; plan();
+    $('dest').value=DEST[k].city; newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; REASONS={}; plan();
   });
   // Zero-cost "Get ideas" — a fully button-driven picker over OUR OWN destinations (no AI calls at all).
   var IDEAS={
@@ -2982,7 +2991,7 @@
             var seen={}, ks=[];
             keys.forEach(function(k){ if(k&&DEST[k]&&!seen[k]){seen[k]=1;ks.push(k);} });
             if(!ks.length){ resolve(false); return; }
-            newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={};
+            newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; REASONS={};
             var days=Math.max(1,Math.min(30,(pp.days|0)||(pp.roadtrip?12:5)));
             var vibes=(Array.isArray(pp.vibes)&&pp.vibes.length)?pp.vibes:['Culture'];
             var budget=(pp.budget==='Budget'||pp.budget==='Luxury')?pp.budget:'Mid-range';
@@ -3032,7 +3041,7 @@
     var apply=function(k){
       if(!k||!DEST[k]){ toast(I18N[LANG].ui.promptNone); return; }
       var h=SUGHINTS||{}, days=Math.max(1,Math.min(30,h.days||5));
-      newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={};
+      newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; REASONS={};
       $('days').value=days; syncDayChips();
       if(h.vibes&&h.vibes.length)document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',h.vibes.indexOf(c.dataset.v)>=0);});
       document.querySelectorAll('#budgetChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===(h.budget||'Mid-range'));});
@@ -3187,7 +3196,7 @@
       var lbl=onlyCityLabel(); meSay(lbl);
       // the whole trip stays in that one city — not just the slice it had been given
       var nights=Math.max(1,parseInt($('days').value,10)||3);
-      ROUTE=null; ROUTEDC=null; ROUTEDCSIG=''; DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; DAYADD={};
+      ROUTE=null; ROUTEDC=null; ROUTEDCSIG=''; DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; REASONS={}; DAYADD={};
       $('dest').value=DEST[only].city; clearExtraCities();
       try{$('city2wrap').classList.add('is-hidden'); $('addCity').classList.remove('is-hidden');}catch(e){}
       $('days').value=nights; syncDayChips();
@@ -3219,7 +3228,7 @@
     var vibe=(IDEAS[cat]||{}).vibe||'Culture';
     botSay(LANG==='ar'?('تمام! أجهّز لك '+DEST[k].city+'…'):(LANG==='es'?('¡Listo! Preparando '+DEST[k].city+'…'):('Perfect — building your '+DEST[k].city+' trip…')));
     CHATCHIPS=[]; chatRender();
-    newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; ROUTE=null;
+    newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; REASONS={}; ROUTE=null;
     $('dest').value=DEST[k].city; clearExtraCities();
     $('days').value=days; syncDayChips();
     document.querySelectorAll('#vibeChips .chip').forEach(function(c){c.classList.toggle('active',c.dataset.v===vibe);});
@@ -3232,7 +3241,7 @@
     var nm=keys.map(function(k){return DEST[k].city;}).join(' → ');
     botSay(LANG==='ar'?('تمام! أجهّز رحلتك: '+nm+'…'):(LANG==='es'?('¡Listo! Preparando: '+nm+'…'):('Perfect — building your road trip: '+nm+'…')));
     CHATCHIPS=[]; chatRender();
-    newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={};
+    newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; REASONS={};
     $('dest').value=DEST[keys[0]].city; $('days').value=days; syncDayChips();
     try{ track('chat_plan',{dest:DEST[keys[0]].city,country:DEST[keys[0]].country||'',cities:keys.length,days:days}); }catch(e){}
     setTimeout(function(){ chatClose(); planRoute(keys,days,vibes,'Mid-range','balanced',true); CHATPICK=[]; askWhatToChange(); },700);
@@ -3398,7 +3407,7 @@
       if(kd>0){ try{ $('kids').value=Math.max(0,Math.min(20,kd)); }catch(e){} }
       // On an edit keep the seed and the user's own swaps, so changing the days doesn't reshuffle
       // every place they already liked. A brand-new trip starts clean.
-      if(!editing){ newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; DAYADD={}; }
+      if(!editing){ newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; REASONS={}; DAYADD={}; }
       ROUTE=null; ROUTEDC=null; ROUTEDCSIG='';
       if(explicit){
         ROUTEDC=nightsArr.map(function(x){ return Math.max(1,Math.min(30,x|0)); }); // their own split, e.g. 8 + 4
@@ -3809,6 +3818,13 @@
   // Somewhere the traveller typed themselves. DAYEDITS stores a name and this resolves it, so a
   // custom stop only has to be findable here to behave like any other — routing reads coordinates
   // we do not have for it, which is why it carries no area and sorts wherever the slot already was.
+  // Why the planner chose what it chose. Written DURING planning by the code that made each
+  // decision — never reconstructed afterwards, because a reason invented after the fact is a
+  // guess dressed as an explanation. Keyed like DAYEDITS: "cityKey|day|slot", plus "cityKey|hotel"
+  // and "cityKey|day|order". Each entry is {k:kind, ...facts} and stays data until something asks
+  // for it; the sentence is built at render time so it can be built in the reader's language.
+  var REASONS={};
+  var LASTFOODWHY=null;   // nearestFood decides; the caller owns the slot key. Handed over here.
   var CUSTOMPOI={};   // cityKey -> { name: {n,a,t} }
   var DAYDEL={};      // slot key -> 1, for stops the traveller removed
   function poiByName(ck,name){ var d=DEST[ck]; if(!d)return null; var all=d.poi.concat(d.food); for(var i=0;i<all.length;i++)if(all[i].n===name)return all[i];
@@ -4255,7 +4271,7 @@
     ROUTEDCSIG=ROUTE.join('|');
     var tot=(ROUTEDC&&ROUTEDC.length)?ROUTEDC.reduce(function(a,b){return a+b;},0):0;
     if(tot>0){ try{ $('days').value=Math.max(1,Math.min(30,tot)); if(window.syncDayChips)syncDayChips(); }catch(e){} }
-    DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; DAYADD={}; // day numbers shift, so per-day edits no longer line up
+    DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; REASONS={}; DAYADD={}; // day numbers shift, so per-day edits no longer line up
     if(ROUTE.length<2){ try{ $('dest').value=DEST[ROUTE[0]].city; clearExtraCities(); }catch(e){} }
     rerenderKeep();
   }
@@ -4265,11 +4281,11 @@
     try{ $('days').value=ROUTEDC.reduce(function(a,b){return a+b;},0); if(window.syncDayChips)syncDayChips(); }catch(e){}
     rerenderKeep();
   }
-  function anotherVersion(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; asReplan(function(){ if(LASTPLAN)LASTPLAN(); }); var out=$('out'); if(out)out.scrollIntoView({block:'start'}); }
+  function anotherVersion(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; REASONS={}; asReplan(function(){ if(LASTPLAN)LASTPLAN(); }); var out=$('out'); if(out)out.scrollIntoView({block:'start'}); }
   function retuneDays(delta){
     var cur=Math.max(1,Math.min(30,parseInt($('days').value,10)||5)), nn=Math.max(1,Math.min(30,cur+delta));
     if(nn===cur)return;
-    $('days').value=nn; if(window.syncDayChips)syncDayChips(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; ROUTEDC=null; // total tuner re-spreads evenly; per-city editor sets each city
+    $('days').value=nn; if(window.syncDayChips)syncDayChips(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; REASONS={}; ROUTEDC=null; // total tuner re-spreads evenly; per-city editor sets each city
     if(ROUTE&&ROUTE.length>=2){ var vibes=picked('vibeChips'); if(!vibes.length)vibes=['Culture']; planRoute(ROUTE,nn,vibes,picked('budgetChips')[0]||'Mid-range',$('pace').value,ROUTEDRIVE); }
     else plan();
     var out=$('out'); if(out)out.scrollIntoView({block:'start'});
@@ -4582,9 +4598,12 @@
     return '<div class="slot'+(went?' went':'')+'" data-ic="'+ic+'" data-sk="'+sk+'" data-q="'+esc(q)+'"><div class="t">'+tm+'</div>'
       +'<div class="d">'+link(locName(ck,poi.n),q,food?'':q,poi.n)+(food?ratingTag(poi.n):'')+areaLabel(locName(ck,poi.a),locName(ck,poi.n))+hopLabel(hop)+'</div>'
       +(food?'':'<button type="button" class="picbtn" data-pic="'+esc(q)+'" aria-label="'+esc(picLbl())+'" title="'+esc(picLbl())+'">'+PICSVG+'</button>')
-      // Restaurants are chosen from the name and the rating, not from a paragraph — and describing
-      // a restaurant is exactly the review-writing the house rules rule out. Places get the "i".
-      +(food?'':'<button type="button" class="infobtn" data-inf="'+esc(poi.n)+'" data-infc="'+esc(city)+'" data-infk="'+esc((DEST[ck]&&DEST[ck].country)||'')+'" aria-label="'+esc(infLbl())+'" title="'+esc(infLbl())+'">'+INFSVG+'</button>')
+      // Every row gets the "i", because every row was a decision the planner can account for.
+      // Restaurants carry the reason ONLY — no written description, since describing a restaurant
+      // is the review-writing the house rules rule out. Places carry both.
+      +'<button type="button" class="infobtn" data-why="'+esc(sk)+'"'
+        +(food?'':' data-inf="'+esc(poi.n)+'" data-infc="'+esc(city)+'" data-infk="'+esc((DEST[ck]&&DEST[ck].country)||'')+'"')
+        +' aria-label="'+esc(infLbl())+'" title="'+esc(infLbl())+'">'+INFSVG+'</button>'
       +'<button type="button" class="picbtn svbtn'+(isSaved(ck,poi.n)?' on':'')+'" data-sv="'+esc(ck)+'|'+esc(poi.n)+'|'+esc(poi.a||'')+'|'+svCatOf(poi,food)+'" aria-label="'+esc(svLbl())+'" title="'+esc(svLbl())+'">'+BKSVG+'</button>'
       +'<button type="button" class="swapbtn" data-sk="'+sk+'" aria-label="'+o.swapPlace+'" title="'+o.swapPlace+'">'+SWAPSVG+'</button>'
       +wentBtn+'</div>';
@@ -4865,12 +4884,20 @@
     // they come in — the thing that decides whether the day reads as a route or as a scribble.
     // Nearest-first, then undo whatever crossing the greedy pass left behind. A place the traveller
     // pinned to a slot themselves never moves: their own choice outranks any optimisation.
-    function routeDay(list,pin,from){
+    function routeDay(list,pin,from,dayNo){
       var co=POI_CO[ck], n=list.length;
       if(!co||n<3)return list;
       function walked(out,anchor){
         var tot=0,p=anchor,x,c;
         for(x=0;x<n;x++){ c=co[out[x].n]; if(p&&c)tot+=Math.sqrt(d2co(p,c)); if(c)p=c; }
+        return tot;
+      }
+      // walked() sums squared-degree roots, which order stops correctly but is not a distance.
+      // Anything shown to a traveller has to be real kilometres, so the saving is measured again
+      // in km rather than converted from a number that never was one.
+      function walkedKm(out,anchor){
+        var tot=0,p=anchor,x,c;
+        for(x=0;x<n;x++){ c=co[out[x].n]; if(p&&c)tot+=kmDist(p,c); if(c)p=c; }
         return tot;
       }
       function build(start,anchor){
@@ -4910,7 +4937,20 @@
       // They told us where they're staying, so the day genuinely starts there and the walk home
       // counts. Otherwise there is no fixed start — the honest answer is the shortest walk through
       // the day's stops, whichever end it begins at, so try each of them and keep the best.
-      if(from)return build(from,from);
+      // The saving is the honest comparison: what this order walks, against what the day would
+      // have walked in the order the places came out of the pool. Recorded here because this is
+      // the only place both numbers exist.
+      function note(out,anchor){
+        if(!dayNo)return out;
+        var before=walkedKm(list,anchor), after=walkedKm(out,anchor);
+        if(isFinite(before)&&isFinite(after)&&before-after>0.6)
+          REASONS[ck+'|'+dayNo+'|order']={k:'order',savedKm:Math.round((before-after)*10)/10,
+            stops:n,anchored:!!anchor};
+        else if(isFinite(after))
+          REASONS[ck+'|'+dayNo+'|order']={k:'order',savedKm:0,stops:n,anchored:!!anchor};
+        return out;
+      }
+      if(from)return note(build(from,from),from);
       var best=null,bl=Infinity,q,cc,cand,L;
       for(q=0;q<n;q++){
         if(pin[q])continue;
@@ -4918,7 +4958,7 @@
         cand=build(cc,null); L=walked(cand,null);
         if(L<bl){ bl=L; best=cand; }
       }
-      return best||build(null,null);
+      return note(best||build(null,null),null);
     }
     // dinner near where the day actually ends: prefer a restaurant closest to the last activity
     // (by coordinates, else by matching neighbourhood), so you're not driving across town to eat.
@@ -4943,11 +4983,20 @@
             var fc=co[f.n], v=Math.sqrt(d2co(fc,ac))+(nc?Math.sqrt(d2co(fc,nc)):0);
             if(v<bb){ bb=v; best=f; }
           });
+          // Two different questions were asked depending on whether anything follows, so the
+          // reason has to say which one — "least detour on the way to X" and "nearest to X" are
+          // not the same claim and a traveller can check either.
+          LASTFOODWHY={k:'food', how:nc?'detour':'nearest',
+            fromName:anchor?anchor.n:'', toName:(nc&&next)?next.n:'',
+            km:Math.round(kmDist(ac,co[best.n])*10)/10,
+            of:withCo.length, rating:(typeof ratingOf==='function'&&ratingOf(best.n))?ratingOf(best.n).r:0};
           return best;
         }
       }
       var areas={}; dayPois.forEach(function(p){areas[p.a]=1;}); // fallback: same neighbourhood
-      var same=avail.filter(function(f){return areas[f.a];}); if(same.length)return same[0];
+      var same=avail.filter(function(f){return areas[f.a];});
+      if(same.length){ LASTFOODWHY={k:'food',how:'area',area:same[0].a}; return same[0]; }
+      LASTFOODWHY=null;
       return take(food,rot,false,day,today);
     }
     for(var i=0;i<count;i++){
@@ -4988,7 +5037,7 @@
         // is the day's budget spent, and pretending anything else fits is a plan nobody can walk
         if(s===0&&!DAYEDITS[sk]&&aloneSet[poi.n])dspd=1;
       }
-      picks=routeDay(picks,pinned,here);
+      picks=routeDay(picks,pinned,here,d);
       for(s=0;s<dspd;s++){
         sk=ck+'|'+d+'|'+s;
         var pk=picks[s];
@@ -5007,7 +5056,8 @@
             body+=nslot(o.times.lunch,pk,o,ck);
             txt.push('  '+o.times.lunch+': '+o.eatNear(String(pk.n).replace(/\s*Day Trip$/i,'')));
           }else{
-            if(!lu)lu=nearestFood(ck,match.food,dayPois,rot,d,todayN,'',picks[s+1]);
+            if(!lu){ LASTFOODWHY=null; lu=nearestFood(ck,match.food,dayPois,rot,d,todayN,'',picks[s+1]);
+              if(LASTFOODWHY)REASONS[lsk]=LASTFOODWHY; }
             useMark(lu.n,d); todayN[lu.n]=1; lunchN=lu.n;
             var lhop=hopTo(lu); walk.push(lu.n);
             body+=eslot(o.times.lunch,lu,match.city,lsk,o,ck,true,lhop);
@@ -5023,7 +5073,8 @@
         body+=nslot(o.times.dinner,lastPk,o,ck);
         txt.push('  '+o.times.dinner+': '+o.eatNear(String(lastPk.n).replace(/\s*Day Trip$/i,'')));
       }else{
-        if(!fo)fo=nearestFood(ck,match.food,dayPois,rot,d,todayN,lunchN);
+        if(!fo){ LASTFOODWHY=null; fo=nearestFood(ck,match.food,dayPois,rot,d,todayN,lunchN);
+          if(LASTFOODWHY)REASONS[dsk]=LASTFOODWHY; }
         useMark(fo.n,d); todayN[fo.n]=1;
         if(lunchN)pairs[lunchN+'|'+fo.n]=1;
         var dhop=hopTo(fo); walk.push(fo.n);
@@ -5752,7 +5803,7 @@
   var ROUTEDRIVE=false;
   var SEED=0;
   var DAYEDITS={};   // explicit per-slot swaps: key "cityKey|day|slotIndex" (or |d for dinner) → place name
-  var DAYROT={}; DAYDEL={}; CUSTOMPOI={};     // per-day shuffle rotation: key "cityKey|day" → integer (picks different unused places)
+  var DAYROT={}; DAYDEL={}; CUSTOMPOI={}; REASONS={};     // per-day shuffle rotation: key "cityKey|day" → integer (picks different unused places)
   var LASTPLAN=null; // re-renders the current plan in place (honouring edits) after a change
   var LASTSPD=3;     // activity slots per day in the current plan
   var KEEPSCROLL=false; // when re-rendering after an in-place edit, don't jump back to the top
@@ -5947,7 +5998,7 @@
     runPromptLocal(raw);
   }
   function runPromptLocal(raw){
-    newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={};
+    newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; REASONS={};
     var pp=parsePrompt(raw);
     (pp.unresolved||[]).forEach(function(q){ try{track('miss',{dest:q,src:'prompt'});}catch(e){} }); // places asked for but not in our data
     if(CONFIG.aiEndpoint && pp.unresolved && pp.unresolved.length){ // build the missing places, then re-parse & plan
@@ -7150,7 +7201,7 @@
     if(!city)return;
     exitRec();
     $('dest').value=city; clearExtraCities();
-    newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; ROUTE=null;
+    newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; REASONS={}; ROUTE=null;
     $('planBtn').click();
   }
   function renderGoalSug(){
@@ -8650,7 +8701,7 @@
       ensureFood(fk, multi?[d1,d2]:[days]); checkOpen(fk); ensureNames(fk); ensureGateway(fk); }
     if(KEEPSCROLL){KEEPSCROLL=false;} else out.scrollIntoView({behavior:'smooth',block:'start'});
   }
-  $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; DAYADD={}; ROUTEDC=null; STAYAREA=''; PGFRESH=true;
+  $('planBtn').addEventListener('click',function(){ newSeed(); DAYEDITS={}; DAYROT={}; DAYDEL={}; CUSTOMPOI={}; REASONS={}; DAYADD={}; ROUTEDC=null; STAYAREA=''; PGFRESH=true;
     try{ $('lastTrip').classList.add('is-hidden'); }catch(e){} plan(); try{ if($('out').classList.contains('show'))haptic(18); }catch(e){} });
   // Currency is a display setting, not a reason to re-plan — but a plan already on screen was
   // frozen in the old currency until the traveller planned again, so the budget "stayed on the
@@ -8799,6 +8850,42 @@
   // the second look at the same trip should not cost a request.
   var INF={}, INFEL=null, INFTIMER=null;
   var INFSVG='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 11.2v5.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7.7" r="1.15" fill="currentColor"/></svg>';
+  // A reason is stored as facts and rendered as a sentence here — never stored as a sentence,
+  // or it could not be shown in three languages, and could not be re-checked against the numbers.
+  function reasonText(key){
+    var r=REASONS[key]; if(!r)return '';
+    var ar=LANG==='ar', es=LANG==='es';
+    var nm=function(x){ return x||''; };
+    if(r.k==='order'){
+      if(!r.savedKm)return ar?('اليوم مرتّب من الأقرب للأبعد عبر '+r.stops+' محطات.')
+        :(es?('El día va de lo más cercano a lo más lejano, '+r.stops+' paradas.')
+        :('The day runs nearest-first across '+r.stops+' stops.'));
+      return ar?('مرتّب من الأقرب للأبعد عبر '+r.stops+' محطات — يوفّر '+r.savedKm+' كم عن ترتيبها الأصلي.')
+        :(es?('De lo más cercano a lo más lejano en '+r.stops+' paradas: ahorra '+r.savedKm+' km frente al orden original.')
+        :('Nearest-first across '+r.stops+' stops — saves '+r.savedKm+' km against the order they came in.'));
+    }
+    if(r.k==='food'){
+      if(r.how==='area')return ar?('في '+nm(r.area)+'، نفس منطقة محطاتك.')
+        :(es?('En '+nm(r.area)+', el mismo barrio que tus paradas.')
+        :('In '+nm(r.area)+', the same area as your stops.'));
+      if(r.how==='detour')return ar?('أقل انحراف عن طريقك بين '+nm(r.fromName)+' و'+nm(r.toName)+' — '+r.km+' كم، من '+r.of+' خيار.')
+        :(es?('El menor desvío entre '+nm(r.fromName)+' y '+nm(r.toName)+': '+r.km+' km, de '+r.of+' opciones.')
+        :('Least detour between '+nm(r.fromName)+' and '+nm(r.toName)+' — '+r.km+' km, out of '+r.of+' options.'));
+      return ar?('الأقرب إلى '+nm(r.fromName)+' — '+r.km+' كم، من '+r.of+' خيار.')
+        :(es?('Lo más cercano a '+nm(r.fromName)+': '+r.km+' km, de '+r.of+' opciones.')
+        :('Nearest to '+nm(r.fromName)+' — '+r.km+' km, out of '+r.of+' options.'));
+    }
+    if(r.k==='hotel'){
+      if(r.how==='yours')return ar?'هذا فندقك اللي اخترته بنفسك.'
+        :(es?'Es el alojamiento que elegiste tú.':'This is the one you told us you booked.');
+      if(r.how==='rated')return ar?('أعلى تقييم في فئة '+r.tier+' — '+r.rating+' من بين '+r.of+' فندق.')
+        :(es?('El mejor valorado en '+r.tier+': '+r.rating+' entre '+r.of+' hoteles.')
+        :('Best rated in '+r.tier+' — '+r.rating+' stars, out of '+r.of+' hotels.'));
+      return ar?('من فئة '+r.tier+' اللي اخترتها.')
+        :(es?('De la categoría '+r.tier+' que elegiste.'):('From the '+r.tier+' tier you picked.'));
+    }
+    return '';
+  }
   function infLbl(){ return LANG==='ar'?'وش هذا المكان؟':(LANG==='es'?'¿Qué es este lugar?':'What is this place?'); }
   function infNone(){ return LANG==='ar'?'ما عندنا وصف لهذا المكان':(LANG==='es'?'Sin descripción para este lugar':'No description for this place'); }
   function infOf(b){ return {n:b.getAttribute('data-inf')||'',c:b.getAttribute('data-infc')||'',k:b.getAttribute('data-infk')||''}; }
@@ -8818,16 +8905,23 @@
   }
   function infHide(){ if(INFTIMER){ clearTimeout(INFTIMER); INFTIMER=null; } if(INFEL)INFEL.classList.remove('show'); }
   function infShow(btn){
-    var q=infOf(btn); if(!q.n)return;
+    var why=reasonText(btn.getAttribute('data-why')||'');
+    var q=infOf(btn);
+    if(why)infPop(btn,why);              // the reason needs nothing fetched, so it never waits
+    if(!q.n)return;
     infFetch(q.n,q.c,q.k).then(function(t){
       if(!t||!btn.isConnected)return;
-      if(!INFEL){ INFEL=document.createElement('div'); INFEL.className='picpop infopop'; document.body.appendChild(INFEL); }
-      INFEL.textContent=t;                                   // textContent, so a model reply is never markup
-      INFEL.classList.add('show');
-      var r=btn.getBoundingClientRect(), w=INFEL.offsetWidth||260, h=INFEL.offsetHeight||90;
-      INFEL.style.left=Math.min(window.innerWidth-w-10,Math.max(10,r.left+r.width/2-w/2))+'px';
-      INFEL.style.top=((r.top>h+16)?(r.top-h-10):(r.bottom+10))+'px';
+      if(why){ infPop(btn,why+'\n\n'+t); return; }
+      infPop(btn,t);
     });
+  }
+  function infPop(btn,text){
+    if(!INFEL){ INFEL=document.createElement('div'); INFEL.className='picpop infopop'; document.body.appendChild(INFEL); }
+    INFEL.textContent=text;                                  // textContent, so a model reply is never markup
+    INFEL.classList.add('show');
+    var r=btn.getBoundingClientRect(), w=INFEL.offsetWidth||260, h=INFEL.offsetHeight||90;
+    INFEL.style.left=Math.min(window.innerWidth-w-10,Math.max(10,r.left+r.width/2-w/2))+'px';
+    INFEL.style.top=((r.top>h+16)?(r.top-h-10):(r.bottom+10))+'px';
   }
   // Touch has no hover, so tapping the "i" opens the line under the row instead.
   function infToggle(btn){
@@ -8836,11 +8930,21 @@
     if(nx&&nx.classList&&nx.classList.contains('infinline')){ nx.parentNode.removeChild(nx); btn.classList.remove('on'); return; }
     var open=$('out').querySelector('.infinline');
     if(open){ var ob=open.previousElementSibling; if(ob){ var xb=ob.querySelector('.infobtn'); if(xb)xb.classList.remove('on'); } open.parentNode.removeChild(open); }
-    var box=document.createElement('div'); box.className='infinline'; box.textContent='…';
+    var box=document.createElement('div'); box.className='infinline';
+    // The planner's own reasoning renders first and instantly — no request, no model, no waiting.
+    // The written description, which costs a round trip, fills in underneath if this row has one.
+    var why=reasonText(btn.getAttribute('data-why')||'');
+    if(why){ var w=document.createElement('div'); w.className='infwhy'; w.textContent=why; box.appendChild(w); }
+    var q=infOf(btn), wants=!!q.n;
+    if(wants){ var d=document.createElement('div'); d.className='infdesc'; d.textContent='…'; box.appendChild(d); }
+    else if(!why){ box.textContent=infNone(); }
     slot.parentNode.insertBefore(box, slot.nextElementSibling);
     btn.classList.add('on');
-    var q=infOf(btn);
-    infFetch(q.n,q.c,q.k).then(function(t){ if(box.isConnected)box.textContent=t||infNone(); });
+    if(wants)infFetch(q.n,q.c,q.k).then(function(t){
+      if(!box.isConnected)return;
+      var d2=box.querySelector('.infdesc'); if(!d2)return;
+      if(t)d2.textContent=t; else if(why)d2.remove(); else d2.textContent=infNone();
+    });
   }
   // Touch devices can't hover, so the photo opens inline under the place — the name still opens Maps.
   function picToggle(btn){
