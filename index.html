@@ -2971,8 +2971,11 @@
           }
           var ctr=okCo(c.lat,c.lng,null)?[c.lat,c.lng]:null;
           CO[key]=[c.lat,c.lng];
+          // Restaurants belong in here too. POI_CO is what nearestFood and the hop labels read, so
+          // leaving food out of it meant an AI city could never place a meal near anything — the
+          // engine measured distances it did not have and quietly gave up on the good answer.
           var pc={}, bad=0;
-          c.poi.forEach(function(p){
+          c.poi.concat(c.food||[]).forEach(function(p){
             if(okCo(p.lat,p.lng,ctr))pc[p.n]=[p.lat,p.lng];
             else if(p.lat!=null||p.lng!=null)bad++;
           });

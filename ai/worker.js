@@ -1220,7 +1220,10 @@ function assembleCity(picked, short) {
   }).filter(Boolean);
   const city = Object.assign({}, picked);
   city.poi = take(picked.poi, "poi");
-  city.food = take(picked.food, "food").map((f) => ({ n: f.n, a: f.a, w: f.w }));
+  // Coordinates were dropped here while the poi rows kept theirs, so a restaurant arrived at the
+  // app as a name with no position. nearestFood then had nothing to measure, fell through to
+  // matching on area name, and dinner stopped being chosen for being near where the day ends.
+  city.food = take(picked.food, "food").map((f) => ({ n: f.n, a: f.a, w: f.w, lat: f.lat, lng: f.lng }));
   city.lat = city.poi.length ? city.poi[0].lat : 0;
   city.lng = city.poi.length ? city.poi[0].lng : 0;
   city.src = "places";
