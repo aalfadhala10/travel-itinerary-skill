@@ -73,7 +73,10 @@ function cityKey(name) {
 // the gap between a busy household and an attack is wide enough that this costs nothing to allow.
 const RL_PER_MIN     = 40;    // requests a minute from one address
 const DAY_LLM_CAP    = 600;   // Claude calls a day, everyone together
-const DAY_PLACES_CAP = 2000;  // Google place lookups a day, everyone together
+const DAY_PLACES_CAP = 200;   // Google place lookups a day, everyone together.
+// Lowered from 2000 for the trial. Google's own Places quotas are all marked "Adjustable: No",
+// so there is no ceiling to set on their side — this counter IS the spending limit, not a backstop
+// to one. It lives in KV as spend:places:<date> with a 48h TTL, shared across every traveller.
 
 function today() { return new Date().toISOString().slice(0, 10); }
 
