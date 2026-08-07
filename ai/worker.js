@@ -1022,10 +1022,16 @@ async function poolFor(city, env) {
       if (hit && hit.length) { dbg(env, "pool.cached", { city, candidates: hit.length }); return hit; }
     } catch (e) {}
   }
+  // Seven searches ran one after another out of caution about rate limits. That caution was
+  // misplaced and it cost the feature: the app aborts a request at 12s, and seven round trips plus
+  // the model call ran past it, so every city failed to build with nothing wrong on this side.
+  // Google's own quota page reports 6,000 requests per minute for this project — seven at once is
+  // not close to anything. The whole phase is now one round trip's worth of latency.
   const all = [], per = {};
-  for (const cat of PLACE_CATS) {                       // sequential: 7 parallel calls earn a limit
-    await spend(env, "places");
-    const got = await searchCategory(city, cat, env);
+  await spend(env, "places", PLACE_CATS.length);        // one counter write, not seven racing ones
+  const batches = await Promise.all(PLACE_CATS.map((cat) =>
+    searchCategory(city, cat, env).then((got) => ({ cat, got })).catch(() => ({ cat, got: [] }))));
+  for (const { cat, got } of batches) {
     per[cat.key] = got.length;
     for (const c of got) all.push(c);
   }
