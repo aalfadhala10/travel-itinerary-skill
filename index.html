@@ -1070,6 +1070,17 @@
   .mkitem span{font-size:12.5px;color:var(--muted)}
   .mkitem .mkgrow{flex:1;min-width:0}
   /* the bottom tab bar from Ahmed's mockups: four rooms, one hallway */
+  /* Three fixed layers — two pills and the nav — sat permanently over the bottom quarter of the
+     screen, hiding 35 separate rows of the itinerary. They now step aside while you scroll down
+     through a plan and come straight back the moment you stop or scroll up, so reading a day is
+     full-screen and every action is still one flick away. */
+  .chromehide .editfab,.chromehide .chatfab{opacity:0;transform:translateY(16px);pointer-events:none}
+  .chromehide .tabbar{transform:translateY(100%)}
+  .editfab,.chatfab{transition:opacity .2s ease,transform .2s ease}
+  .tabbar{transition:transform .22s ease}
+  @media (prefers-reduced-motion:reduce){
+    .editfab,.chatfab,.tabbar{transition:none}
+  }
   .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:8;display:flex;justify-content:space-around;
     padding:7px 8px calc(9px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line)}
   .tabbar .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;
@@ -8895,6 +8906,34 @@
     DAYEDITS[sk]=v; delete DAYDEL[sk];
     rerenderKeep();
   }
+  // Reading a plan is scrolling down; everything else is a deliberate reach. So the chrome hides
+  // only while you are actively going down the page, and returns on the way up, at rest, or at
+  // either end — which is the behaviour every phone browser already taught people.
+  (function(){
+    var last=window.pageYOffset||0, tick=false, idle=null, hidden=false;
+    function set(h){
+      if(h===hidden)return; hidden=h;
+      document.body.classList.toggle('chromehide',h);
+    }
+    function blocked(){   // never hide behind an open surface, or the way back looks broken
+      return document.body.classList.contains('chatlock')||
+             !!document.querySelector('.drawer.show,.welcome.show,.cmpsheet.show');
+    }
+    function onScroll(){
+      if(tick)return; tick=true;
+      requestAnimationFrame(function(){
+        tick=false;
+        var y=window.pageYOffset||0, dy=y-last; last=y;
+        if(idle)clearTimeout(idle);
+        idle=setTimeout(function(){ set(false); },420);   // at rest, always back
+        if(blocked()){ set(false); return; }
+        var bottom=(document.body.scrollHeight-y-window.innerHeight);
+        if(y<120||bottom<140){ set(false); return; }      // both ends stay put
+        if(dy>6)set(true); else if(dy<-6)set(false);
+      });
+    }
+    window.addEventListener('scroll',onScroll,{passive:true});
+  })();
   function openSwap(btn){
     var slot=btn.closest('.slot'); if(!slot)return;
     var nx=slot.nextElementSibling;
