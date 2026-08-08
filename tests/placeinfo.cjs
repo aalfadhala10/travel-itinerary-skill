@@ -22,7 +22,7 @@ function run(opts){
     overBudget:async()=>!!opts.over,
     spend:async()=>{},
     claude:async(k,model,sys,user,schema,max)=>{calls.push({model,sys,user});return opts.reply;},
-    DAY_LLM_CAP:100,
+    DAY_LLM_CAP:100, DAY_PINFO_CAP:100,
   };
   const fn=new Function(...Object.keys(g),block+'; return placeInfo;')(...Object.values(g));
   return {fn,env,store,calls};
@@ -70,7 +70,7 @@ function run(opts){
   // 7. cost guards
   let t8=run({reply:{info:'x'},over:true});
   let r8=await t8.fn({action:'placeinfo',name:'Somewhere',city:'Cairo',lang:'en'},t8.env,'*');
-  ok('over the day budget it answers empty instead of spending', r8.body.info===''&&t8.calls.length===0);
+  ok('over its OWN day budget it answers empty instead of spending', r8.body.info===''&&t8.calls.length===0);
   let t9=run({reply:{info:'x'},key:''});
   let r9=await t9.fn({action:'placeinfo',name:'Somewhere',city:'Cairo',lang:'en'},t9.env,'*');
   ok('with no API key it answers empty instead of failing', r9.body.info===''&&t9.calls.length===0);

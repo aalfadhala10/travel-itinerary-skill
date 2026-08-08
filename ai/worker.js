@@ -73,6 +73,10 @@ function cityKey(name) {
 // the gap between a busy household and an attack is wide enough that this costs nothing to allow.
 const RL_PER_MIN     = 40;    // requests a minute from one address
 const DAY_LLM_CAP    = 600;   // Claude calls a day, everyone together
+// Descriptions get their own allowance. They were spending from the same 600 as city building,
+// which meant a busy day of tapping the "i" could quietly use up the budget that builds cities —
+// a nice-to-have starving the thing the app is for. Its own counter cannot do that.
+const DAY_PINFO_CAP  = 400;   // "what is this place" lines a day, everyone together
 const DAY_PLACES_CAP = 200;   // Google place lookups a day, everyone together.
 // Lowered from 2000 for the trial. Google's own Places quotas are all marked "Adjustable: No",
 // so there is no ceiling to set on their side — this counter IS the spending limit, not a backstop
@@ -2047,7 +2051,7 @@ async function placeInfo(body, env, origin) {
   if (kv) { const hit = await kv.get(ckey); if (hit) return reply(JSON.parse(hit), 200, origin); }
 
   if (!env.ANTHROPIC_API_KEY) return reply({ info: "" }, 200, origin);
-  if (await overBudget(env, "llm", DAY_LLM_CAP)) return reply({ info: "" }, 200, origin);
+  if (await overBudget(env, "pinfo", DAY_PINFO_CAP)) return reply({ info: "" }, 200, origin);
 
   const voice = lang === "ar"
     ? "Write in Khaleeji Arabic (Gulf dialect) — the way someone from the Gulf actually speaks, not Modern Standard Arabic."
@@ -2068,7 +2072,7 @@ async function placeInfo(body, env, origin) {
       "Never mention Israel.",
       name + (city ? ", " + city : "") + (country ? ", " + country : ""),
       PINFO_SCHEMA, 300);
-    await spend(env, "llm");
+    await spend(env, "pinfo");
     let t = got && String(got.info || "").replace(/[<>]/g, "").trim();
     if (t && /israel/i.test(t)) t = "";          // house rule, enforced after the model as well as before
     if (t && t.length > 400) t = t.slice(0, 400);
