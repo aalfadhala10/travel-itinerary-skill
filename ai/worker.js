@@ -1068,6 +1068,18 @@ async function poolFor(city, env) {
   // the model call ran past it, so every city failed to build with nothing wrong on this side.
   // Google's own quota page reports 6,000 requests per minute for this project — seven at once is
   // not close to anything. The whole phase is now one round trip's worth of latency.
+  // The day's cap was counted here and enforced nowhere: overBudget was only ever consulted for
+  // the "places" action, while the path that actually spends is "city". So DAY_PLACES_CAP was a
+  // tally, not a limit — and with Google's own quotas all marked "Adjustable: No", that left the
+  // spend with no ceiling at all.
+  //
+  // Checked here rather than at the dispatcher so it degrades instead of failing: an empty pool
+  // sends buildCity down its invention fallback, so a traveller still gets a city and the day's
+  // Places spending simply stops.
+  if (await overBudget(env, "places", DAY_PLACES_CAP)) {
+    dbg(env, "pool.skipped", { city, reason: "daily places cap reached" });
+    return [];
+  }
   const all = [], per = {};
   await spend(env, "places", PLACE_CATS.length);        // one counter write, not seven racing ones
   const batches = await Promise.all(PLACE_CATS.map((cat) =>
