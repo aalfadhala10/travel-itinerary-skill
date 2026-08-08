@@ -168,6 +168,11 @@
   .stepbtn{flex:0 0 46px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);border-radius:12px;font-size:22px;font-weight:600;cursor:pointer;font-family:var(--ff-body);line-height:1;transition:all .15s;user-select:none}
   .stepbtn:hover{border-color:var(--teal);background:var(--teal-soft)}
   .stepbtn:active{transform:translateY(1px)}
+  /* One question at a time. "How many days?" waits until somewhere has been named, so the first
+     thing anyone meets is a single field rather than a form. It never hides again once shown, and
+     a traveller who taps Plan without ever opening it simply gets the default five days — which is
+     the least-effort path working as intended, not a field they missed. */
+  .qwait{display:none}
   .daypresets{display:flex;gap:6px;margin-top:8px;flex-wrap:nowrap;direction:ltr}
   .daychip{flex:1;min-width:0;padding:9px 4px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:14.5px;font-weight:600;cursor:pointer;font-family:var(--ff-data);transition:all .15s;font-variant-numeric:tabular-nums}
   .daychip:hover{border-color:var(--teal)}
@@ -1404,6 +1409,7 @@
       </div>
     </div>
 
+    <div id="daysBlock" class="qwait">
     <label for="days" id="lblDays">How many days?</label>
     <div class="stepper"><button type="button" class="stepbtn" data-for="days" data-step="-1" aria-label="−">−</button><input id="days" type="number" min="1" max="30" value="5" inputmode="numeric"><button type="button" class="stepbtn" data-for="days" data-step="1" aria-label="+">+</button></div>
     <div class="daypresets" id="dayPresets">
@@ -1412,6 +1418,7 @@
       <button type="button" class="daychip" data-days="7">7</button>
       <button type="button" class="daychip" data-days="10">10</button>
       <button type="button" class="daychip" data-days="14">14</button>
+    </div>
     </div>
     <button type="button" class="manualtoggle moreopts" id="moreToggle" aria-expanded="false"><span id="moreOptsLbl">More options</span><span class="mtchev" aria-hidden="true"></span></button>
     <div class="is-hidden" id="moreOptions">
@@ -2795,7 +2802,36 @@
     if(clr){ clr.addEventListener('mousedown', function(e){ e.preventDefault(); inp.value=''; toggleClear(); open(); inp.focus(); }); }
   }
   try{ aiCityHydrate(); }catch(e){}   // cities built on this device are in the search from the first keystroke
-  makeCombo('dest','destList');
+  // Reveal the second question once the first has an answer — on a pick from the list, or on
+  // leaving the field with something in it. Not on every keystroke: a field that sprouts another
+  // field while you are still typing the first is not calmer, it is twitchier.
+  // NOT askDays — the chat bot already owns that name for its "how many days in Cairo?" prompt,
+  // and in one shared scope the later declaration simply wins. This one was being swallowed whole:
+  // no error, no effect, and askDaysIfAnswered was calling the bot with an undefined city.
+  function revealDaysField(){
+    var b=$('daysBlock'); if(!b||!b.classList.contains('qwait'))return;
+    b.classList.remove('qwait');
+    try{ track('form_days_shown',{}); }catch(e){}
+  }
+  function revealDaysIfDestSet(){
+    var d=$('dest'); if(d&&String(d.value||'').trim().length>=2)revealDaysField();
+  }
+  // "How it works" sat above the form and pushed the only question below the fold on any phone
+  // smaller than the one it was designed on. Explaining the app before letting anyone use it is
+  // backwards; it reads better underneath, where somebody who wants it can still find it. Moved
+  // here rather than in the markup so no nesting is disturbed.
+  (function(){
+    var intro=$('intro'), form=$('manualForm');
+    var card=form&&form.closest?form.closest('.card'):null;
+    if(intro&&card&&card.parentNode&&intro.parentNode)card.parentNode.insertBefore(intro,card.nextSibling);
+  })();
+  makeCombo('dest','destList',revealDaysField);
+  (function(){
+    var d=$('dest'); if(!d)return;
+    d.addEventListener('change',revealDaysIfDestSet);
+    d.addEventListener('blur',revealDaysIfDestSet);
+    revealDaysIfDestSet();   // a restored trip, a deep link, or the bot filling it in
+  })();
   makeCombo('dest2','destList2');
   makeCombo('dest3','destList3');
   makeCombo('dest4','destList4');
@@ -2872,7 +2908,11 @@
     syncEditFab();
   });
   // quick day-length presets
-  function syncDayChips(){ var v=String($('days').value); document.querySelectorAll('#dayPresets .daychip').forEach(function(c){c.classList.toggle('active',c.dataset.days===v);}); }
+  // Eight different paths set the destination for you — the bot, surprise-me, a restored trip, a
+  // route collapsing to one city. They all pass through here, so the reveal hangs off this rather
+  // than off eight call sites that would drift apart the moment a ninth appeared.
+  function syncDayChips(){ var v=String($('days').value); document.querySelectorAll('#dayPresets .daychip').forEach(function(c){c.classList.toggle('active',c.dataset.days===v);});
+    try{ revealDaysIfDestSet(); }catch(e){} }
   $('dayPresets').addEventListener('click',function(e){ var b=e.target.closest('.daychip'); if(!b)return; $('days').value=b.dataset.days; syncDayChips(); });
   $('days').addEventListener('input',syncDayChips);
   syncDayChips();
