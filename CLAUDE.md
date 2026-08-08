@@ -123,6 +123,36 @@ trip credit — the same credits the paywall sells, so points become the discoun
 Moderation is self-serve: worker strips `<>`, caps every size and per-address daily count, and
 three reports hide a trip. Photos are canvas-compressed client-side to ≤~160KB JPEG before upload.
 
+## Things that have already cost a day
+
+Written down because each of these was found by measuring, after a plausible wrong explanation had
+already been believed.
+
+**One scope, 534 functions — names are load-bearing.** A new `askDays()` was silently swallowed by
+the chat bot's existing `askDays(cityName)`: later declaration wins, no error, no effect, and the
+new helper was calling the bot with an undefined city. Grep for a name before defining it.
+
+**`aiCity()` rebuilds every row field by field**, so anything the pipeline adds to a place is
+dropped unless it is added there too. This has now happened three times — coordinates on
+restaurants, then the `main`/`light` meal kind, then coordinates again. If you add a field in
+`ai/worker.js`, add it in `aiCity` in the same commit.
+
+**A client-side timeout does not stop the Worker.** `netFetch` aborts at 12s by default; a city
+build that dies there has already run its Places searches and paid for them. Cancelled requests
+still cost money, and a run of failures looks free in the app and expensive on the bill.
+
+**Google's Places quotas are all marked "Adjustable: No".** There is no ceiling to set on their
+side — the Increase Requests tab only raises. `DAY_PLACES_CAP` in the Worker is therefore the only
+real limit, and it must be checked on the path that actually spends (`city` → `poolFor`), not only
+on the `places` action.
+
+**`main` deliberately carries no Places pipeline in `ai/worker.js`.** Deploy app changes to main by
+cherry-picking, never by pushing the branch wholesale — the branch carries work that has not been
+approved. Twice this shipped by accident.
+
+**Distances: `d2co` returns squared degrees.** Its square root orders stops correctly and is not a
+distance. Anything shown to a traveller must use `kmDist`, or a 4.4 km detour renders as "0 km".
+
 ## Deploying
 
 GitHub Pages serves `main`. Develop on the feature branch, then merge:

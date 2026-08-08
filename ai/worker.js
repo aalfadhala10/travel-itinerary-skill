@@ -1093,6 +1093,22 @@ async function poolFor(city, env) {
     for (const c of got) all.push(c);
   }
   dbg(env, "pool.fetched", { city, requests: PLACE_CATS.length, candidates: all.length, byCategory: per });
+  // Trending is a derivative: you cannot compute it from one reading, and you cannot go back and
+  // take last month's. Every pool fetch already carries userRatingCount for every candidate and
+  // then throws it away, so this keeps a dated copy. Costs nothing — no extra call, no cron, just
+  // a number we already hold — and in two months the difference between two of these IS the trend.
+  //
+  // Only cities somebody actually builds are recorded. That is the point: those are the cities
+  // that matter, and the 771 curated ones would need paid lookups to cover.
+  if (kv && all.length) {
+    const stamp = new Date().toISOString().slice(0, 7);              // YYYY-MM
+    const snap = {};
+    for (const c of all) if (c.id && c.v) snap[c.id] = c.v;
+    try {
+      await kv.put("vel:" + cityKey(city) + ":" + stamp, JSON.stringify(snap),
+        { expirationTtl: 34560000 });                                // 400 days: enough for a year of comparisons
+    } catch (e) {}
+  }
   if (kv && all.length) {
     try { await kv.put(key, JSON.stringify(all), { expirationTtl: POOL_TTL }); } catch (e) {}
   }
